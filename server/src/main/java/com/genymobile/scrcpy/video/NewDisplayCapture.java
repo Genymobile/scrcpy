@@ -49,7 +49,7 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     private Size mainDisplaySize;
     private int mainDisplayDpi;
-    private int maxSize;
+    private final int maxSize;
     private final int displayImePolicy;
     private final Rect crop;
     private final boolean captureOrientationLocked;
@@ -249,12 +249,6 @@ public class NewDisplayCapture extends SurfaceCapture {
     @Override
     public synchronized Size getSize() {
         return videoSize;
-    }
-
-    @Override
-    public synchronized boolean setMaxSize(int newMaxSize) {
-        maxSize = newMaxSize;
-        return true;
     }
 
     private static int scaleDpi(Size initialSize, int initialDpi, Size size) {

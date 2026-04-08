@@ -51,7 +51,6 @@ enum {
     OPT_NO_CLIPBOARD_AUTOSYNC,
     OPT_TCPIP,
     OPT_RAW_KEY_EVENTS,
-    OPT_NO_DOWNSIZE_ON_ERROR,
     OPT_OTG,
     OPT_NO_CLEANUP,
     OPT_PRINT_FPS,
@@ -610,13 +609,6 @@ static const struct sc_option options[] = {
                 "and the device clipboard to the computer clipboard whenever "
                 "it changes.\n"
                 "This option disables this automatic synchronization."
-    },
-    {
-        .longopt_id = OPT_NO_DOWNSIZE_ON_ERROR,
-        .longopt = "no-downsize-on-error",
-        .text = "By default, on MediaCodec error, scrcpy automatically tries "
-                "again with a lower definition.\n"
-                "This option disables this behavior.",
     },
     {
         .longopt_id = OPT_NO_KEY_REPEAT,
@@ -2581,9 +2573,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->tcpip = true;
                 opts->tcpip_dst = optarg;
                 break;
-            case OPT_NO_DOWNSIZE_ON_ERROR:
-                opts->downsize_on_error = false;
-                break;
             case OPT_NO_VIDEO:
                 opts->video = false;
                 break;
@@ -2856,16 +2845,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
 #ifdef HAVE_V4L2
-    if (v4l2) {
-        if (!opts->video) {
-            LOGE("V4L2 sink requires video capture, but --no-video was set.");
-            return false;
-        }
-
-        // V4L2 could not handle size change.
-        // Do not log because downsizing on error is the default behavior,
-        // not an explicit request from the user.
-        opts->downsize_on_error = false;
+    if (v4l2 && !opts->video) {
+        LOGE("V4L2 sink requires video capture, but --no-video was set.");
+        return false;
     }
 
     if (opts->v4l2_buffer && !opts->v4l2_device) {

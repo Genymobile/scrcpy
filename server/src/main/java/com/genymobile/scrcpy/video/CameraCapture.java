@@ -59,7 +59,7 @@ public class CameraCapture extends SurfaceCapture {
     private final String explicitCameraId;
     private final CameraFacing cameraFacing;
     private final Size explicitSize;
-    private int maxSize;
+    private final int maxSize;
     private final CameraAspectRatio aspectRatio;
     private final int fps;
     private final boolean highSpeed;
@@ -372,16 +372,6 @@ public class CameraCapture extends SurfaceCapture {
     @Override
     public Size getSize() {
         return videoSize;
-    }
-
-    @Override
-    public boolean setMaxSize(int maxSize) {
-        if (explicitSize != null) {
-            return false;
-        }
-
-        this.maxSize = maxSize;
-        return true;
     }
 
     @SuppressLint("MissingPermission")

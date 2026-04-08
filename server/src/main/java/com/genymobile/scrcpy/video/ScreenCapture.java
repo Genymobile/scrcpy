@@ -29,7 +29,7 @@ public class ScreenCapture extends SurfaceCapture {
 
     private final VirtualDisplayListener vdListener;
     private final int displayId;
-    private int maxSize;
+    private final int maxSize;
     private final Rect crop;
     private Orientation.Lock captureOrientationLock;
     private Orientation captureOrientation;
@@ -185,12 +185,6 @@ public class ScreenCapture extends SurfaceCapture {
     @Override
     public Size getSize() {
         return videoSize;
-    }
-
-    @Override
-    public boolean setMaxSize(int newMaxSize) {
-        maxSize = newMaxSize;
-        return true;
     }
 
     private static IBinder createDisplay() throws Exception {

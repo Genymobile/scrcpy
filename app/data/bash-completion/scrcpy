@@ -56,7 +56,6 @@ _scrcpy() {
         --no-audio-playback
         --no-cleanup
         --no-clipboard-autosync
-        --no-downsize-on-error
         --no-key-repeat
         --no-mipmaps
         --no-mouse-hover

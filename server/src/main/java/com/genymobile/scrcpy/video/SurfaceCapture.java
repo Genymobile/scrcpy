@@ -74,13 +74,6 @@ public abstract class SurfaceCapture {
     public abstract Size getSize();
 
     /**
-     * Set the maximum capture size (set by the encoder if it does not support the current size).
-     *
-     * @param maxSize Maximum size
-     */
-    public abstract boolean setMaxSize(int maxSize);
-
-    /**
      * Indicate if the capture has been closed internally.
      *
      * @return {@code true} is the capture is closed, {@code false} otherwise.
