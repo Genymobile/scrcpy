@@ -20,8 +20,7 @@
 #define STR(x) STR_IMPL_(x)
 
 enum {
-    OPT_BIT_RATE = 1000,
-    OPT_WINDOW_TITLE,
+    OPT_WINDOW_TITLE = 1000,
     OPT_PUSH_TARGET,
     OPT_ALWAYS_ON_TOP,
     OPT_CROP,
@@ -33,25 +32,18 @@ enum {
     OPT_WINDOW_HEIGHT,
     OPT_WINDOW_BORDERLESS,
     OPT_MAX_FPS,
-    OPT_LOCK_VIDEO_ORIENTATION,
-    OPT_DISPLAY,
     OPT_DISPLAY_ID,
-    OPT_ROTATION,
     OPT_RENDER_DRIVER,
     OPT_NO_MIPMAPS,
-    OPT_CODEC_OPTIONS,
     OPT_VIDEO_CODEC_OPTIONS,
     OPT_FORCE_ADB_FORWARD,
     OPT_DISABLE_SCREENSAVER,
     OPT_SHORTCUT_MOD,
     OPT_NO_KEY_REPEAT,
-    OPT_FORWARD_ALL_CLICKS,
     OPT_LEGACY_PASTE,
-    OPT_ENCODER,
     OPT_VIDEO_ENCODER,
     OPT_POWER_OFF_ON_CLOSE,
     OPT_V4L2_SINK,
-    OPT_DISPLAY_BUFFER,
     OPT_VIDEO_BUFFER,
     OPT_V4L2_BUFFER,
     OPT_TUNNEL_HOST,
@@ -64,7 +56,6 @@ enum {
     OPT_NO_CLEANUP,
     OPT_PRINT_FPS,
     OPT_NO_POWER_ON,
-    OPT_CODEC,
     OPT_VIDEO_CODEC,
     OPT_NO_AUDIO,
     OPT_AUDIO_BIT_RATE,
@@ -76,7 +67,6 @@ enum {
     OPT_REQUIRE_AUDIO,
     OPT_AUDIO_BUFFER,
     OPT_AUDIO_OUTPUT_BUFFER,
-    OPT_NO_DISPLAY,
     OPT_NO_VIDEO,
     OPT_NO_AUDIO_PLAYBACK,
     OPT_NO_VIDEO_PLAYBACK,
@@ -98,8 +88,6 @@ enum {
     OPT_ORIENTATION,
     OPT_KEYBOARD,
     OPT_MOUSE,
-    OPT_HID_KEYBOARD_DEPRECATED,
-    OPT_HID_MOUSE_DEPRECATED,
     OPT_NO_WINDOW,
     OPT_MOUSE_BIND,
     OPT_NO_MOUSE_HOVER,
@@ -266,12 +254,6 @@ static const struct sc_option options[] = {
                 "Default is 8M (8000000).",
     },
     {
-        // deprecated
-        .longopt_id = OPT_BIT_RATE,
-        .longopt = "bit-rate",
-        .argdesc = "value",
-    },
-    {
         .longopt_id = OPT_CAMERA_AR,
         .longopt = "camera-ar",
         .argdesc = "ar",
@@ -345,21 +327,6 @@ static const struct sc_option options[] = {
                 "Default is 0.",
     },
     {
-        // Not really deprecated (--codec has never been released), but without
-        // declaring an explicit --codec option, getopt_long() partial matching
-        // behavior would consider --codec to be equivalent to --codec-options,
-        // which would be confusing.
-        .longopt_id = OPT_CODEC,
-        .longopt = "codec",
-        .argdesc = "value",
-    },
-    {
-        // deprecated
-        .longopt_id = OPT_CODEC_OPTIONS,
-        .longopt = "codec-options",
-        .argdesc = "key[:type]=value[,...]",
-    },
-    {
         .longopt_id = OPT_CROP,
         .longopt = "crop",
         .argdesc = "width:height:x:y",
@@ -377,18 +344,6 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_DISABLE_SCREENSAVER,
         .longopt = "disable-screensaver",
         .text = "Disable screensaver while scrcpy is running.",
-    },
-    {
-        // deprecated
-        .longopt_id = OPT_DISPLAY,
-        .longopt = "display",
-        .argdesc = "id",
-    },
-    {
-        // deprecated
-        .longopt_id = OPT_DISPLAY_BUFFER,
-        .longopt = "display-buffer",
-        .argdesc = "ms",
     },
     {
         .longopt_id = OPT_DISPLAY_ID,
@@ -430,12 +385,6 @@ static const struct sc_option options[] = {
                 "Also see -d (--select-usb).",
     },
     {
-        // deprecated
-        .longopt_id = OPT_ENCODER,
-        .longopt = "encoder",
-        .argdesc = "name",
-    },
-    {
         .shortopt = 'f',
         .longopt = "fullscreen",
         .text = "Start in fullscreen.",
@@ -445,11 +394,6 @@ static const struct sc_option options[] = {
         .longopt = "force-adb-forward",
         .text = "Do not attempt to use \"adb reverse\" to connect to the "
                 "device.",
-    },
-    {
-        // deprecated
-        .longopt_id = OPT_FORWARD_ALL_CLICKS,
-        .longopt = "forward-all-clicks",
     },
     {
         .shortopt = 'G',
@@ -507,12 +451,6 @@ static const struct sc_option options[] = {
         .text = "Kill adb when scrcpy terminates.",
     },
     {
-        // deprecated
-        //.shortopt = 'K', // old, reassigned
-        .longopt_id = OPT_HID_KEYBOARD_DEPRECATED,
-        .longopt = "hid-keyboard",
-    },
-    {
         .longopt_id = OPT_LEGACY_PASTE,
         .longopt = "legacy-paste",
         .text = "Inject computer clipboard text as a sequence of key events "
@@ -546,12 +484,6 @@ static const struct sc_option options[] = {
         .text = "List video and audio encoders available on the device.",
     },
     {
-        // deprecated
-        .longopt_id = OPT_LOCK_VIDEO_ORIENTATION,
-        .longopt = "lock-video-orientation",
-        .argdesc = "value",
-    },
-    {
         .shortopt = 'm',
         .longopt = "max-size",
         .argdesc = "value",
@@ -559,12 +491,6 @@ static const struct sc_option options[] = {
                 "other dimension is computed so that the device aspect-ratio "
                 "is preserved.\n"
                 "Default is 0 (unlimited).",
-    },
-    {
-        // deprecated
-        //.shortopt = 'M', // old, reassigned
-        .longopt_id = OPT_HID_MOUSE_DEPRECATED,
-        .longopt = "hid-mouse",
     },
     {
         .shortopt = 'M',
@@ -690,11 +616,6 @@ static const struct sc_option options[] = {
         .text = "By default, on MediaCodec error, scrcpy automatically tries "
                 "again with a lower definition.\n"
                 "This option disables this behavior.",
-    },
-    {
-        // deprecated
-        .longopt_id = OPT_NO_DISPLAY,
-        .longopt = "no-display",
     },
     {
         .longopt_id = OPT_NO_KEY_REPEAT,
@@ -865,12 +786,6 @@ static const struct sc_option options[] = {
         .text = "By default, scrcpy mirrors only the video when audio capture "
                 "fails on the device. This option makes scrcpy fail if audio "
                 "is enabled but does not work."
-    },
-    {
-        // deprecated
-        .longopt_id = OPT_ROTATION,
-        .longopt = "rotation",
-        .argdesc = "value",
     },
     {
         .shortopt = 's',
@@ -2420,10 +2335,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     int c;
     while ((c = getopt_long(argc, argv, optstring, longopts, NULL)) != -1) {
         switch (c) {
-            case OPT_BIT_RATE:
-                LOGE("--bit-rate has been removed, "
-                     "use --video-bit-rate or --audio-bit-rate.");
-                return false;
             case 'b':
                 if (!parse_bit_rate(optarg, &opts->video_bit_rate)) {
                     return false;
@@ -2437,9 +2348,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_CROP:
                 opts->crop = optarg;
                 break;
-            case OPT_DISPLAY:
-                LOGE("--display has been removed, use --display-id instead.");
-                return false;
             case OPT_DISPLAY_ID:
                 if (!parse_display_id(optarg, &opts->display_id)) {
                     return false;
@@ -2470,10 +2378,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
-            case OPT_HID_KEYBOARD_DEPRECATED:
-                LOGE("--hid-keyboard has been removed, use --keyboard=aoa or "
-                     "--keyboard=uhid instead.");
-                return false;
             case OPT_MAX_FPS:
                 opts->max_fps = optarg;
                 break;
@@ -2498,14 +2402,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_MOUSE_HOVER:
                 opts->mouse_hover = false;
                 break;
-            case OPT_HID_MOUSE_DEPRECATED:
-                LOGE("--hid-mouse has been removed, use --mouse=aoa or "
-                     "--mouse=uhid instead.");
-                return false;
-            case OPT_LOCK_VIDEO_ORIENTATION:
-                LOGE("--lock-video-orientation has been removed, use "
-                     "--capture-orientation instead.");
-                return false;
             case OPT_CAPTURE_ORIENTATION:
                 if (!parse_capture_orientation(optarg,
                                           &opts->capture_orientation,
@@ -2526,10 +2422,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case 'n':
                 opts->control = false;
                 break;
-            case OPT_NO_DISPLAY:
-                LOGE("--no-display has been removed, use --no-playback "
-                     "instead.");
-                return false;
             case 'N':
                 opts->video_playback = false;
                 opts->audio_playback = false;
@@ -2614,10 +2506,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 opts->key_inject_mode = SC_KEY_INJECT_MODE_RAW;
                 break;
-            case OPT_ROTATION:
-                LOGE("--rotation has been removed, use --orientation or "
-                     "--capture-orientation instead.");
-                return false;
             case OPT_DISPLAY_ORIENTATION:
                 if (!parse_orientation(optarg, &opts->display_orientation)) {
                     return false;
@@ -2646,20 +2534,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_KEY_REPEAT:
                 opts->forward_key_repeat = false;
                 break;
-            case OPT_CODEC_OPTIONS:
-                LOGE("--codec-options has been removed, "
-                     "use --video-codec-options or --audio-codec-options.");
-                return false;
             case OPT_VIDEO_CODEC_OPTIONS:
                 opts->video_codec_options = optarg;
                 break;
             case OPT_AUDIO_CODEC_OPTIONS:
                 opts->audio_codec_options = optarg;
                 break;
-            case OPT_ENCODER:
-                LOGE("--encoder has been removed, "
-                     "use --video-encoder or --audio-encoder.");
-                return false;
             case OPT_VIDEO_ENCODER:
                 opts->video_encoder = optarg;
                 break;
@@ -2677,20 +2557,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
-            case OPT_FORWARD_ALL_CLICKS:
-                LOGE("--forward-all-clicks has been removed, "
-                     "use --mouse-bind=++++ instead.");
-                return false;
             case OPT_LEGACY_PASTE:
                 opts->legacy_paste = true;
                 break;
             case OPT_POWER_OFF_ON_CLOSE:
                 opts->power_off_on_close = true;
                 break;
-            case OPT_DISPLAY_BUFFER:
-                LOGE("--display-buffer has been removed, use --video-buffer "
-                     "instead.");
-                return false;
             case OPT_VIDEO_BUFFER:
                 if (!parse_buffering_time(optarg, &opts->video_buffer)) {
                     return false;
@@ -2721,10 +2593,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_PRINT_FPS:
                 opts->start_fps_counter = true;
                 break;
-            case OPT_CODEC:
-                LOGE("--codec has been removed, "
-                     "use --video-codec or --audio-codec.");
-                return false;
             case OPT_VIDEO_CODEC:
                 if (!parse_video_codec(optarg, &opts->video_codec)) {
                     return false;
