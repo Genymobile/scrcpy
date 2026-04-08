@@ -29,6 +29,9 @@ void
 sc_sdl_set_window_position(SDL_Window *window, struct sc_point point);
 
 void
+sc_sdl_set_window_aspect_ratio(SDL_Window *window, float min_aspect, float max_aspect);
+
+void
 sc_sdl_show_window(SDL_Window *window);
 
 void

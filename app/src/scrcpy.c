@@ -814,6 +814,7 @@ aoa_complete:
             .window_width = options->window_width,
             .window_height = options->window_height,
             .window_borderless = options->window_borderless,
+            .window_preserve_aspect_ratio = options->window_preserve_aspect_ratio,
             .orientation = options->display_orientation,
             .mipmaps = options->mipmaps,
             .fullscreen = options->fullscreen,

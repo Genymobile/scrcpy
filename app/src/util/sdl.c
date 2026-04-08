@@ -84,6 +84,15 @@ sc_sdl_set_window_size(SDL_Window *window, struct sc_size size) {
     }
 }
 
+void
+sc_sdl_set_window_aspect_ratio(SDL_Window *window, float min_aspect, float max_aspect) {
+    bool ok = SDL_SetWindowAspectRatio(window, min_aspect, max_aspect);
+    if (!ok) {
+        LOGE("Could not set window aspect ratio: %s", SDL_GetError());
+        assert(!"unexpected");
+    }
+}
+
 struct sc_point
 sc_sdl_get_window_position(SDL_Window *window) {
     int x;

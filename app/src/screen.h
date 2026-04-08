@@ -50,6 +50,7 @@ struct sc_screen {
         uint16_t width;
         uint16_t height;
         bool fullscreen;
+        bool preserve_aspect_ratio;
         bool start_fps_counter;
     } req;
 
@@ -107,6 +108,7 @@ struct sc_screen_params {
     uint16_t window_height;
 
     bool window_borderless;
+    bool window_preserve_aspect_ratio;
 
     enum sc_orientation orientation;
     bool mipmaps;

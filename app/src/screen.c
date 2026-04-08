@@ -377,6 +377,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->req.width = params->window_width;
     screen->req.height = params->window_height;
     screen->req.fullscreen = params->fullscreen;
+    screen->req.preserve_aspect_ratio = params->window_preserve_aspect_ratio;
     screen->req.start_fps_counter = params->start_fps_counter;
 
     bool ok = sc_frame_buffer_init(&screen->fb);
@@ -604,10 +605,14 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
     sc_sdl_set_window_size(screen->window, window_size);
     sc_sdl_set_window_position(screen->window, position);
 
+    if (screen->req.preserve_aspect_ratio) {
+        float aspect_ratio = (float) screen->content_size.width / screen->content_size.height;
+        sc_sdl_set_window_aspect_ratio(screen->window, aspect_ratio, aspect_ratio);
+    }
+
     if (screen->req.fullscreen) {
         sc_screen_toggle_fullscreen(screen);
     }
-
     if (screen->req.start_fps_counter) {
         sc_fps_counter_start(&screen->fps_counter);
     }
@@ -687,6 +692,10 @@ resize_for_content(struct sc_screen *screen, struct sc_size old_content_size,
     };
     target_size = get_optimal_size(target_size, new_content_size, true);
     assert(is_windowed(screen));
+    if(screen->req.preserve_aspect_ratio){
+        float aspect_ratio = (float) new_content_size.width / new_content_size.height;
+        sc_sdl_set_window_aspect_ratio(screen->window, aspect_ratio, aspect_ratio);
+    }
     sc_sdl_set_window_size(screen->window, target_size);
 }
 
@@ -845,6 +854,9 @@ sc_screen_resize_to_fit(struct sc_screen *screen) {
     assert(screen->video);
 
     if (!is_windowed(screen)) {
+        return;
+    }
+    if(screen->req.preserve_aspect_ratio){
         return;
     }
 
