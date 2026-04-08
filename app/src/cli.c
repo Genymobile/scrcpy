@@ -105,6 +105,7 @@ enum {
     OPT_CAMERA_TORCH,
     OPT_CAMERA_ZOOM,
     OPT_MIN_SIZE_ALIGNMENT,
+    OPT_NO_WINDOW_ASPECT_RATIO_LOCK,
 };
 
 struct sc_option {
@@ -668,6 +669,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_NO_WINDOW,
         .longopt = "no-window",
         .text = "Disable scrcpy window. Implies --no-video-playback.",
+    },
+    {
+        .longopt_id = OPT_NO_WINDOW_ASPECT_RATIO_LOCK,
+        .longopt = "no-window-aspect-ratio-lock",
+        .text = "Disable window aspect ratio lock.",
     },
     {
         .longopt_id = OPT_ORIENTATION,
@@ -2757,6 +2763,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                                               &opts->min_size_alignment)) {
                     return false;
                 }
+                break;
+            case OPT_NO_WINDOW_ASPECT_RATIO_LOCK:
+                opts->window_aspect_ratio_lock = false;
                 break;
             default:
                 // getopt prints the error message on stderr

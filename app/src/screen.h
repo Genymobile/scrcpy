@@ -36,6 +36,7 @@ struct sc_screen {
 
     bool video;
     bool camera;
+    bool window_aspect_ratio_lock;
 
     struct sc_texture tex;
     struct sc_input_manager im;
@@ -106,6 +107,7 @@ struct sc_screen_params {
     uint16_t window_width;
     uint16_t window_height;
 
+    bool window_aspect_ratio_lock;
     bool window_borderless;
 
     enum sc_orientation orientation;

@@ -25,6 +25,13 @@ The initial window position and size may be specified:
 scrcpy --window-x=100 --window-y=100 --window-width=800 --window-height=600
 ```
 
+By default, the window aspect ratio is preserved when resizing. To disable this
+behavior:
+
+```bash
+scrcpy --no-window-aspect-ratio-lock
+```
+
 ## Borderless
 
 To disable window decorations:

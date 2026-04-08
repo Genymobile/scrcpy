@@ -17,11 +17,15 @@
 static void
 set_window_size_ar(struct sc_screen *screen, struct sc_size window_size) {
     assert(window_size.width && window_size.height);
-    float ar = (float) window_size.width / window_size.height;
-    bool ok = SDL_SetWindowAspectRatio(screen->window, ar, ar);
-    if (!ok) {
-        LOGW("Could not set window aspect ratio: %s", SDL_GetError());
+
+    if (screen->window_aspect_ratio_lock) {
+        float ar = (float) window_size.width / window_size.height;
+        bool ok = SDL_SetWindowAspectRatio(screen->window, ar, ar);
+        if (!ok) {
+            LOGW("Could not set window aspect ratio: %s", SDL_GetError());
+        }
     }
+
     sc_sdl_set_window_size(screen->window, window_size);
 }
 
@@ -390,6 +394,7 @@ sc_screen_init(struct sc_screen *screen,
 
     screen->video = params->video;
     screen->camera = params->camera;
+    screen->window_aspect_ratio_lock = params->window_aspect_ratio_lock;
 
     screen->req.x = params->window_x;
     screen->req.y = params->window_y;

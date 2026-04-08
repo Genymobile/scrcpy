@@ -813,6 +813,7 @@ aoa_complete:
             .window_y = options->window_y,
             .window_width = options->window_width,
             .window_height = options->window_height,
+            .window_aspect_ratio_lock = options->window_aspect_ratio_lock,
             .window_borderless = options->window_borderless,
             .orientation = options->display_orientation,
             .mipmaps = options->mipmaps,
