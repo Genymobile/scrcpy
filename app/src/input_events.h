@@ -22,10 +22,10 @@
  * coordinates are expressed in SDL window coordinates (the visible UI), while
  * scrcpy events are expressed in device frame coordinates.
  *
- * In particular, the window may be visually scaled or rotated (with --rotation
- * or MOD+Left/Right), but this does not impact scrcpy input events (contrary
- * to SDL input events). This allows to abstract these display details from the
- * input event processors (and to make them independent from the "screen").
+ * In particular, the window may be visually scaled or rotated, but this does
+ * not impact scrcpy input events (contrary to SDL input events). This allows to
+ * abstract these display details from the input event processors (and to make
+ * them independent from the "screen").
  *
  * For many enums below, the values are purposely the same as the SDL
  * constants (though not all SDL values are represented), so that the

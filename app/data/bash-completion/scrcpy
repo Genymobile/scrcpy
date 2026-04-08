@@ -80,7 +80,6 @@ _scrcpy() {
         --record-orientation=
         --render-driver=
         --require-audio
-        --rotation=
         -s --serial=
         -S --turn-screen-off
         --screen-off-timeout=
