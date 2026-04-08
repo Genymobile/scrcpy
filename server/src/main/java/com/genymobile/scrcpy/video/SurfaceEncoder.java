@@ -67,6 +67,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     private void streamCapture() throws IOException, ConfigurationException {
         Codec codec = streamer.getCodec();
         MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
+        MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
 
         MediaCodecInfo.VideoCapabilities caps = mediaCodec.getCodecInfo().getCapabilitiesForType(codec.getMimeType())
                 .getVideoCapabilities();
@@ -76,8 +77,6 @@ public class SurfaceEncoder implements AsyncProcessor {
             alignment = minSizeAlignment;
             Ln.d("Actual video size alignment: " + alignment + "px");
         }
-
-        MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
 
         capture.init(reset, alignment);
 
