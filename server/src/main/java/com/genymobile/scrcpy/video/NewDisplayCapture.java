@@ -50,7 +50,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private Size mainDisplaySize;
     private int mainDisplayDpi;
     private int maxSize;
-    private int displayImePolicy;
+    private final int displayImePolicy;
     private final Rect crop;
     private final boolean captureOrientationLocked;
     private final Orientation captureOrientation;
