@@ -65,6 +65,7 @@ _scrcpy() {
         --no-vd-system-decorations
         --no-video
         --no-video-playback
+        --no-window
         --orientation=
         --otg
         -p --port=
