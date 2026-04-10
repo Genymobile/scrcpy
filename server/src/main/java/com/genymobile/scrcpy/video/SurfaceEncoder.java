@@ -73,7 +73,11 @@ public class SurfaceEncoder implements AsyncProcessor {
         int maxPortraitWidth = caps.getSupportedWidthsFor(maxPortraitHeight).getUpper();
         Size maxPortraitSize = new Size(maxPortraitWidth, maxPortraitHeight);
 
-        return new VideoConstraints(maxSize, alignment, maxLandscapeSize, maxPortraitSize);
+        int minWidth = caps.getSupportedWidths().getLower();
+        int minHeight = caps.getSupportedHeights().getLower();
+        int minSize = Math.max(minWidth, minHeight);
+
+        return new VideoConstraints(maxSize, alignment, maxLandscapeSize, maxPortraitSize, minSize);
     }
 
     private void streamCapture() throws IOException, ConfigurationException {

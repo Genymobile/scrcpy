@@ -13,7 +13,11 @@ public class SizeTest {
     }
 
     private VideoConstraints createVideoConstraints(int maxSize, int alignment, Size maxCodecSize) {
-        return new VideoConstraints(maxSize, alignment, maxCodecSize, maxCodecSize);
+        return new VideoConstraints(maxSize, alignment, maxCodecSize, maxCodecSize, 0);
+    }
+
+    private VideoConstraints createVideoConstraints(int maxSize, int alignment, Size maxCodecSize, int minCodecSize) {
+        return new VideoConstraints(maxSize, alignment, maxCodecSize, maxCodecSize, minCodecSize);
     }
 
     @Test
@@ -58,5 +62,14 @@ public class SizeTest {
         Assert.assertEquals(new Size(400, 536 * 400 / 512), size.constrain(createVideoConstraints(550, 1, maxCodecSize)));
         Assert.assertEquals(new Size(400, 536 * 400 / 512), size.constrain(createVideoConstraints(500, 1, maxCodecSize)));
         Assert.assertEquals(new Size(512 * 410 / 536, 410), size.constrain(createVideoConstraints(410, 1, maxCodecSize)));
+    }
+
+    @Test
+    public void testConstrainMinCodecSize() {
+        Size maxCodecSize = new Size(1024, 1024);
+
+        Size size = new Size(800, 600);
+        Assert.assertEquals(new Size(800, 600), size.constrain(createVideoConstraints(800, 1, maxCodecSize, 512)));
+        Assert.assertEquals(new Size(512, 512), size.constrain(createVideoConstraints(400, 1, maxCodecSize, 512)));
     }
 }

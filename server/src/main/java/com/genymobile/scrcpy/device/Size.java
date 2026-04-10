@@ -72,6 +72,15 @@ public final class Size {
         assert w <= maxWidth : "The width cannot exceed maxWidth";
         assert h <= maxHeight : "The height cannot exceed maxHeight";
 
+        // Minimum codec size must be respected (regardless of requested maxSize)
+        int minCodecSize = constraints.getMinCodecSize();
+        if (w < minCodecSize) {
+            w = minCodecSize;
+        }
+        if (h < minCodecSize) {
+            h = minCodecSize;
+        }
+
         return new Size(w, h);
     }
 

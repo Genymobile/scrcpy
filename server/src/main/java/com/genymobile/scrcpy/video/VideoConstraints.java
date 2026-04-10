@@ -7,8 +7,9 @@ public class VideoConstraints {
     private final int alignment;
     private final Size maxCodecLandscapeSize;
     private final Size maxCodecPortraitSize;
+    private final int minCodecSize;
 
-    public VideoConstraints(int maxSize, int alignment, Size maxCodecLandscapeSize, Size maxCodecPortraitSize) {
+    public VideoConstraints(int maxSize, int alignment, Size maxCodecLandscapeSize, Size maxCodecPortraitSize, int minCodecSize) {
         assert maxSize >= 0 : "Max size must not be negative";
         this.maxSize = maxSize;
 
@@ -21,6 +22,9 @@ public class VideoConstraints {
 
         assert maxCodecPortraitSize != null;
         this.maxCodecPortraitSize = maxCodecPortraitSize;
+
+        assert minCodecSize >= 0;
+        this.minCodecSize = minCodecSize;
     }
 
     /**
@@ -59,5 +63,14 @@ public class VideoConstraints {
      */
     public Size getMaxCodecPortraitSize() {
         return maxCodecPortraitSize;
+    }
+
+    /**
+     * Return the min size supported by the codec.
+     *
+     * @return the min size
+     */
+    public int getMinCodecSize() {
+        return minCodecSize;
     }
 }
