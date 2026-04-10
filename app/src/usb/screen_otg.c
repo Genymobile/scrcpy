@@ -81,6 +81,8 @@ sc_screen_otg_init(struct sc_screen_otg *screen,
         sc_mouse_capture_set_active(&screen->mc, true);
     }
 
+    screen->otg_automatic_screenshot = params->otg_automatic_screenshot;
+
     return true;
 
 error_destroy_window:
@@ -116,6 +118,15 @@ sc_screen_otg_process_key(struct sc_screen_otg *screen,
 
     assert(kp->ops->process_key);
     kp->ops->process_key(kp, &evt, SC_SEQUENCE_INVALID);
+}
+
+static void
+sc_screen_otg_take_screenshot(struct sc_screen_otg *screen) {
+    assert(screen->keyboard);
+    struct sc_key_processor *kp = &screen->keyboard->key_processor;
+
+    assert(kp->ops->take_screenshot);
+    kp->ops->take_screenshot(kp);
 }
 
 static void
@@ -261,11 +272,21 @@ sc_screen_otg_process_gamepad_button(struct sc_screen_otg *screen,
 
 void
 sc_screen_otg_handle_event(struct sc_screen_otg *screen, SDL_Event *event) {
-    if (sc_mouse_capture_handle_event(&screen->mc, event)) {
+    int event_state = sc_mouse_capture_handle_event(&screen->mc, event);
+    if (event_state == SC_MOUSE_CAPTURE_EVENT_CONSUMED) {
+        // The mouse capture handler consumed the event
+        return;
+    } else if (event_state == SC_MOUSE_CAPTURE_EVENT_CONSUMED_EXIT_CAPTURE_MODE) {
+        if (screen->otg_automatic_screenshot) {
+            // send Volume Down + Power event to take a screenshot
+            LOGI("Taking screenshot");
+            sc_screen_otg_take_screenshot(screen);
+        }
         // The mouse capture handler consumed the event
         return;
     }
 
+    // assume event_state is SC_MOUSE_CAPTURE_EVENT_UNCONSUMED
     switch (event->type) {
         case SDL_WINDOWEVENT:
             switch (event->window.event) {

@@ -16,14 +16,14 @@ sc_mouse_capture_is_capture_key(struct sc_mouse_capture *mc, SDL_Keycode key) {
     return sc_shortcut_mods_is_shortcut_key(mc->sdl_mouse_capture_keys, key);
 }
 
-bool
+int
 sc_mouse_capture_handle_event(struct sc_mouse_capture *mc,
                               const SDL_Event *event) {
     switch (event->type) {
         case SDL_WINDOWEVENT:
             if (event->window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
                 sc_mouse_capture_set_active(mc, false);
-                return true;
+                return SC_MOUSE_CAPTURE_EVENT_CONSUMED;
             }
             break;
         case SDL_KEYDOWN: {
@@ -37,7 +37,7 @@ sc_mouse_capture_handle_event(struct sc_mouse_capture *mc,
                     mc->mouse_capture_key_pressed = 0;
                 }
                 // Mouse capture keys are never forwarded to the device
-                return true;
+                return SC_MOUSE_CAPTURE_EVENT_CONSUMED;
             }
             break;
         }
@@ -52,7 +52,11 @@ sc_mouse_capture_handle_event(struct sc_mouse_capture *mc,
                     sc_mouse_capture_toggle(mc);
                 }
                 // Mouse capture keys are never forwarded to the device
-                return true;
+                if (sc_mouse_capture_is_active(mc)) {
+                    return SC_MOUSE_CAPTURE_EVENT_CONSUMED;
+                } else {
+                    return SC_MOUSE_CAPTURE_EVENT_CONSUMED_EXIT_CAPTURE_MODE;
+                }
             }
             break;
         }
@@ -62,13 +66,13 @@ sc_mouse_capture_handle_event(struct sc_mouse_capture *mc,
             if (!sc_mouse_capture_is_active(mc)) {
                 // The mouse will be captured on SDL_MOUSEBUTTONUP, so consume
                 // the event
-                return true;
+                return SC_MOUSE_CAPTURE_EVENT_CONSUMED;
             }
             break;
         case SDL_MOUSEBUTTONUP:
             if (!sc_mouse_capture_is_active(mc)) {
                 sc_mouse_capture_set_active(mc, true);
-                return true;
+                return SC_MOUSE_CAPTURE_EVENT_CONSUMED;
             }
             break;
         case SDL_FINGERMOTION:
@@ -76,10 +80,10 @@ sc_mouse_capture_handle_event(struct sc_mouse_capture *mc,
         case SDL_FINGERUP:
             // Touch events are not compatible with relative mode
             // (coordinates are not relative), so consume the event
-            return true;
+            return SC_MOUSE_CAPTURE_EVENT_CONSUMED;
     }
 
-    return false;
+    return SC_MOUSE_CAPTURE_EVENT_UNCONSUMED;
 }
 
 void
