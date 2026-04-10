@@ -36,6 +36,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     private final String encoderName;
     private final List<CodecOption> codecOptions;
     private final int videoBitRate;
+    private final int maxSize;
     private final float maxFps;
     private final int minSizeAlignment;
 
@@ -48,6 +49,7 @@ public class SurfaceEncoder implements AsyncProcessor {
         this.capture = capture;
         this.streamer = streamer;
         this.videoBitRate = options.getVideoBitRate();
+        this.maxSize = options.getMaxSize();
         this.maxFps = options.getMaxFps();
         this.codecOptions = options.getVideoCodecOptions();
         this.encoderName = options.getVideoEncoder();
@@ -67,7 +69,7 @@ public class SurfaceEncoder implements AsyncProcessor {
             alignment = minSizeAlignment;
             Ln.d("Actual video size alignment: " + alignment + "px");
         }
-        VideoConstraints constraints = new VideoConstraints(alignment);
+        VideoConstraints constraints = new VideoConstraints(maxSize, alignment);
 
         capture.init(reset, constraints);
 

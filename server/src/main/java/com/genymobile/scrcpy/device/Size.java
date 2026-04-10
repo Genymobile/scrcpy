@@ -31,7 +31,8 @@ public final class Size {
         return new Size(height, width);
     }
 
-    public Size constrain(int maxSize, VideoConstraints constraints) {
+    public Size constrain(VideoConstraints constraints) {
+        int maxSize = constraints.getMaxSize();
         int alignment = constraints.getAlignment();
 
         assert maxSize >= 0 : "Max size may not be negative";

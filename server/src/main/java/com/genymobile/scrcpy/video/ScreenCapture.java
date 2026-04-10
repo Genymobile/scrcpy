@@ -29,7 +29,6 @@ public class ScreenCapture extends SurfaceCapture {
 
     private final VirtualDisplayListener vdListener;
     private final int displayId;
-    private final int maxSize;
     private final Rect crop;
     private Orientation.Lock captureOrientationLock;
     private Orientation captureOrientation;
@@ -50,7 +49,6 @@ public class ScreenCapture extends SurfaceCapture {
         this.vdListener = vdListener;
         this.displayId = options.getDisplayId();
         assert displayId != Device.DISPLAY_ID_NONE;
-        this.maxSize = options.getMaxSize();
         this.crop = options.getCrop();
         this.captureOrientationLock = options.getCaptureOrientationLock();
         this.captureOrientation = options.getCaptureOrientation();
@@ -97,7 +95,7 @@ public class ScreenCapture extends SurfaceCapture {
         filter.addAngle(angle);
 
         transform = filter.getInverseTransform();
-        videoSize = filter.getOutputSize().constrain(maxSize, getVideoConstraints());
+        videoSize = filter.getOutputSize().constrain(getVideoConstraints());
     }
 
     @Override

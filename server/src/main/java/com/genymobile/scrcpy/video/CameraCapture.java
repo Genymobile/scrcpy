@@ -59,7 +59,6 @@ public class CameraCapture extends SurfaceCapture {
     private final String explicitCameraId;
     private final CameraFacing cameraFacing;
     private final Size explicitSize;
-    private final int maxSize;
     private final CameraAspectRatio aspectRatio;
     private final int fps;
     private final boolean highSpeed;
@@ -93,7 +92,6 @@ public class CameraCapture extends SurfaceCapture {
         this.explicitCameraId = options.getCameraId();
         this.cameraFacing = options.getCameraFacing();
         this.explicitSize = options.getCameraSize();
-        this.maxSize = options.getMaxSize();
         this.aspectRatio = options.getCameraAspectRatio();
         this.fps = options.getCameraFps();
         this.highSpeed = options.getCameraHighSpeed();
@@ -128,6 +126,7 @@ public class CameraCapture extends SurfaceCapture {
     @Override
     public void prepare() throws IOException {
         try {
+            int maxSize = getVideoConstraints().getMaxSize();
             captureSize = selectSize(cameraId, explicitSize, maxSize, aspectRatio, highSpeed);
             if (captureSize == null) {
                 throw new IOException("Could not select camera size");
@@ -149,7 +148,7 @@ public class CameraCapture extends SurfaceCapture {
         filter.addAngle(angle);
 
         transform = filter.getInverseTransform();
-        videoSize = filter.getOutputSize().constrain(maxSize, getVideoConstraints());
+        videoSize = filter.getOutputSize().constrain(getVideoConstraints());
     }
 
     private static String selectCamera(String explicitCameraId, CameraFacing cameraFacing) throws CameraAccessException, ConfigurationException {

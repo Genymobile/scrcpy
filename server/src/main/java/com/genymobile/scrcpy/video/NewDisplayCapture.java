@@ -49,7 +49,6 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     private Size mainDisplaySize;
     private int mainDisplayDpi;
-    private final int maxSize;
     private final int displayImePolicy;
     private final Rect crop;
     private final boolean captureOrientationLocked;
@@ -69,7 +68,6 @@ public class NewDisplayCapture extends SurfaceCapture {
         this.vdListener = vdListener;
         this.newDisplay = options.getNewDisplay();
         assert newDisplay != null;
-        this.maxSize = options.getMaxSize();
         this.displayImePolicy = options.getDisplayImePolicy();
         this.crop = options.getCrop();
         assert options.getCaptureOrientationLock() != null;
@@ -134,7 +132,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         filter.addAngle(angle);
 
         Size outputSize = filter.getOutputSize();
-        Size filteredSize = outputSize.constrain(maxSize, getVideoConstraints());
+        Size filteredSize = outputSize.constrain(getVideoConstraints());
         if (!filteredSize.equals(outputSize)) {
             filter.addResize(filteredSize);
         }
