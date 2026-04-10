@@ -29,59 +29,35 @@ public final class Size {
         return new Size(height, width);
     }
 
-    public Size limit(int maxSize) {
+    public Size constrain(int maxSize, int alignment) {
         assert maxSize >= 0 : "Max size may not be negative";
+        assert alignment > 0 : "Alignment must be positive";
+        assert (alignment & (alignment - 1)) == 0 : "Alignment must be a power-of-two";
 
-        if (maxSize == 0) {
-            // No limit
-            return this;
+        int alignedMaxSize = maxSize / alignment * alignment; // round to a multiple of alignment
+        int w, h;
+
+        if (maxSize > 0 && (width > alignedMaxSize || height > alignedMaxSize)) {
+            if (width > height) {
+                w = alignedMaxSize;
+                h = round(height * alignedMaxSize / width, alignment);
+            } else {
+                w = round(width * alignedMaxSize / height, alignment);
+                h = alignedMaxSize;
+            }
+        } else {
+            w = round(width, alignment);
+            h = round(height, alignment);
         }
 
-        boolean portrait = height > width;
-        int major = portrait ? height : width;
-        if (major <= maxSize) {
-            return this;
-        }
+        assert maxSize == 0 || w <= maxSize : "The width cannot exceed maxSize if maxSize is aligned";
+        assert maxSize == 0 || h <= maxSize : "The height cannot exceed maxSize if maxSize is aligned";
 
-        int minor = portrait ? width : height;
-
-        int newMajor = maxSize;
-        int newMinor = maxSize * minor / major;
-
-        int w = portrait ? newMinor : newMajor;
-        int h = portrait ? newMajor : newMinor;
         return new Size(w, h);
     }
 
-    /**
-     * Round both dimensions of this size to be multiples of {@code alignment}.
-     *
-     * @param alignment the required alignment
-     * @return the current size rounded
-     */
-    public Size round(int alignment) {
-        if (isMultipleOf(alignment)) {
-            // Already aligned
-            return this;
-        }
-
-        boolean portrait = height > width;
-        int major = portrait ? height : width;
-        int minor = portrait ? width : height;
-
-        major = major / alignment * alignment; // round down to not exceed the initial size
-        minor = (minor + (alignment / 2)) / alignment * alignment; // round to the nearest to minimize aspect ratio distortion
-        if (minor > major) {
-            minor = major;
-        }
-
-        int w = portrait ? minor : major;
-        int h = portrait ? major : minor;
-        return new Size(w, h);
-    }
-
-    public boolean isMultipleOf(int alignment) {
-        return width % alignment == 0 && height % alignment == 0;
+    private static int round(int value, int alignment) {
+        return (value + (alignment / 2)) / alignment * alignment;
     }
 
     public Rect toRect() {
