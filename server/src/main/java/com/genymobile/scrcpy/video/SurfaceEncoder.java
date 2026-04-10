@@ -65,7 +65,15 @@ public class SurfaceEncoder implements AsyncProcessor {
             Ln.d("Actual video size alignment: " + alignment + "px");
         }
 
-        return new VideoConstraints(maxSize, alignment);
+        int maxLandscapeWidth = caps.getSupportedWidths().getUpper();
+        int maxLandscapeHeight = caps.getSupportedHeightsFor(maxLandscapeWidth).getUpper();
+        Size maxLandscapeSize = new Size(maxLandscapeWidth, maxLandscapeHeight);
+
+        int maxPortraitHeight = caps.getSupportedHeights().getUpper();
+        int maxPortraitWidth = caps.getSupportedWidthsFor(maxPortraitHeight).getUpper();
+        Size maxPortraitSize = new Size(maxPortraitWidth, maxPortraitHeight);
+
+        return new VideoConstraints(maxSize, alignment, maxLandscapeSize, maxPortraitSize);
     }
 
     private void streamCapture() throws IOException, ConfigurationException {

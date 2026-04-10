@@ -8,7 +8,12 @@ import org.junit.Test;
 public class SizeTest {
 
     private VideoConstraints createVideoConstraints(int maxSize, int alignment) {
-        return new VideoConstraints(maxSize, alignment);
+        Size maxCodecSize = new Size(4096, 4096);
+        return createVideoConstraints(maxSize, alignment, maxCodecSize);
+    }
+
+    private VideoConstraints createVideoConstraints(int maxSize, int alignment, Size maxCodecSize) {
+        return new VideoConstraints(maxSize, alignment, maxCodecSize, maxCodecSize);
     }
 
     @Test
@@ -38,5 +43,20 @@ public class SizeTest {
         Assert.assertEquals(size, size.constrain(createVideoConstraints(515, 16)));
         Assert.assertEquals(size, size.constrain(createVideoConstraints(0, 16)));
         Assert.assertEquals(size, size.constrain(createVideoConstraints(4096, 16)));
+    }
+
+    @Test
+    public void testConstrainMaxCodecSize() {
+        Size maxCodecSize = new Size(400, 600);
+
+        Size size = new Size(314, 617);
+        Assert.assertEquals(new Size(314 * 600 / 617, 600), size.constrain(createVideoConstraints(0, 1, maxCodecSize)));
+        Assert.assertEquals(new Size(314 * 550 / 617, 550), size.constrain(createVideoConstraints(550, 1, maxCodecSize)));
+
+        size = new Size(512, 536);
+        Assert.assertEquals(new Size(400, 536 * 400 / 512), size.constrain(createVideoConstraints(0, 1, maxCodecSize)));
+        Assert.assertEquals(new Size(400, 536 * 400 / 512), size.constrain(createVideoConstraints(550, 1, maxCodecSize)));
+        Assert.assertEquals(new Size(400, 536 * 400 / 512), size.constrain(createVideoConstraints(500, 1, maxCodecSize)));
+        Assert.assertEquals(new Size(512 * 410 / 536, 410), size.constrain(createVideoConstraints(410, 1, maxCodecSize)));
     }
 }

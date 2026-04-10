@@ -1,16 +1,26 @@
 package com.genymobile.scrcpy.video;
 
+import com.genymobile.scrcpy.device.Size;
+
 public class VideoConstraints {
     private final int maxSize;
     private final int alignment;
+    private final Size maxCodecLandscapeSize;
+    private final Size maxCodecPortraitSize;
 
-    public VideoConstraints(int maxSize, int alignment) {
+    public VideoConstraints(int maxSize, int alignment, Size maxCodecLandscapeSize, Size maxCodecPortraitSize) {
         assert maxSize >= 0 : "Max size must not be negative";
         this.maxSize = maxSize;
 
         assert alignment > 0 : "Alignment must be positive";
         assert (alignment & (alignment - 1)) == 0 : "Alignment must be a power-of-two";
         this.alignment = alignment;
+
+        assert maxCodecLandscapeSize != null;
+        this.maxCodecLandscapeSize = maxCodecLandscapeSize;
+
+        assert maxCodecPortraitSize != null;
+        this.maxCodecPortraitSize = maxCodecPortraitSize;
     }
 
     /**
@@ -31,5 +41,23 @@ public class VideoConstraints {
      */
     public int getAlignment() {
         return alignment;
+    }
+
+    /**
+     * Return the max landscape size supported by the codec.
+     *
+     * @return the max landscape size
+     */
+    public Size getMaxCodecLandscapeSize() {
+        return maxCodecLandscapeSize;
+    }
+
+    /**
+     * Return the max portrait size supported by the codec.
+     *
+     * @return the max portrait size
+     */
+    public Size getMaxCodecPortraitSize() {
+        return maxCodecPortraitSize;
     }
 }

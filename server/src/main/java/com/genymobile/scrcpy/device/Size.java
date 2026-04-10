@@ -39,24 +39,38 @@ public final class Size {
         assert alignment > 0 : "Alignment must be positive";
         assert (alignment & (alignment - 1)) == 0 : "Alignment must be a power-of-two";
 
-        int alignedMaxSize = maxSize / alignment * alignment; // round to a multiple of alignment
-        int w, h;
+        boolean portrait = width < height;
+        Size maxCodecSize = portrait ? constraints.getMaxCodecPortraitSize() : constraints.getMaxCodecLandscapeSize();
 
-        if (maxSize > 0 && (width > alignedMaxSize || height > alignedMaxSize)) {
-            if (width > height) {
-                w = alignedMaxSize;
-                h = round(height * alignedMaxSize / width, alignment);
+        int maxWidth = maxCodecSize.width;
+        int maxHeight = maxCodecSize.height;
+        if (maxSize > 0) {
+            if (maxSize < maxWidth) {
+                maxWidth = maxSize;
+            }
+            if (maxSize < maxHeight) {
+                maxHeight = maxSize;
+            }
+        }
+        maxWidth = maxWidth / alignment * alignment;
+        maxHeight = maxHeight / alignment * alignment;
+
+        int w, h;
+        if (width > maxWidth || height > maxHeight) {
+            if (width * maxHeight > height * maxWidth) {
+                w = maxWidth;
+                h = round(height * maxWidth / width, alignment);
             } else {
-                w = round(width * alignedMaxSize / height, alignment);
-                h = alignedMaxSize;
+                w = round(width * maxHeight / height, alignment);
+                h = maxHeight;
             }
         } else {
             w = round(width, alignment);
             h = round(height, alignment);
         }
 
-        assert maxSize == 0 || w <= maxSize : "The width cannot exceed maxSize if maxSize is aligned";
-        assert maxSize == 0 || h <= maxSize : "The height cannot exceed maxSize if maxSize is aligned";
+        assert w <= maxWidth : "The width cannot exceed maxWidth";
+        assert h <= maxHeight : "The height cannot exceed maxHeight";
 
         return new Size(w, h);
     }
