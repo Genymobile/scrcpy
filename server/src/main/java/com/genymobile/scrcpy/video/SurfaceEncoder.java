@@ -56,20 +56,26 @@ public class SurfaceEncoder implements AsyncProcessor {
         this.minSizeAlignment = options.getMinSizeAlignment();
     }
 
-    private void streamCapture() throws IOException, ConfigurationException {
-        Codec codec = streamer.getCodec();
-        MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
-        MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
-
-        MediaCodecInfo.VideoCapabilities caps = mediaCodec.getCodecInfo().getCapabilitiesForType(codec.getMimeType())
-                .getVideoCapabilities();
-        int alignment = caps != null ? Math.max(caps.getWidthAlignment(), caps.getHeightAlignment()) : 8;
+    private static VideoConstraints createVideoConstraints(int maxSize, int minSizeAlignment, MediaCodecInfo.VideoCapabilities caps) {
+        assert caps != null;
+        int alignment = Math.max(caps.getWidthAlignment(), caps.getHeightAlignment());
         Ln.d("Video codec size alignment requirement: " + alignment + "px");
         if (alignment < minSizeAlignment) {
             alignment = minSizeAlignment;
             Ln.d("Actual video size alignment: " + alignment + "px");
         }
-        VideoConstraints constraints = new VideoConstraints(maxSize, alignment);
+
+        return new VideoConstraints(maxSize, alignment);
+    }
+
+    private void streamCapture() throws IOException, ConfigurationException {
+        Codec codec = streamer.getCodec();
+        MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
+        MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
+
+        MediaCodecInfo.VideoCapabilities caps = mediaCodec.getCodecInfo().getCapabilitiesForType(codec.getMimeType()).getVideoCapabilities();
+        assert caps != null; // caps cannot be null for a video codec
+        VideoConstraints constraints = createVideoConstraints(maxSize, minSizeAlignment, caps);
 
         capture.init(reset, constraints);
 
