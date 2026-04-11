@@ -296,7 +296,10 @@ run_demuxer(void *data) {
                 break;
             }
         } else {
-            sc_demuxer_recv_packet(demuxer, header, packet);
+            bool ok = sc_demuxer_recv_packet(demuxer, header, packet);
+            if (!ok) {
+                break;
+            }
 
             if (must_merge_config_packet) {
                 // Prepend any config packet to the next media packet
