@@ -134,7 +134,10 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, const uint8_t *header,
     assert(!sc_demuxer_is_session(header));
     uint64_t pts_flags = sc_read64be(header);
     uint32_t len = sc_read32be(&header[8]);
-    assert(len);
+    if (!len) {
+        LOGE("Invalid packet length: 0");
+        return false;
+    }
 
     if (av_new_packet(packet, len)) {
         LOG_OOM();
