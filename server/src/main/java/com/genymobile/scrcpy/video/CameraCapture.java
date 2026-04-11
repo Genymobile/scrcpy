@@ -323,7 +323,7 @@ public class CameraCapture extends SurfaceCapture {
                 } catch (CameraAccessException e) {
                     Ln.e("Camera error", e);
                     disconnected.set(true);
-                    invalidate();
+                    getCaptureControl().reset();
                 }
             }
 
@@ -331,7 +331,7 @@ public class CameraCapture extends SurfaceCapture {
             public void onConfigureFailed(CameraCaptureSession session) {
                 Ln.e("Camera configuration error");
                 disconnected.set(true);
-                invalidate();
+                getCaptureControl().reset();
             }
         });
 
@@ -388,7 +388,7 @@ public class CameraCapture extends SurfaceCapture {
             public void onDisconnected(CameraDevice camera) {
                 Ln.w("Camera disconnected");
                 disconnected.set(true);
-                invalidate();
+                getCaptureControl().reset();
             }
 
             @Override
