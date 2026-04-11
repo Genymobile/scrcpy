@@ -64,7 +64,7 @@ public class ScreenCapture extends SurfaceCapture {
     @Override
     public void init(VideoConstraints videoConstraints) {
         this.videoConstraints = videoConstraints;
-        displayMonitor.start(displayId, () -> getCaptureControl().reset());
+        displayMonitor.start(displayId, () -> getCaptureControl().reset(CaptureControl.RESET_REASON_DISPLAY_PROPERTIES_CHANGED));
     }
 
     @Override
