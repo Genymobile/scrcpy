@@ -97,7 +97,10 @@ public class SurfaceEncoder implements AsyncProcessor {
             streamer.writeVideoHeader();
 
             do {
-                captureControl.consumeReset(); // If a capture reset was requested, it is implicitly fulfilled
+                int resetReasons = captureControl.consumeReset();
+                if ((resetReasons & CaptureControl.RESET_REASON_TERMINATE) != 0) {
+                    break;
+                }
                 capture.prepare();
                 Size size = capture.getSize();
 
@@ -123,12 +126,12 @@ public class SurfaceEncoder implements AsyncProcessor {
                     if (stopped.get()) {
                         alive = false;
                     } else {
-                        boolean resetRequested = captureControl.consumeReset();
-                        if (!resetRequested) {
+                        if (!captureControl.isResetRequested()) {
                             // If a reset is requested during encode(), it will interrupt the encoding by an EOS
                             streamer.writeSessionMeta(size.getWidth(), size.getHeight());
                             encode(mediaCodec, streamer);
                         }
+
                         // The capture might have been closed internally (for example if the camera is disconnected)
                         alive = !stopped.get() && !capture.isClosed();
                     }
@@ -275,7 +278,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     public void stop() {
         if (thread != null) {
             stopped.set(true);
-            captureControl.reset();
+            captureControl.reset(CaptureControl.RESET_REASON_TERMINATE);
         }
     }
 
