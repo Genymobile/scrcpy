@@ -362,13 +362,12 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
         }
 
         if (pts_origin == AV_NOPTS_VALUE) {
-            if (!recorder->audio) {
-                assert(video_pkt);
+            if (!recorder->audio && video_pkt) {
                 pts_origin = video_pkt->pts;
-            } else if (!recorder->video) {
-                assert(audio_pkt);
+            } else if (!recorder->video && audio_pkt) {
                 pts_origin = audio_pkt->pts;
-            } else if (video_pkt && audio_pkt) {
+            } else if (recorder->video && recorder->audio && video_pkt
+                    && audio_pkt) {
                 pts_origin = MIN(video_pkt->pts, audio_pkt->pts);
             } else if (recorder->stopped) {
                 if (video_pkt) {
