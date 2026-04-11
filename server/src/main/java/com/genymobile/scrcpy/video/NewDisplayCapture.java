@@ -117,7 +117,7 @@ public class NewDisplayCapture extends SurfaceCapture {
             }
 
             displayRotation = 0;
-            // Set the current display properties to avoid an unnecessary call to invalidate()
+            // Set the current display properties to avoid an unnecessary capture reset
             displayMonitor.setSessionDisplayProperties(new DisplayProperties(displaySize, displayRotation));
         } else {
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(virtualDisplay.getDisplay().getDisplayId());
@@ -201,7 +201,7 @@ public class NewDisplayCapture extends SurfaceCapture {
                 ServiceManager.getWindowManager().setDisplayImePolicy(virtualDisplayId, displayImePolicy);
             }
 
-            displayMonitor.start(virtualDisplayId, this::invalidate);
+            displayMonitor.start(virtualDisplayId, () -> getCaptureControl().reset());
         } catch (Exception e) {
             Ln.e("Could not create display", e);
             throw new AssertionError("Could not create display");
