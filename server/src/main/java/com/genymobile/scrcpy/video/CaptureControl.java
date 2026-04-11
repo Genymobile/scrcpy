@@ -2,21 +2,30 @@ package com.genymobile.scrcpy.video;
 
 import android.media.MediaCodec;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 public class CaptureControl {
 
-    private final AtomicBoolean reset = new AtomicBoolean();
+    public static final int RESET_REASON_TERMINATED = 1;
+    public static final int RESET_REASON_DISPLAY_PROPERTIES_CHANGED = 1 << 1;
+    public static final int RESET_REASON_CLIENT_RESET = 1 << 2;
+
+    private int reset = 0;
 
     // Current instance of MediaCodec to "interrupt" on reset
     private MediaCodec runningMediaCodec;
 
-    public boolean consumeReset() {
-        return reset.getAndSet(false);
+    public synchronized boolean isResetRequested() {
+        return reset != 0;
     }
 
-    public synchronized void reset() {
-        reset.set(true);
+    public synchronized int consumeReset() {
+        int value = reset;
+        reset = 0;
+        return value;
+    }
+
+    public synchronized void reset(int reason) {
+        assert reason != 0;
+        reset |= reason;
         if (runningMediaCodec != null) {
             try {
                 runningMediaCodec.signalEndOfInputStream();
