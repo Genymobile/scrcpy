@@ -4,7 +4,7 @@ import android.media.MediaCodec;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class CaptureReset implements SurfaceCapture.CaptureListener {
+public class CaptureControl {
 
     private final AtomicBoolean reset = new AtomicBoolean();
 
@@ -28,10 +28,5 @@ public class CaptureReset implements SurfaceCapture.CaptureListener {
 
     public synchronized void setRunningMediaCodec(MediaCodec runningMediaCodec) {
         this.runningMediaCodec = runningMediaCodec;
-    }
-
-    @Override
-    public void onInvalidated() {
-        reset();
     }
 }

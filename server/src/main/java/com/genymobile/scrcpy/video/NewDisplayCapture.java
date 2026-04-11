@@ -201,7 +201,7 @@ public class NewDisplayCapture extends SurfaceCapture {
                 ServiceManager.getWindowManager().setDisplayImePolicy(virtualDisplayId, displayImePolicy);
             }
 
-            displayMonitor.start(virtualDisplayId, this::invalidate);
+            displayMonitor.start(virtualDisplayId, () -> getCaptureControl().reset());
         } catch (Exception e) {
             Ln.e("Could not create display", e);
             throw new AssertionError("Could not create display");
