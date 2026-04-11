@@ -7,6 +7,7 @@ public class CaptureControl {
     public static final int RESET_REASON_TERMINATE = 1;
     public static final int RESET_REASON_SIZE_CHANGED = 1 << 1;
     public static final int RESET_REASON_CLIENT_RESET = 1 << 2;
+    public static final int RESET_REASON_CLIENT_RESIZED = 1 << 2;
 
     private int reset = 0;
 
