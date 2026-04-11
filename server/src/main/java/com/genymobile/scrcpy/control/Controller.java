@@ -815,7 +815,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private void resetVideo() {
         if (surfaceCapture != null) {
             Ln.i("Video capture reset");
-            surfaceCapture.invalidate();
+            surfaceCapture.getCaptureControl().reset();
         }
     }
 }

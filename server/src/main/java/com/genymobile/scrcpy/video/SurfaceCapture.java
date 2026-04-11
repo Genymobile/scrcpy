@@ -12,27 +12,21 @@ import java.io.IOException;
  */
 public abstract class SurfaceCapture {
 
-    public interface CaptureListener {
-        void onInvalidated();
-    }
-
-    private CaptureListener listener;
+    private CaptureControl captureControl;
     private VideoConstraints constraints;
 
-    /**
-     * Notify the listener that the capture has been invalidated (for example, because its size changed, or due to a manual user request).
-     */
-    public void invalidate() {
-        listener.onInvalidated();
-    }
 
     /**
      * Called once before the first capture starts.
      */
-    public final void init(CaptureListener listener, VideoConstraints constraints) throws ConfigurationException, IOException {
-        this.listener = listener;
+    public final void init(CaptureControl captureControl, VideoConstraints constraints) throws ConfigurationException, IOException {
+        this.captureControl = captureControl;
         this.constraints = constraints;
         init();
+    }
+
+    public CaptureControl getCaptureControl() {
+        return captureControl;
     }
 
     /**

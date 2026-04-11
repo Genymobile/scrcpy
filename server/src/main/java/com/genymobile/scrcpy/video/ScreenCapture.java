@@ -61,7 +61,7 @@ public class ScreenCapture extends SurfaceCapture {
 
     @Override
     public void init() {
-        displayMonitor.start(displayId, this::invalidate);
+        displayMonitor.start(displayId, () -> getCaptureControl().reset());
     }
 
     @Override
