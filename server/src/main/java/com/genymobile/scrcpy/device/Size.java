@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy.device;
 
+import com.genymobile.scrcpy.video.VideoConstraints;
+
 import android.graphics.Rect;
 
 import java.util.Objects;
@@ -29,7 +31,9 @@ public final class Size {
         return new Size(height, width);
     }
 
-    public Size constrain(int maxSize, int alignment) {
+    public Size constrain(int maxSize, VideoConstraints constraints) {
+        int alignment = constraints.getAlignment();
+
         assert maxSize >= 0 : "Max size may not be negative";
         assert alignment > 0 : "Alignment must be positive";
         assert (alignment & (alignment - 1)) == 0 : "Alignment must be a power-of-two";

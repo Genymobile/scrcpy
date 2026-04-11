@@ -67,8 +67,9 @@ public class SurfaceEncoder implements AsyncProcessor {
             alignment = minSizeAlignment;
             Ln.d("Actual video size alignment: " + alignment + "px");
         }
+        VideoConstraints constraints = new VideoConstraints(alignment);
 
-        capture.init(reset, alignment);
+        capture.init(reset, constraints);
 
         try {
             boolean alive;

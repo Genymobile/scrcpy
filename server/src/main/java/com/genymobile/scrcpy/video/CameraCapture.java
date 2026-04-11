@@ -149,7 +149,7 @@ public class CameraCapture extends SurfaceCapture {
         filter.addAngle(angle);
 
         transform = filter.getInverseTransform();
-        videoSize = filter.getOutputSize().constrain(maxSize, getAlignment());
+        videoSize = filter.getOutputSize().constrain(maxSize, getVideoConstraints());
     }
 
     private static String selectCamera(String explicitCameraId, CameraFacing cameraFacing) throws CameraAccessException, ConfigurationException {

@@ -134,7 +134,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         filter.addAngle(angle);
 
         Size outputSize = filter.getOutputSize();
-        Size filteredSize = outputSize.constrain(maxSize, getAlignment());
+        Size filteredSize = outputSize.constrain(maxSize, getVideoConstraints());
         if (!filteredSize.equals(outputSize)) {
             filter.addResize(filteredSize);
         }

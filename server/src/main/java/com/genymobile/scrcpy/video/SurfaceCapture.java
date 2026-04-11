@@ -17,7 +17,7 @@ public abstract class SurfaceCapture {
     }
 
     private CaptureListener listener;
-    private int alignment;
+    private VideoConstraints constraints;
 
     /**
      * Notify the listener that the capture has been invalidated (for example, because its size changed, or due to a manual user request).
@@ -29,9 +29,9 @@ public abstract class SurfaceCapture {
     /**
      * Called once before the first capture starts.
      */
-    public final void init(CaptureListener listener, int alignment) throws ConfigurationException, IOException {
+    public final void init(CaptureListener listener, VideoConstraints constraints) throws ConfigurationException, IOException {
         this.listener = listener;
-        this.alignment = alignment;
+        this.constraints = constraints;
         init();
     }
 
@@ -83,13 +83,11 @@ public abstract class SurfaceCapture {
     }
 
     /**
-     * Return the video alignment
-     * <p>
-     * This a power-of-2 value that the video width and height must be multiples of.
+     * Return the video constraints.
      *
-     * @return the video alignment
+     * @return the video constraints
      */
-    protected int getAlignment() {
-        return alignment;
+    protected VideoConstraints getVideoConstraints() {
+        return constraints;
     }
 }
