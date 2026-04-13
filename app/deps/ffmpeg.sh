@@ -63,6 +63,8 @@ else
         --enable-decoder=h264
         --enable-decoder=hevc
         --enable-decoder=av1
+        --enable-decoder=vp8
+        --enable-decoder=vp9
         --enable-decoder=libdav1d
         --enable-decoder=pcm_s16le
         --enable-decoder=opus

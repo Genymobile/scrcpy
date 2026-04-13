@@ -111,6 +111,10 @@ sc_server_get_codec_name(enum sc_codec codec) {
             return "h265";
         case SC_CODEC_AV1:
             return "av1";
+        case SC_CODEC_VP8:
+            return "vp8";
+        case SC_CODEC_VP9:
+            return "vp9";
         case SC_CODEC_OPUS:
             return "opus";
         case SC_CODEC_AAC:
