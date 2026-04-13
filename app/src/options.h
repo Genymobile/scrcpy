@@ -43,6 +43,8 @@ enum sc_codec {
     SC_CODEC_H264,
     SC_CODEC_H265,
     SC_CODEC_AV1,
+    SC_CODEC_VP8,
+    SC_CODEC_VP9,
     SC_CODEC_OPUS,
     SC_CODEC_AAC,
     SC_CODEC_FLAC,

@@ -356,6 +356,8 @@ Valid codec ids for _video_ streams are:
  - `"h264"` (`0x68323634`)
  - `"h265"` (`0x68323635`)
  - `"av1"` (`0x00617631`)
+ - `"vp8"` (`0x00767038`)
+ - `"vp9"` (`0x00767039`)
 
 Valid codec ids for _audio_ streams are:
  - `"opus"` (`0x6F707573`)
