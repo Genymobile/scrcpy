@@ -1,6 +1,6 @@
 package com.genymobile.scrcpy.video;
 
-import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.model.Size;
 
 public class VideoConstraints {
     private final int maxSize;

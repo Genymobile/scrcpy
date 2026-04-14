@@ -1,6 +1,6 @@
 package com.genymobile.scrcpy.audio;
 
-import com.genymobile.scrcpy.util.Codec;
+import com.genymobile.scrcpy.model.Codec;
 
 import android.media.MediaFormat;
 

@@ -1,6 +1,6 @@
 package com.genymobile.scrcpy.opengl;
 
-import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.util.Threads;
 
 import android.graphics.SurfaceTexture;

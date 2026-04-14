@@ -2,8 +2,8 @@ package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.FakeContext;
-import com.genymobile.scrcpy.device.DisplayInfo;
-import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.display.DisplayInfo;
+import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.util.Command;
 import com.genymobile.scrcpy.util.Ln;
 

@@ -1,4 +1,4 @@
-package com.genymobile.scrcpy.device;
+package com.genymobile.scrcpy.model;
 
 public final class NewDisplay {
     private Size size;

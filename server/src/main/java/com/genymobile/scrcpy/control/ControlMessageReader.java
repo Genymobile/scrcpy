@@ -1,6 +1,6 @@
 package com.genymobile.scrcpy.control;
 
-import com.genymobile.scrcpy.device.Position;
+import com.genymobile.scrcpy.model.Position;
 import com.genymobile.scrcpy.util.Binary;
 
 import java.io.BufferedInputStream;

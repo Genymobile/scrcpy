@@ -1,9 +1,8 @@
-package com.genymobile.scrcpy.video;
+package com.genymobile.scrcpy.display;
 
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.device.Device;
-import com.genymobile.scrcpy.device.DisplayInfo;
-import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.DisplayWindowListener;

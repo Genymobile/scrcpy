@@ -1,6 +1,6 @@
 package com.genymobile.scrcpy.control;
 
-import com.genymobile.scrcpy.device.Position;
+import com.genymobile.scrcpy.model.Position;
 
 /**
  * Union of all supported event types, identified by their {@code type}.

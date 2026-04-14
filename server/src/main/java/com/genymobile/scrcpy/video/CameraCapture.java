@@ -2,9 +2,9 @@ package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.Options;
-import com.genymobile.scrcpy.device.ConfigurationException;
-import com.genymobile.scrcpy.device.Orientation;
-import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.model.ConfigurationException;
+import com.genymobile.scrcpy.model.Orientation;
+import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.opengl.AffineOpenGLFilter;
 import com.genymobile.scrcpy.opengl.OpenGLFilter;
 import com.genymobile.scrcpy.opengl.OpenGLRunner;

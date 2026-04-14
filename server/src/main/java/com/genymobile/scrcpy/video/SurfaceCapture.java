@@ -1,7 +1,7 @@
 package com.genymobile.scrcpy.video;
 
-import com.genymobile.scrcpy.device.ConfigurationException;
-import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.model.ConfigurationException;
+import com.genymobile.scrcpy.model.Size;
 
 import android.view.Surface;
 
