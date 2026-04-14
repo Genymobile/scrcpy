@@ -241,7 +241,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     }
 
     @Override
-    public synchronized Size getSize() {
+    public Size getSize() {
         return videoSize;
     }
 
