@@ -110,7 +110,6 @@ public class NewDisplayCapture extends SurfaceCapture {
                 dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, displaySize);
             }
 
-            videoSize = displaySize;
             displayRotation = 0;
             // Set the current display size to avoid an unnecessary call to invalidate()
             displaySizeMonitor.setSessionDisplaySize(displaySize);
