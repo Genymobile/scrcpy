@@ -143,7 +143,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         // DisplayInfo gives the oriented size (so videoSize includes the display rotation)
         videoSize = filter.getOutputSize();
 
-        // But the virtual display video always remains in the origin orientation (the video itself is not rotated, so it must rotated manually).
+        // However, the virtual display video always remains in its original orientation, so it must be rotated manually.
         // This additional display rotation must not be included in the input events transform (the expected coordinates are already in the
         // physical display size)
         if ((displayRotation % 2) == 0) {
