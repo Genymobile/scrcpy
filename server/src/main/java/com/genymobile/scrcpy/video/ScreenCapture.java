@@ -5,7 +5,8 @@ import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.display.DisplayInfo;
-import com.genymobile.scrcpy.display.DisplaySizeMonitor;
+import com.genymobile.scrcpy.display.DisplayMonitor;
+import com.genymobile.scrcpy.display.DisplayProperties;
 import com.genymobile.scrcpy.model.ConfigurationException;
 import com.genymobile.scrcpy.model.Orientation;
 import com.genymobile.scrcpy.model.Size;
@@ -38,7 +39,7 @@ public class ScreenCapture extends SurfaceCapture {
     private DisplayInfo displayInfo;
     private Size videoSize;
 
-    private final DisplaySizeMonitor displaySizeMonitor = new DisplaySizeMonitor();
+    private final DisplayMonitor displayMonitor = new DisplayMonitor();
 
     private IBinder display;
     private VirtualDisplay virtualDisplay;
@@ -60,7 +61,7 @@ public class ScreenCapture extends SurfaceCapture {
 
     @Override
     public void init() {
-        displaySizeMonitor.start(displayId, this::invalidate);
+        displayMonitor.start(displayId, this::invalidate);
     }
 
     @Override
@@ -76,23 +77,24 @@ public class ScreenCapture extends SurfaceCapture {
         }
 
         Size displaySize = displayInfo.getSize();
-        displaySizeMonitor.setSessionDisplaySize(displaySize);
+        int displayRotation = displayInfo.getRotation();
+        displayMonitor.setSessionDisplayProperties(new DisplayProperties(displaySize, displayRotation));
 
         if (captureOrientationLock == Orientation.Lock.LockedInitial) {
             // The user requested to lock the video orientation to the current orientation
             captureOrientationLock = Orientation.Lock.LockedValue;
-            captureOrientation = Orientation.fromRotation(displayInfo.getRotation());
+            captureOrientation = Orientation.fromRotation(displayRotation);
         }
 
         VideoFilter filter = new VideoFilter(displaySize);
 
         if (crop != null) {
-            boolean transposed = (displayInfo.getRotation() % 2) != 0;
+            boolean transposed = (displayRotation % 2) != 0;
             filter.addCrop(crop, transposed);
         }
 
         boolean locked = captureOrientationLock != Orientation.Lock.Unlocked;
-        filter.addOrientation(displayInfo.getRotation(), locked, captureOrientation);
+        filter.addOrientation(displayRotation, locked, captureOrientation);
         filter.addAngle(angle);
 
         transform = filter.getInverseTransform();
@@ -169,7 +171,7 @@ public class ScreenCapture extends SurfaceCapture {
 
     @Override
     public void release() {
-        displaySizeMonitor.stopAndRelease();
+        displayMonitor.stopAndRelease();
 
         if (display != null) {
             SurfaceControl.destroyDisplay(display);

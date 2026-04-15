@@ -2,7 +2,6 @@ package com.genymobile.scrcpy.display;
 
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.device.Device;
-import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.DisplayWindowListener;
@@ -14,10 +13,10 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.view.IDisplayWindowListener;
 
-public class DisplaySizeMonitor {
+public class DisplayMonitor {
 
     public interface Listener {
-        void onDisplaySizeChanged();
+        void onDisplayPropertiesChanged();
     }
 
     // On Android 14, DisplayListener may be broken (it never sends events). This is fixed in recent Android 14 upgrades, but we can't really
@@ -33,7 +32,7 @@ public class DisplaySizeMonitor {
 
     private int displayId = Device.DISPLAY_ID_NONE;
 
-    private Size sessionDisplaySize;
+    private DisplayProperties props;
 
     private Listener listener;
 
@@ -51,11 +50,11 @@ public class DisplaySizeMonitor {
             Handler handler = new Handler(handlerThread.getLooper());
             displayListenerHandle = ServiceManager.getDisplayManager().registerDisplayListener(eventDisplayId -> {
                 if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v("DisplaySizeMonitor: onDisplayChanged(" + eventDisplayId + ")");
+                    Ln.v("DisplayMonitor: onDisplayChanged(" + eventDisplayId + ")");
                 }
 
                 if (eventDisplayId == displayId) {
-                    checkDisplaySizeChanged();
+                    checkDisplayPropertiesChanged();
                 }
             }, handler);
         } else {
@@ -63,11 +62,11 @@ public class DisplaySizeMonitor {
                 @Override
                 public void onDisplayConfigurationChanged(int eventDisplayId, Configuration newConfig) {
                     if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                        Ln.v("DisplaySizeMonitor: onDisplayConfigurationChanged(" + eventDisplayId + ")");
+                        Ln.v("DisplayMonitor: onDisplayConfigurationChanged(" + eventDisplayId + ")");
                     }
 
                     if (eventDisplayId == displayId) {
-                        checkDisplaySizeChanged();
+                        checkDisplayPropertiesChanged();
                     }
                 }
             };
@@ -97,38 +96,38 @@ public class DisplaySizeMonitor {
         }
     }
 
-    private synchronized Size getAndSetSessionDisplaySize(Size sessionDisplaySize) {
-        Size oldDisplaySize = this.sessionDisplaySize;
-        this.sessionDisplaySize = sessionDisplaySize;
-        return oldDisplaySize;
+    private synchronized DisplayProperties getAndSetDisplayProperties(DisplayProperties props) {
+        DisplayProperties oldProps = this.props;
+        this.props = props;
+        return oldProps;
     }
 
-    public synchronized void setSessionDisplaySize(Size sessionDisplaySize) {
-        this.sessionDisplaySize = sessionDisplaySize;
+    public synchronized void setSessionDisplayProperties(DisplayProperties props) {
+        this.props = props;
     }
 
-    private void checkDisplaySizeChanged() {
+    private void checkDisplayPropertiesChanged() {
         DisplayInfo di = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
         if (di == null) {
             Ln.w("DisplayInfo for " + displayId + " cannot be retrieved");
-            // We can't compare with the current size, so reset unconditionally
-            Size oldDisplaySize = getAndSetSessionDisplaySize(null); // exchange with synchronization
+            // We can't compare with the current properties, so reset unconditionally
+            DisplayProperties oldProps = getAndSetDisplayProperties(null); // exchange with synchronization
             if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v("DisplaySizeMonitor: requestReset(): " + oldDisplaySize + " -> (unknown)");
+                Ln.v("DisplayMonitor: requestReset(): " + oldProps + " -> (unknown)");
             }
-            listener.onDisplaySizeChanged();
+            listener.onDisplayPropertiesChanged();
         } else {
-            Size size = di.getSize();
+            DisplayProperties newProps = new DisplayProperties(di.getSize(), di.getRotation());
 
-            Size oldDisplaySize = getAndSetSessionDisplaySize(size); // exchange with synchronization
-            if (!size.equals(oldDisplaySize)) {
-                // Reset only if the size is different
+            DisplayProperties oldProps = getAndSetDisplayProperties(newProps); // exchange with synchronization
+            if (!newProps.equals(oldProps)) {
+                // Reset only if the properties are different
                 if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v("DisplaySizeMonitor: requestReset(): " + oldDisplaySize + " -> " + size);
+                    Ln.v("DisplayMonitor: requestReset(): " + oldProps + " -> " + newProps);
                 }
-                listener.onDisplaySizeChanged();
+                listener.onDisplayPropertiesChanged();
             } else if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v("DisplaySizeMonitor: Size not changed (" + size + "): do not requestReset()");
+                Ln.v("DisplayMonitor: DisplayProperties not changed (" + newProps + "): do not requestReset()");
             }
         }
     }

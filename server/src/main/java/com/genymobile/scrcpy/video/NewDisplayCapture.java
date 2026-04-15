@@ -4,7 +4,8 @@ import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.display.DisplayInfo;
-import com.genymobile.scrcpy.display.DisplaySizeMonitor;
+import com.genymobile.scrcpy.display.DisplayMonitor;
+import com.genymobile.scrcpy.display.DisplayProperties;
 import com.genymobile.scrcpy.model.NewDisplay;
 import com.genymobile.scrcpy.model.Orientation;
 import com.genymobile.scrcpy.model.Size;
@@ -42,7 +43,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private final VirtualDisplayListener vdListener;
     private final NewDisplay newDisplay;
 
-    private final DisplaySizeMonitor displaySizeMonitor = new DisplaySizeMonitor();
+    private final DisplayMonitor displayMonitor = new DisplayMonitor();
 
     private AffineMatrix displayTransform;
     private AffineMatrix eventTransform;
@@ -112,8 +113,8 @@ public class NewDisplayCapture extends SurfaceCapture {
             }
 
             displayRotation = 0;
-            // Set the current display size to avoid an unnecessary call to invalidate()
-            displaySizeMonitor.setSessionDisplaySize(displaySize);
+            // Set the current display properties to avoid an unnecessary call to invalidate()
+            displayMonitor.setSessionDisplayProperties(new DisplayProperties(displaySize, displayRotation));
         } else {
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(virtualDisplay.getDisplay().getDisplayId());
             displaySize = displayInfo.getSize();
@@ -194,7 +195,7 @@ public class NewDisplayCapture extends SurfaceCapture {
                 ServiceManager.getWindowManager().setDisplayImePolicy(virtualDisplayId, displayImePolicy);
             }
 
-            displaySizeMonitor.start(virtualDisplayId, this::invalidate);
+            displayMonitor.start(virtualDisplayId, this::invalidate);
         } catch (Exception e) {
             Ln.e("Could not create display", e);
             throw new AssertionError("Could not create display");
@@ -232,7 +233,7 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     @Override
     public void release() {
-        displaySizeMonitor.stopAndRelease();
+        displayMonitor.stopAndRelease();
 
         if (virtualDisplay != null) {
             virtualDisplay.release();
