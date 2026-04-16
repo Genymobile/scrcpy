@@ -128,7 +128,7 @@ public class SurfaceEncoder implements AsyncProcessor {
                     } else {
                         if (!captureControl.isResetRequested()) {
                             // If a reset is requested during encode(), it will interrupt the encoding by an EOS
-                            streamer.writeSessionMeta(size.getWidth(), size.getHeight());
+                            streamer.writeSessionMeta(size.getWidth(), size.getHeight(), false);
                             encode(mediaCodec, streamer);
                         }
 
