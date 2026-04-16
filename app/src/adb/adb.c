@@ -360,6 +360,40 @@ sc_adb_push(struct sc_intr *intr, const char *serial, const char *local,
 }
 
 bool
+sc_adb_pull(struct sc_intr *intr, const char *serial, const char *remote,
+            const char *local, unsigned flags) {
+    assert(serial);
+
+#ifdef __WINDOWS__
+    // Windows will parse the string, so the paths must be quoted
+    // (see sys/win/command.c)
+    local = sc_str_quote(local);
+    if (!local) {
+        LOG_OOM();
+        return false;
+    }
+    remote = sc_str_quote(remote);
+    if (!remote) {
+        LOG_OOM();
+        free((void *) local);
+        return false;
+    }
+#endif
+
+    const char *const argv[] =
+        SC_ADB_COMMAND("-s", serial, "pull", remote, local);
+
+    sc_pid pid = sc_adb_execute(argv, flags);
+
+#ifdef __WINDOWS__
+    free((void *) local);
+    free((void *) remote);
+#endif
+
+    return process_check_success_intr(intr, pid, "adb pull", flags);
+}
+
+bool
 sc_adb_install(struct sc_intr *intr, const char *serial, const char *local,
                unsigned flags) {
 #ifdef _WIN32

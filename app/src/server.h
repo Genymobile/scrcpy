@@ -71,6 +71,7 @@ struct sc_server_params {
     bool vd_destroy_content;
     bool vd_system_decorations;
     uint8_t list;
+    const char *get_app_icon;
 };
 
 struct sc_server {

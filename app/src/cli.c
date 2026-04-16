@@ -107,6 +107,7 @@ enum {
     OPT_GAMEPAD,
     OPT_NEW_DISPLAY,
     OPT_LIST_APPS,
+    OPT_GET_APP_ICON,
     OPT_START_APP,
     OPT_SCREEN_OFF_TIMEOUT,
     OPT_CAPTURE_ORIENTATION,
@@ -510,6 +511,29 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_LIST_APPS,
         .longopt = "list-apps",
         .text = "List Android apps installed on the device.",
+    },
+    {
+        .longopt_id = OPT_GET_APP_ICON,
+        .longopt = "get-app-icon",
+        .argdesc = "package_names[:path]",
+        .text = "Get the icon of an Android app installed on the device."
+                "The required argument is a comma-separated list of package names"
+                " (e.g. \"com.android.chrome,org.mozilla.firefox\").\n"
+                "Optionally, each package name may be followed by ':path' to "
+                "specify where to save the icon (default is the current "
+                "directory).\n"
+                "The icon is saved as a PNG file, named <package_name>.png by "
+                "default, or <path> if specified.\n"
+                "If 'all' is provided instead of a package name, then the "
+                "icon of all installed apps is extracted.\n"
+                "Examples:\n"
+                "    scrcpy --get-app-icon=com.android.chrome\n"
+                "    scrcpy --get-app-icon=com.android.chrome:~/Pictures/\n"
+                "    scrcpy --get-app-icon=all:~/Pictures/scrcpy-icons/\n"
+                "    scrcpy --get-app-icon=com.android.chrome,org.mozilla.firefox\n"
+                "    scrcpy --get-app-icon=com.android.chrome,org.mozilla.firefox:~/Pictures/\n"
+                "If multiple package names are provided, and some cannot be "
+                "found, then their icons are simply skipped (no error).",
     },
     {
         .longopt_id = OPT_LIST_CAMERAS,
@@ -2720,6 +2744,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_LIST_APPS:
                 opts->list |= SC_OPTION_LIST_APPS;
+                break;
+            case OPT_GET_APP_ICON:
+                opts->get_app_icon = optarg;
                 break;
             case OPT_REQUIRE_AUDIO:
                 opts->require_audio = true;

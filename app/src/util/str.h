@@ -50,6 +50,14 @@ char *
 sc_str_concat(const char *start, const char *end);
 
 /**
+ * Duplicate a C string
+ *
+ * Return a new allocated string (caller must free), or NULL on OOM.
+ */
+char *
+sc_str_dup(const char *s);
+
+/**
  * Parse `s` as an integer into `out`
  *
  * Return true if the conversion succeeded, false otherwise.

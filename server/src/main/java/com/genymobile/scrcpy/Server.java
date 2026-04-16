@@ -12,6 +12,7 @@ import com.genymobile.scrcpy.control.Controller;
 import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.DesktopConnection;
 import com.genymobile.scrcpy.device.Device;
+import com.genymobile.scrcpy.device.DeviceApp;
 import com.genymobile.scrcpy.device.NewDisplay;
 import com.genymobile.scrcpy.device.Streamer;
 import com.genymobile.scrcpy.opengl.OpenGLRunner;
@@ -23,16 +24,22 @@ import com.genymobile.scrcpy.video.ScreenCapture;
 import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.SurfaceEncoder;
 import com.genymobile.scrcpy.video.VideoSource;
+import com.genymobile.scrcpy.CleanUp;
+import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.Looper;
+import android.view.Surface;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import android.text.TextUtils;
 
 public final class Server {
 
@@ -262,6 +269,64 @@ public final class Server {
                 Workarounds.apply();
                 Ln.i("Processing Android apps... (this may take some time)");
                 Ln.i(LogUtils.buildAppListMessage());
+            }
+            if (options.getGetAppIcon() != null) {
+                Workarounds.apply();
+                String value = options.getGetAppIcon();
+                // Strip optional ":path" from tokens; do not use path on server
+                String[] packages;
+                int colonIdx = value.indexOf(':');
+                String firstToken = colonIdx >= 0 ? value.substring(0, colonIdx) : value;
+                if ("all".equals(firstToken)) {
+                    List<DeviceApp> apps = Device.listApps();
+                    packages = new String[apps.size()];
+                    for (int i = 0; i < apps.size(); i++) {
+                        packages[i] = apps.get(i).getPackageName();
+                    }
+                } else {
+                    String[] rawTokens = value.split(",");
+                    packages = new String[rawTokens.length];
+                    for (int i = 0; i < rawTokens.length; i++) {
+                        String tok = rawTokens[i].trim();
+                        int ci = tok.indexOf(':');
+                        packages[i] = ci >= 0 ? tok.substring(0, ci) : tok;
+                    }
+                }
+
+                File baseDir = new File("/data/local/tmp/scrcpy/icons");
+                if (!baseDir.exists() && !baseDir.mkdirs()) {
+                    Ln.e("Could not create icons directory: " + baseDir);
+                    return;
+                }
+
+                List<String> success = new ArrayList<>();
+                for (String pkg : packages) {
+                    pkg = pkg.trim();
+                    if (pkg.isEmpty()) {
+                        continue;
+                    }
+                    File out = new File(baseDir, pkg + ".png");
+                    boolean ok = Device.saveAppIconPng(pkg, out);
+                    if (ok) {
+                        success.add(pkg);
+                    }
+                }
+
+                // persist success list for the client
+                try {
+                    File result = new File(baseDir, "_success.txt");
+                    FileOutputStream fos = new FileOutputStream(result);
+                    fos.write(TextUtils.join(",", success).getBytes(StandardCharsets.UTF_8));
+                    fos.flush();
+                    fos.close();
+                } catch (IOException e) {
+                    Ln.w("Could not write success list: " + e.getMessage());
+                }
+
+                Ln.i("Extracted icons: " + success.size());
+                if (!success.isEmpty()) {
+                    Ln.i("get_app_icon_success=" + TextUtils.join(",", success));
+                }
             }
             // Just print the requested data, do not mirror
             return;
