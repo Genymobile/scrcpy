@@ -88,11 +88,15 @@ public final class Streamer {
         writePacket(codecBuffer, pts, config, keyFrame);
     }
 
-    public void writeSessionMeta(int width, int height) throws IOException {
+    public void writeSessionMeta(int width, int height, boolean isClientResize) throws IOException {
         if (sendStreamMeta) {
             headerBuffer.clear();
 
-            headerBuffer.putInt((int) (PACKET_FLAG_SESSION >> 32)); // Set the first bit to 1
+            int flags = (int) (PACKET_FLAG_SESSION >> 32); // set the first bit to 1
+            if (isClientResize) {
+                flags |= 1;
+            }
+            headerBuffer.putInt(flags);
             headerBuffer.putInt(width);
             headerBuffer.putInt(height);
             headerBuffer.flip();

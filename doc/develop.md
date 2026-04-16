@@ -370,16 +370,21 @@ session (a session changes when the device rotates):
 
 ```
      byte 0   byte 1   byte 2   byte 3
-    10000000 00000000 00000000 00000000
-    ^<-------------------------------->
-    |               padding
-     `- session packet flag
+    10000000 00000000 00000000 0000000.
+    ^<------------------------------->^
+    |               padding           |
+     `- session packet flag            `- client resized flag
 
      byte 4   byte 5   byte 6   byte 7   byte 8   byte 9   byte 10  byte 11
     ........ ........ ........ ........ ........ ........ ........ ........
     <---------------------------------> <--------------------------------->
                 video width                         video height
 ```
+
+The "client resized" flag is used for _flex displays_ to indicate that the frame
+size changed due to a client resize request (see [#6772]).
+
+[#6772]: https://github.com/Genymobile/scrcpy/pull/6772
 
 For the _audio_ stream, there are no _session packets_.
 
