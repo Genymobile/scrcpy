@@ -84,6 +84,15 @@ public final class Size {
         return new Size(w, h);
     }
 
+    public Size align(int alignment) {
+        int w = width / alignment * alignment;
+        int h = height / alignment * alignment;
+        if (w == width && h == height) {
+            return this;
+        }
+        return new Size(w, h);
+    }
+
     private static int round(int value, int alignment) {
         return (value + (alignment / 2)) / alignment * alignment;
     }

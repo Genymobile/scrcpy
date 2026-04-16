@@ -108,6 +108,10 @@ public class NewDisplayCapture extends SurfaceCapture {
             if (!newDisplay.hasExplicitSize()) {
                 displaySize = mainDisplaySize;
             }
+
+            // Align the physical display size to avoid unnecessary mismatches with the output size
+            displaySize = displaySize.align(getVideoConstraints().getAlignment());
+
             if (!newDisplay.hasExplicitDpi()) {
                 dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, displaySize);
             }
@@ -117,9 +121,11 @@ public class NewDisplayCapture extends SurfaceCapture {
             displayMonitor.setSessionDisplayProperties(new DisplayProperties(displaySize, displayRotation));
         } else {
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(virtualDisplay.getDisplay().getDisplayId());
-            displaySize = displayInfo.getSize();
             dpi = displayInfo.getDpi();
             displayRotation = displayInfo.getRotation();
+
+            // Align the physical display size to avoid unnecessary mismatches with the output size
+            displaySize = displayInfo.getSize().align(getVideoConstraints().getAlignment());
         }
 
         VideoFilter filter = new VideoFilter(displaySize);
