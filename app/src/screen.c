@@ -319,6 +319,8 @@ sc_screen_frame_sink_open(struct sc_frame_sink *sink,
     screen->content_size = get_oriented_size(screen->frame_size,
                                              screen->orientation);
 
+    screen->current_session = *session;
+
     bool ok = sc_push_event(SC_EVENT_OPEN_WINDOW);
     if (!ok) {
         return false;
@@ -351,6 +353,7 @@ sc_screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
     sc_mutex_lock(&screen->mutex);
     bool previous_skipped = sc_frame_buffer_has_frame(&screen->fb);
     bool ok = sc_frame_buffer_push(&screen->fb, frame);
+    screen->prevent_auto_resize = screen->current_session.video.client_resized;
     sc_mutex_unlock(&screen->mutex);
     if (!ok) {
         return false;
@@ -368,6 +371,14 @@ sc_screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
         }
     }
 
+    return true;
+}
+
+static bool
+sc_screen_frame_sink_push_session(struct sc_frame_sink *sink,
+                                  const struct sc_stream_session *session) {
+    struct sc_screen *screen = DOWNCAST(sink);
+    screen->current_session = *session;
     return true;
 }
 
@@ -396,6 +407,8 @@ sc_screen_init(struct sc_screen *screen,
     screen->req.height = params->window_height;
     screen->req.fullscreen = params->fullscreen;
     screen->req.start_fps_counter = params->start_fps_counter;
+
+    screen->prevent_auto_resize = false;
 
     bool ok = sc_mutex_init(&screen->mutex);
     if (!ok) {
@@ -564,10 +577,13 @@ sc_screen_init(struct sc_screen *screen,
     }
 #endif
 
+    memset(&screen->current_session, 0, sizeof(screen->current_session));
+
     static const struct sc_frame_sink_ops ops = {
         .open = sc_screen_frame_sink_open,
         .close = sc_screen_frame_sink_close,
         .push = sc_screen_frame_sink_push,
+        .push_session = sc_screen_frame_sink_push_session,
     };
 
     screen->frame_sink.ops = &ops;
@@ -719,16 +735,19 @@ resize_for_content(struct sc_screen *screen, struct sc_size old_content_size,
 }
 
 static void
-set_content_size(struct sc_screen *screen, struct sc_size new_content_size) {
+set_content_size(struct sc_screen *screen, struct sc_size new_content_size,
+                 bool resize) {
     assert(screen->video);
 
-    if (is_windowed(screen)) {
-        resize_for_content(screen, screen->content_size, new_content_size);
-    } else if (!screen->resize_pending) {
-        // Store the windowed size to be able to compute the optimal size once
-        // fullscreen/maximized/minimized are disabled
-        screen->windowed_content_size = screen->content_size;
-        screen->resize_pending = true;
+    if (resize) {
+        if (is_windowed(screen)) {
+            resize_for_content(screen, screen->content_size, new_content_size);
+        } else if (!screen->resize_pending) {
+            // Store the windowed size to be able to compute the optimal size
+            // once fullscreen/maximized/minimized are disabled
+            screen->windowed_content_size = screen->content_size;
+            screen->resize_pending = true;
+        }
     }
 
     screen->content_size = new_content_size;
@@ -758,7 +777,7 @@ sc_screen_set_orientation(struct sc_screen *screen,
     struct sc_size new_content_size =
         get_oriented_size(screen->frame_size, orientation);
 
-    set_content_size(screen, new_content_size);
+    set_content_size(screen, new_content_size, true);
 
     screen->orientation = orientation;
     LOGI("Display orientation set to %s", sc_orientation_get_name(orientation));
@@ -767,7 +786,7 @@ sc_screen_set_orientation(struct sc_screen *screen,
 }
 
 static bool
-sc_screen_apply_frame(struct sc_screen *screen) {
+sc_screen_apply_frame(struct sc_screen *screen, bool can_resize) {
     assert(screen->video);
     assert(screen->window_shown);
 
@@ -784,7 +803,7 @@ sc_screen_apply_frame(struct sc_screen *screen) {
 
         struct sc_size new_content_size =
             get_oriented_size(new_frame_size, screen->orientation);
-        set_content_size(screen, new_content_size);
+        set_content_size(screen, new_content_size, can_resize);
         sc_screen_update_content_rect(screen);
     }
 
@@ -820,8 +839,10 @@ sc_screen_update_frame(struct sc_screen *screen) {
     av_frame_unref(screen->frame);
     sc_mutex_lock(&screen->mutex);
     sc_frame_buffer_consume(&screen->fb, screen->frame);
+    // read with lock held
+    bool can_resize = !screen->prevent_auto_resize;
     sc_mutex_unlock(&screen->mutex);
-    return sc_screen_apply_frame(screen);
+    return sc_screen_apply_frame(screen, can_resize);
 }
 
 void
@@ -839,7 +860,7 @@ sc_screen_set_paused(struct sc_screen *screen, bool paused) {
         av_frame_free(&screen->frame);
         screen->frame = screen->resume_frame;
         screen->resume_frame = NULL;
-        bool ok = sc_screen_apply_frame(screen);
+        bool ok = sc_screen_apply_frame(screen, true);
         if (!ok) {
             LOGE("Resume frame update failed");
         }
