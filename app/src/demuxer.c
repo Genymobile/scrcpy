@@ -76,10 +76,10 @@ sc_demuxer_recv_header(struct sc_demuxer *demuxer,
     // which only contains a 12-byte header:
     //
     //  byte 0   byte 1   byte 2   byte 3
-    // 10000000 00000000 00000000 00000000
-    // ^<-------------------------------->
-    // |               padding
-    //  `- session packet flag
+    // 10000000 00000000 00000000 0000000.
+    // ^<------------------------------->^
+    // |               padding           |
+    //  `- session packet flag            `- client resized flag
     //
     //  byte 4   byte 5   byte 6   byte 7   byte 8   byte 9   byte 10  byte 11
     // ........ ........ ........ ........ ........ ........ ........ ........
@@ -126,6 +126,7 @@ sc_demuxer_parse_session(const uint8_t *header,
     assert(sc_demuxer_is_session(header));
     session->video.width = sc_read32be(&header[4]);
     session->video.height = sc_read32be(&header[8]);
+    session->video.client_resized = header[3] & 1;
 }
 
 static bool
