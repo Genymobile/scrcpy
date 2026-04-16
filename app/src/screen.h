@@ -52,6 +52,8 @@ struct sc_screen {
 
     struct sc_mutex mutex;
     struct sc_frame_buffer fb; // protected by mutex
+    // When true, a frame size change must not cause the window to be resized
+    bool prevent_auto_resize; // protected by mutex
 
     // The initial requested window properties
     struct {
@@ -82,6 +84,9 @@ struct sc_screen {
     // rectangle of the content (excluding black borders)
     struct SDL_FRect rect;
     bool window_shown;
+
+    // only accessed from the thread calling sc_frame_sink_ops functions
+    struct sc_stream_session current_session;
 
     AVFrame *frame;
 
