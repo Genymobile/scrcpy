@@ -824,6 +824,10 @@ aoa_complete:
             .mipmaps = options->mipmaps,
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,
+            .new_display = options->new_display != NULL,
+            .adaptive_new_display = options->adaptive_new_display,
+            .adaptive_scale = options->adaptive_scale,
+            .adaptive_dpi = options->adaptive_dpi,
         };
 
         if (!sc_screen_init(&s->screen, &screen_params)) {
