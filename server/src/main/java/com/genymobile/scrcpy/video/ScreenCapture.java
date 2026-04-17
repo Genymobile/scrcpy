@@ -61,7 +61,7 @@ public class ScreenCapture extends SurfaceCapture {
 
     @Override
     public void init() {
-        displayMonitor.start(displayId, this::invalidate);
+        displayMonitor.start(displayId, () -> getCaptureControl().reset(CaptureControl.RESET_REASON_SIZE_CHANGED));
     }
 
     @Override
@@ -78,7 +78,7 @@ public class ScreenCapture extends SurfaceCapture {
 
         Size displaySize = displayInfo.getSize();
         int displayRotation = displayInfo.getRotation();
-        displayMonitor.setSessionDisplayProperties(new DisplayProperties(displaySize, displayRotation));
+        displayMonitor.expectChange(new DisplayProperties(displaySize, displayRotation));
 
         if (captureOrientationLock == Orientation.Lock.LockedInitial) {
             // The user requested to lock the video orientation to the current orientation

@@ -13,6 +13,8 @@ import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
 import com.genymobile.scrcpy.video.CameraCapture;
+import com.genymobile.scrcpy.video.CaptureControl;
+import com.genymobile.scrcpy.video.NewDisplayCapture;
 import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.VideoSource;
 import com.genymobile.scrcpy.video.VirtualDisplayListener;
@@ -368,6 +370,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     return true;
                 case ControlMessage.TYPE_START_APP:
                     startAppAsync(msg.getText());
+                    return true;
+                case ControlMessage.TYPE_RESIZE_DISPLAY:
+                    resizeDisplay(msg.getWidth(), msg.getHeight());
                     return true;
                 default:
                     // fall through
@@ -815,7 +820,12 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private void resetVideo() {
         if (surfaceCapture != null) {
             Ln.i("Video capture reset");
-            surfaceCapture.invalidate();
+            surfaceCapture.getCaptureControl().reset(CaptureControl.RESET_REASON_CLIENT_RESET);
         }
+    }
+
+    private void resizeDisplay(int width, int height) {
+        NewDisplayCapture newDisplayCapture = (NewDisplayCapture) surfaceCapture;
+        newDisplayCapture.resizeDisplay(width, height);
     }
 }

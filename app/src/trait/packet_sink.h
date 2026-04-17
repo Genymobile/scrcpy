@@ -18,6 +18,7 @@ struct sc_packet_sink {
 struct sc_stream_session_video {
     uint32_t width;
     uint32_t height;
+    bool client_resized;
 };
 
 struct sc_stream_session {

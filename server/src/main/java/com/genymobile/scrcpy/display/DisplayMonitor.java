@@ -25,14 +25,14 @@ public class DisplayMonitor {
     // So use the default method only before Android 14.
     private static final boolean USE_DEFAULT_METHOD = Build.VERSION.SDK_INT < AndroidVersions.API_34_ANDROID_14;
 
+    private final DisplayPropertiesTracker tracker = new DisplayPropertiesTracker();
+
     private DisplayManager.DisplayListenerHandle displayListenerHandle;
     private HandlerThread handlerThread;
 
     private IDisplayWindowListener displayWindowListener;
 
     private int displayId = Device.DISPLAY_ID_NONE;
-
-    private DisplayProperties props;
 
     private Listener listener;
 
@@ -48,15 +48,16 @@ public class DisplayMonitor {
             handlerThread = new HandlerThread("DisplayListener");
             handlerThread.start();
             Handler handler = new Handler(handlerThread.getLooper());
-            displayListenerHandle = ServiceManager.getDisplayManager().registerDisplayListener(eventDisplayId -> {
-                if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v("DisplayMonitor: onDisplayChanged(" + eventDisplayId + ")");
-                }
+            displayListenerHandle = ServiceManager.getDisplayManager().registerDisplayListener(
+                    eventDisplayId -> {
+                        if (Ln.isEnabled(Ln.Level.VERBOSE)) {
+                            Ln.v("DisplayMonitor: onDisplayChanged(" + eventDisplayId + ")");
+                        }
 
-                if (eventDisplayId == displayId) {
-                    checkDisplayPropertiesChanged();
-                }
-            }, handler);
+                        if (eventDisplayId == displayId) {
+                            checkDisplayPropertiesChanged();
+                        }
+                    }, handler);
         } else {
             displayWindowListener = new DisplayWindowListener() {
                 @Override
@@ -96,39 +97,16 @@ public class DisplayMonitor {
         }
     }
 
-    private synchronized DisplayProperties getAndSetDisplayProperties(DisplayProperties props) {
-        DisplayProperties oldProps = this.props;
-        this.props = props;
-        return oldProps;
-    }
-
-    public synchronized void setSessionDisplayProperties(DisplayProperties props) {
-        this.props = props;
+    public void expectChange(DisplayProperties props) {
+        tracker.expectChange(props);
     }
 
     private void checkDisplayPropertiesChanged() {
         DisplayInfo di = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
-        if (di == null) {
-            Ln.w("DisplayInfo for " + displayId + " cannot be retrieved");
-            // We can't compare with the current properties, so reset unconditionally
-            DisplayProperties oldProps = getAndSetDisplayProperties(null); // exchange with synchronization
-            if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v("DisplayMonitor: requestReset(): " + oldProps + " -> (unknown)");
-            }
+        DisplayProperties props = di != null ? new DisplayProperties(di.getSize(), di.getRotation()) : null;
+        boolean trigger = tracker.onDisplayPropertiesChanged(props);
+        if (trigger) {
             listener.onDisplayPropertiesChanged();
-        } else {
-            DisplayProperties newProps = new DisplayProperties(di.getSize(), di.getRotation());
-
-            DisplayProperties oldProps = getAndSetDisplayProperties(newProps); // exchange with synchronization
-            if (!newProps.equals(oldProps)) {
-                // Reset only if the properties are different
-                if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v("DisplayMonitor: requestReset(): " + oldProps + " -> " + newProps);
-                }
-                listener.onDisplayPropertiesChanged();
-            } else if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v("DisplayMonitor: DisplayProperties not changed (" + newProps + "): do not requestReset()");
-            }
         }
     }
 }
