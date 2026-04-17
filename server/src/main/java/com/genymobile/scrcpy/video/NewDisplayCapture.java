@@ -13,6 +13,7 @@ import com.genymobile.scrcpy.opengl.OpenGLRunner;
 import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
+import com.genymobile.scrcpy.wrappers.WindowManager;
 
 import android.graphics.Rect;
 import android.hardware.display.VirtualDisplay;
@@ -197,6 +198,10 @@ public class NewDisplayCapture extends SurfaceCapture {
 
             if (displayImePolicy != -1) {
                 ServiceManager.getWindowManager().setDisplayImePolicy(virtualDisplayId, displayImePolicy);
+            }
+
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14) {
+                ServiceManager.getWindowManager().setDisplayWindowingMode(virtualDisplayId, WindowManager.WINDOWING_MODE_FREEFORM);
             }
 
             displaySizeMonitor.start(virtualDisplayId, this::invalidate);
