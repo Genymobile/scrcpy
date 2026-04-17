@@ -93,6 +93,10 @@ public final class Size {
         return new Size(w, h);
     }
 
+    public boolean isAligned(int alignment) {
+        return width / alignment * alignment == width && height / alignment * alignment == height;
+    }
+
     private static int round(int value, int alignment) {
         return (value + (alignment / 2)) / alignment * alignment;
     }

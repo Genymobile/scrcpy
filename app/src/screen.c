@@ -284,10 +284,26 @@ end:
 }
 
 static void
-sc_screen_on_resize(struct sc_screen *screen) {
+sc_screen_on_resize(struct sc_screen *screen, const SDL_WindowEvent *event) {
     // This event can be triggered before the window is shown
     if (screen->window_shown) {
         sc_screen_render(screen, true);
+
+        if (screen->flex_display) {
+            assert(!screen->camera);
+            assert(!(event->data1 & ~0xFFFF));
+            assert(!(event->data2 & ~0xFFFF));
+            uint16_t width = event->data1;
+            uint16_t height = event->data2;
+            if (sc_orientation_is_swap(screen->orientation)) {
+                uint16_t tmp = width;
+                width = height;
+                height = tmp;
+            }
+
+            LOGV("resize_display(%" PRIu16 ", %" PRIu16 ")", width, height);
+            sc_controller_resize_display(screen->controller, width, height);
+        }
     }
 }
 
@@ -309,7 +325,7 @@ event_watcher(void *data, SDL_Event *event) {
     if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
         // In practice, it seems to always be called from the same thread in
         // that specific case. Anyway, it's just a workaround.
-        sc_screen_on_resize(screen);
+        sc_screen_on_resize(screen, &event->window);
     }
 
     return true;
@@ -404,6 +420,8 @@ sc_screen_frame_sink_push_session(struct sc_frame_sink *sink,
 bool
 sc_screen_init(struct sc_screen *screen,
                const struct sc_screen_params *params) {
+    screen->controller = params->controller;
+
     screen->resize_pending = false;
     screen->window_shown = false;
     screen->paused = false;
@@ -416,6 +434,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->camera = params->camera;
     screen->window_aspect_ratio_lock = params->window_aspect_ratio_lock;
     screen->render_fit = params->render_fit;
+    screen->flex_display = params->flex_display;
 
     screen->req.x = params->window_x;
     screen->req.y = params->window_y;
@@ -738,11 +757,13 @@ resize_for_content(struct sc_screen *screen, struct sc_size old_content_size,
     assert(screen->video);
 
     struct sc_size window_size = sc_sdl_get_window_size(screen->window);
-    struct sc_size target_size = {
-        .width = (uint32_t) window_size.width * new_content_size.width
-                / old_content_size.width,
-        .height = (uint32_t) window_size.height * new_content_size.height
-                / old_content_size.height,
+    struct sc_size target_size = new_content_size;
+    if (!screen->flex_display) {
+        // Scale proportionally
+        target_size.width = (uint32_t) window_size.width * target_size.width
+                          / old_content_size.width;
+        target_size.height = (uint32_t) window_size.height * target_size.height
+                           / old_content_size.height;
     };
     target_size = get_optimal_size(target_size, new_content_size, true);
     assert(is_windowed(screen));
@@ -1001,7 +1022,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
 // If defined, then the actions are already performed by the event watcher
 #ifndef CONTINUOUS_RESIZING_WORKAROUND
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-            sc_screen_on_resize(screen);
+            sc_screen_on_resize(screen, &event->window);
             return;
 #endif
         case SDL_EVENT_WINDOW_RESTORED:
