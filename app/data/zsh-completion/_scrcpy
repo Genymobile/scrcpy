@@ -97,7 +97,7 @@ arguments=(
     {-v,--version}'[Print the version of scrcpy]'
     {-V,--verbosity=}'[Set the log level]:verbosity:(verbose debug info warn error)'
     '--video-buffer=[Add a buffering delay \(in milliseconds\) before displaying video frames]'
-    '--video-codec=[Select the video codec]:codec:(h264 h265 av1)'
+    '--video-codec=[Select the video codec]:codec:(h264 h265 av1 vp8 vp9)'
     '--video-codec-options=[Set a list of comma-separated key\:type=value options for the device video encoder]'
     '--video-encoder=[Use a specific MediaCodec video encoder]'
     '--video-source=[Select the video source]:source:(display camera)'
