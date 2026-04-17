@@ -113,10 +113,10 @@ commands:
 ```bash
 adb push scrcpy-server /data/local/tmp/scrcpy-server.jar
 adb forward tcp:27183 localabstract:scrcpy
-adb shell CLASSPATH=/data/local/tmp/scrcpy-server.jar app_process / com.genymobile.scrcpy.Server 2.1
+adb shell CLASSPATH=/data/local/tmp/scrcpy-server.jar app_process / com.genymobile.scrcpy.Server 4.0
 ```
 
-The first argument (`2.1` in the example) is the client scrcpy version. The
+The first argument (`4.0` in the example) is the client scrcpy version. The
 server fails if the client and the server do not have the exact same version.
 The protocol between the client and the server may change from version to
 version (see [protocol](#protocol) below), and there is no backward or forward
@@ -136,7 +136,7 @@ execution will look like this:
 
 ```bash
 # scid is a random number to identify different clients running on the same device
-adb shell CLASSPATH=/data/local/tmp/scrcpy-server.jar app_process / com.genymobile.scrcpy.Server 2.1 scid=12345678 log_level=info audio=false max_size=1920
+adb shell CLASSPATH=/data/local/tmp/scrcpy-server.jar app_process / com.genymobile.scrcpy.Server 4.0 scid=12345678 log_level=info audio=false max_size=1920
 ```
 
 ### Components
@@ -303,7 +303,7 @@ number of sockets, the order in which the sockets must be opened, the data
 format on the wire…) from version to version. A client must always be run with a
 matching server version.
 
-This section documents the current protocol in scrcpy v2.1.
+This section documents the current protocol in scrcpy 4.0.
 
 ### Connection
 
@@ -352,19 +352,41 @@ Then each socket is used for its intended purpose.
 
 ### Video and audio
 
-On the _video_ and _audio_ sockets, the device first sends some [codec
-metadata]:
- - On the _video_ socket, 12 bytes:
-   - the codec id (`u32`) (H264, H265 or AV1)
-   - the initial video width (`u32`)
-   - the initial video height (`u32`)
- - On the _audio_ socket, 4 bytes:
-   - the codec id (`u32`) (OPUS, AAC or RAW)
+On the _video_ and _audio_ sockets, the device first sends the codec id (`u32`).
+
+Valid codec ids for _video_ streams are:
+ - `"h264"` (`0x68323634`)
+ - `"h265"` (`0x68323635`)
+ - `"av1"` (`0x00617631`)
+
+Valid codec ids for _audio_ streams are:
+ - `"opus"` (`0x6F707573`)
+ - `"aac"` (`0x00616163`)
+ - `"flac"` (`0x666C6163`)
+ - `"raw"` (`0x00726177`)
 
 [codec metadata]: https://github.com/Genymobile/scrcpy/blob/a3cdf1a6b86ea22786e1f7d09b9c202feabc6949/server/src/main/java/com/genymobile/scrcpy/Streamer.java#L33-L51
 
-Then each packet produced by `MediaCodec` is sent, prefixed by a 12-byte [frame
-header]:
+For the _video_ stream, a _session packet_ (12 bytes) is sent for each capture
+session (a session changes when the device rotates):
+
+```
+     byte 0   byte 1   byte 2   byte 3
+    10000000 00000000 00000000 00000000
+    ^<-------------------------------->
+    |               padding
+     `- session packet flag
+
+     byte 4   byte 5   byte 6   byte 7   byte 8   byte 9   byte 10  byte 11
+    ........ ........ ........ ........ ........ ........ ........ ........
+    <---------------------------------> <--------------------------------->
+                video width                         video height
+```
+
+For the _audio_ stream, there are no _session packets_.
+
+Then _media packets_ are sent, each containing the payload produced by
+`MediaCodec`, prefixed by a 12-byte [frame header]:
  - config packet flag (`u1`)
  - key frame flag (`u1`)
  - PTS (`u62`)
@@ -382,13 +404,23 @@ Here is a schema describing the frame header:
 
 The most significant bits of the PTS are used for packet flags:
 
-     byte 7   byte 6   byte 5   byte 4   byte 3   byte 2   byte 1   byte 0
-    CK...... ........ ........ ........ ........ ........ ........ ........
-    ^^<------------------------------------------------------------------->
-    ||                                PTS
-    | `- key frame
-     `-- config packet
+     byte 0   byte 1   byte 2   byte 3   byte 4   byte 5   byte 6   byte 7
+    0CK..... ........ ........ ........ ........ ........ ........ ........
+    ^^^<------------------------------------------------------------------>
+    |||                                PTS
+    || `- key frame
+    | `-- config packet
+     `--- media packet flag
+
+     byte 8   byte 9   byte 10  byte 11
+    ........ ........ ........ ........ ........ ........ . . .
+    <---------------------------------> <---------------- . . .
+               packet size                       raw packet
+
 ```
+
+_Session packets_ and _media packets_ are distinguished by their first bit (the
+MSB).
 
 [frame header]: https://github.com/Genymobile/scrcpy/blob/a3cdf1a6b86ea22786e1f7d09b9c202feabc6949/server/src/main/java/com/genymobile/scrcpy/Streamer.java#L83
 
@@ -421,10 +453,10 @@ streams easily:
 Concretely, here is how to expose a raw H.264 stream on a TCP socket:
 
 ```bash
-adb push scrcpy-server-v2.1 /data/local/tmp/scrcpy-server-manual.jar
+adb push scrcpy-server-v4.0 /data/local/tmp/scrcpy-server-manual.jar
 adb forward tcp:1234 localabstract:scrcpy
 adb shell CLASSPATH=/data/local/tmp/scrcpy-server-manual.jar \
-    app_process / com.genymobile.scrcpy.Server 2.1 \
+    app_process / com.genymobile.scrcpy.Server 4.0 \
     tunnel_forward=true audio=false control=false cleanup=false \
     raw_stream=true max_size=1920
 ```
