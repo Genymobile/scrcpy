@@ -13,6 +13,24 @@ scrcpy --new-display=/240    # use the main display size and 240 dpi
 
 The new virtual display is destroyed on exit.
 
+
+## Flex display
+
+To continuously resize the virtual display to match the window size, enable
+"flex display" using `--flex-display` (or `-x`):
+
+```bash
+# Start Android Settings in a window
+scrcpy --new-display=1024x768 --start-app=com.android.settings --flex-display
+
+# -x is equivalent to --flex-display
+scrcpy --new-display=1024x768 --start-app=com.android.settings -x
+
+# By default, the display size/dpi is 1280x960/160
+scrcpy --new-display --start-app=com.android.settings --flex-display
+```
+
+
 ## Start app
 
 On some devices, a launcher is available in the virtual display.
