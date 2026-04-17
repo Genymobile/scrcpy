@@ -525,6 +525,9 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                     switch_fps_counter_state(im);
                 }
                 return;
+            case SDLK_Q:
+                sc_push_event(SDL_EVENT_QUIT);
+                return;
         }
 
         if (disconnected) {

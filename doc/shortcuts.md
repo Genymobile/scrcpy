@@ -23,6 +23,7 @@ _<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
 
  | Action                                      |   Shortcut
  | ------------------------------------------- |:-----------------------------
+ | Quit                                        | <kbd>MOD</kbd>+<kbd>q</kbd>
  | Switch fullscreen mode                      | <kbd>MOD</kbd>+<kbd>f</kbd> \| <kbd>F11</kbd>
  | Rotate display left                         | <kbd>MOD</kbd>+<kbd>←</kbd> _(left)_
  | Rotate display right                        | <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_
