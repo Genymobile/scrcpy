@@ -154,7 +154,7 @@ install it manually and make it available from the `PATH`:
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
 
-### Mac OS
+### macOS
 
 Install the packages with [Homebrew]:
 
