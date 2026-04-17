@@ -1004,7 +1004,7 @@ static const struct sc_option options[] = {
 
 static const struct sc_shortcut shortcuts[] = {
     {
-        .shortcuts = { "MOD+f" },
+        .shortcuts = { "MOD+f", "F11" },
         .text = "Switch fullscreen mode",
     },
     {
