@@ -114,6 +114,7 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
+    OPT_DO_NOT_DISTURB,
 };
 
 struct sc_option {
@@ -408,6 +409,11 @@ static const struct sc_option options[] = {
                 "in degrees; the \"flip\" keyword applies a horizontal flip "
                 "before the rotation.\n"
                 "Default is 0.",
+    },
+    {
+        .longopt_id = OPT_DO_NOT_DISTURB,
+        .longopt = "do-not-disturb",
+        .text = "Enable Do Not Disturb",
     },
     {
         .shortopt = 'e',
@@ -2820,6 +2826,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                                               &opts->display_ime_policy)) {
                     return false;
                 }
+                break;
+            case OPT_DO_NOT_DISTURB:
+                opts->do_not_disturb = true;
                 break;
             default:
                 // getopt prints the error message on stderr

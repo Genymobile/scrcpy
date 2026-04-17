@@ -360,6 +360,9 @@ execute_server(struct sc_server *server,
     if (params->show_touches) {
         ADD_PARAM("show_touches=true");
     }
+    if (params->do_not_disturb) {
+        ADD_PARAM("do_not_disturb=true");
+    }
     if (params->stay_awake) {
         ADD_PARAM("stay_awake=true");
     }

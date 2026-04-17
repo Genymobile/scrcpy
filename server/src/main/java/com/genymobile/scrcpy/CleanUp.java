@@ -6,6 +6,7 @@ import com.genymobile.scrcpy.util.Settings;
 import com.genymobile.scrcpy.util.SettingsException;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.app.NotificationManager;
 import android.os.BatteryManager;
 import android.os.Looper;
 import android.system.ErrnoException;
@@ -80,6 +81,18 @@ public final class CleanUp {
             }
         }
 
+        int previousDoNotDisturbMode = -1;
+        if (options.getDoNotDisturb()) {
+            try {
+                NotificationManager notificationManager = ServiceManager.getNotificationManager();
+                previousDoNotDisturbMode = notificationManager.getCurrentInterruptionFilter();
+                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS);
+
+            } catch (Exception e) {
+                Ln.e("Could not set dnd mode", e);
+            }
+        }
+
         int restoreScreenOffTimeout = -1;
         int screenOffTimeout = options.getScreenOffTimeout();
         if (screenOffTimeout != -1) {
@@ -116,14 +129,15 @@ public final class CleanUp {
         boolean powerOffScreen = options.getPowerOffScreenOnClose();
 
         try {
-            run(displayId, restoreStayOn, disableShowTouches, powerOffScreen, restoreScreenOffTimeout, restoreDisplayImePolicy);
+            run(displayId, restoreStayOn, disableShowTouches, powerOffScreen, restoreScreenOffTimeout, restoreDisplayImePolicy, previousDoNotDisturbMode);
         } catch (IOException e) {
             Ln.e("Clean up I/O exception", e);
         }
     }
 
     private void run(int displayId, int restoreStayOn, boolean disableShowTouches, boolean powerOffScreen, int restoreScreenOffTimeout,
-            int restoreDisplayImePolicy) throws IOException {
+            int restoreDisplayImePolicy,
+            int previousDoNotDisturbMode) throws IOException {
         String[] cmd = {
                 "app_process",
                 "/",
@@ -134,6 +148,7 @@ public final class CleanUp {
                 String.valueOf(powerOffScreen),
                 String.valueOf(restoreScreenOffTimeout),
                 String.valueOf(restoreDisplayImePolicy),
+                String.valueOf(previousDoNotDisturbMode),
         };
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
@@ -204,6 +219,7 @@ public final class CleanUp {
         boolean powerOffScreen = Boolean.parseBoolean(args[3]);
         int restoreScreenOffTimeout = Integer.parseInt(args[4]);
         int restoreDisplayImePolicy = Integer.parseInt(args[5]);
+        int previousDoNotDisturbMode = Integer.parseInt(args[6]);
 
         // Dynamic option
         boolean restoreDisplayPower = false;
@@ -264,6 +280,11 @@ public final class CleanUp {
                 Ln.i("Restoring display power");
                 Device.setDisplayPower(targetDisplayId, true);
             }
+        }
+
+        if(previousDoNotDisturbMode != -1) {
+            Ln.i("Restoring DoNotDisturbMode");
+            ServiceManager.getNotificationManager().setInterruptionFilter(previousDoNotDisturbMode);
         }
 
         System.exit(0);
