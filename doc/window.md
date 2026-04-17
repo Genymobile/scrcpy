@@ -58,7 +58,7 @@ scrcpy -f   # short version
 ```
 
 Fullscreen mode can then be toggled dynamically with <kbd>MOD</kbd>+<kbd>f</kbd>
-(see [shortcuts](shortcuts.md)).
+or <kbd>F11</kbd> (see [shortcuts](shortcuts.md)).
 
 
 ## Disable screensaver
