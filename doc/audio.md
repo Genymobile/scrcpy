@@ -188,12 +188,11 @@ scrcpy --video-buffer=200 --audio-buffer=200
 ```
 
 It is also possible to configure another audio buffer (the audio output buffer),
-by default set to 5ms. Don't change it, unless you get some [robotic and glitchy
-sound][#3793]:
+by default set to 10ms. Do not change this setting unless you have a good reason
+(see [robotic and glitchy sound][#3793]). For instance:
 
 ```bash
-# Only if absolutely necessary
-scrcpy --audio-output-buffer=10
+scrcpy --audio-output-buffer=5
 ```
 
 [#3793]: https://github.com/Genymobile/scrcpy/issues/3793

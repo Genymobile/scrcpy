@@ -241,9 +241,8 @@ static const struct sc_option options[] = {
         .argdesc = "ms",
         .text = "Configure the size of the SDL audio output buffer (in "
                 "milliseconds).\n"
-                "If you get \"robotic\" audio playback, you should test with "
-                "a higher value (10). Do not change this setting otherwise.\n"
-                "Default is 5.",
+                "Do not change this setting unless you have a good reason.\n"
+                "Default is 10.",
     },
     {
         .shortopt = 'b',
