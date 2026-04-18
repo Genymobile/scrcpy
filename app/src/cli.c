@@ -621,14 +621,20 @@ static const struct sc_option options[] = {
     {
         .longopt_id = OPT_NEW_DISPLAY,
         .longopt = "new-display",
-        .argdesc = "[<width>x<height>][/<dpi>]",
+        .argdesc = "[<width>x<height>][/<dpi>][:r[<factor>]]",
         .optional_arg = true,
         .text = "Create a new display with the specified resolution and "
                 "density. If not provided, they default to the main display "
-                "dimensions and DPI.\n"
+                "dimensions and DPI. Add ':r' to make the display resizable. "
+                "Optionally add a resolution factor after ':r' to scale the "
+                "display size (between 0.1 and 10.0).\n"
                 "Examples:\n"
                 "    --new-display=1920x1080\n"
                 "    --new-display=1920x1080/420  # force 420 dpi\n"
+                "    --new-display=1920x1080/420:r  # resizable display\n"
+                "    --new-display=1920x1080/420:r2.0  # resizable with 2x factor\n"
+                "    --new-display=:r0.5  # resizable with main display size and 0.5x factor\n"
+                "    --new-display=/420:r1.5  # resizable with main display size, 420 dpi and 1.5x factor\n"
                 "    --new-display         # main display size and density\n"
                 "    --new-display=/240    # main display size and 240 dpi",
     },

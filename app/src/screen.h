@@ -59,7 +59,21 @@ struct sc_screen {
     // client orientation
     enum sc_orientation orientation;
     // rectangle of the content (excluding black borders)
-    struct SDL_Rect rect;
+    SDL_Rect rect;
+
+    // --- Añadido para evitar bucles y zonas negras en displays redimensionables ---
+    int last_window_width;
+    int last_window_height;
+    int last_display_width;
+    int last_display_height;
+    // -----------------------------------------------------------------------------
+
+    // --- Añadido para resize diferido ---
+    int pending_resize_width;
+    int pending_resize_height;
+    SDL_TimerID resize_timer;
+    // -----------------------------------
+
     bool has_frame;
     bool fullscreen;
     bool maximized;
@@ -69,6 +83,12 @@ struct sc_screen {
 
     bool paused;
     AVFrame *resume_frame;
+
+    bool resizable_new_display;
+    float resolution_factor; // Factor to multiply window size in resizable mode
+    bool initial_setup; // track if we're in initial window setup phase
+    bool content_driven_resize; // track if we're in content-driven resize (to avoid feedback loop)
+    uint64_t last_resize_time; // timestamp of last resize to implement debouncing
 };
 
 struct sc_screen_params {
@@ -100,6 +120,8 @@ struct sc_screen_params {
 
     bool fullscreen;
     bool start_fps_counter;
+    bool resizable_new_display;
+    float resolution_factor; // Factor to multiply window size in resizable mode
 };
 
 // initialize screen, create window, renderer and texture (window is hidden)
