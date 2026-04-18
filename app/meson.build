@@ -141,14 +141,28 @@ check_functions = [
     'vasprintf',
     'nrand48',
     'jrand48',
-    'reallocarray',
 ]
+
+check_functions_in_headers = {
+    'stdlib.h': [
+        'reallocarray'
+    ],
+}
 
 foreach f : check_functions
   if cc.has_function(f)
     define = 'HAVE_' + f.underscorify().to_upper()
     conf.set(define, true)
   endif
+endforeach
+
+foreach header, f_list : check_functions_in_headers
+    foreach f : f_list
+        if cc.has_function(f) and cc.has_header_symbol(header, f, args: ['-D_GNU_SOURCE'])
+            define = 'HAVE_' + f.underscorify().to_upper()
+            conf.set(define, true)
+        endif
+    endforeach
 endforeach
 
 conf.set('HAVE_SOCK_CLOEXEC', host_machine.system() != 'windows' and
