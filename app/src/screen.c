@@ -183,6 +183,12 @@ compute_content_rect(struct sc_size render_size, struct sc_size content_size,
         rect->w = content_size.width;
         rect->h = content_size.height;
         return;
+    } else if (render_fit == SC_RENDER_FIT_STRETCHED) {
+        rect->x = 0;
+        rect->y = 0;
+        rect->w = render_size.width;
+        rect->h = render_size.height;
+        return;
     }
 
     assert(is_icon || render_fit == SC_RENDER_FIT_LETTERBOX);
@@ -984,6 +990,11 @@ sc_screen_resize_to_fit(struct sc_screen *screen) {
     assert(screen->video);
 
     if (!is_windowed(screen)) {
+        return;
+    }
+
+    if (screen->render_fit == SC_RENDER_FIT_STRETCHED) {
+        // nothing to do
         return;
     }
 
