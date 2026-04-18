@@ -91,3 +91,24 @@ computer. To disable it:
 ```bash
 scrcpy --disable-screensaver
 ```
+
+
+## Render fit
+
+By default, the video stream is rendered in [letterbox] mode: the content fits
+the window as best as possible while preserving the aspect ratio.
+
+For [flex displays], the display is continuously resized to match the window, so
+render fit is _unscaled_: the content is rendered without scaling.
+
+It is also possible to _stretch_ the content to fit the window without
+preserving the aspect ratio (`--render-fit=stretched`).
+
+```bash
+scrcpy --render-fit=letterbox  # default
+scrcpy --render-fit=unscaled   # default for flex displays
+scrcpy --render-fit=stretched
+```
+
+[letterbox]: https://en.wikipedia.org/wiki/Letterboxing_(filming)
+[flex displays]: virtual_display.md#flex-display
