@@ -31,6 +31,7 @@ src = [
     'src/receiver.c',
     'src/recorder.c',
     'src/scrcpy.c',
+    'src/stream_sink.c',
     'src/screen.c',
     'src/server.c',
     'src/version.c',
