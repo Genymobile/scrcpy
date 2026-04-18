@@ -447,6 +447,19 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         }
     }
 
+    // Shortcuts that do not involve the MOD key
+    switch (sdl_keycode) {
+        case SDLK_F11:
+            if (video && !repeat && down) {
+                bool alt = event->mod & SDL_KMOD_ALT;
+                bool super = event->mod & SDL_KMOD_GUI;
+                if (!ctrl && !shift && !alt && !super) {
+                    sc_screen_toggle_fullscreen(im->screen);
+                }
+            }
+            return;
+    }
+
     if (is_shortcut) {
         enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
         switch (sdl_keycode) {
