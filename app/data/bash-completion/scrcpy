@@ -180,7 +180,7 @@ _scrcpy() {
             return
             ;;
         --render-fit)
-            COMPREPLY=($(compgen -W 'letterbox disabled' -- "$cur"))
+            COMPREPLY=($(compgen -W 'letterbox stretched disabled' -- "$cur"))
             return
             ;;
         --shortcut-mod)
