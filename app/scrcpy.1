@@ -518,9 +518,10 @@ Supported names are currently "direct3d", "opengl", "opengles2", "opengles", "me
 .BI "\-\-render\-fit " mode
 Set the render-fit mode to configure how the rendering fits the window.
 
-Possible values are "letterbox" and "disabled":
+Possible values are "letterbox", "stretched" and "disabled":
 
  - "letterbox": preserve the aspect ratio and fit the window as best as possible (black bars are added either at the top and bottom or at the sides if needed).
+ - "stretched": fit the window without preserving the aspect ratio.
  - "disabled": render the display at the top-left corner, without scaling.
 
 Default is "letterbox", unless --flex-display is set, in which case it is "disabled".
