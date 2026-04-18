@@ -784,10 +784,13 @@ static const struct sc_option options[] = {
         .argdesc = "mode",
         .text = "Set the render-fit mode to configure how the rendering fits "
                 "the window.\n"
-                "Possible values are \"letterbox\" and \"disabled\".\n"
+                "Possible values are \"letterbox\", \"stretched\" and "
+                "\"disabled\".\n"
                 "\"letterbox\": preserve the aspect ratio and fit the window "
                 "as best as possible (black bars are added either at the top "
                 "and bottom or at the sides if needed).\n"
+                "\"stretched\": fit the window without preserving the aspect "
+                "ratio.\n"
                 "\"disabled\": render the display at the top-left corner, "
                 "without scaling.\n"
                 "Default is \"letterbox\", unless --flex-display is set, in "
@@ -2354,12 +2357,18 @@ parse_render_fit(const char *optarg, enum sc_render_fit *mode) {
         return true;
     }
 
+    if (!strcmp(optarg, "stretched")) {
+        *mode = SC_RENDER_FIT_STRETCHED;
+        return true;
+    }
+
     if (!strcmp(optarg, "disabled")) {
         *mode = SC_RENDER_FIT_DISABLED;
         return true;
     }
 
-    LOGE("Unsupported render-fit: %s (expected letterbox or disabled)", optarg);
+    LOGE("Unsupported render-fit: %s (expected letterbox, stretched or "
+         "disabled)", optarg);
     return false;
 }
 
