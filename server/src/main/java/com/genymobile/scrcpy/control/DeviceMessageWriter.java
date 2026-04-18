@@ -22,6 +22,7 @@ public class DeviceMessageWriter {
     public void write(DeviceMessage msg) throws IOException {
         int type = msg.getType();
         dos.writeByte(type);
+        byte[] data;
         switch (type) {
             case DeviceMessage.TYPE_CLIPBOARD:
                 String text = msg.getText();
@@ -35,9 +36,18 @@ public class DeviceMessageWriter {
                 break;
             case DeviceMessage.TYPE_UHID_OUTPUT:
                 dos.writeShort(msg.getId());
-                byte[] data = msg.getData();
+                data = msg.getData();
                 dos.writeShort(data.length);
                 dos.write(data);
+                break;
+            case DeviceMessage.TYPE_MEDIA_UPDATE:
+                dos.writeShort(msg.getId());
+                data = msg.getData();
+                dos.writeShort(data.length);
+                dos.write(data);
+                break;
+            case DeviceMessage.TYPE_MEDIA_REMOVE:
+                dos.writeShort(msg.getId());
                 break;
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
