@@ -157,7 +157,7 @@ scrcpy_otg(struct scrcpy_options *options) {
         options->gamepad_input_mode == SC_GAMEPAD_INPUT_MODE_AOA;
 
     if (enable_keyboard) {
-        ok = sc_keyboard_aoa_init(&s->keyboard, &s->aoa);
+        ok = sc_keyboard_aoa_init(&s->keyboard, &s->aoa, options->otg_emulate_qwerty);
         if (!ok) {
             goto end;
         }

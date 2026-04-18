@@ -283,6 +283,7 @@ struct scrcpy_options {
 #endif
 #ifdef HAVE_USB
     bool otg;
+    bool otg_emulate_qwerty;
 #endif
     bool show_touches;
     bool fullscreen;

@@ -702,7 +702,7 @@ scrcpy(struct scrcpy_options *options) {
 
             bool aoa_fail = false;
             if (use_keyboard_aoa) {
-                if (sc_keyboard_aoa_init(&s->keyboard_aoa, &s->aoa)) {
+                if (sc_keyboard_aoa_init(&s->keyboard_aoa, &s->aoa, false)) {
                     keyboard_aoa_initialized = true;
                     kp = &s->keyboard_aoa.key_processor;
                 } else {

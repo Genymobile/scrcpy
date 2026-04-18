@@ -63,7 +63,9 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
 }
 
 bool
-sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
+sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb,
+                     struct sc_aoa *aoa,
+                     bool use_logical_scancodes) {
     kb->aoa = aoa;
 
     struct sc_hid_open hid_open;
@@ -91,6 +93,7 @@ sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
     // to be acknowledged by the device before injecting Ctrl+v.
     kb->key_processor.async_paste = true;
     kb->key_processor.hid = true;
+    kb->key_processor.use_logical_scancodes = use_logical_scancodes;
     kb->key_processor.ops = &ops;
 
     return true;
