@@ -168,6 +168,16 @@ compute_content_rect(struct sc_size render_size, struct sc_size content_size,
         return;
     }
 
+    if (render_fit == SC_RENDER_FIT_STRETCHED) {
+        rect->x = 0;
+        rect->y = 0;
+        rect->w = render_size.width;
+        rect->h = render_size.height;
+        return;
+    }
+
+    assert(render_fit == SC_RENDER_FIT_LETTERBOX);
+
     if (is_optimal_size(render_size, content_size)) {
         rect->x = 0;
         rect->y = 0;
