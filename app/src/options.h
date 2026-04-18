@@ -223,6 +223,7 @@ enum sc_shortcut_mod {
 enum sc_render_fit {
     SC_RENDER_FIT_AUTO,
     SC_RENDER_FIT_LETTERBOX,
+    SC_RENDER_FIT_STRETCHED,
     SC_RENDER_FIT_DISABLED,
 };
 
