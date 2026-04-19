@@ -118,7 +118,7 @@ public class NewDisplayCapture extends SurfaceCapture {
 
             displayRotation = 0;
             // Set the current display properties to avoid an unnecessary capture reset
-            displayMonitor.setSessionDisplayProperties(new DisplayProperties(displaySize, displayRotation));
+            displayMonitor.expectChange(new DisplayProperties(displaySize, displayRotation));
         } else {
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(virtualDisplay.getDisplay().getDisplayId());
             dpi = displayInfo.getDpi();

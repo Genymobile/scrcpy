@@ -97,8 +97,8 @@ public class DisplayMonitor {
         }
     }
 
-    public void setSessionDisplayProperties(DisplayProperties props) {
-        tracker.setCurrent(props);
+    public void expectChange(DisplayProperties props) {
+        tracker.expectChange(props);
     }
 
     private void checkDisplayPropertiesChanged() {
