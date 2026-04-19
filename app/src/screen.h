@@ -69,6 +69,22 @@ struct sc_screen {
 
     bool paused;
     AVFrame *resume_frame;
+
+    // simple debug overlay (movable)
+    bool overlay_visible;
+    bool overlay_persistent;
+    int overlay_x;
+    int overlay_y;
+    int overlay_w;
+    int overlay_h;
+    char overlay_text[128];
+    int overlay_ttl; // frames remaining to show
+    bool overlay_dragging;
+    int overlay_drag_offset_x;
+    int overlay_drag_offset_y;
+         // New: overlay checkboxes
+         bool overlay_pinch_zoom_enabled;
+         bool overlay_toggle_enabled;
 };
 
 struct sc_screen_params {
@@ -100,6 +116,8 @@ struct sc_screen_params {
 
     bool fullscreen;
     bool start_fps_counter;
+    enum sc_scroll_action scroll_action;
+    bool overlay_persistent;
 };
 
 // initialize screen, create window, renderer and texture (window is hidden)

@@ -108,11 +108,13 @@ const struct scrcpy_options scrcpy_options_default = {
     .window = true,
     .mouse_hover = true,
     .audio_dup = false,
+    .overlay_persistent = false,
     .new_display = NULL,
     .start_app = NULL,
     .angle = NULL,
     .vd_destroy_content = true,
     .vd_system_decorations = true,
+    .scroll_action = SC_SCROLL_ACTION_SCROLL,
 };
 
 enum sc_orientation
