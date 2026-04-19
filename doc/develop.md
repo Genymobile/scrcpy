@@ -29,7 +29,7 @@ Similarly, if audio is enabled, then the server sends a raw audio stream (OPUS
 by default) of the device audio output (or the microphone if
 `--audio-source=mic` is specified), with some additional headers for each
 packet. The client decodes the stream, attempts to keep a minimal latency by
-maintaining an average buffering. The [blog post][scrcpy2] of the scrcpy v2.0
+maintaining an average buffering. The [blog post][scrcpy2] of the scrcpy 2.0
 release gives more details about the audio feature.
 
 If control is enabled, then the client captures relevant keyboard and mouse
