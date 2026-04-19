@@ -114,6 +114,7 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
+    OPT_STREAM_SINK,
 };
 
 struct sc_option {
@@ -955,6 +956,17 @@ static const struct sc_option options[] = {
 #else
                 "Default is info.",
 #endif
+    },
+    {
+        .longopt_id = OPT_STREAM_SINK,
+        .longopt = "stream-sink",
+        .argdesc = "url",
+        .text = "Stream the device video and audio as MPEG-TS to the given URL.\n"
+                "Supported protocols are srt, udp and tcp.\n"
+                "The URL is passed to the FFmpeg muxer, so it may contain "
+                "additional options (e.g. srt://HOST:PORT?latency=200).\n"
+                "For faster startup of clients, you may want to set "
+                "--video-codec-options=i-frame-interval:float=1.0."
     },
     {
         .longopt_id = OPT_V4L2_SINK,
@@ -2686,6 +2698,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGE("OTG mode (--otg) is disabled.");
                 return false;
 #endif
+            case OPT_STREAM_SINK:
+                opts->stream_sink = optarg;
+                break;
             case OPT_V4L2_SINK:
 #ifdef HAVE_V4L2
                 opts->v4l2_device = optarg;
@@ -2876,13 +2891,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->video && !opts->video_playback && !opts->record_filename
-            && !v4l2) {
-        LOGI("No video playback, no recording, no V4L2 sink: video disabled");
+            && !v4l2 && !opts->stream_sink) {
+        LOGI("No video playback, no recording, no V4L2 sink, no stream sink: "
+             "video disabled");
         opts->video = false;
     }
 
-    if (opts->audio && !opts->audio_playback && !opts->record_filename) {
-        LOGI("No audio playback, no recording: audio disabled");
+    if (opts->audio && !opts->audio_playback && !opts->record_filename
+            && !opts->stream_sink) {
+        LOGI("No audio playback, no recording, no stream sink: audio disabled");
         opts->audio = false;
     }
 
