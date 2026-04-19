@@ -8,6 +8,8 @@
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_keycode.h>
 
+#include "android/input.h"
+
 #include "controller.h"
 #include "file_pusher.h"
 #include "options.h"
@@ -44,6 +46,7 @@ struct sc_input_manager {
     uint16_t last_mod;
 
     uint64_t next_sequence; // used for request acknowledgements
+    enum sc_scroll_action scroll_action;
 };
 
 struct sc_input_manager_params {
@@ -58,6 +61,7 @@ struct sc_input_manager_params {
     bool legacy_paste;
     bool clipboard_autosync;
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
+    enum sc_scroll_action scroll_action;
 };
 
 void
@@ -67,5 +71,9 @@ sc_input_manager_init(struct sc_input_manager *im,
 void
 sc_input_manager_handle_event(struct sc_input_manager *im,
                               const SDL_Event *event);
+
+bool
+sc_input_manager_handle_mouse_wheel_pinch(struct sc_input_manager *im,
+                                         const SDL_MouseWheelEvent *event);
 
 #endif

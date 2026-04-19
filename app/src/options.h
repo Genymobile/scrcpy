@@ -192,6 +192,11 @@ struct sc_mouse_binding_set {
     enum sc_mouse_binding click5;
 };
 
+enum sc_scroll_action {
+    SC_SCROLL_ACTION_SCROLL,
+    SC_SCROLL_ACTION_ZOOM,
+};
+
 struct sc_mouse_bindings {
     struct sc_mouse_binding_set pri;
     struct sc_mouse_binding_set sec; // When Shift is pressed
@@ -323,10 +328,14 @@ struct scrcpy_options {
     bool window;
     bool mouse_hover;
     bool audio_dup;
+    /* Keep on-screen overlay visible (debug) */
+    bool overlay_persistent;
     const char *new_display; // [<width>x<height>][/<dpi>] parsed by the server
     const char *start_app;
     bool vd_destroy_content;
     bool vd_system_decorations;
+    /* Behavior for mouse wheel: scroll (default) or zoom (send zoom keycodes) */
+    enum sc_scroll_action scroll_action;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

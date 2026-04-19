@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <SDL2/SDL.h>
 
 #include "android/input.h"
@@ -28,6 +29,8 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->kp = params->kp;
     im->mp = params->mp;
     im->gp = params->gp;
+
+    im->scroll_action = params->scroll_action;
 
     im->mouse_bindings = params->mouse_bindings;
     im->legacy_paste = params->legacy_paste;
@@ -267,7 +270,6 @@ clipboard_paste(struct sc_input_manager *im) {
 static void
 rotate_device(struct sc_input_manager *im) {
     assert(im->controller);
-
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_ROTATE_DEVICE;
 
@@ -336,6 +338,13 @@ simulate_virtual_finger(struct sc_input_manager *im,
                         struct sc_point point) {
     bool up = action == AMOTION_EVENT_ACTION_UP;
 
+    fprintf(stderr,
+            "INJECT: virtual finger action=%d pos=%d,%d pressure=%.1f\n",
+            action,
+            point.x,
+            point.y,
+            up ? 0.0f : 1.0f);
+
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
     msg.inject_touch_event.action = action;
@@ -356,6 +365,160 @@ simulate_virtual_finger(struct sc_input_manager *im,
 
 static struct sc_point
 inverse_point(struct sc_point point, struct sc_size size,
+              bool invert_x, bool invert_y);
+
+static SDL_Point
+sc_screen_convert_frame_to_window_point(struct sc_screen *screen,
+                                       struct sc_point frame_point);
+
+static void
+sc_input_manager_process_synthetic_mouse_motion(struct sc_input_manager *im,
+                                                int32_t x, int32_t y,
+                                                int32_t xrel, int32_t yrel);
+
+static struct sc_position
+sc_input_manager_get_position(struct sc_input_manager *im, int32_t x,
+                                                           int32_t y);
+
+static void
+sc_input_manager_process_synthetic_mouse_click(struct sc_input_manager *im,
+                                               enum android_motionevent_action action,
+                                               int32_t x, int32_t y);
+
+static void
+sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
+                                      const SDL_MouseMotionEvent *event);
+
+bool
+sc_input_manager_handle_mouse_wheel_pinch(struct sc_input_manager *im,
+                                         const SDL_MouseWheelEvent *event) {
+    if (!im || !im->screen || event->y == 0) {
+        return false;
+    }
+
+    int mouse_x;
+    int mouse_y;
+    (void) SDL_GetMouseState(&mouse_x, &mouse_y);
+
+    // Ensure the wheel pinch originates from a point on the device video,
+    // not from the overlay or outside the frame content.
+    SDL_Rect rect = im->screen->rect;
+    if (mouse_x < rect.x || mouse_x >= rect.x + rect.w
+            || mouse_y < rect.y || mouse_y >= rect.y + rect.h) {
+        mouse_x = rect.x + rect.w / 2;
+        mouse_y = rect.y + rect.h / 2;
+    }
+
+    struct sc_point mouse = sc_screen_convert_window_to_frame_coords(
+        im->screen, mouse_x, mouse_y);
+    int zoom_delta = event->y > 0
+        ?  (int)(im->screen->frame_size.height / 16)
+        : -(int)(im->screen->frame_size.height / 16);
+
+    struct sc_point p1a = mouse;
+    struct sc_point p2a = inverse_point(mouse, im->screen->frame_size,
+                                       true, true);
+    p2a.x = CLAMP(p2a.x, 0, im->screen->frame_size.width - 1);
+    p2a.y = CLAMP(p2a.y, 0, im->screen->frame_size.height - 1);
+    struct sc_point p1b;
+    int32_t dx = mouse.x - im->screen->frame_size.width / 2;
+    int32_t dy = mouse.y - im->screen->frame_size.height / 2;
+    if (dx == 0 && dy == 0) {
+        p1b.x = mouse.x;
+        p1b.y = CLAMP(mouse.y + zoom_delta, 0,
+                     im->screen->frame_size.height - 1);
+    } else {
+        double dist = sqrt((double) dx * dx + (double) dy * dy);
+        double scale = (double) zoom_delta / dist;
+        p1b.x = CLAMP(mouse.x + (int32_t) round(dx * scale), 0,
+                     im->screen->frame_size.width - 1);
+        p1b.y = CLAMP(mouse.y + (int32_t) round(dy * scale), 0,
+                     im->screen->frame_size.height - 1);
+    }
+    struct sc_point p2b = inverse_point(p1b, im->screen->frame_size,
+                                       true, true);
+    p2b.x = CLAMP(p2b.x, 0, im->screen->frame_size.width - 1);
+    p2b.y = CLAMP(p2b.y, 0, im->screen->frame_size.height - 1);
+
+    fprintf(stderr,
+            "PINCH: wheel gesture start mouse=%d,%d p1a=%d,%d p2a=%d,%d p1b=%d,%d p2b=%d,%d\n",
+            mouse_x, mouse_y,
+            p1a.x, p1a.y,
+            p2a.x, p2a.y,
+            p1b.x, p1b.y,
+            p2b.x, p2b.y);
+    fflush(stderr);
+
+
+    SDL_Point target = sc_screen_convert_frame_to_window_point(im->screen,
+                                                               p1b);
+    fprintf(stderr,
+        "PINCH: synthetic motion target window=%d,%d frame=%d,%d vfinger=%d buttons=0x%02x\n",
+        target.x, target.y,
+        p1b.x, p1b.y,
+        im->vfinger_down,
+        im->mouse_buttons_state);
+    fflush(stderr);
+
+    bool saved_vfinger_down = im->vfinger_down;
+    bool saved_invert_x = im->vfinger_invert_x;
+    bool saved_invert_y = im->vfinger_invert_y;
+    uint8_t saved_buttons_state = im->mouse_buttons_state;
+
+    // Use the existing control-drag pinch flow for wheel zoom:
+    // generic finger down, virtual finger down, synthetic move, then up.
+    SDL_Point start = sc_screen_convert_frame_to_window_point(im->screen,
+                                                             p1a);
+    SDL_Point end = sc_screen_convert_frame_to_window_point(im->screen,
+                                                           p1b);
+    im->mouse_buttons_state = saved_buttons_state | SC_MOUSE_BUTTON_LEFT;
+    sc_input_manager_process_synthetic_mouse_click(im,
+                                                  AMOTION_EVENT_ACTION_DOWN,
+                                                  start.x, start.y);
+    if (!simulate_virtual_finger(im, AMOTION_EVENT_ACTION_DOWN, p2a)) {
+        im->mouse_buttons_state = saved_buttons_state;
+        return false;
+    }
+
+    im->vfinger_invert_x = true;
+    im->vfinger_invert_y = true;
+    im->vfinger_down = true;
+    im->mouse_buttons_state = saved_buttons_state | SC_MOUSE_BUTTON_LEFT;
+    const int steps = 3;
+    int32_t prev_x = mouse_x;
+    int32_t prev_y = mouse_y;
+    for (int i = 1; i <= steps; ++i) {
+        int32_t step_x = mouse_x + (target.x - mouse_x) * i / steps;
+        int32_t step_y = mouse_y + (target.y - mouse_y) * i / steps;
+        int32_t step_xrel = step_x - prev_x;
+        int32_t step_yrel = step_y - prev_y;
+        sc_input_manager_process_synthetic_mouse_motion(im, step_x, step_y,
+                                                       step_xrel, step_yrel);
+        prev_x = step_x;
+        prev_y = step_y;
+    }
+
+    sc_input_manager_process_synthetic_mouse_click(im,
+                                                  AMOTION_EVENT_ACTION_UP,
+                                                  end.x, end.y);
+    if (!simulate_virtual_finger(im, AMOTION_EVENT_ACTION_UP, p2b)) {
+        im->mouse_buttons_state = saved_buttons_state;
+        im->vfinger_down = saved_vfinger_down;
+        im->vfinger_invert_x = saved_invert_x;
+        im->vfinger_invert_y = saved_invert_y;
+        return false;
+    }
+
+    im->mouse_buttons_state = saved_buttons_state;
+    im->vfinger_down = saved_vfinger_down;
+    im->vfinger_invert_x = saved_invert_x;
+    im->vfinger_invert_y = saved_invert_y;
+
+    return true;
+}
+
+static struct sc_point
+inverse_point(struct sc_point point, struct sc_size size,
               bool invert_x, bool invert_y) {
     if (invert_x) {
         point.x = size.width - point.x;
@@ -364,6 +527,110 @@ inverse_point(struct sc_point point, struct sc_size size,
         point.y = size.height - point.y;
     }
     return point;
+}
+
+static SDL_Point
+sc_screen_convert_frame_to_window_point(struct sc_screen *screen,
+                                       struct sc_point frame_point) {
+    int32_t w = screen->content_size.width;
+    int32_t h = screen->content_size.height;
+
+    struct sc_point drawable;
+    switch (screen->orientation) {
+        case SC_ORIENTATION_0:
+            drawable.x = frame_point.x;
+            drawable.y = frame_point.y;
+            break;
+        case SC_ORIENTATION_90:
+            drawable.x = h - frame_point.y;
+            drawable.y = frame_point.x;
+            break;
+        case SC_ORIENTATION_180:
+            drawable.x = w - frame_point.x;
+            drawable.y = h - frame_point.y;
+            break;
+        case SC_ORIENTATION_270:
+            drawable.x = frame_point.y;
+            drawable.y = w - frame_point.x;
+            break;
+        case SC_ORIENTATION_FLIP_0:
+            drawable.x = w - frame_point.x;
+            drawable.y = frame_point.y;
+            break;
+        case SC_ORIENTATION_FLIP_90:
+            drawable.x = h - frame_point.y;
+            drawable.y = w - frame_point.x;
+            break;
+        case SC_ORIENTATION_FLIP_180:
+            drawable.x = frame_point.x;
+            drawable.y = h - frame_point.y;
+            break;
+        default:
+            assert(screen->orientation == SC_ORIENTATION_FLIP_270);
+            drawable.x = frame_point.y;
+            drawable.y = frame_point.x;
+            break;
+    }
+
+    int ww, wh, dw, dh;
+    SDL_GetWindowSize(screen->window, &ww, &wh);
+    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
+    int32_t x = screen->rect.x + (int64_t) drawable.x * screen->rect.w / w;
+    int32_t y = screen->rect.y + (int64_t) drawable.y * screen->rect.h / h;
+    SDL_Point result = {
+        .x = (int64_t) x * ww / dw,
+        .y = (int64_t) y * wh / dh,
+    };
+    return result;
+}
+
+static void
+sc_input_manager_process_synthetic_mouse_motion(struct sc_input_manager *im,
+                                                int32_t x, int32_t y,
+                                                int32_t xrel, int32_t yrel) {
+    fprintf(stderr,
+            "SYNTH: process motion x=%d y=%d xrel=%d yrel=%d vfinger=%d buttons=0x%02x\n",
+            x, y, xrel, yrel, im->vfinger_down, im->mouse_buttons_state);
+    fflush(stderr);
+    SDL_MouseMotionEvent event = {
+        .type = SDL_MOUSEMOTION,
+        .which = 0,
+        .x = x,
+        .y = y,
+        .xrel = xrel,
+        .yrel = yrel,
+        .state = SDL_BUTTON(SDL_BUTTON_LEFT),
+    };
+    sc_input_manager_process_mouse_motion(im, &event);
+}
+
+static void
+sc_input_manager_process_synthetic_mouse_click(struct sc_input_manager *im,
+                                               enum android_motionevent_action action,
+                                               int32_t x, int32_t y) {
+    if (!im || !im->mp || !im->mp->ops->process_mouse_click) {
+        return;
+    }
+
+    struct sc_mouse_click_event evt = {
+        .position = sc_input_manager_get_position(im, x, y),
+        .action = action == AMOTION_EVENT_ACTION_DOWN
+                  ? SC_ACTION_DOWN : SC_ACTION_UP,
+        .button = SC_MOUSE_BUTTON_LEFT,
+        .pointer_id = SC_POINTER_ID_GENERIC_FINGER,
+        .buttons_state = action == AMOTION_EVENT_ACTION_DOWN
+                         ? SC_MOUSE_BUTTON_LEFT : 0,
+    };
+
+    fprintf(stderr,
+            "SYNTH: process click action=%d x=%d y=%d buttons=0x%02x\n",
+            action,
+            x,
+            y,
+            evt.buttons_state);
+    fflush(stderr);
+
+    im->mp->ops->process_mouse_click(im->mp, &evt);
 }
 
 static void
@@ -637,6 +904,12 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
         return;
     }
 
+    fprintf(stderr,
+            "SYNTH: mouse motion event x=%d y=%d xrel=%d yrel=%d buttons=0x%02x vfinger=%d\n",
+            event->x, event->y, event->xrel, event->yrel,
+            im->mouse_buttons_state, im->vfinger_down);
+    fflush(stderr);
+
     struct sc_mouse_motion_event evt = {
         .position = sc_input_manager_get_position(im, event->x, event->y),
         .pointer_id = im->vfinger_down ? SC_POINTER_ID_GENERIC_FINGER
@@ -657,6 +930,13 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
         struct sc_point mouse =
            sc_screen_convert_window_to_frame_coords(im->screen, event->x,
                                                     event->y);
+        LOGD("Virtual finger move: mouse=%d,%d frame=%d,%d invert_x=%d invert_y=%d",
+             event->x,
+             event->y,
+             mouse.x,
+             mouse.y,
+             im->vfinger_invert_x,
+             im->vfinger_invert_y);
         struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size,
                                                 im->vfinger_invert_x,
                                                 im->vfinger_invert_y);
@@ -725,6 +1005,16 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     bool paused = im->screen->paused;
     bool down = event->type == SDL_MOUSEBUTTONDOWN;
 
+    fprintf(stderr, "INPUT: mouse button %s button=%d clicks=%d pos=%d,%d which=%d control=%d paused=%d\n",
+            down ? "down" : "up",
+            event->button,
+            event->clicks,
+            event->x,
+            event->y,
+            event->which,
+            control,
+            paused);
+
     enum sc_mouse_button button = sc_mouse_button_from_sdl(event->button);
     if (button == SC_MOUSE_BUTTON_UNKNOWN) {
         return;
@@ -747,6 +1037,10 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
                                               : &im->mouse_bindings.sec;
         enum sc_mouse_binding binding =
             sc_input_manager_get_binding(bindings, event->button);
+        LOGD("Mouse button binding: button=%d -> binding=%d action=%s",
+             event->button,
+             binding,
+             down ? "down" : "up");
         assert(binding != SC_MOUSE_BINDING_AUTO);
         switch (binding) {
             case SC_MOUSE_BINDING_DISABLED:
@@ -824,6 +1118,14 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         .buttons_state = im->mouse_buttons_state,
     };
 
+    LOGD("Dispatching click event: pointer_id=%llu button=%d action=%d pos=%d,%d buttons_state=0x%02x",
+         evt.pointer_id,
+         evt.button,
+         evt.action,
+         (int) evt.position.point.x,
+         (int) evt.position.point.y,
+         evt.buttons_state);
+
     assert(im->mp->ops->process_mouse_click);
     im->mp->ops->process_mouse_click(im->mp, &evt);
 
@@ -866,6 +1168,13 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
             //   1     1           0         1      horizontal tilt
             im->vfinger_invert_x = ctrl_pressed ^ shift_pressed;
             im->vfinger_invert_y = ctrl_pressed;
+          LOGD("Virtual finger mode start: invert_x=%d invert_y=%d mouse=%d,%d frame=%d,%d",
+              im->vfinger_invert_x,
+              im->vfinger_invert_y,
+              event->x,
+              event->y,
+              mouse.x,
+              mouse.y);
         }
         struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size,
                                                 im->vfinger_invert_x,
@@ -873,6 +1182,10 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         enum android_motionevent_action action = down
                                                ? AMOTION_EVENT_ACTION_DOWN
                                                : AMOTION_EVENT_ACTION_UP;
+            LOGD("Virtual finger event: action=%d vfinger=%d,%d",
+                (int) action,
+                vfinger.x,
+                vfinger.y);
         if (!simulate_virtual_finger(im, action, vfinger)) {
             return;
         }
@@ -883,7 +1196,56 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
 static void
 sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
                                      const SDL_MouseWheelEvent *event) {
+    LOGD("Mouse wheel event: x=%d y=%d direction=%d preciseX=%.2f preciseY=%.2f scroll_action=%d",
+         event->x,
+         event->y,
+         event->direction,
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+         event->preciseX,
+         event->preciseY,
+#else
+         0.0f,
+         0.0f,
+#endif
+         im->scroll_action);
+    // If configured to map scroll to zoom, synthesize zoom key events
+    if (im->scroll_action == SC_SCROLL_ACTION_ZOOM) {
+        // Prefer integer delta when available
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+        int v = event->y; // integer ticks
+#else
+        int v = event->y;
+#endif
+        if (v == 0) {
+            return;
+        }
+
+        enum android_keycode key = v > 0 ? AKEYCODE_ZOOM_IN : AKEYCODE_ZOOM_OUT;
+
+        // For each tick, send a key down + key up
+        int ticks = v > 0 ? v : -v;
+        LOGD("Synthesizing zoom key events: key=%d ticks=%d", key, ticks);
+        for (int i = 0; i < ticks; ++i) {
+            struct sc_control_msg msg = {0};
+            msg.type = SC_CONTROL_MSG_TYPE_INJECT_KEYCODE;
+            msg.inject_keycode.action = AKEY_EVENT_ACTION_DOWN;
+            msg.inject_keycode.keycode = key;
+            msg.inject_keycode.repeat = 0;
+            msg.inject_keycode.metastate = 0;
+            if (!sc_controller_push_msg(im->controller, &msg)) {
+                LOGW("Could not request 'inject zoom key down'");
+            }
+            msg.inject_keycode.action = AKEY_EVENT_ACTION_UP;
+            if (!sc_controller_push_msg(im->controller, &msg)) {
+                LOGW("Could not request 'inject zoom key up'");
+            }
+        }
+
+        return;
+    }
+
     if (!im->mp->ops->process_mouse_scroll) {
+        LOGD("Mouse scroll drop: processor does not support scroll");
         // The mouse processor does not support scroll events
         return;
     }
@@ -907,6 +1269,59 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
         .vscroll_int = event->y,
         .buttons_state = im->mouse_buttons_state,
     };
+
+    LOGD("Mouse scroll forwarded: pos=%d,%d hscroll=%.2f vscroll=%.2f h_int=%d v_int=%d buttons_state=0x%02x",
+        (int) evt.position.point.x,
+        (int) evt.position.point.y,
+        evt.hscroll,
+        evt.vscroll,
+        (int) evt.hscroll_int,
+        (int) evt.vscroll_int,
+        evt.buttons_state);
+
+    /* Debug logging: show scroll event details */
+    /* Also print to stderr directly to ensure visibility even if SDL logs
+       are redirected or filtered by the environment/IDE. */
+    fprintf(stderr, "SCROLL: pos=%d,%d h=%.2f v=%.2f h_int=%d v_int=%d\n",
+        (int) evt.position.point.x,
+        (int) evt.position.point.y,
+        evt.hscroll,
+        evt.vscroll,
+        (int) evt.hscroll_int,
+        (int) evt.vscroll_int);
+    fflush(stderr);
+
+    LOGI("mouse wheel event: pos=%d,%d h=%f v=%f h_int=%d v_int=%d",
+     (int) evt.position.point.x,
+     (int) evt.position.point.y,
+     evt.hscroll,
+     evt.vscroll,
+     (int) evt.hscroll_int,
+     (int) evt.vscroll_int);
+
+    /* Also update the window title briefly so it's visible on-screen */
+    if (im->screen && im->screen->window) {
+    char _titlebuf[128];
+    snprintf(_titlebuf, sizeof _titlebuf, "scrcpy - scroll h=%.2f v=%.2f",
+         evt.hscroll, evt.vscroll);
+    SDL_SetWindowTitle(im->screen->window, _titlebuf);
+    }
+
+    /* Update on-screen overlay so the user sees the scroll info visually */
+    if (im->screen) {
+        // Update the overlay info line for the new overlay UI
+        snprintf(im->screen->overlay_text, sizeof im->screen->overlay_text,
+                 "h=%.2f v=%.2f x=%d y=%d",
+                 evt.hscroll, evt.vscroll,
+                 (int) evt.position.point.x, (int) evt.position.point.y);
+        // Always show the overlay if persistent, otherwise show temporarily
+        if (!im->screen->overlay_persistent) {
+            im->screen->overlay_visible = true;
+            im->screen->overlay_ttl = 120; // ~2 seconds at 60 FPS
+        }
+        LOGD("Overlay info updated from wheel: %s", im->screen->overlay_text);
+        // If persistent, overlay_visible is managed elsewhere
+    }
 
     im->mp->ops->process_mouse_scroll(im->mp, &evt);
 }

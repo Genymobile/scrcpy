@@ -36,6 +36,16 @@ struct sc_display {
     } pending;
 
     bool has_frame;
+    // transient overlay filled by the caller before rendering
+    bool overlay_enabled;
+    int overlay_x;
+    int overlay_y;
+    char overlay_text[128];
+    int overlay_w;
+    int overlay_h;
+    // overlay checkbox state
+    bool overlay_pinch_zoom_enabled;
+    bool overlay_toggle_enabled;
 };
 
 enum sc_display_result {
@@ -47,6 +57,9 @@ enum sc_display_result {
 bool
 sc_display_init(struct sc_display *display, SDL_Window *window,
                 SDL_Surface *icon_novideo, bool mipmaps);
+
+void 
+sc_render_overlay_ui(struct sc_display *display);
 
 void
 sc_display_destroy(struct sc_display *display);
