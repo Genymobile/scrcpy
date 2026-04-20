@@ -157,7 +157,7 @@ documented in the following pages:
  - [Camera](doc/camera.md)
  - [Video4Linux](doc/v4l2.md)
  - [Shortcuts](doc/shortcuts.md)
-
+ - [Wifi](doc/wifi_adb_toolbox.md)
 
 ## Resources
 
