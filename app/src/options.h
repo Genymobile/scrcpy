@@ -324,6 +324,9 @@ struct scrcpy_options {
     bool mouse_hover;
     bool audio_dup;
     const char *new_display; // [<width>x<height>][/<dpi>] parsed by the server
+    bool adaptive_new_display;
+    double adaptive_scale;
+    uint16_t adaptive_dpi; // if non-zero, use as fixed dpi for adaptive mode
     const char *start_app;
     bool vd_destroy_content;
     bool vd_system_decorations;
