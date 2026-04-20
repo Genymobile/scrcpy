@@ -200,6 +200,7 @@ scrcpy_otg(struct scrcpy_options *options) {
         .window_height = options->window_height,
         .window_borderless = options->window_borderless,
         .shortcut_mods = options->shortcut_mods,
+        .otg_automatic_screenshot = options->otg_automatic_screenshot,
     };
 
     ok = sc_screen_otg_init(&s->screen_otg, &params);
