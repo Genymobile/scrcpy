@@ -227,6 +227,8 @@ struct sc_port_range {
 
 #define SC_WINDOW_POSITION_UNDEFINED (-0x8000)
 
+#define SC_MAX_CONTROL_CMDS 100
+
 struct scrcpy_options {
     const char *serial;
     const char *crop;
@@ -327,6 +329,9 @@ struct scrcpy_options {
     const char *start_app;
     bool vd_destroy_content;
     bool vd_system_decorations;
+    const char *screencap_filename;
+    const char *control_cmds[SC_MAX_CONTROL_CMDS];
+    unsigned control_cmd_count;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

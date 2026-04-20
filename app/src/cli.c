@@ -114,6 +114,8 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
+    OPT_SCREENCAP,
+    OPT_CONTROL_CMD,
 };
 
 struct sc_option {
@@ -613,6 +615,16 @@ static const struct sc_option options[] = {
         .text = "Disable device control (mirror the device in read-only).",
     },
     {
+        .longopt_id = OPT_CONTROL_CMD,
+        .longopt = "control",
+        .argdesc = "command",
+        .optional_arg = true,
+        .text = "Send a control command to the device and exit.\n"
+                "Use --control or --control --help for detailed usage.\n"
+                "Can be specified multiple times for multi-finger gestures.\n"
+                "Available commands: click, swipe, input.",
+    },
+    {
         .shortopt = 'N',
         .longopt = "no-playback",
         .text = "Disable video and audio playback on the computer (equivalent "
@@ -846,6 +858,14 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_ROTATION,
         .longopt = "rotation",
         .argdesc = "value",
+    },
+    {
+        .longopt_id = OPT_SCREENCAP,
+        .longopt = "screencap",
+        .argdesc = "file.png",
+        .text = "Take a screenshot and save it to file.\n"
+                "The screenshot is captured from the video stream, "
+                "the same way as --record.",
     },
     {
         .shortopt = 's',
@@ -1497,6 +1517,74 @@ print_exit_status(const struct sc_exit_status *status, unsigned cols) {
     // text + 9 to remove the initial indentation
     printf("    %3d  %s\n", status->value, text + 9);
     free(text);
+}
+
+static void
+print_control_usage(void) {
+    fprintf(stderr,
+        "Usage: scrcpy --control=\"<command>\" [--control=\"<command>\" ...]\n"
+        "\n"
+        "Send control commands to the device and exit.\n"
+        "\n"
+        "Commands:\n"
+        "\n"
+        "  click <x> <y> [duration_ms]\n"
+        "      Tap at the given coordinates.\n"
+        "      Default duration: 100ms. Use longer duration for long-press.\n"
+        "\n"
+        "      Examples:\n"
+        "          scrcpy --control=\"click 540 1200\"\n"
+        "          scrcpy --control=\"click 540 1200 2000\"   # long-press 2s\n"
+        "\n"
+        "  swipe <x1> <y1> <x2> <y2> [duration_ms]\n"
+        "      Swipe from (x1,y1) to (x2,y2).\n"
+        "      Default duration: 300ms.\n"
+        "\n"
+        "      Examples:\n"
+        "          scrcpy --control=\"swipe 540 1500 540 500\"\n"
+        "          scrcpy --control=\"swipe 540 1500 540 500 1000\"   # slow\n"
+        "\n"
+        "  input '<text>'\n"
+        "      Input text. Supports full Unicode (Chinese, emoji, etc).\n"
+        "\n"
+        "      Examples:\n"
+        "          scrcpy --control=\"input 'hello world'\"\n"
+        "          scrcpy --control=\"input '你好世界🎉'\"\n"
+        "\n"
+        "  sleep <ms>\n"
+        "      Wait for the specified duration. Only used with &&.\n"
+        "\n"
+        "Chaining with &&:\n"
+        "    Use && to chain commands sequentially within one --control.\n"
+        "\n"
+        "      # Swipe up twice with 100ms gap\n"
+        "      scrcpy --control=\"swipe 540 1500 540 500 300 && \\\n"
+        "                        sleep 100 && \\\n"
+        "                        swipe 540 1500 540 500 300\"\n"
+        "\n"
+        "      # Type text then click search\n"
+        "      scrcpy --control=\"input '你好' && click 900 200\"\n"
+        "\n"
+        "      # Scroll down 5 times quickly\n"
+        "      scrcpy --control=\"swipe 540 1500 540 500 200 && \\\n"
+        "                        swipe 540 1500 540 500 200 && \\\n"
+        "                        swipe 540 1500 540 500 200 && \\\n"
+        "                        swipe 540 1500 540 500 200 && \\\n"
+        "                        swipe 540 1500 540 500 200\"\n"
+        "\n"
+        "Multi-finger gestures:\n"
+        "    Multiple --control flags (without &&) run in parallel.\n"
+        "    Each flag represents one finger.\n"
+        "\n"
+        "      # Two-finger pinch\n"
+        "      scrcpy --control=\"swipe 200 800 400 500\" \\\n"
+        "             --control=\"swipe 800 800 600 500\"\n"
+        "\n"
+        "      # Three-finger swipe up\n"
+        "      scrcpy --control=\"swipe 200 1200 200 400 500\" \\\n"
+        "             --control=\"swipe 540 1200 540 400 500\" \\\n"
+        "             --control=\"swipe 880 1200 880 400 500\"\n"
+    );
 }
 
 void
@@ -2821,6 +2909,23 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_SCREENCAP:
+                opts->screencap_filename = optarg;
+                break;
+            case OPT_CONTROL_CMD:
+                if (!optarg || !strcmp(optarg, "-h")
+                            || !strcmp(optarg, "--help")
+                            || !strcmp(optarg, "help")) {
+                    print_control_usage();
+                    return false;
+                }
+                if (opts->control_cmd_count >= SC_MAX_CONTROL_CMDS) {
+                    LOGE("Too many --control commands (max %d)",
+                         SC_MAX_CONTROL_CMDS);
+                    return false;
+                }
+                opts->control_cmds[opts->control_cmd_count++] = optarg;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2858,6 +2963,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     v4l2 = !!opts->v4l2_device;
 #endif
 
+    if (opts->control_cmd_count) {
+        // Control command mode: send commands and exit
+        opts->video_playback = false;
+        opts->audio_playback = false;
+        opts->audio = false;
+        opts->window = false;
+        opts->control = true;
+    }
+
     if (!opts->window) {
         // Without window, there cannot be any video playback
         opts->video_playback = false;
@@ -2876,8 +2990,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->video && !opts->video_playback && !opts->record_filename
-            && !v4l2) {
-        LOGI("No video playback, no recording, no V4L2 sink: video disabled");
+            && !opts->screencap_filename && !v4l2) {
+        LOGI("No video playback, no recording, no screencap, no V4L2 sink: "
+             "video disabled");
         opts->video = false;
     }
 
@@ -3229,6 +3344,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
+    if (opts->screencap_filename) {
+        if (!opts->video) {
+            LOGE("Video disabled, nothing to screencap");
+            return false;
+        }
+    }
+
     if (opts->audio_codec == SC_CODEC_FLAC && opts->audio_bit_rate) {
         LOGW("--audio-bit-rate is ignored for FLAC audio codec");
     }
@@ -3289,6 +3411,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         // Only report obvious errors.
         if (opts->record_filename) {
             LOGE("OTG mode: cannot record");
+            return false;
+        }
+        if (opts->screencap_filename) {
+            LOGE("OTG mode: cannot screencap");
             return false;
         }
         if (opts->turn_screen_off) {
