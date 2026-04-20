@@ -6,6 +6,7 @@ import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.display.DisplayInfo;
 import com.genymobile.scrcpy.display.DisplayMonitor;
 import com.genymobile.scrcpy.display.DisplayProperties;
+import com.genymobile.scrcpy.display.DisplayResizeDebouncer;
 import com.genymobile.scrcpy.model.NewDisplay;
 import com.genymobile.scrcpy.model.Orientation;
 import com.genymobile.scrcpy.model.Size;
@@ -65,8 +66,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private Size displaySize; // the logical size of the display (including rotation)
     private Size physicalSize; // the physical size of the display (without rotation)
 
-    private Size pendingClientResized;
-    private Size latestSize;
+    private DisplayResizeDebouncer debouncer;
 
     private int dpi;
 
@@ -96,6 +96,8 @@ public class NewDisplayCapture extends SurfaceCapture {
                 // A maxSize request constrains the resulting size while preserving the aspect ratio, which is meaningless for a flex display
                 throw new IllegalArgumentException("Flex display does not support explicit maxSize constraint");
             }
+
+            debouncer = new DisplayResizeDebouncer(this::triggerResize);
         }
 
         displaySize = newDisplay.getSize();
@@ -150,28 +152,8 @@ public class NewDisplayCapture extends SurfaceCapture {
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(virtualDisplay.getDisplay().getDisplayId());
             dpi = displayInfo.getDpi();
             displayRotation = displayInfo.getRotation();
-
-            Size pendingClientResized = consumeClientResized();
-            if (pendingClientResized != null) {
-                assert pendingClientResized.isAligned(constraints.getAlignment()) : "pendingClientResized must be aligned";
-                displaySize = pendingClientResized;
-                if (captureOrientation.isSwap()) {
-                    displaySize = displaySize.rotate();
-                }
-                Size vdSize = displaySize;
-                if ((displayRotation % 2) != 0) {
-                    vdSize = vdSize.rotate();
-                }
-
-                displayMonitor.expectChange(new DisplayProperties(vdSize, displayRotation));
-                if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v(getClass().getSimpleName() + ": virtualDisplay.resize(" + vdSize.getWidth() + ", " + vdSize.getHeight() + ")");
-                }
-                virtualDisplay.resize(vdSize.getWidth(), vdSize.getHeight(), dpi);
-            } else {
-                // Align the physical display size to avoid unnecessary mismatches with the output size
-                displaySize = displayInfo.getSize().align(constraints.getAlignment());
-            }
+            // Align the physical display size to avoid unnecessary mismatches with the output size
+            displaySize = displayInfo.getSize().align(constraints.getAlignment());
         }
 
         VideoFilter filter = new VideoFilter(displaySize);
@@ -194,7 +176,6 @@ public class NewDisplayCapture extends SurfaceCapture {
 
         // DisplayInfo gives the oriented size (so videoSize includes the display rotation)
         videoSize = filter.getOutputSize();
-        setLatestSize(videoSize);
 
         // However, the virtual display video always remains in its original orientation, so it must be rotated manually.
         // This additional display rotation must not be included in the input events transform (the expected coordinates are already in the
@@ -239,9 +220,10 @@ public class NewDisplayCapture extends SurfaceCapture {
                             | VIRTUAL_DISPLAY_FLAG_DEVICE_DISPLAY_GROUP;
                 }
             }
-            virtualDisplay = ServiceManager.getDisplayManager()
+            VirtualDisplay vd = ServiceManager.getDisplayManager()
                     .createNewVirtualDisplay("scrcpy", displaySize.getWidth(), displaySize.getHeight(), dpi, surface, flags);
-            virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
+            setCurrentVirtualDisplay(vd); // used for client resize
+            virtualDisplayId = vd.getDisplay().getDisplayId();
             Ln.i("New display: " + displaySize.getWidth() + "x" + displaySize.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
 
             if (displayImePolicy != -1) {
@@ -290,7 +272,7 @@ public class NewDisplayCapture extends SurfaceCapture {
 
         if (virtualDisplay != null) {
             virtualDisplay.release();
-            virtualDisplay = null;
+            setCurrentVirtualDisplay(null);
         }
     }
 
@@ -305,7 +287,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         return initialDpi * num / den;
     }
 
-    public synchronized void resizeDisplay(int width, int height) {
+    public void resizeDisplay(int width, int height) {
         if (!flexDisplay) {
             throw new IllegalStateException("Cannot resize a non-flex display");
         }
@@ -315,40 +297,27 @@ public class NewDisplayCapture extends SurfaceCapture {
             Ln.v(getClass().getSimpleName() + ": resizeDisplay(" + width + ", " + height + ")");
             Ln.v(getClass().getSimpleName() + ": constrained size = " + newSize);
         }
-        if (newSize.equals(pendingClientResized)) {
-            // Already requested
-            if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v(getClass().getSimpleName() + ": new size already requested (" + newSize + ")");
+
+        Ln.i("==== requestResize(" + newSize + ")");
+        debouncer.requestResize(newSize);
+    }
+
+    private synchronized void setCurrentVirtualDisplay(VirtualDisplay virtualDisplay) {
+        this.virtualDisplay = virtualDisplay;
+    }
+
+    private synchronized VirtualDisplay getCurrentVirtualDisplay() {
+        return virtualDisplay;
+    }
+
+    private synchronized void triggerResize(Size size) {
+        VirtualDisplay vd = getCurrentVirtualDisplay(); // with synchronization
+        if (vd != null) {
+            DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(vd.getDisplay().getDisplayId());
+            if (captureOrientation.isSwap() ^ (displayInfo.getRotation() % 2) != 0) {
+                size = size.rotate();
             }
-            return;
+            vd.resize(size.getWidth(), size.getHeight(), dpi);
         }
-
-        Size latestSize = getLatestSize(); // with synchro
-        if (newSize.equals(latestSize)) {
-            if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v(getClass().getSimpleName() + ": requested new size (" + newSize + ") is already the latest one");
-            }
-            return;
-        }
-
-        pendingClientResized = newSize;
-        if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-            Ln.v(getClass().getSimpleName() + ": reset (" + newSize + ")");
-        }
-        getCaptureControl().reset(CaptureControl.RESET_REASON_CLIENT_RESIZED);
-    }
-
-    private synchronized Size consumeClientResized() {
-        Size size = pendingClientResized;
-        pendingClientResized = null;
-        return size;
-    }
-
-    private synchronized Size getLatestSize() {
-        return latestSize;
-    }
-
-    private synchronized void setLatestSize(Size latestSize) {
-        this.latestSize = latestSize;
     }
 }
