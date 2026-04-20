@@ -83,6 +83,7 @@ _scrcpy() {
         --screen-off-timeout=
         --shortcut-mod=
         --start-app=
+        --exit-on-close
         -t --show-touches
         --tcpip
         --tcpip=

@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <SDL2/SDL.h>
+
+#include "config.h"
 
 #include "options.h"
 #include "util/log.h"
@@ -108,6 +111,7 @@ enum {
     OPT_NEW_DISPLAY,
     OPT_LIST_APPS,
     OPT_START_APP,
+    OPT_EXIT_ON_CLOSE,
     OPT_SCREEN_OFF_TIMEOUT,
     OPT_CAPTURE_ORIENTATION,
     OPT_ANGLE,
@@ -890,8 +894,14 @@ static const struct sc_option options[] = {
                 "    scrcpy --start-app=?firefox\n"
                 "Add a '+' prefix to force-stop before starting the app:\n"
                 "    scrcpy --new-display --start-app=+org.mozilla.firefox\n"
-                "Both prefixes can be used, in that order:\n"
-                "    scrcpy --start-app=+?firefox",
+                "All prefixes can be combined, in that order.\n"
+                "See also --exit-on-close.",
+    },
+    {
+        .longopt_id = OPT_EXIT_ON_CLOSE,
+        .longopt = "exit-on-close",
+        .text = "Exit scrcpy when the app started with --start-app closes.\n"
+                "This option is only available with --start-app.",
     },
     {
         .shortopt = 't',
@@ -2799,6 +2809,23 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_START_APP:
                 opts->start_app = optarg;
+                // Check if the app name ends with '-' to enable end execution
+                if (optarg && strlen(optarg) > 0 && optarg[strlen(optarg) - 1] == '-') {
+                    opts->stop_app = true;
+                    // Remove the trailing '-' from the app name
+                    char *app_name = strdup(optarg);
+                    if (app_name) {
+                        app_name[strlen(app_name) - 1] = '\0';
+                        opts->start_app = app_name;
+                    }
+                }
+                break;
+            case OPT_EXIT_ON_CLOSE:
+                if (!opts->start_app) {
+                    LOGE("--exit-on-close is only available with --start-app");
+                    return false;
+                }
+                opts->exit_on_app_close = true;
                 break;
             case OPT_SCREEN_OFF_TIMEOUT:
                 if (!parse_screen_off_timeout(optarg,

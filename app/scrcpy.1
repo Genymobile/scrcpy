@@ -536,9 +536,15 @@ Add a '+' prefix to force-stop before starting the app:
 
     scrcpy --new-display --start-app=+org.mozilla.firefox
 
-Both prefixes can be used, in that order:
+All prefixes can be combined, in that order.
 
-    scrcpy --start-app=+?firefox
+See also \fB\-\-exit\-on\-close\fR.
+
+.TP
+.B \-\-exit\-on\-close
+Exit scrcpy when the app started with \fB\-\-start\-app\fR closes.
+
+This option is only available with \fB\-\-start\-app\fR.
 
 .TP
 .B \-t, \-\-show\-touches

@@ -325,6 +325,8 @@ struct scrcpy_options {
     bool audio_dup;
     const char *new_display; // [<width>x<height>][/<dpi>] parsed by the server
     const char *start_app;
+    bool exit_on_app_close;
+    bool stop_app;
     bool vd_destroy_content;
     bool vd_system_decorations;
 };
