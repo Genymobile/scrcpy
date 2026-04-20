@@ -802,6 +802,62 @@ aoa_complete:
         const char *window_title =
             options->window_title ? options->window_title : info->device_name;
 
+        // Check if new_display is resizable (contains :r)
+        bool resizable_new_display = false;
+        float resolution_factor = 1.0f;
+        bool auto_resolution_factor = false;
+
+        if (options->new_display) {
+            const char *r_pos = strstr(options->new_display, ":r");
+            if (r_pos) {
+                resizable_new_display = true;
+                // Check if there's a resolution factor after ":r"
+                const char *factor_start = r_pos + 2; // Skip ":r"
+                if (*factor_start && (*factor_start >= '0' && *factor_start <= '9')) {
+                    // Parse the resolution factor
+                    char *end;
+                    resolution_factor = strtof(factor_start, &end);
+                    if (resolution_factor <= 0.1f) {
+                        // Prevent too small factors
+                        resolution_factor = 0.1f;
+                    } else if (resolution_factor > 10.0f) {
+                        // Prevent too large factors
+                        resolution_factor = 10.0f;
+                    }
+                } else {
+                    // No explicit resolution factor provided, will calculate automatically
+                    auto_resolution_factor = true;
+                    LOGI("No resolution factor specified, will calculate automatically");
+                }
+            }
+        }
+
+        // If automatic resolution factor calculation was requested, calculate it based on the main display size
+        if (auto_resolution_factor && resizable_new_display) {
+            // Get the main display size
+            SDL_Rect display_bounds;
+            if (SDL_GetDisplayUsableBounds(0, &display_bounds) == 0) {
+                // Calculate the resolution factor based on the ratio between the display size and the requested window size
+                int display_width = display_bounds.w;
+                int display_height = display_bounds.h;
+                int window_width = options->window_width ? options->window_width : display_width / 2;
+                int window_height = options->window_height ? options->window_height : display_height / 2;
+                float width_factor = (float)display_width / window_width;
+                float height_factor = (float)display_height / window_height;
+                resolution_factor = width_factor < height_factor ? width_factor : height_factor;
+                if (resolution_factor < 0.1f) {
+                    resolution_factor = 0.1f;
+                } else if (resolution_factor > 10.0f) {
+                    resolution_factor = 10.0f;
+                }
+                LOGI("Calculated automatic resolution factor: %.2f (display: %dx%d, window: %dx%d)",
+                     resolution_factor, display_width, display_height, window_width, window_height);
+            } else {
+                LOGW("Could not get display bounds, using default resolution factor: 1.0");
+                resolution_factor = 1.0f;
+            }
+        }
+
         struct sc_screen_params screen_params = {
             .video = options->video_playback,
             .controller = controller,
@@ -824,6 +880,8 @@ aoa_complete:
             .mipmaps = options->mipmaps,
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,
+            .resizable_new_display = resizable_new_display,
+            .resolution_factor = resolution_factor,
         };
 
         if (!sc_screen_init(&s->screen, &screen_params)) {

@@ -182,6 +182,10 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             size_t len = write_string_tiny(&buf[1], msg->start_app.name, 255);
             return 1 + len;
         }
+        case SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY:
+            sc_write16be(&buf[1], msg->resize_display.width);
+            sc_write16be(&buf[3], msg->resize_display.height);
+            return 5;
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
@@ -317,6 +321,9 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             break;
         case SC_CONTROL_MSG_TYPE_RESET_VIDEO:
             LOG_CMSG("reset video");
+            break;
+        case SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY:
+            LOG_CMSG("resize display to %dx%d", msg->resize_display.width, msg->resize_display.height);
             break;
         default:
             LOG_CMSG("unknown type: %u", (unsigned) msg->type);

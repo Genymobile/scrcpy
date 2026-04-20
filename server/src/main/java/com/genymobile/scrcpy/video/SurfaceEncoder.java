@@ -199,7 +199,17 @@ public class SurfaceEncoder implements AsyncProcessor {
 
         boolean eos;
         do {
-            int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
+            int outputBufferId;
+            try {
+                // Use a finite timeout to handle MediaCodec reset scenarios gracefully
+                outputBufferId = codec.dequeueOutputBuffer(bufferInfo, 10000); // 10ms timeout
+            } catch (IllegalStateException e) {
+                // This can happen when MediaCodec is being reset (e.g., during display resize)
+                // The pending dequeue request gets cancelled
+                Ln.d("MediaCodec dequeue interrupted during reset: " + e.getMessage());
+                break; // Exit the loop gracefully
+            }
+            
             try {
                 eos = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
                 // On EOS, there might be data or not, depending on bufferInfo.size

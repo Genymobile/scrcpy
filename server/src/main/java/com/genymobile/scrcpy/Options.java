@@ -1,5 +1,8 @@
 package com.genymobile.scrcpy;
 
+import android.graphics.Rect;
+import android.util.Pair;
+
 import com.genymobile.scrcpy.audio.AudioCodec;
 import com.genymobile.scrcpy.audio.AudioSource;
 import com.genymobile.scrcpy.device.Device;
@@ -13,9 +16,6 @@ import com.genymobile.scrcpy.video.CameraFacing;
 import com.genymobile.scrcpy.video.VideoCodec;
 import com.genymobile.scrcpy.video.VideoSource;
 import com.genymobile.scrcpy.wrappers.WindowManager;
-
-import android.graphics.Rect;
-import android.util.Pair;
 
 import java.util.List;
 import java.util.Locale;
@@ -589,8 +589,24 @@ public class Options {
         //  - "<width>x<height>/<dpi>"
         //  - "<width>x<height>"
         //  - "/<dpi>"
+        //  - "<width>x<height>/<dpi>:r"
+        //  - "<width>x<height>:r"
+        //  - "/<dpi>:r"
+        //  - ":r"
+        //  - "<width>x<height>/<dpi>:r<factor>"
+        //  - "<width>x<height>:r<factor>"
+        //  - "/<dpi>:r<factor>"
+        //  - ":r<factor>"
         if (newDisplay.isEmpty()) {
             return new NewDisplay();
+        }
+
+        // Check for resizable flag and resolution factor
+        boolean resizable = false;
+        int rIndex = newDisplay.indexOf(":r");
+        if (rIndex >= 0) {
+            resizable = true;
+            newDisplay = newDisplay.substring(0, rIndex);
         }
 
         String[] tokens = newDisplay.split("/");
@@ -612,7 +628,7 @@ public class Options {
             dpi = 0;
         }
 
-        return new NewDisplay(size, dpi);
+        return new NewDisplay(size, dpi, resizable);
     }
 
     private static Pair<Orientation.Lock, Orientation> parseCaptureOrientation(String value) {

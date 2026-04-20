@@ -48,6 +48,8 @@ public class ControlMessageReader {
             case ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
             case ControlMessage.TYPE_RESET_VIDEO:
                 return ControlMessage.createEmpty(type);
+            case ControlMessage.TYPE_RESIZE_DISPLAY:
+                return parseResizeDisplay();
             case ControlMessage.TYPE_UHID_CREATE:
                 return parseUhidCreate();
             case ControlMessage.TYPE_UHID_INPUT:
@@ -164,6 +166,12 @@ public class ControlMessageReader {
     private ControlMessage parseStartApp() throws IOException {
         String name = parseString(1);
         return ControlMessage.createStartApp(name);
+    }
+
+    private ControlMessage parseResizeDisplay() throws IOException {
+        int width = dis.readUnsignedShort();
+        int height = dis.readUnsignedShort();
+        return ControlMessage.createResizeDisplay(width, height);
     }
 
     private Position parsePosition() throws IOException {

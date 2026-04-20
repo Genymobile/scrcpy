@@ -11,7 +11,17 @@
 
 #define DISPLAY_MARGINS 96
 
+// --- Fix: Ensure these are defined before any use ---
+#define RESIZE_FINISHED_DELAY 200
+static Uint32 resize_timer_callback(Uint32 interval, void *param);
+
 #define DOWNCAST(SINK) container_of(SINK, struct sc_screen, frame_sink)
+
+// Prototipo para evitar error de declaración implícita
+static bool sizes_are_close(int a, int b, int tolerance);
+
+static void
+sc_screen_send_resize_display(struct sc_screen *screen, int width, int height);
 
 static inline struct sc_size
 get_oriented_size(struct sc_size size, enum sc_orientation orientation) {
@@ -239,11 +249,9 @@ static int
 event_watcher(void *data, SDL_Event *event) {
     struct sc_screen *screen = data;
     assert(screen->video);
-
     if (event->type == SDL_WINDOWEVENT
             && event->window.event == SDL_WINDOWEVENT_RESIZED) {
-        // In practice, it seems to always be called from the same thread in
-        // that specific case. Anyway, it's just a workaround.
+        // Only handle rendering for the workaround, resize logic should be handled elsewhere
         sc_screen_render(screen, true);
     }
     return 0;
@@ -333,6 +341,9 @@ sc_screen_init(struct sc_screen *screen,
     screen->paused = false;
     screen->resume_frame = NULL;
     screen->orientation = SC_ORIENTATION_0;
+    screen->initial_setup = true;
+    screen->content_driven_resize = false;
+    screen->last_resize_time = 0;
 
     screen->video = params->video;
 
@@ -342,6 +353,11 @@ sc_screen_init(struct sc_screen *screen,
     screen->req.height = params->window_height;
     screen->req.fullscreen = params->fullscreen;
     screen->req.start_fps_counter = params->start_fps_counter;
+
+    screen->resizable_new_display = params->resizable_new_display;
+    screen->resolution_factor = params->resolution_factor;
+    
+    LOGI("Resolution factor: %.2f", screen->resolution_factor);
 
     bool ok = sc_frame_buffer_init(&screen->fb);
     if (!ok) {
@@ -508,6 +524,10 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
 
     SDL_ShowWindow(screen->window);
     sc_screen_update_content_rect(screen);
+
+    // Mark initial setup as complete - now user resizing will trigger display resize
+    LOGD("Initial setup complete, enabling user resize detection");
+    screen->initial_setup = false;
 }
 
 void
@@ -537,11 +557,20 @@ sc_screen_destroy(struct sc_screen *screen) {
     sc_frame_buffer_destroy(&screen->fb);
 }
 
+// Utilidad para comparar tamaños con tolerancia
+static bool sizes_are_close(int a, int b, int tolerance) {
+    return abs(a - b) <= tolerance;
+}
+
 static void
 resize_for_content(struct sc_screen *screen, struct sc_size old_content_size,
                    struct sc_size new_content_size) {
     assert(screen->video);
-
+    if (screen->resizable_new_display) {
+        // En modo redimensionable, el display nunca debe modificar la ventana
+        // Por lo tanto, ignorar cualquier resize proveniente del display
+        return;
+    }
     struct sc_size window_size = get_window_size(screen);
     struct sc_size target_size = {
         .width = (uint32_t) window_size.width * new_content_size.width
@@ -550,7 +579,11 @@ resize_for_content(struct sc_screen *screen, struct sc_size old_content_size,
                 / old_content_size.height,
     };
     target_size = get_optimal_size(target_size, new_content_size, true);
+
+    // Mark that we're doing a content-driven resize to avoid feedback loop
+    screen->content_driven_resize = true;
     set_window_size(screen, target_size);
+    screen->content_driven_resize = false;
 }
 
 static void
@@ -577,8 +610,11 @@ apply_pending_resize(struct sc_screen *screen) {
     assert(!screen->maximized);
     assert(!screen->minimized);
     if (screen->resize_pending) {
+        // Mark that we're doing a content-driven resize to avoid feedback loop
+        screen->content_driven_resize = true;
         resize_for_content(screen, screen->windowed_content_size,
                                    screen->content_size);
+        screen->content_driven_resize = false;
         screen->resize_pending = false;
     }
 }
@@ -800,6 +836,17 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
 
 bool
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
+    // --- Manejo especial para SDL_USEREVENT de resize diferido ---
+    if (event->type == SDL_USEREVENT && event->user.code == 0x5343525A && event->user.data1 == screen) {
+        // Timer expirado: notificar resize
+        if (screen->pending_resize_width > 0 && screen->pending_resize_height > 0) {
+            LOGD("[RESIZE_FINISHED] Notifying display resize: %dx%d", screen->pending_resize_width, screen->pending_resize_height);
+            sc_screen_send_resize_display(screen, screen->pending_resize_width, screen->pending_resize_height);
+        }
+        screen->resize_timer = 0;
+        return true;
+    }
+    // --- Fin manejo especial ---
     switch (event->type) {
         case SC_EVENT_SCREEN_INIT_SIZE: {
             // The initial size is passed via screen->frame_size
@@ -835,6 +882,37 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                     sc_screen_render(screen, true);
                     break;
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    if (screen->resizable_new_display) {
+                        int w, h;
+                        SDL_GetWindowSize(screen->window, &w, &h);
+                        if ((!sizes_are_close(w, screen->last_window_width, 2) || !sizes_are_close(h, screen->last_window_height, 2)) &&
+                            !screen->initial_setup && !screen->content_driven_resize) {
+                            screen->last_window_width = w;
+                            screen->last_window_height = h;
+                            // --- Resize diferido ---
+                            // Round to multiple of 8 to match server-side rounding and avoid quality degradation
+                            int rounded_w = (w + 4) & ~7;  // Round to nearest multiple of 8
+                            int rounded_h = (h + 4) & ~7;  // Round to nearest multiple of 8
+                            
+                            // Resize window to rounded dimensions to maintain quality
+                            if (rounded_w != w || rounded_h != h) {
+                                SDL_SetWindowSize(screen->window, rounded_w, rounded_h);
+                                LOGD("Window resized to rounded dimensions: %dx%d (from %dx%d)", rounded_w, rounded_h, w, h);
+                            }
+                            
+                            screen->pending_resize_width = rounded_w;
+                            screen->pending_resize_height = rounded_h;
+                            if (screen->resize_timer) {
+                                SDL_RemoveTimer(screen->resize_timer);
+                            }
+                            screen->resize_timer = SDL_AddTimer(RESIZE_FINISHED_DELAY, resize_timer_callback, screen);
+                            // --- Fin resize diferido ---
+                        } else if (screen->initial_setup) {
+                            LOGD("[SIZE_CHANGED] Initial setup resize ignored: %dx%d", w, h);
+                        } else if (screen->content_driven_resize) {
+                            LOGD("[SIZE_CHANGED] Content-driven resize ignored: %dx%d", w, h);
+                        }
+                    }
                     sc_screen_render(screen, true);
                     break;
                 case SDL_WINDOWEVENT_MAXIMIZED:
@@ -871,9 +949,63 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
     return true;
 }
 
+static void
+sc_screen_send_resize_display(struct sc_screen *screen, int width, int height) {
+    if (!screen->im.controller) {
+        return;
+    }
+
+    // Validate minimum size constraints to avoid Android errors
+    if (width < 1 || height < 1) {
+        LOGD("Display size too small, ignoring resize: %dx%d", width, height);
+        return;
+    }
+    
+    // Apply resolution factor if in resizable mode
+    int adjusted_width = width;
+    int adjusted_height = height;
+    
+    if (screen->resizable_new_display && screen->resolution_factor != 1.0f) {
+        adjusted_width = (int)(width * screen->resolution_factor);
+        adjusted_height = (int)(height * screen->resolution_factor);
+        
+        // Ensure minimum size
+        if (adjusted_width < 1) adjusted_width = 1;
+        if (adjusted_height < 1) adjusted_height = 1;
+        
+        // Ensure maximum size to avoid encoder issues
+        // Most Android devices support up to 4K resolution for encoding
+        const int MAX_DIMENSION = 2048; // Safe limit for most devices
+        if (adjusted_width > MAX_DIMENSION || adjusted_height > MAX_DIMENSION) {
+            // Scale down proportionally to fit within limits
+            float scale = 1.0f;
+            if (adjusted_width > adjusted_height) {
+                scale = (float)MAX_DIMENSION / adjusted_width;
+            } else {
+                scale = (float)MAX_DIMENSION / adjusted_height;
+            }
+            adjusted_width = (int)(adjusted_width * scale);
+            adjusted_height = (int)(adjusted_height * scale);
+            LOGW("Limiting dimensions to %dx%d to avoid encoder issues", adjusted_width, adjusted_height);
+        }
+        
+        LOGD("Applying resolution factor %.2f: %dx%d -> %dx%d", 
+             screen->resolution_factor, width, height, adjusted_width, adjusted_height);
+    }
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY;
+    msg.resize_display.width = (uint16_t) adjusted_width;
+    msg.resize_display.height = (uint16_t) adjusted_height;
+
+    if (!sc_controller_push_msg(screen->im.controller, &msg)) {
+        LOGW("Could not request display resize to %dx%d", adjusted_width, adjusted_height);
+    }
+}
+
 struct sc_point
 sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
-                                           int32_t x, int32_t y) {
+                                          int32_t x, int32_t y) {
     assert(screen->video);
 
     enum sc_orientation orientation = screen->orientation;
@@ -944,4 +1076,27 @@ sc_screen_hidpi_scale_coords(struct sc_screen *screen, int32_t *x, int32_t *y) {
     // scale for HiDPI (64 bits for intermediate multiplications)
     *x = (int64_t) *x * dw / ww;
     *y = (int64_t) *y * dh / wh;
+}
+
+// --- Resize diferido ---
+static Uint32 resize_timer_callback(Uint32 interval, void *param) {
+    (void)interval;
+    struct sc_screen *screen = param;
+    assert(screen->video);
+    int width = screen->pending_resize_width;
+    int height = screen->pending_resize_height;
+    screen->pending_resize_width = 0;
+    screen->pending_resize_height = 0;
+    // Ignorar tamaños inválidos
+    if (width < 1 || height < 1) {
+        LOGD("Ignoring invalid resize: %dx%d", width, height);
+        return 0;
+    }
+    // Round to multiple of 8 to match server-side rounding and avoid quality degradation
+    int rounded_w = (width + 4) & ~7;  // Round to nearest multiple of 8
+    int rounded_h = (height + 4) & ~7;  // Round to nearest multiple of 8
+    
+    LOGD("[RESIZE_FINISHED] Notifying display resize: %dx%d (rounded from %dx%d)", rounded_w, rounded_h, width, height);
+    sc_screen_send_resize_display(screen, rounded_w, rounded_h);
+    return 0;
 }

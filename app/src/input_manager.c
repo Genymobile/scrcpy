@@ -541,6 +541,11 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                     if (shift) {
                         reset_video(im);
                     } else {
+                        // Disable MOD+R rotation in resizable virtual display mode
+                        if (im->screen->resizable_new_display) {
+                            LOGI("MOD+R rotation disabled in resizable virtual display mode");
+                            return;
+                        }
                         rotate_device(im);
                     }
                 }
