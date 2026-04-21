@@ -48,6 +48,7 @@ public class Options {
     private boolean cameraHighSpeed;
     private boolean showTouches;
     private boolean stayAwake;
+    private boolean doNotDisturb;
     private int screenOffTimeout = -1;
     private int displayImePolicy = -1;
     private List<CodecOption> videoCodecOptions;
@@ -182,6 +183,10 @@ public class Options {
 
     public boolean getStayAwake() {
         return stayAwake;
+    }
+
+    public boolean getDoNotDisturb() {
+        return doNotDisturb;
     }
 
     public int getScreenOffTimeout() {
@@ -392,6 +397,9 @@ public class Options {
                     break;
                 case "stay_awake":
                     options.stayAwake = Boolean.parseBoolean(value);
+                    break;
+                case "do_not_disturb":
+                    options.doNotDisturb = Boolean.parseBoolean(value);
                     break;
                 case "screen_off_timeout":
                     options.screenOffTimeout = Integer.parseInt(value);
