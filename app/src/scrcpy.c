@@ -474,6 +474,7 @@ scrcpy(struct scrcpy_options *options) {
         .vd_destroy_content = options->vd_destroy_content,
         .vd_system_decorations = options->vd_system_decorations,
         .list = options->list,
+        .get_app_icon = options->get_app_icon,
     };
 
     static const struct sc_server_callbacks cbs = {
@@ -497,7 +498,7 @@ scrcpy(struct scrcpy_options *options) {
 
     server_started = true;
 
-    if (options->list) {
+    if (options->list || options->get_app_icon) {
         bool ok = await_for_server(NULL);
         ret = ok ? SCRCPY_EXIT_SUCCESS : SCRCPY_EXIT_FAILURE;
         goto end;

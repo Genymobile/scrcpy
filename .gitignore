@@ -8,3 +8,6 @@ build/
 /x/
 local.properties
 /scrcpy-server
+/.vscode/*
+/.cache/*
+*.DS_Store

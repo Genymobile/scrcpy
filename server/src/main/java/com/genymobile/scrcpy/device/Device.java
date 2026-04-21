@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.app.ActivityOptions;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -24,6 +25,13 @@ import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -229,6 +237,55 @@ public final class Device {
         }
 
         return apps;
+    }
+    
+    public static Drawable getAppIcon(String packageName) {
+        PackageManager pm = FakeContext.get().getPackageManager();
+        try {
+            ApplicationInfo appInfo = pm.getApplicationInfo(packageName, PackageManager.GET_META_DATA);
+            return pm.getApplicationIcon(appInfo);
+        } catch (PackageManager.NameNotFoundException e) {
+            Ln.e("Package not found: " + packageName);
+            return null;
+        }
+    }
+
+    public static boolean saveAppIconPng(String packageName, File outFile) {
+        Drawable icon = getAppIcon(packageName);
+        if (icon == null) {
+            return false;
+        }
+        try {
+            Bitmap bitmap;
+            if (icon instanceof BitmapDrawable) {
+                bitmap = ((BitmapDrawable) icon).getBitmap();
+            } else {
+                int width = Math.max(1, icon.getIntrinsicWidth());
+                int height = Math.max(1, icon.getIntrinsicHeight());
+                bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(bitmap);
+                icon.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                icon.draw(canvas);
+            }
+            FileOutputStream fos = null;
+            try {
+                fos = new FileOutputStream(outFile);
+                boolean ok = bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                fos.flush();
+                return ok;
+            } finally {
+                if (fos != null) {
+                    try {
+                        fos.close();
+                    } catch (IOException ignored) {
+                        // ignore
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Ln.e("Error saving icon for " + packageName + ": " + e.getMessage());
+            return false;
+        }
     }
 
     @SuppressLint("QueryPermissionsNeeded")

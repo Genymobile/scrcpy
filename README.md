@@ -157,6 +157,7 @@ documented in the following pages:
  - [Camera](doc/camera.md)
  - [Video4Linux](doc/v4l2.md)
  - [Shortcuts](doc/shortcuts.md)
+ - [Get app icon](doc/get_app_icon.md)
 
 
 ## Resources

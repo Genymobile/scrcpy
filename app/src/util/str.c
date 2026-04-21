@@ -14,6 +14,18 @@
 
 #include "util/log.h"
 #include "util/strbuf.h"
+char *
+sc_str_dup(const char *s) {
+    size_t len = strlen(s) + 1;
+    char *copy = malloc(len);
+    if (!copy) {
+        LOG_OOM();
+        return NULL;
+    }
+    memcpy(copy, s, len);
+    return copy;
+}
+
 
 size_t
 sc_strncpy(char *dest, const char *src, size_t n) {

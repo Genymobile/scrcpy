@@ -319,12 +319,14 @@ struct scrcpy_options {
 #define SC_OPTION_LIST_CAMERAS 0x4
 #define SC_OPTION_LIST_CAMERA_SIZES 0x8
 #define SC_OPTION_LIST_APPS 0x10
+#define SC_OPTION_GET_APP_ICON 0x20
     uint8_t list;
     bool window;
     bool mouse_hover;
     bool audio_dup;
     const char *new_display; // [<width>x<height>][/<dpi>] parsed by the server
     const char *start_app;
+    const char *get_app_icon; // package name for app icon
     bool vd_destroy_content;
     bool vd_system_decorations;
 };
