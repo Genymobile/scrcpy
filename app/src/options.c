@@ -59,7 +59,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .display_orientation = SC_ORIENTATION_0,
     .record_orientation = SC_ORIENTATION_0,
     .display_ime_policy = SC_DISPLAY_IME_POLICY_UNDEFINED,
-    .render_fit = SC_RENDER_FIT_LETTERBOX,
+    .render_fit = SC_RENDER_FIT_AUTO,
     .window_x = SC_WINDOW_POSITION_UNDEFINED,
     .window_y = SC_WINDOW_POSITION_UNDEFINED,
     .window_width = 0,
@@ -118,6 +118,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .vd_system_decorations = true,
     .camera_torch = false,
     .keep_active = false,
+    .flex_display = false,
 };
 
 enum sc_orientation

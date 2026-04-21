@@ -221,6 +221,7 @@ enum sc_shortcut_mod {
 };
 
 enum sc_render_fit {
+    SC_RENDER_FIT_AUTO,
     SC_RENDER_FIT_LETTERBOX,
     SC_RENDER_FIT_DISABLED,
 };
@@ -337,6 +338,7 @@ struct scrcpy_options {
     bool vd_system_decorations;
     bool camera_torch;
     bool keep_active;
+    bool flex_display;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

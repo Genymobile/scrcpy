@@ -109,7 +109,8 @@ _scrcpy() {
         --window-x=
         --window-y=
         --window-width=
-        --window-height="
+        --window-height=
+        -x --flex-display"
 
     _init_completion -s || return
 
