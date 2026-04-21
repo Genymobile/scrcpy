@@ -66,6 +66,7 @@ public class Options {
     private NewDisplay newDisplay;
     private boolean vdDestroyContent = true;
     private boolean vdSystemDecorations = true;
+    private boolean flexDisplay;
 
     private Orientation.Lock captureOrientationLock = Orientation.Lock.Unlocked;
     private Orientation captureOrientation = Orientation.Orient0;
@@ -256,6 +257,10 @@ public class Options {
 
     public boolean getVDSystemDecorations() {
         return vdSystemDecorations;
+    }
+
+    public boolean getFlexDisplay() {
+        return flexDisplay;
     }
 
     public boolean getList() {
@@ -505,6 +510,9 @@ public class Options {
                     break;
                 case "vd_system_decorations":
                     options.vdSystemDecorations = Boolean.parseBoolean(value);
+                    break;
+                case "flex_display":
+                    options.flexDisplay = Boolean.parseBoolean(value);
                     break;
                 case "capture_orientation":
                     Pair<Orientation.Lock, Orientation> pair = parseCaptureOrientation(value);
