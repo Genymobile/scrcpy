@@ -46,4 +46,9 @@ public enum Orientation {
     public int getRotation() {
         return ordinal() & 3;
     }
+
+    public boolean isSwap() {
+        // width and height are swapped on 90-degree rotations
+        return (ordinal() & 1) != 0;
+    }
 }
