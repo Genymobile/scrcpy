@@ -67,11 +67,13 @@ src = [
     'src/util/timeout.c',
 ]
 
-conf = configuration_data()
+feature_test_macros = [
+    '-D_GNU_SOURCE',
+    '-D_POSIX_C_SOURCE=200809L',
+    '-D_XOPEN_SOURCE=700',
+]
 
-conf.set('_POSIX_C_SOURCE', '200809L')
-conf.set('_XOPEN_SOURCE', '700')
-conf.set('_GNU_SOURCE', true)
+conf = configuration_data()
 
 if host_machine.system() == 'windows'
     windows = import('windows')
@@ -81,17 +83,22 @@ if host_machine.system() == 'windows'
         'src/sys/win/process.c',
         windows.compile_resources('scrcpy-windows.rc'),
     ]
-    conf.set('_WIN32_WINNT', '0x0600')
-    conf.set('WINVER', '0x0600')
+    feature_test_macros += [
+        '-D_WIN32_WINNT=0x0600',
+        '-DWINVER=0x0600',
+    ]
 else
     src += [
         'src/sys/unix/file.c',
         'src/sys/unix/process.c',
     ]
     if host_machine.system() == 'darwin'
-        conf.set('_DARWIN_C_SOURCE', true)
+        feature_test_macros += '-D_DARWIN_C_SOURCE'
     endif
 endif
+
+
+add_project_arguments(feature_test_macros, language: 'c')
 
 v4l2_support = get_option('v4l2') and host_machine.system() == 'linux'
 if v4l2_support
