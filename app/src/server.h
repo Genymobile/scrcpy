@@ -73,6 +73,7 @@ struct sc_server_params {
     bool vd_destroy_content;
     bool vd_system_decorations;
     bool keep_active;
+    bool flex_display;
     uint8_t list;
 };
 
