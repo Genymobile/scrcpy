@@ -38,6 +38,9 @@ struct sc_screen {
     bool video;
     bool camera;
     bool window_aspect_ratio_lock;
+    bool flex_display;
+
+    struct sc_controller *controller;
 
     struct sc_screen_bg_color {
         uint8_t r;
@@ -103,6 +106,7 @@ struct sc_screen {
 struct sc_screen_params {
     bool video;
     bool camera;
+    bool flex_display;
 
     struct sc_controller *controller;
     struct sc_file_pusher *fp;
