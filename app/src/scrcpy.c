@@ -465,6 +465,7 @@ scrcpy(struct scrcpy_options *options) {
         .camera_zoom = options->camera_zoom,
         .vd_destroy_content = options->vd_destroy_content,
         .vd_system_decorations = options->vd_system_decorations,
+        .flex_display = options->flex_display,
         .list = options->list,
     };
 
@@ -797,6 +798,7 @@ aoa_complete:
         struct sc_screen_params screen_params = {
             .video = options->video_playback,
             .camera = options->video_source == SC_VIDEO_SOURCE_CAMERA,
+            .flex_display = options->flex_display,
             .controller = controller,
             .fp = fp,
             .kp = kp,
