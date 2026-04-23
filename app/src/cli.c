@@ -114,6 +114,8 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
+    OPT_NO_CONFIG,
+    OPT_CONFIG_FILE,
 };
 
 struct sc_option {
@@ -344,6 +346,16 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_CODEC_OPTIONS,
         .longopt = "codec-options",
         .argdesc = "key[:type]=value[,...]",
+    },
+    {
+        .longopt_id = OPT_CONFIG_FILE,
+        .longopt = "config-file",
+        .argdesc = "path",
+        .text = "Specify a custom config file path.\n"
+                "By default, scrcpy reads "
+                "$XDG_CONFIG_HOME/scrcpy/config.ini "
+                "(or ~/.config/scrcpy/config.ini).\n"
+                "Also see --no-config.",
     },
     {
         .longopt_id = OPT_CROP,
@@ -658,6 +670,12 @@ static const struct sc_option options[] = {
                 "and the device clipboard to the computer clipboard whenever "
                 "it changes.\n"
                 "This option disables this automatic synchronization."
+    },
+    {
+        .longopt_id = OPT_NO_CONFIG,
+        .longopt = "no-config",
+        .text = "Do not load any config file.\n"
+                "Also see --config-file.",
     },
     {
         .longopt_id = OPT_NO_DOWNSIZE_ON_ERROR,
@@ -1218,6 +1236,10 @@ static const struct sc_envvar envvars[] = {
         .name = "ANDROID_SERIAL",
         .text = "Device serial to use if no selector (-s, -d, -e or "
                 "--tcpip=<addr>) is specified",
+    },
+    {
+        .name = "SCRCPY_CONFIG_FILE",
+        .text = "Path to the config file (see --config-file)",
     },
     {
         .name = "SCRCPY_ICON_PATH",
@@ -2820,6 +2842,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                                               &opts->display_ime_policy)) {
                     return false;
                 }
+                break;
+            case OPT_NO_CONFIG:
+                // Already handled in pre-parse (sc_config_argv_init)
+                break;
+            case OPT_CONFIG_FILE:
+                // Already handled in pre-parse (sc_config_argv_init)
                 break;
             default:
                 // getopt prints the error message on stderr
