@@ -25,6 +25,8 @@ public final class ControlMessage {
     public static final int TYPE_OPEN_HARD_KEYBOARD_SETTINGS = 15;
     public static final int TYPE_START_APP = 16;
     public static final int TYPE_RESET_VIDEO = 17;
+    public static final int TYPE_MEDIA_STATE = 18;
+    public static final int TYPE_MEDIA_SEEK = 19;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -50,9 +52,15 @@ public final class ControlMessage {
     private long sequence;
     private int id;
     private byte[] data;
+<<<<<<< HEAD
     private boolean on;
     private int vendorId;
     private int productId;
+=======
+    private int mediaState;
+    private long mediaSeek;
+
+>>>>>>> 38b99700 (hook up device events)
 
     private ControlMessage() {
     }
@@ -159,10 +167,26 @@ public final class ControlMessage {
         return msg;
     }
 
+<<<<<<< HEAD
     public static ControlMessage createStartApp(String name) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_START_APP;
         msg.text = name;
+=======
+    public static ControlMessage createMediaState(int receiverId, byte state) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_MEDIA_STATE;
+        msg.id = receiverId;
+        msg.mediaState = state;
+        return msg;
+    }
+
+    public static ControlMessage createMediaSeek(int receiverId, long position) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_MEDIA_STATE;
+        msg.id = receiverId;
+        msg.mediaSeek = position;
+>>>>>>> 38b99700 (hook up device events)
         return msg;
     }
 
@@ -238,6 +262,7 @@ public final class ControlMessage {
         return data;
     }
 
+<<<<<<< HEAD
     public boolean getOn() {
         return on;
     }
@@ -248,5 +273,13 @@ public final class ControlMessage {
 
     public int getProductId() {
         return productId;
+=======
+    public long getMediaSeek() {
+        return mediaSeek;
+    }
+
+    public int getMediaState() {
+        return mediaState;
+>>>>>>> 38b99700 (hook up device events)
     }
 }
