@@ -52,8 +52,8 @@ public final class Size {
                 maxHeight = maxSize;
             }
         }
-        maxWidth = maxWidth / alignment * alignment;
-        maxHeight = maxHeight / alignment * alignment;
+        maxWidth = align(maxWidth, alignment);
+        maxHeight = align(maxHeight, alignment);
 
         int w, h;
         if (width > maxWidth || height > maxHeight) {
@@ -85,8 +85,8 @@ public final class Size {
     }
 
     public Size align(int alignment) {
-        int w = width / alignment * alignment;
-        int h = height / alignment * alignment;
+        int w = align(width, alignment);
+        int h = align(height, alignment);
         if (w == width && h == height) {
             return this;
         }
@@ -95,6 +95,10 @@ public final class Size {
 
     private static int round(int value, int alignment) {
         return (value + (alignment / 2)) / alignment * alignment;
+    }
+
+    private static int align(int value, int alignment) {
+        return value / alignment * alignment;
     }
 
     public Rect toRect() {
