@@ -13,6 +13,47 @@
 
 #include "util/log.h"
 
+// Copy a saved PNG file onto the system clipboard as an image so it can be
+// pasted directly into other apps.
+static void
+copy_png_to_clipboard(const char *filename) {
+#ifdef __APPLE__
+    // The AppleScript type code «class PNGf» contains the guillemets «»
+    // which are U+00AB / U+00BB — encoded as UTF-8 below.
+    char cmd[1024];
+    int ret = snprintf(cmd, sizeof(cmd),
+        "osascript -e 'set the clipboard to "
+        "(read (POSIX file \"%s\") as \xc2\xab""class PNGf\xc2\xbb)' "
+        ">/dev/null 2>&1 &",
+        filename);
+    if (ret <= 0 || (size_t) ret >= sizeof(cmd)) {
+        LOGW("Could not build clipboard command");
+        return;
+    }
+    int rc = system(cmd);
+    if (rc != 0) {
+        LOGW("Could not copy screenshot to clipboard (rc=%d)", rc);
+    } else {
+        LOGI("Screenshot copied to clipboard");
+    }
+#else
+    // On Linux try xclip, then wl-copy. Errors are non-fatal.
+    char cmd[1024];
+    int ret = snprintf(cmd, sizeof(cmd),
+        "(xclip -selection clipboard -t image/png -i \"%s\""
+        " || wl-copy --type image/png < \"%s\") >/dev/null 2>&1 &",
+        filename, filename);
+    if (ret <= 0 || (size_t) ret >= sizeof(cmd)) {
+        LOGW("Could not build clipboard command");
+        return;
+    }
+    int rc = system(cmd);
+    if (rc != 0) {
+        LOGW("Could not copy screenshot to clipboard (rc=%d)", rc);
+    }
+#endif
+}
+
 static bool
 generate_filename(char *buf, size_t size) {
     const char *home = getenv("HOME");
@@ -261,6 +302,7 @@ sc_screenshot_save(const AVFrame *frame, enum sc_orientation orientation) {
     bool ok = encode_png(final_frame, filename);
     if (ok) {
         LOGI("Screenshot saved to %s", filename);
+        copy_png_to_clipboard(filename);
     } else {
         LOGE("Failed to encode/save screenshot");
     }

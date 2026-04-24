@@ -64,7 +64,12 @@ sc_display_update_texture(struct sc_display *display, const AVFrame *frame);
 
 enum sc_display_result
 sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
-                  enum sc_orientation orientation);
+                  enum sc_orientation orientation,
+                  const SDL_Rect *toolbar_bg,
+                  const SDL_Rect *toolbar_button,
+                  const SDL_Rect *toolbar_logs_button,
+                  const SDL_Rect *toolbar_save_logs_button,
+                  const SDL_Rect *toolbar_save_all_logs_button);
 
 void
 sc_display_flash(struct sc_display *display);

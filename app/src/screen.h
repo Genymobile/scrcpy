@@ -60,6 +60,16 @@ struct sc_screen {
     enum sc_orientation orientation;
     // rectangle of the content (excluding black borders)
     struct SDL_Rect rect;
+    // toolbar strip above the content (drawable coords)
+    struct SDL_Rect toolbar_rect;
+    // screenshot button inside the toolbar (drawable coords)
+    struct SDL_Rect toolbar_button_rect;
+    // logs button inside the toolbar (drawable coords)
+    struct SDL_Rect toolbar_logs_button_rect;
+    // "save logs to file" button inside the toolbar (drawable coords)
+    struct SDL_Rect toolbar_save_logs_button_rect;
+    // "save full system logs (all buffers)" button (drawable coords)
+    struct SDL_Rect toolbar_save_all_logs_button_rect;
     bool has_frame;
     bool fullscreen;
     bool maximized;

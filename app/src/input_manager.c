@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <SDL2/SDL.h>
 
 #include "android/input.h"
@@ -367,6 +368,155 @@ inverse_point(struct sc_point point, struct sc_size size,
     return point;
 }
 
+// Returns the foreground app's package name, or an empty string if not found.
+// Caller must provide a buffer; output is NUL-terminated.
+static void
+get_foreground_package(char *pkg, size_t pkg_size) {
+    if (pkg_size == 0) {
+        return;
+    }
+    pkg[0] = '\0';
+    FILE *fp = popen(
+        "adb shell \"dumpsys activity activities"
+        " | grep mResumedActivity"
+        " | head -1"
+        " | sed 's|.* \\([^ ]*/\\).*|\\1|'"
+        " | sed 's|/||'\"", "r");
+    if (!fp) {
+        return;
+    }
+    if (fgets(pkg, pkg_size, fp)) {
+        size_t len = strlen(pkg);
+        while (len > 0 && (pkg[len-1] == '\n' || pkg[len-1] == '\r'
+                           || pkg[len-1] == ' ')) {
+            pkg[--len] = '\0';
+        }
+    }
+    pclose(fp);
+}
+
+// Dump the current logcat buffer (filtered to foreground app when possible)
+// to ~/Downloads/scrcpy_logs_YYYYMMDD-HHMMSS.txt.
+static void
+save_logcat_to_downloads(void) {
+    const char *home = getenv("HOME");
+    if (!home) {
+        home = ".";
+    }
+
+    time_t now = time(NULL);
+    struct tm *tm = localtime(&now);
+    if (!tm) {
+        LOGW("Could not resolve local time for log filename");
+        return;
+    }
+
+    char filename[512];
+    int n = snprintf(filename, sizeof(filename),
+                     "%s/Downloads/scrcpy_logs_%04d%02d%02d-%02d%02d%02d.txt",
+                     home,
+                     tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+                     tm->tm_hour, tm->tm_min, tm->tm_sec);
+    if (n <= 0 || (size_t) n >= sizeof(filename)) {
+        LOGW("Could not build log filename");
+        return;
+    }
+
+    char pkg[256];
+    get_foreground_package(pkg, sizeof(pkg));
+
+    char cmd[1024];
+    int rc;
+    if (pkg[0]) {
+        LOGI("Saving logcat for %s to %s", pkg, filename);
+        rc = snprintf(cmd, sizeof(cmd),
+                      "adb logcat -d --pid=$(adb shell pidof %s)"
+                      " > \"%s\" 2>&1 &",
+                      pkg, filename);
+    } else {
+        LOGI("Saving full logcat buffer to %s", filename);
+        rc = snprintf(cmd, sizeof(cmd),
+                      "adb logcat -d > \"%s\" 2>&1 &", filename);
+    }
+    if (rc <= 0 || (size_t) rc >= sizeof(cmd)) {
+        LOGW("Could not build logcat save command");
+        return;
+    }
+    system(cmd);
+}
+
+// Dump the full system log buffers (main+system+crash+events+radio...) to
+// ~/Downloads/scrcpy_syslogs_YYYYMMDD-HHMMSS.txt. Unfiltered, unlike
+// save_logcat_to_downloads() which is scoped to the foreground app's PID.
+static void
+save_full_system_logcat_to_downloads(void) {
+    const char *home = getenv("HOME");
+    if (!home) {
+        home = ".";
+    }
+
+    time_t now = time(NULL);
+    struct tm *tm = localtime(&now);
+    if (!tm) {
+        LOGW("Could not resolve local time for syslog filename");
+        return;
+    }
+
+    char filename[512];
+    int n = snprintf(filename, sizeof(filename),
+                     "%s/Downloads/scrcpy_syslogs_%04d%02d%02d-%02d%02d%02d.txt",
+                     home,
+                     tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+                     tm->tm_hour, tm->tm_min, tm->tm_sec);
+    if (n <= 0 || (size_t) n >= sizeof(filename)) {
+        LOGW("Could not build syslog filename");
+        return;
+    }
+
+    char cmd[1024];
+    int rc = snprintf(cmd, sizeof(cmd),
+                      "adb logcat -d -b all > \"%s\" 2>&1 &", filename);
+    if (rc <= 0 || (size_t) rc >= sizeof(cmd)) {
+        LOGW("Could not build full logcat save command");
+        return;
+    }
+    LOGI("Saving full system logcat (all buffers) to %s", filename);
+    system(cmd);
+}
+
+static void
+open_logcat_for_foreground_app(void) {
+    char pkg[256];
+    get_foreground_package(pkg, sizeof(pkg));
+
+    if (pkg[0]) {
+        LOGI("Opening logcat for foreground app: %s", pkg);
+        char cmd[1024];
+#ifdef __APPLE__
+        snprintf(cmd, sizeof(cmd),
+            "osascript -e 'tell application \"Terminal\" to do script "
+            "\"adb logcat --pid=$(adb shell pidof %s)\"' &", pkg);
+#else
+        snprintf(cmd, sizeof(cmd),
+            "x-terminal-emulator -e sh -c "
+            "\"adb logcat --pid=\\$(adb shell pidof %s)\" &"
+            " || xterm -e sh -c "
+            "\"adb logcat --pid=\\$(adb shell pidof %s)\" &",
+            pkg, pkg);
+#endif
+        system(cmd);
+    } else {
+        LOGI("Could not detect foreground app, opening unfiltered logcat");
+#ifdef __APPLE__
+        system("osascript -e 'tell application \"Terminal\" to do script "
+               "\"adb logcat\"' &");
+#else
+        system("x-terminal-emulator -e adb logcat &"
+               " || xterm -e adb logcat &");
+#endif
+    }
+}
+
 static void
 sc_input_manager_process_key(struct sc_input_manager *im,
                              const SDL_KeyboardEvent *event) {
@@ -402,52 +552,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
 
     // Ctrl+Shift+L: open logcat filtered to foreground app
     if (ctrl && shift && sdl_keycode == SDLK_l && !repeat && down) {
-        // Get the foreground app's package name from the device
-        FILE *fp = popen(
-            "adb shell \"dumpsys activity activities"
-            " | grep mResumedActivity"
-            " | head -1"
-            " | sed 's|.* \\([^ ]*/\\).*|\\1|'"
-            " | sed 's|/||'\"", "r");
-        char pkg[256] = {0};
-        if (fp) {
-            if (fgets(pkg, sizeof(pkg), fp)) {
-                // Strip trailing whitespace/newline
-                size_t len = strlen(pkg);
-                while (len > 0 && (pkg[len-1] == '\n' || pkg[len-1] == '\r'
-                                   || pkg[len-1] == ' ')) {
-                    pkg[--len] = '\0';
-                }
-            }
-            pclose(fp);
-        }
-
-        if (pkg[0]) {
-            LOGI("Opening logcat for foreground app: %s", pkg);
-            char cmd[1024];
-#ifdef __APPLE__
-            snprintf(cmd, sizeof(cmd),
-                "osascript -e 'tell application \"Terminal\" to do script "
-                "\"adb logcat --pid=$(adb shell pidof %s)\"' &", pkg);
-#else
-            snprintf(cmd, sizeof(cmd),
-                "x-terminal-emulator -e sh -c "
-                "\"adb logcat --pid=\\$(adb shell pidof %s)\" &"
-                " || xterm -e sh -c "
-                "\"adb logcat --pid=\\$(adb shell pidof %s)\" &",
-                pkg, pkg);
-#endif
-            system(cmd);
-        } else {
-            LOGI("Could not detect foreground app, opening unfiltered logcat");
-#ifdef __APPLE__
-            system("osascript -e 'tell application \"Terminal\" to do script "
-                   "\"adb logcat\"' &");
-#else
-            system("x-terminal-emulator -e adb logcat &"
-                   " || xterm -e adb logcat &");
-#endif
-        }
+        open_logcat_for_foreground_app();
         return;
     }
 
@@ -695,11 +800,30 @@ sc_input_manager_get_position(struct sc_input_manager *im, int32_t x,
     };
 }
 
+// Returns true if (window-space) point lands inside the toolbar strip.
+static bool
+sc_input_manager_in_toolbar(struct sc_input_manager *im, int32_t wx,
+                            int32_t wy) {
+    if (!im->screen->video) {
+        return false;
+    }
+    int32_t x = wx, y = wy;
+    sc_screen_hidpi_scale_coords(im->screen, &x, &y);
+    (void) x;
+    const SDL_Rect *tb = &im->screen->toolbar_rect;
+    return y < tb->y + tb->h;
+}
+
 static void
 sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
                                       const SDL_MouseMotionEvent *event) {
     if (event->which == SDL_TOUCH_MOUSEID) {
         // simulated from touch events, so it's a duplicate
+        return;
+    }
+
+    if (sc_input_manager_in_toolbar(im, event->x, event->y)) {
+        // Don't forward motion over the toolbar strip to the device
         return;
     }
 
@@ -790,6 +914,42 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     bool control = im->controller;
     bool paused = im->screen->paused;
     bool down = event->type == SDL_MOUSEBUTTONDOWN;
+
+    // Handle clicks on the toolbar strip (outside the mirrored content)
+    if (sc_input_manager_in_toolbar(im, event->x, event->y)) {
+        if (down && event->button == SDL_BUTTON_LEFT && im->screen->video) {
+            int32_t x = event->x, y = event->y;
+            sc_screen_hidpi_scale_coords(im->screen, &x, &y);
+            const SDL_Rect *btn = &im->screen->toolbar_button_rect;
+            const SDL_Rect *logs = &im->screen->toolbar_logs_button_rect;
+            const SDL_Rect *save = &im->screen->toolbar_save_logs_button_rect;
+            const SDL_Rect *save_all =
+                &im->screen->toolbar_save_all_logs_button_rect;
+            if (x >= btn->x && x < btn->x + btn->w
+                    && y >= btn->y && y < btn->y + btn->h) {
+                LOGD("Screenshot toolbar button clicked");
+                bool ok = sc_screenshot_save(im->screen->frame,
+                                             im->screen->orientation);
+                if (ok) {
+                    sc_display_flash(&im->screen->display);
+                }
+            } else if (x >= logs->x && x < logs->x + logs->w
+                    && y >= logs->y && y < logs->y + logs->h) {
+                LOGD("Logs toolbar button clicked");
+                open_logcat_for_foreground_app();
+            } else if (x >= save->x && x < save->x + save->w
+                    && y >= save->y && y < save->y + save->h) {
+                LOGD("Save-logs toolbar button clicked");
+                save_logcat_to_downloads();
+            } else if (x >= save_all->x && x < save_all->x + save_all->w
+                    && y >= save_all->y && y < save_all->y + save_all->h) {
+                LOGD("Save-all-logs toolbar button clicked");
+                save_full_system_logcat_to_downloads();
+            }
+        }
+        // Swallow all mouse button events in the toolbar region
+        return;
+    }
 
     enum sc_mouse_button button = sc_mouse_button_from_sdl(event->button);
     if (button == SC_MOUSE_BUTTON_UNKNOWN) {
