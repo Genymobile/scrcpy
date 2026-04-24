@@ -59,14 +59,14 @@ public final class Size {
         if (width > maxWidth || height > maxHeight) {
             if (width * maxHeight > height * maxWidth) {
                 w = maxWidth;
-                h = round(height * maxWidth / width, alignment);
+                h = align(height * maxWidth / width, alignment);
             } else {
-                w = round(width * maxHeight / height, alignment);
+                w = align(width * maxHeight / height, alignment);
                 h = maxHeight;
             }
         } else {
-            w = round(width, alignment);
-            h = round(height, alignment);
+            w = align(width, alignment);
+            h = align(height, alignment);
         }
 
         assert w <= maxWidth : "The width cannot exceed maxWidth";
@@ -91,10 +91,6 @@ public final class Size {
             return this;
         }
         return new Size(w, h);
-    }
-
-    private static int round(int value, int alignment) {
-        return (value + (alignment / 2)) / alignment * alignment;
     }
 
     private static int align(int value, int alignment) {
