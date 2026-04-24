@@ -105,6 +105,7 @@ enum {
     OPT_CAMERA_ZOOM,
     OPT_MIN_SIZE_ALIGNMENT,
     OPT_NO_WINDOW_ASPECT_RATIO_LOCK,
+    OPT_RENDER_FIT,
 };
 
 struct sc_option {
@@ -778,6 +779,24 @@ static const struct sc_option options[] = {
                 "<https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER>",
     },
     {
+        .longopt_id = OPT_RENDER_FIT,
+        .longopt = "render-fit",
+        .argdesc = "mode",
+        .text = "Set the render-fit mode to configure how the rendering fits "
+                "the window.\n"
+                "Possible values are \"letterbox\", \"stretched\" and "
+                "\"disabled\".\n"
+                "\"letterbox\": preserve the aspect ratio and fit the window "
+                "as best as possible (black bars are added either at the top "
+                "and bottom or at the sides if needed).\n"
+                "\"stretched\": fit the window without preserving the aspect "
+                "ratio.\n"
+                "\"disabled\": render the display at the top-left corner, "
+                "without scaling.\n"
+                "Default is \"letterbox\", unless --flex-display is set, in "
+                "which case it is \"disabled\".",
+    },
+    {
         .longopt_id = OPT_REQUIRE_AUDIO,
         .longopt = "require-audio",
         .text = "By default, scrcpy mirrors only the video when audio capture "
@@ -999,6 +1018,11 @@ static const struct sc_option options[] = {
         .argdesc = "value",
         .text = "Set the initial window height.\n"
                 "Default is 0 (automatic).",
+    },
+    {
+        .shortopt = 'x',
+        .longopt = "flex-display",
+        .text = "Continuously resize the virtual display to match the window.",
     },
 };
 
@@ -2327,6 +2351,28 @@ parse_mouse_bindings(const char *s, struct sc_mouse_bindings *mb) {
 }
 
 static bool
+parse_render_fit(const char *optarg, enum sc_render_fit *mode) {
+    if (!strcmp(optarg, "letterbox")) {
+        *mode = SC_RENDER_FIT_LETTERBOX;
+        return true;
+    }
+
+    if (!strcmp(optarg, "stretched")) {
+        *mode = SC_RENDER_FIT_STRETCHED;
+        return true;
+    }
+
+    if (!strcmp(optarg, "disabled")) {
+        *mode = SC_RENDER_FIT_DISABLED;
+        return true;
+    }
+
+    LOGE("Unsupported render-fit: %s (expected letterbox, stretched or "
+         "disabled)", optarg);
+    return false;
+}
+
+static bool
 parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                        const char *optstring, const struct option *longopts) {
     struct scrcpy_options *opts = &args->opts;
@@ -2759,6 +2805,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_WINDOW_ASPECT_RATIO_LOCK:
                 opts->window_aspect_ratio_lock = false;
                 break;
+            case OPT_RENDER_FIT:
+                if (!parse_render_fit(optarg, &opts->render_fit)) {
+                    return false;
+                }
+                break;
+            case 'x':
+                opts->flex_display = true;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2938,6 +2992,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
+    if (opts->render_fit == SC_RENDER_FIT_AUTO) {
+        opts->render_fit = opts->flex_display ? SC_RENDER_FIT_DISABLED
+                                              : SC_RENDER_FIT_LETTERBOX;
+    }
+
     if (otg) {
         if (!opts->control) {
             LOGE("--no-control is not allowed in OTG mode");
@@ -3055,6 +3114,28 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     if (opts->display_id != 0 && opts->new_display) {
         LOGE("Cannot specify both --display-id and --new-display");
         return false;
+    }
+
+    if (opts->flex_display) {
+        if (opts->video_source != SC_VIDEO_SOURCE_DISPLAY
+                || !opts->new_display) {
+            LOGE("-x/--flex-display can only be applied to displays created "
+                 "with --new-display");
+            return false;
+        }
+
+        if (opts->max_size) {
+            LOGE("--max-size is not compatible with -x/--flex-display");
+            return false;
+        }
+
+        if (opts->crop) {
+            LOGE("--crop is not compatible with -x/--flex-display");
+            return false;
+        }
+
+        // Force free resizing
+        opts->window_aspect_ratio_lock = false;
     }
 
     if (opts->display_ime_policy != SC_DISPLAY_IME_POLICY_UNDEFINED

@@ -43,7 +43,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     private Thread thread;
     private final AtomicBoolean stopped = new AtomicBoolean();
 
-    private final CaptureReset reset = new CaptureReset();
+    private final CaptureControl captureControl = new CaptureControl();
 
     public SurfaceEncoder(SurfaceCapture capture, Streamer streamer, Options options) {
         this.capture = capture;
@@ -89,7 +89,7 @@ public class SurfaceEncoder implements AsyncProcessor {
         assert caps != null; // caps cannot be null for a video codec
         VideoConstraints constraints = createVideoConstraints(maxSize, minSizeAlignment, caps);
 
-        capture.init(reset, constraints);
+        capture.init(captureControl, constraints);
 
         try {
             boolean alive;
@@ -97,7 +97,10 @@ public class SurfaceEncoder implements AsyncProcessor {
             streamer.writeVideoHeader();
 
             do {
-                reset.consumeReset(); // If a capture reset was requested, it is implicitly fulfilled
+                int resetReasons = captureControl.consumeReset();
+                if ((resetReasons & CaptureControl.RESET_REASON_TERMINATED) != 0) {
+                    break;
+                }
                 capture.prepare();
                 Size size = capture.getSize();
 
@@ -118,22 +121,26 @@ public class SurfaceEncoder implements AsyncProcessor {
                     mediaCodecStarted = true;
 
                     // Set the MediaCodec instance to "interrupt" (by signaling an EOS) on reset
-                    reset.setRunningMediaCodec(mediaCodec);
+                    captureControl.setRunningMediaCodec(mediaCodec);
 
                     if (stopped.get()) {
                         alive = false;
                     } else {
-                        boolean resetRequested = reset.consumeReset();
-                        if (!resetRequested) {
+                        if (!captureControl.isResetRequested()) {
+                            // The reset is due to a resize initiated by the client
+                            boolean isClientResize = (resetReasons & CaptureControl.RESET_REASON_CLIENT_RESIZED) != 0
+                                    && (resetReasons & CaptureControl.RESET_REASON_DISPLAY_PROPERTIES_CHANGED) == 0;
+                            streamer.writeSessionMeta(size.getWidth(), size.getHeight(), isClientResize);
+
                             // If a reset is requested during encode(), it will interrupt the encoding by an EOS
-                            streamer.writeSessionMeta(size.getWidth(), size.getHeight());
                             encode(mediaCodec, streamer);
                         }
+
                         // The capture might have been closed internally (for example if the camera is disconnected)
                         alive = !stopped.get() && !capture.isClosed();
                     }
                 } finally {
-                    reset.setRunningMediaCodec(null);
+                    captureControl.setRunningMediaCodec(null);
                     if (captureStarted) {
                         capture.stop();
                     }
@@ -275,7 +282,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     public void stop() {
         if (thread != null) {
             stopped.set(true);
-            reset.reset();
+            captureControl.reset(CaptureControl.RESET_REASON_TERMINATED);
         }
     }
 

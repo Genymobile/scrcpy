@@ -220,6 +220,13 @@ enum sc_shortcut_mod {
     SC_SHORTCUT_MOD_RSUPER = 1 << 5,
 };
 
+enum sc_render_fit {
+    SC_RENDER_FIT_AUTO,
+    SC_RENDER_FIT_LETTERBOX,
+    SC_RENDER_FIT_STRETCHED,
+    SC_RENDER_FIT_DISABLED,
+};
+
 struct sc_port_range {
     uint16_t first;
     uint16_t last;
@@ -269,6 +276,7 @@ struct scrcpy_options {
     enum sc_orientation display_orientation;
     enum sc_orientation record_orientation;
     enum sc_display_ime_policy display_ime_policy;
+    enum sc_render_fit render_fit;
     int16_t window_x; // SC_WINDOW_POSITION_UNDEFINED for "auto"
     int16_t window_y; // SC_WINDOW_POSITION_UNDEFINED for "auto"
     uint16_t window_width;
@@ -330,6 +338,7 @@ struct scrcpy_options {
     bool vd_destroy_content;
     bool vd_system_decorations;
     bool camera_torch;
+    bool flex_display;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;
