@@ -73,13 +73,16 @@ public final class Size {
         assert h <= maxHeight : "The height cannot exceed maxHeight";
 
         // Minimum codec size must be respected (regardless of requested maxSize)
-        int minCodecSize = constraints.getMinCodecSize();
+        int minCodecSize = alignUp(constraints.getMinCodecSize(), alignment);
         if (w < minCodecSize) {
             w = minCodecSize;
         }
         if (h < minCodecSize) {
             h = minCodecSize;
         }
+
+        assert w % alignment == 0 : "The width must be a multiple of alignment";
+        assert h % alignment == 0 : "The height must be a multiple of alignment";
 
         return new Size(w, h);
     }
@@ -95,6 +98,10 @@ public final class Size {
 
     private static int align(int value, int alignment) {
         return value / alignment * alignment;
+    }
+
+    private static int alignUp(int value, int alignment) {
+        return (value + alignment - 1) / alignment * alignment;
     }
 
     public Rect toRect() {
