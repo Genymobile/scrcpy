@@ -423,6 +423,9 @@ execute_server(struct sc_server *server,
     if (!params->vd_system_decorations) {
         ADD_PARAM("vd_system_decorations=false");
     }
+    if (params->keep_active) {
+        ADD_PARAM("keep_active=true");
+    }
     if (params->list & SC_OPTION_LIST_ENCODERS) {
         ADD_PARAM("list_encoders=true");
     }

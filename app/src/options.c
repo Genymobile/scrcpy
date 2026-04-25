@@ -116,6 +116,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .vd_destroy_content = true,
     .vd_system_decorations = true,
     .camera_torch = false,
+    .keep_active = false,
 };
 
 enum sc_orientation

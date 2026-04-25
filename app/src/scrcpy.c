@@ -465,6 +465,7 @@ scrcpy(struct scrcpy_options *options) {
         .camera_zoom = options->camera_zoom,
         .vd_destroy_content = options->vd_destroy_content,
         .vd_system_decorations = options->vd_system_decorations,
+        .keep_active = options->keep_active,
         .list = options->list,
     };
 

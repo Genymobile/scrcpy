@@ -105,6 +105,7 @@ enum {
     OPT_CAMERA_ZOOM,
     OPT_MIN_SIZE_ALIGNMENT,
     OPT_NO_WINDOW_ASPECT_RATIO_LOCK,
+    OPT_KEEP_ACTIVE,
 };
 
 struct sc_option {
@@ -419,6 +420,11 @@ static const struct sc_option options[] = {
     {
         .shortopt = 'K',
         .text = "Same as --keyboard=uhid, or --keyboard=aoa if --otg is set.",
+    },
+    {
+        .longopt_id = OPT_KEEP_ACTIVE,
+        .longopt = "keep-active",
+        .text = "Keep the screen on by simulating user activity.",
     },
     {
         .longopt_id = OPT_KEYBOARD,
@@ -2759,6 +2765,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_WINDOW_ASPECT_RATIO_LOCK:
                 opts->window_aspect_ratio_lock = false;
                 break;
+            case OPT_KEEP_ACTIVE:
+                opts->keep_active = true;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -3197,6 +3206,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
         if (opts->start_app) {
             LOGE("Cannot start an Android app if control is disabled");
+            return false;
+        }
+        if (opts->keep_active) {
+            LOGE("Cannot keep device active if control is disabled");
             return false;
         }
     }

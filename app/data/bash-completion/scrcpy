@@ -34,6 +34,7 @@ _scrcpy() {
         --gamepad=
         -h --help
         -K
+        --keep-active
         --keyboard=
         --kill-adb-on-close
         --legacy-paste

@@ -330,6 +330,7 @@ struct scrcpy_options {
     bool vd_destroy_content;
     bool vd_system_decorations;
     bool camera_torch;
+    bool keep_active;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

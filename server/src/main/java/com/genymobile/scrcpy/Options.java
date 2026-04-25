@@ -67,6 +67,8 @@ public class Options {
     private boolean vdDestroyContent = true;
     private boolean vdSystemDecorations = true;
 
+    private boolean keepActive;
+
     private Orientation.Lock captureOrientationLock = Orientation.Lock.Unlocked;
     private Orientation captureOrientation = Orientation.Orient0;
 
@@ -256,6 +258,10 @@ public class Options {
 
     public boolean getVDSystemDecorations() {
         return vdSystemDecorations;
+    }
+
+    public boolean getKeepActive() {
+        return keepActive;
     }
 
     public boolean getList() {
@@ -513,6 +519,9 @@ public class Options {
                     break;
                 case "display_ime_policy":
                     options.displayImePolicy = parseDisplayImePolicy(value);
+                    break;
+                case "keep_active":
+                    options.keepActive = Boolean.parseBoolean(value);
                     break;
                 case "send_device_meta":
                     options.sendDeviceMeta = Boolean.parseBoolean(value);

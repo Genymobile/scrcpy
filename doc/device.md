@@ -3,6 +3,17 @@
 Some command line arguments perform actions on the device itself while scrcpy is
 running.
 
+
+## Keep active
+
+To prevent the device from turning off due to inactivity, `--keep-active`
+periodically signals user activity to the system:
+
+```bash
+scrcpy --keep-active
+```
+
+
 ## Stay awake
 
 To prevent the device from sleeping after a delay **when the device is plugged

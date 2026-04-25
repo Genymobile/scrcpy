@@ -70,10 +70,14 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     // control_msg.h values of the pointerId field in inject_touch_event message
     private static final int POINTER_ID_MOUSE = -1;
 
+    // Interval between simulated user activity events
+    private static final long KEEP_ACTIVE_INTERVAL_MS = 4000;
+
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
     private ExecutorService startAppExecutor;
 
     private Thread thread;
+    private Thread keepActiveThread;
 
     private UhidManager uhidManager;
 
@@ -85,6 +89,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private final DeviceMessageSender sender;
     private final boolean clipboardAutosync;
     private final boolean powerOn;
+    private final boolean keepActive;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
@@ -115,6 +120,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             this.sender = null;
             this.clipboardAutosync = false;
             this.powerOn = false;
+            this.keepActive = false;
             return;
         }
 
@@ -122,6 +128,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         this.clipboardAutosync = options.getClipboardAutosync();
         this.powerOn = options.getPowerOn();
+        this.keepActive = options.getKeepActive();
         initPointers();
         sender = new DeviceMessageSender(controlChannel);
 
@@ -236,8 +243,35 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         }
     }
 
+    private void startKeepActiveThread() {
+        keepActiveThread = new Thread(() -> {
+            try {
+                while (true) {
+                    Thread.sleep(KEEP_ACTIVE_INTERVAL_MS);
+                    int actionDisplayId = getActionDisplayId();
+                    if (actionDisplayId != Device.DISPLAY_ID_NONE) {
+                        Device.keepActive(actionDisplayId);
+                    }
+                }
+            } catch (InterruptedException e) {
+                // ignore
+            } catch (Throwable e) {
+                Ln.e("Keep active error", e);
+            } finally {
+                Ln.d("Keep active thread stopped");
+            }
+        });
+        keepActiveThread.setName("keep-active");
+        keepActiveThread.setDaemon(true);
+        keepActiveThread.start();
+    }
+
     @Override
     public void start(TerminationListener listener) {
+        if (keepActive) {
+            startKeepActiveThread();
+        }
+
         thread = new Thread(() -> {
             try {
                 control();
@@ -259,6 +293,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     @Override
     public void stop() {
+        if (keepActiveThread != null) {
+            keepActiveThread.interrupt();
+        }
         if (thread != null) {
             thread.interrupt();
         }
