@@ -20,6 +20,7 @@ import com.genymobile.scrcpy.video.VideoSource;
 import com.genymobile.scrcpy.video.VirtualDisplayListener;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.InputManager;
+import com.genymobile.scrcpy.wrappers.PowerManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.content.Intent;
@@ -240,6 +241,17 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     @Override
     public void start(TerminationListener listener) {
+        Thread t = new Thread(() -> {
+            PowerManager pm = ServiceManager.getPowerManager();
+            while (true) {
+                SystemClock.sleep(4000);
+                pm.userActivity(getActionDisplayId());
+            }
+        });
+        t.setName("keep-presence");
+        t.setDaemon(true);
+        t.start();
+
         thread = new Thread(() -> {
             try {
                 control();
