@@ -52,28 +52,28 @@ public final class Size {
                 maxHeight = maxSize;
             }
         }
-        maxWidth = maxWidth / alignment * alignment;
-        maxHeight = maxHeight / alignment * alignment;
+        maxWidth = align(maxWidth, alignment);
+        maxHeight = align(maxHeight, alignment);
 
         int w, h;
         if (width > maxWidth || height > maxHeight) {
             if (width * maxHeight > height * maxWidth) {
                 w = maxWidth;
-                h = round(height * maxWidth / width, alignment);
+                h = align(height * maxWidth / width, alignment);
             } else {
-                w = round(width * maxHeight / height, alignment);
+                w = align(width * maxHeight / height, alignment);
                 h = maxHeight;
             }
         } else {
-            w = round(width, alignment);
-            h = round(height, alignment);
+            w = align(width, alignment);
+            h = align(height, alignment);
         }
 
         assert w <= maxWidth : "The width cannot exceed maxWidth";
         assert h <= maxHeight : "The height cannot exceed maxHeight";
 
         // Minimum codec size must be respected (regardless of requested maxSize)
-        int minCodecSize = constraints.getMinCodecSize();
+        int minCodecSize = alignUp(constraints.getMinCodecSize(), alignment);
         if (w < minCodecSize) {
             w = minCodecSize;
         }
@@ -81,20 +81,27 @@ public final class Size {
             h = minCodecSize;
         }
 
+        assert w % alignment == 0 : "The width must be a multiple of alignment";
+        assert h % alignment == 0 : "The height must be a multiple of alignment";
+
         return new Size(w, h);
     }
 
     public Size align(int alignment) {
-        int w = width / alignment * alignment;
-        int h = height / alignment * alignment;
+        int w = align(width, alignment);
+        int h = align(height, alignment);
         if (w == width && h == height) {
             return this;
         }
         return new Size(w, h);
     }
 
-    private static int round(int value, int alignment) {
-        return (value + (alignment / 2)) / alignment * alignment;
+    private static int align(int value, int alignment) {
+        return value / alignment * alignment;
+    }
+
+    private static int alignUp(int value, int alignment) {
+        return (value + alignment - 1) / alignment * alignment;
     }
 
     public Rect toRect() {

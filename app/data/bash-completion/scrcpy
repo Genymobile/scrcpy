@@ -80,6 +80,7 @@ _scrcpy() {
         --record-format=
         --record-orientation=
         --render-driver=
+        --render-fit=
         --require-audio
         -s --serial=
         -S --turn-screen-off
@@ -107,7 +108,8 @@ _scrcpy() {
         --window-x=
         --window-y=
         --window-width=
-        --window-height="
+        --window-height=
+        -x --flex-display"
 
     _init_completion -s || return
 
@@ -174,6 +176,10 @@ _scrcpy() {
             ;;
         --render-driver)
             COMPREPLY=($(compgen -W 'direct3d opengl opengles2 opengles metal software' -- "$cur"))
+            return
+            ;;
+        --render-fit)
+            COMPREPLY=($(compgen -W 'letterbox stretched disabled' -- "$cur"))
             return
             ;;
         --shortcut-mod)

@@ -13,11 +13,14 @@ import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
 import com.genymobile.scrcpy.video.CameraCapture;
+import com.genymobile.scrcpy.video.CaptureControl;
+import com.genymobile.scrcpy.video.NewDisplayCapture;
 import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.VideoSource;
 import com.genymobile.scrcpy.video.VirtualDisplayListener;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.InputManager;
+import com.genymobile.scrcpy.wrappers.PowerManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.content.Intent;
@@ -238,6 +241,17 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     @Override
     public void start(TerminationListener listener) {
+        Thread t = new Thread(() -> {
+            PowerManager pm = ServiceManager.getPowerManager();
+            while (true) {
+                SystemClock.sleep(4000);
+                pm.userActivity(getActionDisplayId());
+            }
+        });
+        t.setName("keep-presence");
+        t.setDaemon(true);
+        t.start();
+
         thread = new Thread(() -> {
             try {
                 control();
@@ -368,6 +382,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     return true;
                 case ControlMessage.TYPE_START_APP:
                     startAppAsync(msg.getText());
+                    return true;
+                case ControlMessage.TYPE_RESIZE_DISPLAY:
+                    resizeDisplay(msg.getWidth(), msg.getHeight());
                     return true;
                 default:
                     // fall through
@@ -609,7 +626,17 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     private boolean pressBackOrTurnScreenOn(int action) {
-        if (displayId == Device.DISPLAY_ID_NONE || Device.isScreenOn(displayId)) {
+        boolean injectBack;
+        // Device.isScreenOn(displayId) ignores the displayId below Android 14
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14) {
+            // Inject BACK if the screen is on for the current virtual display id
+            int actionDisplayId = getActionDisplayId();
+            injectBack = actionDisplayId == Device.DISPLAY_ID_NONE || Device.isScreenOn(actionDisplayId);
+        } else {
+            // Inject BACK if the display is not the main display, or if the main display is on
+            injectBack = displayId != 0 || Device.isScreenOn(0);
+        }
+        if (injectBack) {
             return injectKeyEvent(action, KeyEvent.KEYCODE_BACK, 0, 0, Device.INJECT_MODE_ASYNC);
         }
 
@@ -815,7 +842,12 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private void resetVideo() {
         if (surfaceCapture != null) {
             Ln.i("Video capture reset");
-            surfaceCapture.invalidate();
+            surfaceCapture.getCaptureControl().reset(CaptureControl.RESET_REASON_CLIENT_RESET);
         }
+    }
+
+    private void resizeDisplay(int width, int height) {
+        NewDisplayCapture newDisplayCapture = (NewDisplayCapture) surfaceCapture;
+        newDisplayCapture.requestResize(width, height);
     }
 }

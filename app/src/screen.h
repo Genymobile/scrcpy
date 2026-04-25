@@ -22,6 +22,7 @@
 #include "trait/key_processor.h"
 #include "trait/frame_sink.h"
 #include "trait/mouse_processor.h"
+#include "util/thread.h"
 
 #ifdef __APPLE__
 # define SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
@@ -37,12 +38,19 @@ struct sc_screen {
     bool video;
     bool camera;
     bool window_aspect_ratio_lock;
+    bool flex_display;
+
+    struct sc_controller *controller;
 
     struct sc_texture tex;
     struct sc_input_manager im;
     struct sc_mouse_capture mc; // only used in mouse relative mode
-    struct sc_frame_buffer fb;
     struct sc_fps_counter fps_counter;
+
+    struct sc_mutex mutex;
+    struct sc_frame_buffer fb; // protected by mutex
+    // When true, a frame size change must not cause the window to be resized
+    bool prevent_auto_resize; // protected by mutex
 
     // The initial requested window properties
     struct {
@@ -60,6 +68,8 @@ struct sc_screen {
     SDL_GLContext gl_context;
 #endif
 
+    enum sc_render_fit render_fit;
+
     struct sc_size frame_size;
     struct sc_size content_size; // rotated frame_size
 
@@ -74,6 +84,9 @@ struct sc_screen {
     struct SDL_FRect rect;
     bool window_shown;
 
+    // only accessed from the thread calling sc_frame_sink_ops functions
+    struct sc_stream_session current_session;
+
     AVFrame *frame;
 
     bool paused;
@@ -87,6 +100,7 @@ struct sc_screen {
 struct sc_screen_params {
     bool video;
     bool camera;
+    bool flex_display;
 
     struct sc_controller *controller;
     struct sc_file_pusher *fp;
@@ -110,6 +124,7 @@ struct sc_screen_params {
     bool window_aspect_ratio_lock;
     bool window_borderless;
 
+    enum sc_render_fit render_fit;
     enum sc_orientation orientation;
     bool mipmaps;
 

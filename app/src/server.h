@@ -72,6 +72,7 @@ struct sc_server_params {
     bool camera_torch;
     bool vd_destroy_content;
     bool vd_system_decorations;
+    bool flex_display;
     uint8_t list;
 };
 
