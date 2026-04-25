@@ -88,6 +88,11 @@ public final class Device {
         return ServiceManager.getPowerManager().isScreenOn(displayId);
     }
 
+    public static void keepActive(int displayId) {
+        assert displayId != DISPLAY_ID_NONE;
+        ServiceManager.getPowerManager().userActivity(displayId);
+    }
+
     public static void expandNotificationPanel() {
         ServiceManager.getStatusBarManager().expandNotificationsPanel();
     }

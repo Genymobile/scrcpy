@@ -20,6 +20,7 @@ import com.genymobile.scrcpy.video.VideoSource;
 import com.genymobile.scrcpy.video.VirtualDisplayListener;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.InputManager;
+import com.genymobile.scrcpy.wrappers.PowerManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.content.Intent;
@@ -240,6 +241,25 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     @Override
     public void start(TerminationListener listener) {
+        Thread t = new Thread(() -> {
+            try {
+                while (true) {
+                    Thread.sleep(4000);
+                    int actionDisplayId = getActionDisplayId();
+                    if (actionDisplayId != Device.DISPLAY_ID_NONE) {
+                        Device.keepActive(actionDisplayId);
+                    }
+                }
+            } catch (InterruptedException e) {
+                // ignore
+            } catch (Throwable e) {
+                Ln.e("Keep active error", e);
+            }
+        });
+        t.setName("keep-active");
+        t.setDaemon(true);
+        t.start();
+
         thread = new Thread(() -> {
             try {
                 control();
