@@ -609,7 +609,17 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     private boolean pressBackOrTurnScreenOn(int action) {
-        if (displayId == Device.DISPLAY_ID_NONE || Device.isScreenOn(displayId)) {
+        boolean injectBack;
+        // Device.isScreenOn(displayId) ignores the displayId below Android 14
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14) {
+            // Inject BACK if the screen is on for the current virtual display id
+            int actionDisplayId = getActionDisplayId();
+            injectBack = actionDisplayId == Device.DISPLAY_ID_NONE || Device.isScreenOn(actionDisplayId);
+        } else {
+            // Inject BACK if the display is not the main display, or if the main display is on
+            injectBack = displayId != 0 || Device.isScreenOn(0);
+        }
+        if (injectBack) {
             return injectKeyEvent(action, KeyEvent.KEYCODE_BACK, 0, 0, Device.INJECT_MODE_ASYNC);
         }
 
