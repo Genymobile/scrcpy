@@ -54,6 +54,8 @@ convert_keycode(enum sc_keycode from, enum android_keycode *to, uint16_t mod,
         {SC_KEYCODE_RALT,      AKEYCODE_ALT_RIGHT},
         {SC_KEYCODE_LGUI,      AKEYCODE_META_LEFT},
         {SC_KEYCODE_RGUI,      AKEYCODE_META_RIGHT},
+        {SC_KEYCODE_LANG1,     AKEYCODE_LANGUAGE_SWITCH},
+        {SC_KEYCODE_LANG2,     AKEYCODE_SWITCH_CHARSET},
     };
 
     // Numpad navigation keys.

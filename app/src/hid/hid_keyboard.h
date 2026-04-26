@@ -13,7 +13,8 @@
 // Maybe SDL_Keycode is used by most people, but SDL_Scancode is taken from USB
 // HID protocol.
 // 0x65 is Application, typically AT-101 Keyboard ends here.
-#define SC_HID_KEYBOARD_KEYS 0x66
+// 0x90 is LANG1, 0x91 is LANG2. We set it to 0xA5 (165) to cover more keys.
+#define SC_HID_KEYBOARD_KEYS 0xA5
 
 #define SC_HID_ID_KEYBOARD 1
 
