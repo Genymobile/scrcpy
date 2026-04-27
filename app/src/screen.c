@@ -158,16 +158,27 @@ sc_screen_is_relative_mode(struct sc_screen *screen) {
 
 static void
 compute_content_rect(struct sc_size render_size, struct sc_size content_size,
-                     bool is_icon, SDL_FRect *rect) {
-    if (is_icon && content_size.width <= render_size.width
+                     bool is_icon, enum sc_render_fit render_fit,
+                     SDL_FRect *rect) {
+    if (is_icon) {
+        if (content_size.width <= render_size.width
                 && content_size.height <= render_size.height) {
-        // Center without upscaling
-        rect->x = (render_size.width - content_size.width) / 2.f;
-        rect->y = (render_size.height - content_size.height) / 2.f;
+            // Center without upscaling
+            rect->x = (render_size.width - content_size.width) / 2.f;
+            rect->y = (render_size.height - content_size.height) / 2.f;
+            rect->w = content_size.width;
+            rect->h = content_size.height;
+            return;
+        }
+    } else if (render_fit == SC_RENDER_FIT_DISABLED) {
+        rect->x = 0;
+        rect->y = 0;
         rect->w = content_size.width;
         rect->h = content_size.height;
         return;
     }
+
+    assert(is_icon || render_fit == SC_RENDER_FIT_LETTERBOX);
 
     if (is_optimal_size(render_size, content_size)) {
         rect->x = 0;
@@ -202,7 +213,7 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
     struct sc_size render_size =
         sc_sdl_get_render_output_size(screen->renderer);
     compute_content_rect(render_size, screen->content_size, is_icon,
-                         &screen->rect);
+                         screen->render_fit, &screen->rect);
 }
 
 // render the texture to the renderer
@@ -406,6 +417,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->video = params->video;
     screen->camera = params->camera;
     screen->window_aspect_ratio_lock = params->window_aspect_ratio_lock;
+    screen->render_fit = params->render_fit;
 
     screen->req.x = params->window_x;
     screen->req.y = params->window_y;
