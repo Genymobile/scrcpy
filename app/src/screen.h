@@ -101,6 +101,12 @@ struct sc_screen {
     bool disconnected;
     bool disconnect_started;
     struct sc_disconnect disconnect;
+
+    // Track resize requests caused by frame-size changes
+    struct sc_resize_tracker {
+        sc_tick time; // 0 means none
+        struct sc_size size;
+    } resize_tracker;
 };
 
 struct sc_screen_params {
