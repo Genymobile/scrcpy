@@ -201,6 +201,8 @@ datadir = get_option('datadir') # by default 'share'
 install_man('scrcpy.1')
 install_data('data/scrcpy.png',
              install_dir: datadir / 'icons/hicolor/256x256/apps')
+install_data('data/disconnected.png',
+             install_dir: datadir / 'icons/hicolor/256x256/apps')
 install_data('data/zsh-completion/_scrcpy',
              install_dir: datadir / 'zsh/site-functions')
 install_data('data/bash-completion/scrcpy',
