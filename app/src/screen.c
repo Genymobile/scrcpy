@@ -150,6 +150,13 @@ get_initial_optimal_size(struct sc_size content_size, uint16_t req_width,
     return window_size;
 }
 
+static inline void
+sc_screen_track_resize(struct sc_screen *screen, struct sc_size size) {
+    LOGV("Track resize: %" PRIu16 "x%" PRIu16, size.width, size.height);
+    screen->resize_tracker.time = sc_tick_now();
+    screen->resize_tracker.size = size;
+}
+
 static inline bool
 sc_screen_is_relative_mode(struct sc_screen *screen) {
     // screen->im.mp may be NULL if --no-control
@@ -311,7 +318,20 @@ sc_screen_on_resize(struct sc_screen *screen, const SDL_WindowEvent *event) {
             assert(!(event->data2 & ~0xFFFF));
             uint16_t width = event->data1;
             uint16_t height = event->data2;
-            sc_screen_request_resize_display(screen, width, height);
+
+            sc_tick last_req = screen->resize_tracker.time;
+            if (last_req
+                    && screen->resize_tracker.size.width == width
+                    && screen->resize_tracker.size.height == height
+                    && sc_tick_now() < last_req + SC_TICK_FROM_MS(3000)) {
+                // This resize event is the result of a previous (recent) resize
+                // request triggered by a change in the frame's dimensions.
+                LOGV("Ignore local resize: %" PRIu16 "x%" PRIu16,
+                     width, height);
+                screen->resize_tracker.time = 0;
+            } else {
+                sc_screen_request_resize_display(screen, width, height);
+            }
         }
     }
 }
@@ -453,6 +473,10 @@ sc_screen_init(struct sc_screen *screen,
     screen->req.start_fps_counter = params->start_fps_counter;
 
     screen->prevent_auto_resize = false;
+
+    screen->resize_tracker.time = 0;
+    screen->resize_tracker.size.width = 0;
+    screen->resize_tracker.size.height = 0;
 
     bool ok = sc_mutex_init(&screen->mutex);
     if (!ok) {
@@ -685,6 +709,12 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
         get_initial_optimal_size(screen->content_size, screen->req.width,
                                                        screen->req.height);
 
+    if (screen->flex_display) {
+        // Avoid sending an unnecessary initial "resize display" request to the
+        // server if the size has not changed.
+        sc_screen_track_resize(screen, window_size);
+    }
+
     assert(is_windowed(screen));
     set_aspect_ratio(screen, screen->content_size);
     sc_sdl_set_window_size(screen->window, window_size);
@@ -853,6 +883,11 @@ sc_screen_apply_frame(struct sc_screen *screen, bool can_resize) {
 
         struct sc_size new_content_size =
             get_oriented_size(new_frame_size, screen->orientation);
+
+        if (screen->flex_display) {
+            sc_screen_track_resize(screen, new_content_size);
+        }
+
         set_content_size(screen, new_content_size, can_resize);
         sc_screen_update_content_rect(screen);
     }
