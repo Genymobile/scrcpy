@@ -100,16 +100,101 @@ sc_screen_otg_destroy(struct sc_screen_otg *screen) {
     SDL_DestroyWindow(screen->window);
 }
 
+static const enum sc_scancode keycode_to_scancode[] = {
+    /* SDL2 has SDL_GetScancodeFromKey, but that uses the current keymap */
+
+    [SC_KEYCODE_RETURN] = SC_SCANCODE_RETURN,
+    [SC_KEYCODE_ESCAPE] = SC_SCANCODE_ESCAPE,
+    [SC_KEYCODE_BACKSPACE] = SC_SCANCODE_BACKSPACE,
+    [SC_KEYCODE_TAB] = SC_SCANCODE_TAB,
+    [SC_KEYCODE_SPACE] = SC_SCANCODE_SPACE,
+    [SC_KEYCODE_EXCLAIM] = SC_SCANCODE_1,
+    [SC_KEYCODE_QUOTEDBL] = SC_SCANCODE_APOSTROPHE,
+    [SC_KEYCODE_HASH] = SC_SCANCODE_3,
+    [SC_KEYCODE_PERCENT] = SC_SCANCODE_5,
+    [SC_KEYCODE_DOLLAR] = SC_SCANCODE_4,
+    [SC_KEYCODE_AMPERSAND] = SC_SCANCODE_7,
+    [SC_KEYCODE_QUOTE] = SC_SCANCODE_APOSTROPHE,
+    [SC_KEYCODE_LEFTPAREN] = SC_SCANCODE_9,
+    [SC_KEYCODE_RIGHTPAREN] = SC_SCANCODE_0,
+    [SC_KEYCODE_ASTERISK] = SC_SCANCODE_8,
+    [SC_KEYCODE_PLUS] = SC_SCANCODE_EQUALS,
+    [SC_KEYCODE_COMMA] = SC_SCANCODE_COMMA,
+    [SC_KEYCODE_MINUS] = SC_SCANCODE_MINUS,
+    [SC_KEYCODE_PERIOD] = SC_SCANCODE_PERIOD,
+    [SC_KEYCODE_SLASH] = SC_SCANCODE_SLASH,
+    [SC_KEYCODE_0] = SC_SCANCODE_0,
+    [SC_KEYCODE_1] = SC_SCANCODE_1,
+    [SC_KEYCODE_2] = SC_SCANCODE_2,
+    [SC_KEYCODE_3] = SC_SCANCODE_3,
+    [SC_KEYCODE_4] = SC_SCANCODE_4,
+    [SC_KEYCODE_5] = SC_SCANCODE_5,
+    [SC_KEYCODE_6] = SC_SCANCODE_6,
+    [SC_KEYCODE_7] = SC_SCANCODE_7,
+    [SC_KEYCODE_8] = SC_SCANCODE_8,
+    [SC_KEYCODE_9] = SC_SCANCODE_9,
+    [SC_KEYCODE_COLON] = SC_SCANCODE_SEMICOLON,
+    [SC_KEYCODE_SEMICOLON] = SC_SCANCODE_SEMICOLON,
+    [SC_KEYCODE_LESS] = SC_SCANCODE_COMMA,
+    [SC_KEYCODE_EQUALS] = SC_SCANCODE_EQUALS,
+    [SC_KEYCODE_GREATER] = SC_SCANCODE_PERIOD,
+    [SC_KEYCODE_QUESTION] = SC_SCANCODE_SLASH,
+    [SC_KEYCODE_AT] = SC_SCANCODE_2,
+
+    [SC_KEYCODE_LEFTBRACKET] = SC_SCANCODE_LEFTBRACKET,
+    [SC_KEYCODE_BACKSLASH] = SC_SCANCODE_BACKSLASH,
+    [SC_KEYCODE_RIGHTBRACKET] = SC_SCANCODE_RIGHTBRACKET,
+    [SC_KEYCODE_CARET] = SC_SCANCODE_6,
+    [SC_KEYCODE_UNDERSCORE] = SC_SCANCODE_MINUS,
+    [SC_KEYCODE_BACKQUOTE] = SC_SCANCODE_GRAVE,
+    [SC_KEYCODE_a] = SC_SCANCODE_A,
+    [SC_KEYCODE_b] = SC_SCANCODE_B,
+    [SC_KEYCODE_c] = SC_SCANCODE_C,
+    [SC_KEYCODE_d] = SC_SCANCODE_D,
+    [SC_KEYCODE_e] = SC_SCANCODE_E,
+    [SC_KEYCODE_f] = SC_SCANCODE_F,
+    [SC_KEYCODE_g] = SC_SCANCODE_G,
+    [SC_KEYCODE_h] = SC_SCANCODE_H,
+    [SC_KEYCODE_i] = SC_SCANCODE_I,
+    [SC_KEYCODE_j] = SC_SCANCODE_J,
+    [SC_KEYCODE_k] = SC_SCANCODE_K,
+    [SC_KEYCODE_l] = SC_SCANCODE_L,
+    [SC_KEYCODE_m] = SC_SCANCODE_M,
+    [SC_KEYCODE_n] = SC_SCANCODE_N,
+    [SC_KEYCODE_o] = SC_SCANCODE_O,
+    [SC_KEYCODE_p] = SC_SCANCODE_P,
+    [SC_KEYCODE_q] = SC_SCANCODE_Q,
+    [SC_KEYCODE_r] = SC_SCANCODE_R,
+    [SC_KEYCODE_s] = SC_SCANCODE_S,
+    [SC_KEYCODE_t] = SC_SCANCODE_T,
+    [SC_KEYCODE_u] = SC_SCANCODE_U,
+    [SC_KEYCODE_v] = SC_SCANCODE_V,
+    [SC_KEYCODE_w] = SC_SCANCODE_W,
+    [SC_KEYCODE_x] = SC_SCANCODE_X,
+    [SC_KEYCODE_y] = SC_SCANCODE_Y,
+    [SC_KEYCODE_z] = SC_SCANCODE_Z,
+};
+
 static void
 sc_screen_otg_process_key(struct sc_screen_otg *screen,
                              const SDL_KeyboardEvent *event) {
     assert(screen->keyboard);
     struct sc_key_processor *kp = &screen->keyboard->key_processor;
 
+    enum sc_keycode keycode = sc_keycode_from_sdl(event->keysym.sym);
+    enum sc_scancode scancode = sc_scancode_from_sdl(event->keysym.scancode);
+
+    if (kp->use_logical_scancodes && keycode < ARRAY_LEN(keycode_to_scancode)) {
+        enum sc_scancode logical_scancode = keycode_to_scancode[keycode];
+        if (logical_scancode != 0) {
+            scancode = logical_scancode;
+        }
+    }
+
     struct sc_key_event evt = {
         .action = sc_action_from_sdl_keyboard_type(event->type),
-        .keycode = sc_keycode_from_sdl(event->keysym.sym),
-        .scancode = sc_scancode_from_sdl(event->keysym.scancode),
+        .keycode = keycode,
+        .scancode = scancode,
         .repeat = event->repeat,
         .mods_state = sc_mods_state_from_sdl(event->keysym.mod),
     };
