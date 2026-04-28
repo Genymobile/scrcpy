@@ -185,8 +185,7 @@ public final class Server {
                     asyncProcessor.join();
                 }
 
-                OpenGLRunner.quit(); // quit the OpenGL thread, if any
-                OpenGLRunner.join();
+                OpenGLRunner.shutdown();
             } catch (InterruptedException e) {
                 // ignore
             }
