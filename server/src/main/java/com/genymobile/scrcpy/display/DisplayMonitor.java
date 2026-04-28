@@ -54,7 +54,12 @@ public class DisplayMonitor {
                 }
 
                 if (eventDisplayId == displayId) {
-                    checkDisplayPropertiesChanged();
+                    try {
+                        checkDisplayPropertiesChanged();
+                    } catch (Throwable e) {
+                        Ln.e("DisplayMonitor error", e);
+                        throw e;
+                    }
                 }
             }, handler);
         } else {
@@ -66,7 +71,12 @@ public class DisplayMonitor {
                     }
 
                     if (eventDisplayId == displayId) {
-                        checkDisplayPropertiesChanged();
+                        try {
+                            checkDisplayPropertiesChanged();
+                        } catch (Throwable e) {
+                            Ln.e("DisplayMonitor error", e);
+                            throw e;
+                        }
                     }
                 }
             };
