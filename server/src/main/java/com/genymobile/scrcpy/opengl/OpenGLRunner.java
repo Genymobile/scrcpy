@@ -23,7 +23,6 @@ public final class OpenGLRunner {
 
     private static HandlerThread handlerThread;
     private static Handler handler;
-    private static boolean quit;
 
     private EGLDisplay eglDisplay;
     private EGLContext eglContext;
@@ -49,32 +48,19 @@ public final class OpenGLRunner {
 
     public static synchronized void initOnce() {
         if (handlerThread == null) {
-            if (quit) {
-                throw new IllegalStateException("Could not init OpenGLRunner after it is quit");
-            }
             handlerThread = new HandlerThread("OpenGLRunner");
             handlerThread.start();
             handler = new Handler(handlerThread.getLooper());
         }
     }
 
-    public static void quit() {
+    public static void shutdown() throws InterruptedException {
         HandlerThread thread;
         synchronized (OpenGLRunner.class) {
             thread = handlerThread;
-            quit = true;
         }
         if (thread != null) {
             thread.quitSafely();
-        }
-    }
-
-    public static void join() throws InterruptedException {
-        HandlerThread thread;
-        synchronized (OpenGLRunner.class) {
-            thread = handlerThread;
-        }
-        if (thread != null) {
             thread.join();
         }
     }
