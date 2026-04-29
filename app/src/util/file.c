@@ -36,6 +36,16 @@ sc_file_get_local_path(const char *name) {
         return NULL;
     }
 
+    // Reject path traversal attempts: absolute paths or '..' components
+    if (name[0] == '/' || name[0] == '\\' ||
+            strstr(name, "../") || strstr(name, "..\\") ||
+            !strcmp(name, "..")) {
+        LOGE("Unsafe filename rejected: \"%s\"", name);
+        free(executable_path);
+        free(file_path);
+        return NULL;
+    }
+
     memcpy(file_path, dir, dirlen);
     file_path[dirlen] = SC_PATH_SEPARATOR;
     // namelen + 1 to copy the final '\0'
