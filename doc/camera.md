@@ -4,7 +4,7 @@ Camera mirroring is supported for devices with Android 12 or higher.
 
 To capture the camera instead of the device screen:
 
-```
+```bash
 scrcpy --video-source=camera
 ```
 
@@ -34,7 +34,7 @@ scrcpy --video-source=camera --no-audio-playback --record=file.mp4
 
 To list the cameras available (with their declared valid sizes and frame rates):
 
-```
+```bash
 scrcpy --list-cameras
 scrcpy --list-camera-sizes
 ```
@@ -48,7 +48,7 @@ not declared but supported._
 
 It is possible to pass an explicit camera id (as listed by `--list-cameras`):
 
-```
+```bash
 scrcpy --video-source=camera --camera-id=0
 ```
 
@@ -73,7 +73,7 @@ scrcpy --video-source=camera --camera-id=0 --camera-facing=front  # error
 
 It is possible to pass an explicit camera size:
 
-```
+```bash
 scrcpy --video-source=camera --camera-size=1920x1080
 ```
 
@@ -81,7 +81,7 @@ The given size may be listed among the declared valid sizes
 (`--list-camera-sizes`), but may also be anything else (some devices support
 arbitrary sizes):
 
-```
+```bash
 scrcpy --video-source=camera --camera-size=1840x444
 ```
 
@@ -117,7 +117,7 @@ scrcpy --video-source=camera --camera-size=1920x1080 -m3000  # error
 To rotate the captured video, use the [video orientation](video.md#orientation)
 option:
 
-```
+```bash
 scrcpy --video-source=camera --camera-size=1920x1080 --orientation=90
 ```
 
@@ -128,7 +128,7 @@ By default, camera is captured at Android's default frame rate (30 fps).
 
 To configure a different frame rate:
 
-```
+```bash
 scrcpy --video-source=camera --camera-fps=60
 ```
 
@@ -140,7 +140,7 @@ The Android camera API also supports a [high speed capture mode][high speed].
 This mode is restricted to specific resolutions and frame rates, listed by
 `--list-camera-sizes`.
 
-```
+```bash
 scrcpy --video-source=camera --camera-size=1920x1080 --camera-fps=240
 ```
 

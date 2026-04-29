@@ -88,7 +88,7 @@ scrcpy -Sw   # short version
 
 Since Android 15, it is possible to change this setting manually:
 
-```
+```bash
 # turn screen off (0 for main display)
 adb shell cmd display power-off 0
 # turn screen on
@@ -149,28 +149,28 @@ scrcpy --list-apps
 
 An app, selected by its package name, can be launched on start:
 
-```
+```bash
 scrcpy --start-app=org.mozilla.firefox
 ```
 
 This feature can be used to run an app in a [virtual
 display](virtual-display.md):
 
-```
+```bash
 scrcpy --new-display=1920x1080 --start-app=org.videolan.vlc
 ```
 
 The app can be optionally forced-stop before being started, by adding a `+`
 prefix:
 
-```
+```bash
 scrcpy --start-app=+org.mozilla.firefox
 ```
 
 For convenience, it is also possible to select an app by its name, by adding a
 `?` prefix:
 
-```
+```bash
 scrcpy --start-app=?firefox
 ```
 
@@ -179,6 +179,6 @@ passing the package name is recommended.
 
 The `+` and `?` prefixes can be combined (in that order):
 
-```
+```bash
 scrcpy --start-app=+?firefox
 ```

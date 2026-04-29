@@ -20,7 +20,7 @@ available), unless `--require-audio` is set.
 
 To disable audio:
 
-```
+```bash
 scrcpy --no-audio
 ```
 
@@ -45,7 +45,7 @@ scrcpy --no-window
 Without video, the audio latency is typically not critical, so it might be
 interesting to add [buffering](#buffering) to minimize glitches:
 
-```
+```bash
 scrcpy --no-video --audio-buffer=200
 ```
 
@@ -55,14 +55,14 @@ By default, the device audio output is forwarded.
 
 It is possible to capture the device microphone instead:
 
-```
+```bash
 scrcpy --audio-source=mic
 ```
 
 For example, to use the device as a dictaphone and record a capture directly on
 the computer:
 
-```
+```bash
 scrcpy --audio-source=mic --no-video --no-playback --record=file.opus
 ```
 
@@ -85,7 +85,7 @@ Many sources are available:
 An alternative device audio capture method is also available (only for Android
 13 and above):
 
-```
+```bash
 scrcpy --audio-source=playback
 ```
 
@@ -183,7 +183,7 @@ If you don't interact with the device (to watch a video for example), a higher
 latency (for both [video](video.md#buffering) and audio) might be preferable to
 avoid glitches and smooth the playback:
 
-```
+```bash
 scrcpy --video-buffer=200 --audio-buffer=200
 ```
 

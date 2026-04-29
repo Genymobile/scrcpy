@@ -43,7 +43,7 @@ scrcpy --new-display=1920x1080 --no-vd-system-decorations --start-app=org.fossif
 By default, virtual display system decorations are enabled. To disable them, use
 `--no-vd-system-decorations`:
 
-```
+```bash
 scrcpy --new-display --no-vd-system-decorations
 ```
 
@@ -60,7 +60,7 @@ By default, when the virtual display is closed, the running apps are destroyed.
 
 To move them to the main display instead, use:
 
-```
+```bash
 scrcpy --new-display --no-vd-destroy-content
 ```
 

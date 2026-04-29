@@ -434,7 +434,7 @@ As soon as a client connects over TCP on port 1234, the device will start
 streaming the video. For example, VLC can play the video (although you will
 experience a very high latency, more details [here][vlc-0latency]):
 
-```
+```bash
 vlc -Idummy --demux=h264 --network-caching=0 tcp://localhost:1234
 ```
 

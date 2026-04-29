@@ -64,7 +64,7 @@ scrcpy
 
 or with arguments (here to disable audio and record to `file.mkv`):
 
-```
+```bash
 scrcpy --no-audio --record=file.mkv
 ```
 
