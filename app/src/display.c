@@ -22,7 +22,9 @@ struct sc_mini_glyph {
 static const struct sc_mini_glyph SC_MINI_FONT[] = {
     {'A', {0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11}},
     {'C', {0x0E, 0x11, 0x10, 0x10, 0x10, 0x11, 0x0E}},
+    {'E', {0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F}},
     {'G', {0x0E, 0x11, 0x10, 0x17, 0x11, 0x11, 0x0E}},
+    {'H', {0x11, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11}},
     {'L', {0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1F}},
     {'M', {0x11, 0x1B, 0x15, 0x15, 0x11, 0x11, 0x11}},
     {'O', {0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E}},
@@ -404,7 +406,8 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
                   const SDL_Rect *toolbar_button,
                   const SDL_Rect *toolbar_logs_button,
                   const SDL_Rect *toolbar_save_logs_button,
-                  const SDL_Rect *toolbar_save_all_logs_button) {
+                  const SDL_Rect *toolbar_save_all_logs_button,
+                  const SDL_Rect *toolbar_home_button) {
     SDL_RenderClear(display->renderer);
 
     if (display->pending.flags) {
@@ -622,6 +625,69 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
             }
             sc_mini_draw_button_label(display->renderer, label.x, label.y,
                                       label.w, label.h, "APP");
+        }
+
+        if (toolbar_home_button) {
+            // Home button: house icon + "HOME" label
+            SDL_SetRenderDrawColor(display->renderer, 80, 80, 80, 255);
+            SDL_RenderFillRect(display->renderer, toolbar_home_button);
+
+            SPLIT_BUTTON(toolbar_home_button, icon, label);
+
+            int pad_x = icon.w / 8;
+            int pad_y = icon.h / 8;
+            int hx = icon.x + pad_x;
+            int hy = icon.y + pad_y;
+            int hw = icon.w - 2 * pad_x;
+            int hh = icon.h - 2 * pad_y;
+
+            int roof_h = hh * 2 / 5;
+            int body_h = hh - roof_h;
+
+            SDL_SetRenderDrawColor(display->renderer, 220, 220, 220, 255);
+
+            // Roof: 4 stacked rows widening towards the bottom
+            int row_h = roof_h / 4;
+            if (row_h < 1) row_h = 1;
+            int insets[4] = {hw * 3 / 8, hw / 4, hw / 8, 0};
+            for (int i = 0; i < 4; ++i) {
+                int inset = insets[i];
+                int w = hw - 2 * inset;
+                if (w < 1) w = 1;
+                SDL_Rect row = {
+                    .x = hx + inset,
+                    .y = hy + i * row_h,
+                    .w = w,
+                    .h = row_h,
+                };
+                SDL_RenderFillRect(display->renderer, &row);
+            }
+
+            // Body: filled rect under the roof
+            SDL_Rect body = {
+                .x = hx,
+                .y = hy + roof_h,
+                .w = hw,
+                .h = body_h,
+            };
+            SDL_RenderFillRect(display->renderer, &body);
+
+            // Door cutout (button bg color)
+            int door_w = hw / 4;
+            int door_h = body_h * 2 / 3;
+            if (door_w >= 1 && door_h >= 1) {
+                SDL_Rect door = {
+                    .x = hx + (hw - door_w) / 2,
+                    .y = hy + roof_h + body_h - door_h,
+                    .w = door_w,
+                    .h = door_h,
+                };
+                SDL_SetRenderDrawColor(display->renderer, 80, 80, 80, 255);
+                SDL_RenderFillRect(display->renderer, &door);
+            }
+
+            sc_mini_draw_button_label(display->renderer, label.x, label.y,
+                                      label.w, label.h, "HOME");
         }
 
 #undef SPLIT_BUTTON

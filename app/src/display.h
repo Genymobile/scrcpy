@@ -69,7 +69,8 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
                   const SDL_Rect *toolbar_button,
                   const SDL_Rect *toolbar_logs_button,
                   const SDL_Rect *toolbar_save_logs_button,
-                  const SDL_Rect *toolbar_save_all_logs_button);
+                  const SDL_Rect *toolbar_save_all_logs_button,
+                  const SDL_Rect *toolbar_home_button);
 
 void
 sc_display_flash(struct sc_display *display);

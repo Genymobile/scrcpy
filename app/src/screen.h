@@ -70,6 +70,8 @@ struct sc_screen {
     struct SDL_Rect toolbar_save_logs_button_rect;
     // "save full system logs (all buffers)" button (drawable coords)
     struct SDL_Rect toolbar_save_all_logs_button_rect;
+    // "home" button — sends Android HOME keycode (drawable coords)
+    struct SDL_Rect toolbar_home_button_rect;
     bool has_frame;
     bool fullscreen;
     bool maximized;

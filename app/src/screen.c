@@ -226,6 +226,12 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
     screen->toolbar_save_all_logs_button_rect.y = btn_margin;
     screen->toolbar_save_all_logs_button_rect.w = btn_size;
     screen->toolbar_save_all_logs_button_rect.h = btn_size;
+    // Home button (sends Android HOME), leftmost so it's the easiest to hit
+    screen->toolbar_home_button_rect.x =
+        screen->toolbar_save_all_logs_button_rect.x - btn_margin - btn_size;
+    screen->toolbar_home_button_rect.y = btn_margin;
+    screen->toolbar_home_button_rect.w = btn_size;
+    screen->toolbar_home_button_rect.h = btn_size;
 
     struct sc_size content_size = screen->content_size;
     // The drawable size is the window size * the HiDPI scale, minus toolbar
@@ -275,7 +281,8 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
                           &screen->toolbar_rect, &screen->toolbar_button_rect,
                           &screen->toolbar_logs_button_rect,
                           &screen->toolbar_save_logs_button_rect,
-                          &screen->toolbar_save_all_logs_button_rect);
+                          &screen->toolbar_save_all_logs_button_rect,
+                          &screen->toolbar_home_button_rect);
     (void) res; // any error already logged
 }
 
@@ -283,7 +290,7 @@ static void
 sc_screen_render_novideo(struct sc_screen *screen) {
     enum sc_display_result res =
         sc_display_render(&screen->display, NULL, SC_ORIENTATION_0,
-                          NULL, NULL, NULL, NULL, NULL);
+                          NULL, NULL, NULL, NULL, NULL, NULL);
     (void) res; // any error already logged
 }
 

@@ -925,6 +925,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
             const SDL_Rect *save = &im->screen->toolbar_save_logs_button_rect;
             const SDL_Rect *save_all =
                 &im->screen->toolbar_save_all_logs_button_rect;
+            const SDL_Rect *home = &im->screen->toolbar_home_button_rect;
             if (x >= btn->x && x < btn->x + btn->w
                     && y >= btn->y && y < btn->y + btn->h) {
                 LOGD("Screenshot toolbar button clicked");
@@ -945,6 +946,13 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
                     && y >= save_all->y && y < save_all->y + save_all->h) {
                 LOGD("Save-all-logs toolbar button clicked");
                 save_full_system_logcat_to_downloads();
+            } else if (x >= home->x && x < home->x + home->w
+                    && y >= home->y && y < home->y + home->h) {
+                LOGD("Home toolbar button clicked");
+                if (im->controller && im->kp && !im->screen->paused) {
+                    action_home(im, SC_ACTION_DOWN);
+                    action_home(im, SC_ACTION_UP);
+                }
             }
         }
         // Swallow all mouse button events in the toolbar region
