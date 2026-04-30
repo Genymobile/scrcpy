@@ -216,7 +216,7 @@ scrcpy --list-displays
 A secondary display may only be controlled if the device runs at least Android
 10 (otherwise it is mirrored as read-only).
 
-It is also possible to create a [virtual display](virtual_display.md).
+It is also possible to create a [virtual display](virtual-display.md).
 
 
 ## Buffering

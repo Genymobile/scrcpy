@@ -31,7 +31,7 @@ It focuses on:
 Its features include:
  - [audio forwarding](doc/audio.md) (Android 11+)
  - [recording](doc/recording.md)
- - [virtual display](doc/virtual_display.md)
+ - [virtual display](doc/virtual-display.md)
  - mirroring with [Android device screen off](doc/device.md#turn-screen-off)
  - [copy-paste](doc/control.md#copy-paste) in both directions
  - [configurable quality](doc/video.md)
@@ -151,7 +151,7 @@ documented in the following pages:
  - [Device](doc/device.md)
  - [Window](doc/window.md)
  - [Recording](doc/recording.md)
- - [Virtual display](doc/virtual_display.md)
+ - [Virtual display](doc/virtual-display.md)
  - [Tunnels](doc/tunnels.md)
  - [OTG](doc/otg.md)
  - [Camera](doc/camera.md)

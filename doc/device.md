@@ -154,7 +154,7 @@ scrcpy --start-app=org.mozilla.firefox
 ```
 
 This feature can be used to run an app in a [virtual
-display](virtual_display.md):
+display](virtual-display.md):
 
 ```
 scrcpy --new-display=1920x1080 --start-app=org.videolan.vlc
