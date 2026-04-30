@@ -165,6 +165,7 @@ documented in the following pages:
  - [Translations][wiki] (not necessarily up to date)
  - [Build instructions](doc/build.md)
  - [Developers](doc/develop.md)
+ - [Verify release signatures](doc/verify-release.md)
 
 [wiki]: https://github.com/Genymobile/scrcpy/wiki
 
