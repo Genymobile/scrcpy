@@ -79,8 +79,7 @@ void
 sc_sdl_set_window_size(SDL_Window *window, struct sc_size size) {
     bool ok = SDL_SetWindowSize(window, size.width, size.height);
     if (!ok) {
-        LOGE("Could not set window size: %s", SDL_GetError());
-        assert(!"unexpected");
+        LOGD("Could not set window size: %s", SDL_GetError());
     }
 }
 
@@ -107,8 +106,7 @@ void
 sc_sdl_set_window_position(SDL_Window *window, struct sc_point point) {
     bool ok = SDL_SetWindowPosition(window, point.x, point.y);
     if (!ok) {
-        LOGE("Could not set window position: %s", SDL_GetError());
-        assert(!"unexpected");
+        LOGD("Could not set window position: %s", SDL_GetError());
     }
 }
 
