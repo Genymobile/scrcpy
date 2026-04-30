@@ -604,6 +604,7 @@ static const struct sc_option options[] = {
                 " 'h': trigger shortcut HOME\n"
                 " 's': trigger shortcut APP_SWITCH\n"
                 " 'n': trigger shortcut \"expand notification panel\"\n"
+                " 'i': trigger shortcut INFO\n"
                 "Default is 'bhsn:++++' for SDK mouse, and '++++:bhsn' for AOA "
                 "and UHID.",
     },
@@ -785,7 +786,7 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_PRINT_FPS,
         .longopt = "print-fps",
         .text = "Start FPS counter, to print framerate logs to the console. "
-                "It can be started or stopped at any time with MOD+i.",
+                "It can be started or stopped at any time with MOD+q.",
     },
     {
         .longopt_id = OPT_PUSH_TARGET,
@@ -1123,6 +1124,10 @@ static const struct sc_shortcut shortcuts[] = {
         .text = "Click on APP_SWITCH",
     },
     {
+        .shortcuts = { "MOD+i" },
+        .text = "Click on INFO",
+    },
+    {
         .shortcuts = { "MOD+m" },
         .text = "Click on MENU",
     },
@@ -1184,7 +1189,7 @@ static const struct sc_shortcut shortcuts[] = {
         .text = "Open keyboard settings on the device (for HID keyboard only)",
     },
     {
-        .shortcuts = { "MOD+i" },
+        .shortcuts = { "MOD+q" },
         .text = "Enable/disable FPS counter (print frames/second in logs)",
     },
     {
@@ -2297,6 +2302,9 @@ parse_mouse_binding(char c, enum sc_mouse_binding *b) {
         case 's':
             *b = SC_MOUSE_BINDING_APP_SWITCH;
             return true;
+        case 'i':
+            *b = SC_MOUSE_BINDING_INFO;
+            return true;
         case 'n':
             *b = SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL;
             return true;
@@ -2333,7 +2341,7 @@ parse_mouse_bindings(const char *s, struct sc_mouse_bindings *mb) {
     // either "xxxx" or "xxxx:xxxx"
     if (len != 4 && (len != 9 || s[4] != ':')) {
         LOGE("Invalid mouse bindings: '%s' (expected 'xxxx' or 'xxxx:xxxx', "
-             "with each 'x' being in {'+', '-', 'b', 'h', 's', 'n'})", s);
+             "with each 'x' being in {'+', '-', 'b', 'h', 's', 'n', 'i'})", s);
         return false;
     }
 
