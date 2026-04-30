@@ -212,6 +212,7 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
         // If the recorder is stopped, don't process anything if there are not
         // at least video packets
         sc_mutex_unlock(&recorder->mutex);
+        LOGW("Recording stopped before headers were processed");
         return false;
     }
 
