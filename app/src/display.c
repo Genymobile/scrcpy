@@ -2,10 +2,111 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 #include <libavutil/pixfmt.h>
 
 #include "util/log.h"
+
+// -------- Mini 5x7 bitmap font for toolbar button labels --------
+//
+// Each glyph occupies 5 columns × 7 rows. Rows are encoded low-5-bits,
+// bit 4 = leftmost pixel.
+
+struct sc_mini_glyph {
+    char c;
+    uint8_t rows[7];
+};
+
+static const struct sc_mini_glyph SC_MINI_FONT[] = {
+    {'A', {0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11}},
+    {'C', {0x0E, 0x11, 0x10, 0x10, 0x10, 0x11, 0x0E}},
+    {'E', {0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F}},
+    {'G', {0x0E, 0x11, 0x10, 0x17, 0x11, 0x11, 0x0E}},
+    {'H', {0x11, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11}},
+    {'L', {0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1F}},
+    {'M', {0x11, 0x1B, 0x15, 0x15, 0x11, 0x11, 0x11}},
+    {'O', {0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E}},
+    {'P', {0x1E, 0x11, 0x11, 0x1E, 0x10, 0x10, 0x10}},
+    {'S', {0x0F, 0x10, 0x10, 0x0E, 0x01, 0x01, 0x1E}},
+    {'Y', {0x11, 0x11, 0x0A, 0x04, 0x04, 0x04, 0x04}},
+};
+
+static const uint8_t *
+sc_mini_font_lookup(char c) {
+    for (size_t i = 0;
+         i < sizeof(SC_MINI_FONT) / sizeof(SC_MINI_FONT[0]); ++i) {
+        if (SC_MINI_FONT[i].c == c) {
+            return SC_MINI_FONT[i].rows;
+        }
+    }
+    return NULL;
+}
+
+// Width in pixels of a string rendered at the given scale (1px gap between
+// glyphs).
+static int
+sc_mini_text_width(const char *s, int scale) {
+    int n = 0;
+    for (const char *p = s; *p; ++p) {
+        ++n;
+    }
+    if (n == 0) {
+        return 0;
+    }
+    return (n * 5 + (n - 1)) * scale;
+}
+
+static void
+sc_mini_draw_text(SDL_Renderer *r, int x, int y, int scale, const char *s) {
+    int cx = x;
+    for (const char *p = s; *p; ++p) {
+        const uint8_t *glyph = sc_mini_font_lookup(*p);
+        if (glyph) {
+            for (int row = 0; row < 7; ++row) {
+                uint8_t bits = glyph[row];
+                for (int col = 0; col < 5; ++col) {
+                    if (bits & (1 << (4 - col))) {
+                        SDL_Rect px = {
+                            .x = cx + col * scale,
+                            .y = y + row * scale,
+                            .w = scale,
+                            .h = scale,
+                        };
+                        SDL_RenderFillRect(r, &px);
+                    }
+                }
+            }
+        }
+        cx += 6 * scale; // 5 px glyph + 1 px gap
+    }
+}
+
+// Draw a label centered inside (x, y, w, h), picking the largest integer
+// scale that still fits with a small margin.
+static void
+sc_mini_draw_button_label(SDL_Renderer *r, int x, int y, int w, int h,
+                          const char *text) {
+    if (h < 9 || w < 6 || !text || !*text) {
+        return;
+    }
+    int unit_w = sc_mini_text_width(text, 1);
+    if (unit_w <= 0) {
+        return;
+    }
+    int scale_by_h = (h - 2) / 7;
+    int scale_by_w = (w - 2) / unit_w;
+    int scale = scale_by_h < scale_by_w ? scale_by_h : scale_by_w;
+    if (scale < 1) {
+        scale = 1;
+    }
+    int tw = sc_mini_text_width(text, scale);
+    int th = 7 * scale;
+    int tx = x + (w - tw) / 2;
+    int ty = y + (h - th) / 2;
+    sc_mini_draw_text(r, tx, ty, scale, text);
+}
 
 static bool
 sc_display_init_novideo_icon(struct sc_display *display,
@@ -300,7 +401,13 @@ sc_display_update_texture(struct sc_display *display, const AVFrame *frame) {
 
 enum sc_display_result
 sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
-                  enum sc_orientation orientation) {
+                  enum sc_orientation orientation,
+                  const SDL_Rect *toolbar_bg,
+                  const SDL_Rect *toolbar_button,
+                  const SDL_Rect *toolbar_logs_button,
+                  const SDL_Rect *toolbar_save_logs_button,
+                  const SDL_Rect *toolbar_save_all_logs_button,
+                  const SDL_Rect *toolbar_home_button) {
     SDL_RenderClear(display->renderer);
 
     if (display->pending.flags) {
@@ -346,6 +453,278 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
         }
     }
 
+    // Draw toolbar (dark strip with labelled buttons)
+    if (toolbar_bg) {
+        SDL_SetRenderDrawBlendMode(display->renderer, SDL_BLENDMODE_NONE);
+        SDL_SetRenderDrawColor(display->renderer, 40, 40, 40, 255);
+        SDL_RenderFillRect(display->renderer, toolbar_bg);
+
+        // Each button reserves the bottom ~38% of its rect for a text label.
+#define SC_BTN_LABEL_NUM 2
+#define SC_BTN_LABEL_DEN 5
+#define SC_BTN_GAP_NUM   1
+#define SC_BTN_GAP_DEN   20
+
+        // Helper: split a button rect into (icon_area, label_area).
+        #define SPLIT_BUTTON(BTN, ICON, LBL) \
+            int _lh = (BTN)->h * SC_BTN_LABEL_NUM / SC_BTN_LABEL_DEN; \
+            int _gap = (BTN)->h * SC_BTN_GAP_NUM / SC_BTN_GAP_DEN; \
+            SDL_Rect ICON = { \
+                .x = (BTN)->x, .y = (BTN)->y, \
+                .w = (BTN)->w, .h = (BTN)->h - _lh - _gap, \
+            }; \
+            SDL_Rect LBL = { \
+                .x = (BTN)->x, .y = (BTN)->y + (BTN)->h - _lh, \
+                .w = (BTN)->w, .h = _lh, \
+            }
+
+        if (toolbar_button) {
+            // Screenshot button: lens icon + "CAM" label
+            SDL_SetRenderDrawColor(display->renderer, 80, 80, 80, 255);
+            SDL_RenderFillRect(display->renderer, toolbar_button);
+
+            SPLIT_BUTTON(toolbar_button, icon, label);
+
+            int lens_size = icon.w * 2 / 5;
+            if (lens_size < 1) {
+                lens_size = 1;
+            }
+            SDL_Rect lens = {
+                .x = icon.x + (icon.w - lens_size) / 2,
+                .y = icon.y + (icon.h - lens_size) / 2,
+                .w = lens_size,
+                .h = lens_size,
+            };
+            SDL_SetRenderDrawColor(display->renderer, 220, 220, 220, 255);
+            SDL_RenderFillRect(display->renderer, &lens);
+            sc_mini_draw_button_label(display->renderer, label.x, label.y,
+                                      label.w, label.h, "CAM");
+        }
+
+        if (toolbar_logs_button) {
+            // Open-live-logs button: three bars + "LOG" label
+            SDL_SetRenderDrawColor(display->renderer, 80, 80, 80, 255);
+            SDL_RenderFillRect(display->renderer, toolbar_logs_button);
+
+            SPLIT_BUTTON(toolbar_logs_button, icon, label);
+
+            int pad = icon.w / 4;
+            if (pad < 1) pad = 1;
+            int bar_w = icon.w - 2 * pad;
+            int bar_h = icon.h / 8;
+            if (bar_h < 1) bar_h = 1;
+            int gap = bar_h * 2;
+            int total = 3 * bar_h + 2 * gap;
+            int y0 = icon.y + (icon.h - total) / 2;
+            SDL_SetRenderDrawColor(display->renderer, 220, 220, 220, 255);
+            for (int i = 0; i < 3; ++i) {
+                SDL_Rect bar = {
+                    .x = icon.x + pad,
+                    .y = y0 + i * (bar_h + gap),
+                    .w = bar_w,
+                    .h = bar_h,
+                };
+                SDL_RenderFillRect(display->renderer, &bar);
+            }
+            sc_mini_draw_button_label(display->renderer, label.x, label.y,
+                                      label.w, label.h, "LOG");
+        }
+
+        if (toolbar_save_all_logs_button) {
+            // Full-system-log dump: bars + arrow + "SYS" label
+            SDL_SetRenderDrawColor(display->renderer, 80, 80, 80, 255);
+            SDL_RenderFillRect(display->renderer, toolbar_save_all_logs_button);
+
+            SPLIT_BUTTON(toolbar_save_all_logs_button, icon, label);
+
+            int bw = icon.w;
+            int bh = icon.h;
+            int pad = bw / 5;
+            if (pad < 1) pad = 1;
+            int bar_w = bw - 2 * pad;
+            int bar_h = bh / 12;
+            if (bar_h < 1) bar_h = 1;
+            int gap = bar_h;
+            int bars_total = 3 * bar_h + 2 * gap;
+            int arrow_h = bh / 2;
+            int content_h = bars_total + arrow_h + bar_h;
+            int y0 = icon.y + (bh - content_h) / 2;
+
+            SDL_SetRenderDrawColor(display->renderer, 220, 220, 220, 255);
+            for (int i = 0; i < 3; ++i) {
+                SDL_Rect bar = {
+                    .x = icon.x + pad,
+                    .y = y0 + i * (bar_h + gap),
+                    .w = bar_w,
+                    .h = bar_h,
+                };
+                SDL_RenderFillRect(display->renderer, &bar);
+            }
+            int arrow_y = y0 + bars_total + bar_h;
+            int row_h = arrow_h / 3;
+            if (row_h < 1) row_h = 1;
+            int insets[3] = {bw / 8, bw / 4, bw * 3 / 8};
+            for (int i = 0; i < 3; ++i) {
+                int inset = insets[i];
+                int w = bw - 2 * inset;
+                if (w < 1) w = 1;
+                SDL_Rect row = {
+                    .x = icon.x + inset,
+                    .y = arrow_y + i * row_h,
+                    .w = w,
+                    .h = row_h,
+                };
+                SDL_RenderFillRect(display->renderer, &row);
+            }
+            sc_mini_draw_button_label(display->renderer, label.x, label.y,
+                                      label.w, label.h, "SYS");
+        }
+
+        if (toolbar_save_logs_button) {
+            // App-filtered log dump: down-arrow + "APP" label
+            SDL_SetRenderDrawColor(display->renderer, 80, 80, 80, 255);
+            SDL_RenderFillRect(display->renderer, toolbar_save_logs_button);
+
+            SPLIT_BUTTON(toolbar_save_logs_button, icon, label);
+
+            int bw = icon.w;
+            int bh = icon.h;
+            int stem_w = bw / 3;
+            if (stem_w < 1) stem_w = 1;
+            int stem_h = bh * 2 / 5;
+            if (stem_h < 1) stem_h = 1;
+            int pad_top = bh / 8;
+            int pad_bot = bh / 8;
+            int tri_space = bh - pad_top - stem_h - pad_bot;
+            int row_h = tri_space / 3;
+            if (row_h < 1) row_h = 1;
+
+            SDL_SetRenderDrawColor(display->renderer, 220, 220, 220, 255);
+
+            SDL_Rect stem = {
+                .x = icon.x + (bw - stem_w) / 2,
+                .y = icon.y + pad_top,
+                .w = stem_w,
+                .h = stem_h,
+            };
+            SDL_RenderFillRect(display->renderer, &stem);
+
+            int tri_y = stem.y + stem_h;
+            int insets[3] = {bw / 8, bw / 4, bw * 3 / 8};
+            for (int i = 0; i < 3; ++i) {
+                int inset = insets[i];
+                int w = bw - 2 * inset;
+                if (w < 1) w = 1;
+                SDL_Rect row = {
+                    .x = icon.x + inset,
+                    .y = tri_y + i * row_h,
+                    .w = w,
+                    .h = row_h,
+                };
+                SDL_RenderFillRect(display->renderer, &row);
+            }
+            sc_mini_draw_button_label(display->renderer, label.x, label.y,
+                                      label.w, label.h, "APP");
+        }
+
+        if (toolbar_home_button) {
+            // Home button: house icon + "HOME" label
+            SDL_SetRenderDrawColor(display->renderer, 80, 80, 80, 255);
+            SDL_RenderFillRect(display->renderer, toolbar_home_button);
+
+            SPLIT_BUTTON(toolbar_home_button, icon, label);
+
+            int pad_x = icon.w / 8;
+            int pad_y = icon.h / 8;
+            int hx = icon.x + pad_x;
+            int hy = icon.y + pad_y;
+            int hw = icon.w - 2 * pad_x;
+            int hh = icon.h - 2 * pad_y;
+
+            int roof_h = hh * 2 / 5;
+            int body_h = hh - roof_h;
+
+            SDL_SetRenderDrawColor(display->renderer, 220, 220, 220, 255);
+
+            // Roof: 4 stacked rows widening towards the bottom
+            int row_h = roof_h / 4;
+            if (row_h < 1) row_h = 1;
+            int insets[4] = {hw * 3 / 8, hw / 4, hw / 8, 0};
+            for (int i = 0; i < 4; ++i) {
+                int inset = insets[i];
+                int w = hw - 2 * inset;
+                if (w < 1) w = 1;
+                SDL_Rect row = {
+                    .x = hx + inset,
+                    .y = hy + i * row_h,
+                    .w = w,
+                    .h = row_h,
+                };
+                SDL_RenderFillRect(display->renderer, &row);
+            }
+
+            // Body: filled rect under the roof
+            SDL_Rect body = {
+                .x = hx,
+                .y = hy + roof_h,
+                .w = hw,
+                .h = body_h,
+            };
+            SDL_RenderFillRect(display->renderer, &body);
+
+            // Door cutout (button bg color)
+            int door_w = hw / 4;
+            int door_h = body_h * 2 / 3;
+            if (door_w >= 1 && door_h >= 1) {
+                SDL_Rect door = {
+                    .x = hx + (hw - door_w) / 2,
+                    .y = hy + roof_h + body_h - door_h,
+                    .w = door_w,
+                    .h = door_h,
+                };
+                SDL_SetRenderDrawColor(display->renderer, 80, 80, 80, 255);
+                SDL_RenderFillRect(display->renderer, &door);
+            }
+
+            sc_mini_draw_button_label(display->renderer, label.x, label.y,
+                                      label.w, label.h, "HOME");
+        }
+
+#undef SPLIT_BUTTON
+    }
+
+    // Draw screenshot flash overlay if active
+    if (display->flash_active) {
+        sc_tick elapsed = sc_tick_now() - display->flash_start;
+        sc_tick duration = SC_TICK_FROM_MS(500);
+        if (elapsed < duration) {
+            // Full white for first 100ms, then fade out
+            uint8_t alpha;
+            sc_tick fade_start = SC_TICK_FROM_MS(100);
+            if (elapsed < fade_start) {
+                alpha = 255;
+            } else {
+                alpha = (uint8_t) (255 * (duration - elapsed)
+                                       / (duration - fade_start));
+            }
+            SDL_SetRenderDrawBlendMode(display->renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(display->renderer, 255, 255, 255, alpha);
+            SDL_RenderFillRect(display->renderer, NULL);
+            LOGD("Screenshot flash: alpha=%d, elapsed=%" PRItick "ms",
+                 alpha, SC_TICK_TO_MS(elapsed));
+        } else {
+            display->flash_active = false;
+            LOGD("Screenshot flash finished");
+        }
+    }
+
     SDL_RenderPresent(display->renderer);
     return SC_DISPLAY_RESULT_OK;
+}
+
+void
+sc_display_flash(struct sc_display *display) {
+    display->flash_start = sc_tick_now();
+    display->flash_active = true;
+    LOGD("Screenshot flash triggered");
 }

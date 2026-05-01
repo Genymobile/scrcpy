@@ -11,7 +11,22 @@
 
 #define DISPLAY_MARGINS 96
 
+// Height of the toolbar strip above the content, in window pixels
+#define SC_TOOLBAR_HEIGHT 72
+
 #define DOWNCAST(SINK) container_of(SINK, struct sc_screen, frame_sink)
+
+// Convert the toolbar height from window pixels to drawable pixels
+static int
+get_toolbar_drawable_height(struct sc_screen *screen) {
+    int ww, wh, dw, dh;
+    SDL_GetWindowSize(screen->window, &ww, &wh);
+    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
+    if (wh <= 0) {
+        return SC_TOOLBAR_HEIGHT;
+    }
+    return (int) ((int64_t) SC_TOOLBAR_HEIGHT * dh / wh);
+}
 
 static inline struct sc_size
 get_oriented_size(struct sc_size size, enum sc_orientation orientation) {
@@ -170,15 +185,63 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
     int dh;
     SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
 
+    int tb = get_toolbar_drawable_height(screen);
+    int usable_dh = dh - tb;
+    if (usable_dh < 1) {
+        usable_dh = 1;
+    }
+
+    // Toolbar spans the full width at the top
+    screen->toolbar_rect.x = 0;
+    screen->toolbar_rect.y = 0;
+    screen->toolbar_rect.w = dw;
+    screen->toolbar_rect.h = tb;
+
+    // Buttons in the top-right corner of the toolbar
+    int btn_margin = tb > 0 ? tb / 4 : 0;
+    int btn_size = tb - 2 * btn_margin;
+    if (btn_size < 1) {
+        btn_size = 1;
+    }
+    // Screenshot (rightmost)
+    screen->toolbar_button_rect.x = dw - btn_margin - btn_size;
+    screen->toolbar_button_rect.y = btn_margin;
+    screen->toolbar_button_rect.w = btn_size;
+    screen->toolbar_button_rect.h = btn_size;
+    // Logs button, placed to the left of the screenshot button
+    screen->toolbar_logs_button_rect.x =
+        screen->toolbar_button_rect.x - btn_margin - btn_size;
+    screen->toolbar_logs_button_rect.y = btn_margin;
+    screen->toolbar_logs_button_rect.w = btn_size;
+    screen->toolbar_logs_button_rect.h = btn_size;
+    // Save-logs button, placed to the left of the logs button
+    screen->toolbar_save_logs_button_rect.x =
+        screen->toolbar_logs_button_rect.x - btn_margin - btn_size;
+    screen->toolbar_save_logs_button_rect.y = btn_margin;
+    screen->toolbar_save_logs_button_rect.w = btn_size;
+    screen->toolbar_save_logs_button_rect.h = btn_size;
+    // Save-all-logs button (full system dump), placed to the left of save-logs
+    screen->toolbar_save_all_logs_button_rect.x =
+        screen->toolbar_save_logs_button_rect.x - btn_margin - btn_size;
+    screen->toolbar_save_all_logs_button_rect.y = btn_margin;
+    screen->toolbar_save_all_logs_button_rect.w = btn_size;
+    screen->toolbar_save_all_logs_button_rect.h = btn_size;
+    // Home button (sends Android HOME), leftmost so it's the easiest to hit
+    screen->toolbar_home_button_rect.x =
+        screen->toolbar_save_all_logs_button_rect.x - btn_margin - btn_size;
+    screen->toolbar_home_button_rect.y = btn_margin;
+    screen->toolbar_home_button_rect.w = btn_size;
+    screen->toolbar_home_button_rect.h = btn_size;
+
     struct sc_size content_size = screen->content_size;
-    // The drawable size is the window size * the HiDPI scale
-    struct sc_size drawable_size = {dw, dh};
+    // The drawable size is the window size * the HiDPI scale, minus toolbar
+    struct sc_size drawable_size = {dw, usable_dh};
 
     SDL_Rect *rect = &screen->rect;
 
     if (is_optimal_size(drawable_size, content_size)) {
         rect->x = 0;
-        rect->y = 0;
+        rect->y = tb;
         rect->w = drawable_size.width;
         rect->h = drawable_size.height;
         return;
@@ -191,9 +254,9 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
         rect->w = drawable_size.width;
         rect->h = drawable_size.width * content_size.height
                                       / content_size.width;
-        rect->y = (drawable_size.height - rect->h) / 2;
+        rect->y = tb + (drawable_size.height - rect->h) / 2;
     } else {
-        rect->y = 0;
+        rect->y = tb;
         rect->h = drawable_size.height;
         rect->w = drawable_size.height * content_size.width
                                        / content_size.height;
@@ -214,14 +277,20 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     }
 
     enum sc_display_result res =
-        sc_display_render(&screen->display, &screen->rect, screen->orientation);
+        sc_display_render(&screen->display, &screen->rect, screen->orientation,
+                          &screen->toolbar_rect, &screen->toolbar_button_rect,
+                          &screen->toolbar_logs_button_rect,
+                          &screen->toolbar_save_logs_button_rect,
+                          &screen->toolbar_save_all_logs_button_rect,
+                          &screen->toolbar_home_button_rect);
     (void) res; // any error already logged
 }
 
 static void
 sc_screen_render_novideo(struct sc_screen *screen) {
     enum sc_display_result res =
-        sc_display_render(&screen->display, NULL, SC_ORIENTATION_0);
+        sc_display_render(&screen->display, NULL, SC_ORIENTATION_0,
+                          NULL, NULL, NULL, NULL, NULL, NULL);
     (void) res; // any error already logged
 }
 
@@ -494,6 +563,8 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
     struct sc_size window_size =
         get_initial_optimal_size(screen->content_size, screen->req.width,
                                                        screen->req.height);
+    // Reserve space for the toolbar strip above the content
+    window_size.height += SC_TOOLBAR_HEIGHT;
 
     set_window_size(screen, window_size);
     SDL_SetWindowPosition(screen->window, x, y);
@@ -543,13 +614,18 @@ resize_for_content(struct sc_screen *screen, struct sc_size old_content_size,
     assert(screen->video);
 
     struct sc_size window_size = get_window_size(screen);
+    // Work on the content area (window minus toolbar) for aspect-ratio fit
+    uint16_t content_area_height = window_size.height > SC_TOOLBAR_HEIGHT
+                                 ? window_size.height - SC_TOOLBAR_HEIGHT
+                                 : 1;
     struct sc_size target_size = {
         .width = (uint32_t) window_size.width * new_content_size.width
                 / old_content_size.width,
-        .height = (uint32_t) window_size.height * new_content_size.height
+        .height = (uint32_t) content_area_height * new_content_size.height
                 / old_content_size.height,
     };
     target_size = get_optimal_size(target_size, new_content_size, true);
+    target_size.height += SC_TOOLBAR_HEIGHT;
     set_window_size(screen, target_size);
 }
 
@@ -764,16 +840,24 @@ sc_screen_resize_to_fit(struct sc_screen *screen) {
     struct sc_point point = get_window_position(screen);
     struct sc_size window_size = get_window_size(screen);
 
+    // Exclude toolbar from the available content area for aspect fit
+    struct sc_size content_area = {
+        .width = window_size.width,
+        .height = window_size.height > SC_TOOLBAR_HEIGHT
+                ? window_size.height - SC_TOOLBAR_HEIGHT : 1,
+    };
+
     struct sc_size optimal_size =
-        get_optimal_size(window_size, screen->content_size, false);
+        get_optimal_size(content_area, screen->content_size, false);
 
     // Center the window related to the device screen
     assert(optimal_size.width <= window_size.width);
-    assert(optimal_size.height <= window_size.height);
+    assert(optimal_size.height <= content_area.height);
     uint32_t new_x = point.x + (window_size.width - optimal_size.width) / 2;
-    uint32_t new_y = point.y + (window_size.height - optimal_size.height) / 2;
+    uint32_t new_y = point.y + (content_area.height - optimal_size.height) / 2;
 
-    SDL_SetWindowSize(screen->window, optimal_size.width, optimal_size.height);
+    SDL_SetWindowSize(screen->window, optimal_size.width,
+                      optimal_size.height + SC_TOOLBAR_HEIGHT);
     SDL_SetWindowPosition(screen->window, new_x, new_y);
     LOGD("Resized to optimal size: %ux%u", optimal_size.width,
                                            optimal_size.height);
@@ -793,7 +877,8 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
     }
 
     struct sc_size content_size = screen->content_size;
-    SDL_SetWindowSize(screen->window, content_size.width, content_size.height);
+    SDL_SetWindowSize(screen->window, content_size.width,
+                      content_size.height + SC_TOOLBAR_HEIGHT);
     LOGD("Resized to pixel-perfect: %ux%u", content_size.width,
                                             content_size.height);
 }

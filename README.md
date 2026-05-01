@@ -77,6 +77,86 @@ Note that USB debugging is not required to run scrcpy in [OTG mode](doc/otg.md).
  - [Windows](doc/windows.md) (read [how to run](doc/windows.md#run))
  - [macOS](doc/macos.md)
 
+## Fork features (this repo)
+
+This fork adds a small toolbar above the mirrored device screen with four
+buttons (left → right):
+
+ 1. **Dump full system logs** — runs `adb logcat -d -b all` and writes the
+    output to `~/Downloads/scrcpy_syslogs_<timestamp>.txt`. Unfiltered, all
+    buffers (main, system, crash, events, radio, …).
+ 2. **Dump foreground-app logs** — runs `adb logcat -d --pid=$(adb shell pidof
+    <foreground-pkg>)` and writes to
+    `~/Downloads/scrcpy_logs_<timestamp>.txt`. Falls back to the full buffer
+    if the foreground package can't be detected.
+ 3. **Open live logcat** — opens a Terminal window streaming `adb logcat
+    --pid=…` for the foreground app (same as `Ctrl+Shift+L`).
+ 4. **Screenshot** — saves a PNG to `~/Downloads/scrcpy_<timestamp>.png` **and
+    copies it to the system clipboard** so you can paste it straight into
+    Slack/Messages/etc. (same as `Ctrl+Shift+S`).
+
+All dumps are point-in-time snapshots of the device's in-memory log ring
+buffers; older entries that have already been overwritten are not recoverable
+(Android doesn't persist logs to disk). Run `adb logcat -g` to see the exact
+buffer sizes on your device.
+
+### macOS: launch scrcpy from the Dock
+
+A minimal `Scrcpy.app` bundle lets you launch the build from the Dock without
+opening a terminal. To set it up after cloning and building (`meson setup
+build && ninja -C build`):
+
+```bash
+# 1. Create the .app skeleton
+mkdir -p "/Applications/Scrcpy.app/Contents/MacOS" \
+         "/Applications/Scrcpy.app/Contents/Resources"
+
+# 2. Info.plist
+cat > "/Applications/Scrcpy.app/Contents/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key><string>scrcpy-launcher</string>
+    <key>CFBundleIdentifier</key><string>com.local.scrcpy</string>
+    <key>CFBundleName</key><string>Scrcpy</string>
+    <key>CFBundleDisplayName</key><string>Scrcpy</string>
+    <key>CFBundleVersion</key><string>1.0</string>
+    <key>CFBundleShortVersionString</key><string>1.0</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleIconFile</key><string>icon</string>
+</dict>
+</plist>
+PLIST
+
+# 3. Launcher script — edit the cd path and PATH to match your setup.
+#    PATH must include adb (Finder-launched apps don't inherit your shell PATH).
+cat > "/Applications/Scrcpy.app/Contents/MacOS/scrcpy-launcher" <<'SH'
+#!/usr/bin/env bash
+export PATH="$HOME/Library/Android/sdk/platform-tools:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+cd "$HOME/scrcpy"          # ← adjust to where you cloned this repo
+exec ./run build "$@"
+SH
+chmod +x "/Applications/Scrcpy.app/Contents/MacOS/scrcpy-launcher"
+
+# 4. Icon (converts the repo icon to .icns)
+cp app/data/icon.png "/Applications/Scrcpy.app/Contents/Resources/icon.png"
+sips -s format icns "/Applications/Scrcpy.app/Contents/Resources/icon.png" \
+     --out "/Applications/Scrcpy.app/Contents/Resources/icon.icns"
+
+# 5. Refresh Finder's icon cache, then launch once
+touch /Applications/Scrcpy.app
+open /Applications/Scrcpy.app
+```
+
+Once it's running, right-click the Dock icon → **Options → Keep in Dock** to
+pin it. From then on, clicking the Dock icon runs `./run build` from the repo
+and opens the mirrored device window.
+
+If the Dock icon "opens and immediately quits", it usually means `adb` isn't
+on the `PATH` baked into the launcher — edit `scrcpy-launcher` and add the
+directory where `which adb` points.
+
 
 ## Must-know tips
 
