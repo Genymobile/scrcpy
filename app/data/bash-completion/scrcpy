@@ -110,7 +110,7 @@ _scrcpy() {
 
     case "$prev" in
         --video-codec)
-            COMPREPLY=($(compgen -W 'h264 h265 av1' -- "$cur"))
+            COMPREPLY=($(compgen -W 'h264 h265 av1 vp8 vp9' -- "$cur"))
             return
             ;;
         --audio-codec)
