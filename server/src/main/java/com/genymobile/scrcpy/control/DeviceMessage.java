@@ -5,9 +5,11 @@ public final class DeviceMessage {
     public static final int TYPE_CLIPBOARD = 0;
     public static final int TYPE_ACK_CLIPBOARD = 1;
     public static final int TYPE_UHID_OUTPUT = 2;
+    public static final int TYPE_IMAGE_CLIPBOARD = 3;
 
     private int type;
     private String text;
+    private String mimeType;
     private long sequence;
     private int id;
     private byte[] data;
@@ -37,6 +39,14 @@ public final class DeviceMessage {
         return event;
     }
 
+    public static DeviceMessage createImageClipboard(byte[] imageData, String mimeType) {
+        DeviceMessage event = new DeviceMessage();
+        event.type = TYPE_IMAGE_CLIPBOARD;
+        event.data = imageData;
+        event.mimeType = mimeType;
+        return event;
+    }
+
     public int getType() {
         return type;
     }
@@ -55,5 +65,9 @@ public final class DeviceMessage {
 
     public byte[] getData() {
         return data;
+    }
+
+    public String getMimeType() {
+        return mimeType;
     }
 }
