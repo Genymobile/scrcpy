@@ -45,10 +45,10 @@ public final class Size {
         int maxWidth = maxCodecSize.width;
         int maxHeight = maxCodecSize.height;
         if (maxSize > 0) {
-            if (maxSize < maxWidth) {
+            if (maxWidth > maxSize) {
                 maxWidth = maxSize;
             }
-            if (maxSize < maxHeight) {
+            if (maxHeight > maxSize) {
                 maxHeight = maxSize;
             }
         }
