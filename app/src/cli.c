@@ -98,6 +98,7 @@ enum {
     OPT_ORIENTATION,
     OPT_KEYBOARD,
     OPT_MOUSE,
+    OPT_SCROLL_ACTION,
     OPT_HID_KEYBOARD_DEPRECATED,
     OPT_HID_MOUSE_DEPRECATED,
     OPT_NO_WINDOW,
@@ -114,6 +115,7 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
+    OPT_OVERLAY,
 };
 
 struct sc_option {
@@ -204,6 +206,11 @@ static const struct sc_option options[] = {
         .text = "Duplicate audio (capture and keep playing on the device).\n"
                 "This feature is only available with --audio-source=playback."
 
+    },
+    {
+        .longopt_id = OPT_OVERLAY,
+        .longopt = "overlay",
+        .text = "Keep the on-screen debug overlay visible (useful for debugging).",
     },
     {
         .longopt_id = OPT_AUDIO_ENCODER,
@@ -2231,6 +2238,22 @@ parse_gamepad(const char *optarg, enum sc_gamepad_input_mode *mode) {
 }
 
 static bool
+parse_scroll_action(const char *optarg, enum sc_scroll_action *action) {
+    if (!strcmp(optarg, "scroll")) {
+        *action = SC_SCROLL_ACTION_SCROLL;
+        return true;
+    }
+
+    if (!strcmp(optarg, "zoom")) {
+        *action = SC_SCROLL_ACTION_ZOOM;
+        return true;
+    }
+
+    LOGE("Unsupported scroll-action: %s (expected scroll or zoom)", optarg);
+    return false;
+}
+
+static bool
 parse_time_limit(const char *s, sc_tick *tick) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF, "time limit");
@@ -2438,8 +2461,16 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_SCROLL_ACTION:
+                if (!parse_scroll_action(optarg, &opts->scroll_action)) {
+                    return false;
+                }
+                break;
             case OPT_NO_MOUSE_HOVER:
                 opts->mouse_hover = false;
+                break;
+            case OPT_OVERLAY:
+                opts->overlay_persistent = true;
                 break;
             case OPT_HID_MOUSE_DEPRECATED:
                 LOGE("--hid-mouse has been removed, use --mouse=aoa or "

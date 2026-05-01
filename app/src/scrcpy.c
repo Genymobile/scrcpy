@@ -813,6 +813,7 @@ aoa_complete:
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,
             .shortcut_mods = options->shortcut_mods,
+            .scroll_action = options->scroll_action,
             .window_title = window_title,
             .always_on_top = options->always_on_top,
             .window_x = options->window_x,
@@ -824,6 +825,7 @@ aoa_complete:
             .mipmaps = options->mipmaps,
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,
+            .overlay_persistent = options->overlay_persistent,
         };
 
         if (!sc_screen_init(&s->screen, &screen_params)) {

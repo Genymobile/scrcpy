@@ -1,5 +1,163 @@
 #include "display.h"
 
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <SDL2/SDL.h>
+
+// Render the overlay UI: checkboxes, labels, and info line
+void sc_render_overlay_ui(struct sc_display *display) {
+    // 8x12 font for ASCII 32..127 (printable)
+    static const uint8_t font8x12[96][12] = {
+        {0,0,0,0,0,0,0,0,0,0,0,0}, // (space)
+        {24,24,24,24,24,24,24,0,24,24,0,0}, // !
+        {54,54,54,36,0,0,0,0,0,0,0,0}, // "
+        {0,36,36,126,36,36,36,126,36,36,0,0}, // #
+        {8,62,73,72,62,9,73,62,8,8,0,0}, // $
+        {0,99,147,102,12,24,48,102,201,198,0,0}, // %
+        {28,34,34,20,40,82,73,70,61,0,0,0}, // &
+        {24,24,24,16,0,0,0,0,0,0,0,0}, // '
+        {12,24,48,48,48,48,48,48,24,12,0,0}, // (
+        {48,24,12,12,12,12,12,12,24,48,0,0}, // )
+        {0,0,36,24,126,24,36,0,0,0,0,0}, // *
+        {0,0,24,24,126,24,24,0,0,0,0,0}, // +
+        {0,0,0,0,0,0,0,24,24,16,0,0}, // ,
+        {0,0,0,0,126,0,0,0,0,0,0,0}, // -
+        {0,0,0,0,0,0,0,24,24,0,0,0}, // .
+        {0,3,6,12,24,48,96,192,128,0,0,0}, // /
+        {60,66,99,115,91,79,70,66,60,0,0,0}, // 0
+        {24,56,24,24,24,24,24,24,126,0,0,0}, // 1
+        {60,66,3,6,12,24,48,96,127,0,0,0}, // 2
+        {60,66,3,6,28,6,3,66,60,0,0,0}, // 3
+        {6,14,30,54,102,127,6,6,15,0,0,0}, // 4
+        {127,64,64,124,66,3,3,66,60,0,0,0}, // 5
+        {28,48,96,124,102,99,99,102,60,0,0,0}, // 6
+        {127,3,6,12,24,48,48,48,48,0,0,0}, // 7
+        {60,66,99,102,60,102,99,66,60,0,0,0}, // 8
+        {60,102,99,99,63,6,12,24,56,0,0,0}, // 9
+        {0,0,24,24,0,0,24,24,0,0,0,0}, // :
+        {0,0,24,24,0,0,24,24,16,0,0,0}, // ;
+        {12,24,48,96,192,96,48,24,12,0,0,0}, // <
+        {0,0,126,0,126,0,0,0,0,0,0,0}, // =
+        {48,24,12,6,3,6,12,24,48,0,0,0}, // >
+        {60,66,3,6,12,24,24,0,24,24,0,0}, // ?
+        {60,66,99,111,107,111,96,62,0,0,0,0}, // @
+        {24,60,102,102,126,102,102,102,231,0,0,0}, // A
+        {124,102,102,124,102,102,102,102,124,0,0,0}, // B
+        {60,102,96,96,96,96,96,102,60,0,0,0}, // C
+        {120,108,102,102,102,102,102,108,120,0,0,0}, // D
+        {126,96,96,124,96,96,96,96,126,0,0,0}, // E
+        {126,96,96,124,96,96,96,96,96,0,0,0}, // F
+        {60,102,96,96,110,102,102,102,60,0,0,0}, // G
+        {102,102,102,126,102,102,102,102,102,0,0,0}, // H
+        {60,24,24,24,24,24,24,24,60,0,0,0}, // I
+        {6,6,6,6,6,6,6,102,60,0,0,0}, // J
+        {102,108,120,112,120,108,102,102,102,0,0,0}, // K
+        {96,96,96,96,96,96,96,96,126,0,0,0}, // L
+        {99,119,127,107,99,99,99,99,99,0,0,0}, // M
+        {102,102,118,126,110,102,102,102,102,0,0,0}, // N
+        {60,102,99,99,99,99,99,102,60,0,0,0}, // O
+        {124,102,102,102,124,96,96,96,96,0,0,0}, // P
+        {60,102,99,99,99,99,107,102,61,0,0,0}, // Q
+        {124,102,102,102,124,108,102,102,102,0,0,0}, // R
+        {60,102,96,60,6,3,99,102,60,0,0,0}, // S
+        {126,24,24,24,24,24,24,24,24,0,0,0}, // T
+        {102,102,102,102,102,102,102,102,60,0,0,0}, // U
+        {99,99,99,99,99,99,54,28,8,0,0,0}, // V
+        {99,99,99,99,99,107,127,119,99,0,0,0}, // W
+        {99,99,54,28,8,28,54,99,99,0,0,0}, // X
+        {99,99,99,54,28,8,8,8,8,0,0,0}, // Y
+        {127,3,6,12,24,48,96,96,127,0,0,0}, // Z
+        {60,48,48,48,48,48,48,48,60,0,0,0}, // [
+    {0,192,96,48,24,12,6,3,0,0,0,0}, // backslash
+        {60,12,12,12,12,12,12,12,60,0,0,0}, // ]
+        {8,28,54,99,0,0,0,0,0,0,0,0}, // ^
+        {0,0,0,0,0,0,0,0,0,0,255,0}, // _
+        {24,24,24,12,0,0,0,0,0,0,0,0}, // `
+        {0,0,60,6,62,102,102,102,59,0,0,0}, // a
+        {96,96,124,102,102,102,102,102,124,0,0,0}, // b
+        {0,0,60,102,96,96,96,102,60,0,0,0}, // c
+        {6,6,62,102,102,102,102,102,62,0,0,0}, // d
+        {0,0,60,102,126,96,96,102,60,0,0,0}, // e
+        {28,54,48,120,48,48,48,48,120,0,0,0}, // f
+        {0,0,62,102,102,102,62,6,102,60,0,0}, // g
+        {96,96,124,102,102,102,102,102,102,0,0,0}, // h
+        {24,0,56,24,24,24,24,24,60,0,0,0}, // i
+        {6,0,6,6,6,6,6,102,102,60,0,0}, // j
+        {96,96,102,108,120,120,108,102,102,0,0,0}, // k
+        {56,24,24,24,24,24,24,24,60,0,0,0}, // l
+        {0,0,102,127,107,107,99,99,99,0,0,0}, // m
+        {0,0,124,102,102,102,102,102,102,0,0,0}, // n
+        {0,0,60,102,102,102,102,102,60,0,0,0}, // o
+        {0,0,124,102,102,102,124,96,96,240,0,0}, // p
+        {0,0,62,102,102,102,62,6,6,15,0,0}, // q
+        {0,0,124,102,96,96,96,96,240,0,0,0}, // r
+        {0,0,62,96,60,6,6,102,60,0,0,0}, // s
+        {16,16,124,16,16,16,16,16,14,0,0,0}, // t
+        {0,0,102,102,102,102,102,102,62,0,0,0}, // u
+        {0,0,102,102,102,102,102,60,24,0,0,0}, // v
+        {0,0,99,99,99,107,127,54,54,0,0,0}, // w
+        {0,0,102,102,60,24,60,102,102,0,0,0}, // x
+        {0,0,102,102,102,62,6,102,60,0,0,0}, // y
+        {0,0,126,12,24,48,96,96,126,0,0,0}, // z
+        {12,24,24,24,48,24,24,24,12,0,0,0}, // {
+        {24,24,24,24,24,24,24,24,24,0,0,0}, // |
+        {48,24,24,24,12,24,24,24,48,0,0,0}, // }
+        {0,0,0,51,102,204,0,0,0,0,0,0}, // ~
+    };
+    const int char_w = 8;
+    const int char_h = 12;
+        const int spacing = 2;
+        const int scale = 2;
+    // Compose overlay lines
+    char line1[64], line2[64], line3[128];
+    snprintf(line1, sizeof(line1), "%s Pinch Zoom on Scroll", display->overlay_pinch_zoom_enabled ? "[x]" : "[ ]");
+    snprintf(line2, sizeof(line2), "%s Overlay Toggle", display->overlay_toggle_enabled ? "[x]" : "[ ]");
+    snprintf(line3, sizeof(line3), "%s", display->overlay_text);
+    // Layout: 2 checkboxes + 1 info line
+    int lines = 3;
+    int maxlen = (int)strlen(line1);
+    if ((int)strlen(line2) > maxlen) maxlen = (int)strlen(line2);
+    if ((int)strlen(line3) > maxlen) maxlen = (int)strlen(line3);
+        int text_w = maxlen * (char_w * scale + spacing);
+        int text_h = lines * (char_h * scale) + (lines - 1) * (2 * scale);
+    SDL_SetRenderDrawBlendMode(display->renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(display->renderer, 0, 0, 0, 200); // dark semi-transparent background
+    SDL_Rect bg = { display->overlay_x, display->overlay_y, text_w + 8, text_h + 8 };
+    SDL_RenderFillRect(display->renderer, &bg);
+        SDL_SetRenderDrawColor(display->renderer, 255, 255, 255, 255); // white text for readability
+    int x = display->overlay_x + 4;
+    int y = display->overlay_y + 4;
+    const char *linestr[3] = { line1, line2, line3 };
+    for (int l = 0; l < lines; ++l) {
+        const char *text = linestr[l];
+        int len = (int)strlen(text);
+        int xx = x;
+        for (int i = 0; i < len; ++i) {
+            unsigned char c = text[i];
+            if (c < 32 || c > 127) {
+                    xx += char_w * scale + spacing;
+                continue;
+            }
+            const uint8_t *glyph = font8x12[c - 32];
+            for (int row = 0; row < char_h; ++row) {
+                uint8_t bits = glyph[row];
+                for (int col = 0; col < char_w; ++col) {
+                    if (bits & (1 << (7 - col))) {
+                            SDL_Rect r = { xx + col * scale, y + row * scale,
+                                           scale, scale };
+                        SDL_RenderFillRect(display->renderer, &r);
+                    }
+                }
+            }
+                xx += char_w * scale + spacing;
+        }
+            y += char_h * scale + 2 * scale;
+    }
+    // Set overlay_w and overlay_h for click detection
+        display->overlay_w = text_w + 8;
+        display->overlay_h = text_h + 8;
+}
 #include <assert.h>
 #include <inttypes.h>
 #include <string.h>
@@ -308,6 +466,9 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
         if (!ok) {
             return SC_DISPLAY_RESULT_PENDING;
         }
+
+        SDL_RenderPresent(display->renderer);
+        return SC_DISPLAY_RESULT_OK;
     }
 
     SDL_Renderer *renderer = display->renderer;
@@ -346,6 +507,11 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
         }
     }
 
+    // draw overlay UI (checkboxes, labels, info line) if requested
+    if (display->overlay_enabled) {
+        // Call the new overlay rendering function (to be implemented if not present)
+        sc_render_overlay_ui(display);
+    }
     SDL_RenderPresent(display->renderer);
     return SC_DISPLAY_RESULT_OK;
 }

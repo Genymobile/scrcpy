@@ -162,6 +162,9 @@ sc_screen_is_relative_mode(struct sc_screen *screen) {
     return screen->im.mp && screen->im.mp->relative_mode;
 }
 
+static void sc_screen_log_overlay_state(struct sc_screen *screen,
+                                       const char *reason);
+
 static void
 sc_screen_update_content_rect(struct sc_screen *screen) {
     assert(screen->video);
@@ -213,9 +216,45 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
         sc_screen_update_content_rect(screen);
     }
 
+    // Show overlay when the toggle is enabled or when a temporary overlay TTL is active
+    bool overlay_should_be_visible = screen->overlay_toggle_enabled || screen->overlay_ttl > 0;
+    if (overlay_should_be_visible != screen->overlay_visible) {
+        screen->overlay_visible = overlay_should_be_visible;
+        sc_screen_log_overlay_state(screen, "render visibility update");
+    }
+    if (screen->overlay_visible) {
+        screen->display.overlay_enabled = true;
+        screen->display.overlay_x = screen->overlay_x;
+        screen->display.overlay_y = screen->overlay_y;
+        // copy info line
+        strncpy(screen->display.overlay_text, screen->overlay_text,
+                sizeof(screen->display.overlay_text) - 1);
+        screen->display.overlay_text[sizeof(screen->display.overlay_text) - 1] = '\0';
+        // forward checkbox state
+        screen->display.overlay_pinch_zoom_enabled = screen->overlay_pinch_zoom_enabled;
+        screen->display.overlay_toggle_enabled = screen->overlay_toggle_enabled;
+        // forward overlay size for click detection
+        screen->overlay_w = screen->display.overlay_w;
+        screen->overlay_h = screen->display.overlay_h;
+    } else {
+        screen->display.overlay_enabled = false;
+        screen->display.overlay_text[0] = '\0';
+        screen->display.overlay_pinch_zoom_enabled = false;
+        screen->display.overlay_toggle_enabled = false;
+    }
+
     enum sc_display_result res =
         sc_display_render(&screen->display, &screen->rect, screen->orientation);
     (void) res; // any error already logged
+
+    // decrement overlay TTL (frames)
+    if (screen->overlay_ttl > 0) {
+        --screen->overlay_ttl;
+        if (screen->overlay_ttl == 0) {
+            LOGD("Overlay TTL expired, hiding overlay");
+            screen->overlay_visible = false;
+        }
+    }
 }
 
 static void
@@ -249,7 +288,6 @@ event_watcher(void *data, SDL_Event *event) {
     return 0;
 }
 #endif
-
 static bool
 sc_screen_frame_sink_open(struct sc_frame_sink *sink,
                           const AVCodecContext *ctx) {
@@ -342,6 +380,30 @@ sc_screen_init(struct sc_screen *screen,
     screen->req.height = params->window_height;
     screen->req.fullscreen = params->fullscreen;
     screen->req.start_fps_counter = params->start_fps_counter;
+
+    // overlay defaults
+    screen->overlay_visible = false;
+    screen->overlay_x = 20;
+    screen->overlay_y = 20;
+    screen->overlay_w = 220;
+    screen->overlay_h = 36;
+    screen->overlay_text[0] = '\0';
+    screen->overlay_ttl = 0;
+    screen->overlay_dragging = false;
+    screen->overlay_drag_offset_x = 0;
+    screen->overlay_drag_offset_y = 0;
+    /* persistent overlay requested by options */
+    screen->overlay_persistent = params->overlay_persistent;
+    if (screen->overlay_persistent) {
+        screen->overlay_visible = true;
+        LOGD("Overlay persistent enabled at init");
+    }
+    // Initialize new overlay checkboxes
+    screen->overlay_pinch_zoom_enabled = false;
+    screen->overlay_toggle_enabled = screen->overlay_persistent;
+    if (screen->overlay_toggle_enabled) {
+        screen->overlay_visible = true;
+    }
 
     bool ok = sc_frame_buffer_init(&screen->fb);
     if (!ok) {
@@ -440,6 +502,7 @@ sc_screen_init(struct sc_screen *screen,
         .legacy_paste = params->legacy_paste,
         .clipboard_autosync = params->clipboard_autosync,
         .shortcut_mods = params->shortcut_mods,
+        .scroll_action = params->scroll_action,
     };
 
     sc_input_manager_init(&screen->im, &im_params);
@@ -598,9 +661,7 @@ sc_screen_set_orientation(struct sc_screen *screen,
     set_content_size(screen, new_content_size);
 
     screen->orientation = orientation;
-    LOGI("Display orientation set to %s", sc_orientation_get_name(orientation));
-
-    sc_screen_render(screen, true);
+    
 }
 
 static bool
@@ -798,8 +859,77 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
                                             content_size.height);
 }
 
+static bool
+sc_screen_handle_mouse_wheel_pinch(struct sc_screen *screen,
+                                   const SDL_MouseWheelEvent *wheel) {
+    if (!screen->overlay_pinch_zoom_enabled) {
+        fprintf(stderr, "PINCH: wheel ignored, pinch disabled\n");
+        return false;
+    }
+
+    fprintf(stderr, "PINCH: intercepting mouse wheel for pinch zoom\n");
+    LOGI("Intercepting mouse wheel for pinch zoom: visible=%d toggle_enabled=%d pinch_enabled=%d",
+         screen->overlay_visible,
+         screen->overlay_toggle_enabled,
+         screen->overlay_pinch_zoom_enabled);
+    return sc_input_manager_handle_mouse_wheel_pinch(&screen->im, wheel);
+}
+
+static void
+sc_screen_log_overlay_state(struct sc_screen *screen, const char *reason) {
+    LOGD("Overlay state changed (%s): visible=%d persistent=%d toggle_enabled=%d pinch_zoom_enabled=%d ttl=%d",
+         reason,
+         screen->overlay_visible,
+         screen->overlay_persistent,
+         screen->overlay_toggle_enabled,
+         screen->overlay_pinch_zoom_enabled,
+         screen->overlay_ttl);
+}
+
 bool
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
+
+    // Overlay toggle hotkey: F10
+    if (event->type == SDL_KEYDOWN && event->key.keysym.sym == SDLK_F10) {
+        screen->overlay_toggle_enabled = !screen->overlay_toggle_enabled;
+        if (!screen->overlay_toggle_enabled) {
+            screen->overlay_visible = false;
+        } else {
+            screen->overlay_visible = true;
+        }
+        sc_screen_log_overlay_state(screen, "hotkey F10");
+        return true;
+    }
+
+    // If overlay toggle is off, keep normal event flow and allow the overlay
+    // to remain visible temporarily while the TTL is active.
+    if (!screen->overlay_toggle_enabled) {
+        // Allow toggling overlay via checkbox click
+        if (event->type == SDL_MOUSEBUTTONDOWN) {
+            int mx = event->button.x;
+            int my = event->button.y;
+            sc_screen_hidpi_scale_coords(screen, &mx, &my);
+            int char_h = 12, scale = 2;
+            int x = screen->overlay_x + 4;
+            int y2 = screen->overlay_y + 4 + char_h * scale + 2 * scale;
+            int cb_w = screen->overlay_w - 8;
+            int cb_h = char_h * scale;
+            if (mx >= x && mx < x + cb_w && my >= y2 && my < y2 + cb_h) {
+                screen->overlay_toggle_enabled = true;
+                screen->overlay_visible = true;
+                LOGD("Overlay toggle re-enabled via hidden click");
+        fprintf(stderr, "OVERLAY: re-enabled via hidden click\n");
+        fprintf(stderr, "OVERLAY STATE: toggle=%d pinch=%d visible=%d ttl=%d\n",
+            screen->overlay_toggle_enabled,
+            screen->overlay_pinch_zoom_enabled,
+            screen->overlay_visible,
+            screen->overlay_ttl);
+                sc_screen_log_overlay_state(screen, "hidden click on toggle line");
+                return true;
+            }
+        }
+    }
+
     switch (event->type) {
         case SC_EVENT_SCREEN_INIT_SIZE: {
             // The initial size is passed via screen->frame_size
@@ -817,6 +947,12 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                 return false;
             }
             return true;
+        }
+        case SDL_MOUSEWHEEL: {
+            if (sc_screen_handle_mouse_wheel_pinch(screen, &event->wheel)) {
+                return true;
+            }
+            break;
         }
         case SDL_WINDOWEVENT:
             if (!screen->video
@@ -865,6 +1001,98 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
             && sc_mouse_capture_handle_event(&screen->mc, event)) {
         // The mouse capture handler consumed the event
         return true;
+    }
+
+    // Handle overlay drag/move before forwarding to input manager
+    switch (event->type) {
+    case SDL_MOUSEBUTTONDOWN: {
+        fprintf(stderr, "SCREEN MOUSE DOWN: x=%d y=%d button=%d overlay_visible=%d toggle_enabled=%d pinch_enabled=%d\n",
+            event->button.x,
+            event->button.y,
+            event->button.button,
+            screen->overlay_visible,
+            screen->overlay_toggle_enabled,
+            screen->overlay_pinch_zoom_enabled);
+            // Overlay checkbox click handling
+            if (screen->overlay_visible && event->button.button == SDL_BUTTON_LEFT) {
+                int mx = event->button.x;
+                int my = event->button.y;
+                sc_screen_hidpi_scale_coords(screen, &mx, &my);
+                // Overlay layout must match display.c rendering
+                // Font: 8x12, scale: 2, spacing: 2, padding: 4, 3 lines
+                int char_h = 12, scale = 2;
+                int x = screen->overlay_x + 4;
+                int y = screen->overlay_y + 4;
+                // Checkbox area: full visible line width for easier clicking
+                int cb_w = screen->overlay_w - 8;
+                int cb_h = char_h * scale;
+                // Pinch Zoom checkbox (line 1)
+                if (mx >= x && mx < x + cb_w && my >= y && my < y + cb_h) {
+                    screen->overlay_pinch_zoom_enabled = !screen->overlay_pinch_zoom_enabled;
+                    LOGD("Overlay pinch zoom toggled: %d", screen->overlay_pinch_zoom_enabled);
+                    fprintf(stderr, "OVERLAY: pinch zoom toggled=%d\n",
+                            screen->overlay_pinch_zoom_enabled);
+                    sc_screen_log_overlay_state(screen, "checkbox pinch zoom");
+                    return true;
+                }
+                // Overlay Toggle checkbox (line 2)
+                int y2 = y + char_h * scale + 2 * scale;
+                if (mx >= x && mx < x + cb_w && my >= y2 && my < y2 + cb_h) {
+                    screen->overlay_toggle_enabled = !screen->overlay_toggle_enabled;
+                    screen->overlay_visible = screen->overlay_toggle_enabled;
+                    LOGD("Overlay toggle toggled: %d", screen->overlay_toggle_enabled);
+                    fprintf(stderr, "OVERLAY: toggle enabled=%d\n",
+                            screen->overlay_toggle_enabled);
+                    sc_screen_log_overlay_state(screen, "checkbox overlay toggle");
+                    return true;
+                }
+            }
+            if (screen->overlay_visible && event->button.button == SDL_BUTTON_LEFT) {
+                int mx = event->button.x;
+                int my = event->button.y;
+                sc_screen_hidpi_scale_coords(screen, &mx, &my);
+                int char_h = 12, scale = 2;
+                int drag_h = char_h * scale + 2 * scale;
+                int drag_w = 3 * (8 * scale + 2) + 8;
+                // Only start dragging if the click is in the top overlay header
+                if (mx >= screen->overlay_x && mx < screen->overlay_x + drag_w
+                        && my >= screen->overlay_y && my < screen->overlay_y + drag_h) {
+                    screen->overlay_dragging = true;
+                    screen->overlay_drag_offset_x = mx - screen->overlay_x;
+                    screen->overlay_drag_offset_y = my - screen->overlay_y;
+                    // consume the event (do not forward to device)
+                    return true;
+                }
+            }
+            break;
+        }
+        case SDL_MOUSEBUTTONUP: {
+            if (screen->overlay_dragging && event->button.button == SDL_BUTTON_LEFT) {
+                screen->overlay_dragging = false;
+                return true;
+            }
+            break;
+        }
+        case SDL_MOUSEMOTION: {
+            if (screen->overlay_dragging) {
+                int mx = event->motion.x;
+                int my = event->motion.y;
+                sc_screen_hidpi_scale_coords(screen, &mx, &my);
+                screen->overlay_x = mx - screen->overlay_drag_offset_x;
+                screen->overlay_y = my - screen->overlay_drag_offset_y;
+                // clamp to window bounds
+                int ww, wh;
+                SDL_GL_GetDrawableSize(screen->window, &ww, &wh);
+                if (screen->overlay_x < 0) screen->overlay_x = 0;
+                if (screen->overlay_y < 0) screen->overlay_y = 0;
+                if (screen->overlay_x + screen->overlay_w > ww)
+                    screen->overlay_x = ww - screen->overlay_w;
+                if (screen->overlay_y + screen->overlay_h > wh)
+                    screen->overlay_y = wh - screen->overlay_h;
+                return true;
+            }
+            break;
+        }
     }
 
     sc_input_manager_handle_event(&screen->im, event);
