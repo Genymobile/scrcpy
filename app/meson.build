@@ -105,6 +105,12 @@ if v4l2_support
     src += [ 'src/v4l2_sink.c' ]
 endif
 
+libavdevice_dep = dependency('libavdevice', static: get_option('static'), required: false)
+client_audio_support = get_option('client_audio') and libavdevice_dep.found()
+if client_audio_support
+    src += [ 'src/client_audio.c' ]
+endif
+
 usb_support = get_option('usb')
 if usb_support
     src += [
@@ -129,8 +135,8 @@ dependencies = [
     dependency('sdl3', version: '>= 3.2.0', static: static),
 ]
 
-if v4l2_support
-    dependencies += dependency('libavdevice', static: static)
+if v4l2_support or client_audio_support
+    dependencies += libavdevice_dep
 endif
 
 if usb_support
@@ -181,6 +187,9 @@ conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 
 # enable V4L2 support (linux only)
 conf.set('HAVE_V4L2', v4l2_support)
+
+# enable client audio forwarding (requires libavdevice)
+conf.set('HAVE_CLIENT_AUDIO', client_audio_support)
 
 # enable HID over AOA support (linux only)
 conf.set('HAVE_USB', usb_support)

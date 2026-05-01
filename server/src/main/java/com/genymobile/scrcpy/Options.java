@@ -26,6 +26,7 @@ public class Options {
     private int scid = -1; // 31-bit non-negative value, or -1
     private boolean video = true;
     private boolean audio = true;
+    private boolean client_audio = false;
     private int maxSize;
     private int minSizeAlignment = 1;
     private VideoCodec videoCodec = VideoCodec.H264;
@@ -98,6 +99,10 @@ public class Options {
 
     public boolean getAudio() {
         return audio;
+    }
+
+    public boolean getClientAudio() {
+        return client_audio;
     }
 
     public int getMaxSize() {
@@ -343,6 +348,9 @@ public class Options {
                 case "audio":
                     options.audio = Boolean.parseBoolean(value);
                     break;
+                case "client_audio":
+                    options.client_audio = Boolean.parseBoolean(value);
+                    break;
                 case "video_codec":
                     VideoCodec videoCodec = VideoCodec.findByName(value);
                     if (videoCodec == null) {
@@ -553,6 +561,12 @@ public class Options {
         if (options.newDisplay != null) {
             assert options.displayId == 0 : "Must not set both displayId and newDisplay";
             options.displayId = Device.DISPLAY_ID_NONE;
+        }
+
+        if (options.client_audio &&
+            (options.audioSource == AudioSource.VOICE_CALL ||
+             options.audioSource == AudioSource.VOICE_CALL_UPLINK)) {
+            throw new IllegalArgumentException("client_audio is incompatible with audio_source=voice-call and audio_source=voice-call-uplink");
         }
 
         return options;
