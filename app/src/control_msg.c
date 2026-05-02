@@ -185,6 +185,10 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
         case SC_CONTROL_MSG_TYPE_CAMERA_SET_TORCH:
             buf[1] = msg->camera_set_torch.on ? 1 : 0;
             return 2;
+        case SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY:
+            sc_write16be(&buf[1], msg->resize_display.width);
+            sc_write16be(&buf[3], msg->resize_display.height);
+            return 5;
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
@@ -272,6 +276,10 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
         case SC_CONTROL_MSG_TYPE_SET_DISPLAY_POWER:
             LOG_CMSG("display power %s",
                      msg->set_display_power.on ? "on" : "off");
+            break;
+        case SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY:
+            LOG_CMSG("resize display %" PRIu16 "x%" PRIu16,
+                     msg->resize_display.width, msg->resize_display.height);
             break;
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
             LOG_CMSG("expand notification panel");

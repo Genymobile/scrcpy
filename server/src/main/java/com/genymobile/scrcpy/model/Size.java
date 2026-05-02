@@ -32,6 +32,10 @@ public final class Size {
     }
 
     public Size constrain(VideoConstraints constraints) {
+        return constrain(constraints, true);
+    }
+
+    public Size constrain(VideoConstraints constraints, boolean preserveAspectRatio) {
         int maxSize = constraints.getMaxSize();
         int alignment = constraints.getAlignment();
 
@@ -45,35 +49,43 @@ public final class Size {
         int maxWidth = maxCodecSize.width;
         int maxHeight = maxCodecSize.height;
         if (maxSize > 0) {
-            if (maxSize < maxWidth) {
+            if (maxWidth > maxSize) {
                 maxWidth = maxSize;
             }
-            if (maxSize < maxHeight) {
+            if (maxHeight > maxSize) {
                 maxHeight = maxSize;
             }
         }
-        maxWidth = maxWidth / alignment * alignment;
-        maxHeight = maxHeight / alignment * alignment;
+        maxWidth = align(maxWidth, alignment);
+        maxHeight = align(maxHeight, alignment);
 
         int w, h;
-        if (width > maxWidth || height > maxHeight) {
-            if (width * maxHeight > height * maxWidth) {
-                w = maxWidth;
-                h = round(height * maxWidth / width, alignment);
+        if (preserveAspectRatio) {
+            if (width > maxWidth || height > maxHeight) {
+                if (width * maxHeight > height * maxWidth) {
+                    w = maxWidth;
+                    h = height * maxWidth / width;
+                } else {
+                    w = width * maxHeight / height;
+                    h = maxHeight;
+                }
             } else {
-                w = round(width * maxHeight / height, alignment);
-                h = maxHeight;
+                w = width;
+                h = height;
             }
         } else {
-            w = round(width, alignment);
-            h = round(height, alignment);
+            w = Math.min(width, maxWidth);
+            h = Math.min(height, maxHeight);
         }
+
+        w = align(w, alignment);
+        h = align(h, alignment);
 
         assert w <= maxWidth : "The width cannot exceed maxWidth";
         assert h <= maxHeight : "The height cannot exceed maxHeight";
 
         // Minimum codec size must be respected (regardless of requested maxSize)
-        int minCodecSize = constraints.getMinCodecSize();
+        int minCodecSize = alignUp(constraints.getMinCodecSize(), alignment);
         if (w < minCodecSize) {
             w = minCodecSize;
         }
@@ -81,20 +93,27 @@ public final class Size {
             h = minCodecSize;
         }
 
+        assert w % alignment == 0 : "The width must be a multiple of alignment";
+        assert h % alignment == 0 : "The height must be a multiple of alignment";
+
         return new Size(w, h);
     }
 
     public Size align(int alignment) {
-        int w = width / alignment * alignment;
-        int h = height / alignment * alignment;
+        int w = align(width, alignment);
+        int h = align(height, alignment);
         if (w == width && h == height) {
             return this;
         }
         return new Size(w, h);
     }
 
-    private static int round(int value, int alignment) {
-        return (value + (alignment / 2)) / alignment * alignment;
+    private static int align(int value, int alignment) {
+        return value / alignment * alignment;
+    }
+
+    private static int alignUp(int value, int alignment) {
+        return (value + alignment - 1) / alignment * alignment;
     }
 
     public Rect toRect() {

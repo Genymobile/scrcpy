@@ -16,7 +16,7 @@ import android.view.IDisplayWindowListener;
 public class DisplayMonitor {
 
     public interface Listener {
-        void onDisplayPropertiesChanged();
+        void onDisplayPropertiesChanged(DisplayProperties props);
     }
 
     // On Android 14, DisplayListener may be broken (it never sends events). This is fixed in recent Android 14 upgrades, but we can't really
@@ -54,7 +54,12 @@ public class DisplayMonitor {
                 }
 
                 if (eventDisplayId == displayId) {
-                    checkDisplayPropertiesChanged();
+                    try {
+                        checkDisplayPropertiesChanged();
+                    } catch (Throwable e) {
+                        Ln.e("DisplayMonitor error", e);
+                        throw e;
+                    }
                 }
             }, handler);
         } else {
@@ -66,7 +71,12 @@ public class DisplayMonitor {
                     }
 
                     if (eventDisplayId == displayId) {
-                        checkDisplayPropertiesChanged();
+                        try {
+                            checkDisplayPropertiesChanged();
+                        } catch (Throwable e) {
+                            Ln.e("DisplayMonitor error", e);
+                            throw e;
+                        }
                     }
                 }
             };
@@ -113,9 +123,9 @@ public class DisplayMonitor {
             // We can't compare with the current properties, so reset unconditionally
             DisplayProperties oldProps = getAndSetDisplayProperties(null); // exchange with synchronization
             if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v("DisplayMonitor: requestReset(): " + oldProps + " -> (unknown)");
+                Ln.v("DisplayMonitor: " + oldProps + " -> (unknown)");
             }
-            listener.onDisplayPropertiesChanged();
+            listener.onDisplayPropertiesChanged(null);
         } else {
             DisplayProperties newProps = new DisplayProperties(di.getSize(), di.getRotation());
 
@@ -123,11 +133,11 @@ public class DisplayMonitor {
             if (!newProps.equals(oldProps)) {
                 // Reset only if the properties are different
                 if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v("DisplayMonitor: requestReset(): " + oldProps + " -> " + newProps);
+                    Ln.v("DisplayMonitor: " + oldProps + " -> " + newProps);
                 }
-                listener.onDisplayPropertiesChanged();
+                listener.onDisplayPropertiesChanged(newProps);
             } else if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v("DisplayMonitor: DisplayProperties not changed (" + newProps + "): do not requestReset()");
+                Ln.v("DisplayMonitor: " + newProps + " (unchanged)");
             }
         }
     }

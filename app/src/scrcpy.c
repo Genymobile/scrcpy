@@ -466,6 +466,7 @@ scrcpy(struct scrcpy_options *options) {
         .vd_destroy_content = options->vd_destroy_content,
         .vd_system_decorations = options->vd_system_decorations,
         .keep_active = options->keep_active,
+        .flex_display = options->flex_display,
         .list = options->list,
     };
 
@@ -798,6 +799,7 @@ aoa_complete:
         struct sc_screen_params screen_params = {
             .video = options->video_playback,
             .camera = options->video_source == SC_VIDEO_SOURCE_CAMERA,
+            .flex_display = options->flex_display,
             .controller = controller,
             .fp = fp,
             .kp = kp,
@@ -815,6 +817,7 @@ aoa_complete:
             .window_height = options->window_height,
             .window_aspect_ratio_lock = options->window_aspect_ratio_lock,
             .window_borderless = options->window_borderless,
+            .render_fit = options->render_fit,
             .orientation = options->display_orientation,
             .mipmaps = options->mipmaps,
             .fullscreen = options->fullscreen,
