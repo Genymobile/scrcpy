@@ -32,6 +32,10 @@ public final class Size {
     }
 
     public Size constrain(VideoConstraints constraints) {
+        return constrain(constraints, true);
+    }
+
+    public Size constrain(VideoConstraints constraints, boolean preserveAspectRatio) {
         int maxSize = constraints.getMaxSize();
         int alignment = constraints.getAlignment();
 
@@ -56,18 +60,26 @@ public final class Size {
         maxHeight = align(maxHeight, alignment);
 
         int w, h;
-        if (width > maxWidth || height > maxHeight) {
-            if (width * maxHeight > height * maxWidth) {
-                w = maxWidth;
-                h = align(height * maxWidth / width, alignment);
+        if (preserveAspectRatio) {
+            if (width > maxWidth || height > maxHeight) {
+                if (width * maxHeight > height * maxWidth) {
+                    w = maxWidth;
+                    h = height * maxWidth / width;
+                } else {
+                    w = width * maxHeight / height;
+                    h = maxHeight;
+                }
             } else {
-                w = align(width * maxHeight / height, alignment);
-                h = maxHeight;
+                w = width;
+                h = height;
             }
         } else {
-            w = align(width, alignment);
-            h = align(height, alignment);
+            w = Math.min(width, maxWidth);
+            h = Math.min(height, maxHeight);
         }
+
+        w = align(w, alignment);
+        h = align(h, alignment);
 
         assert w <= maxWidth : "The width cannot exceed maxWidth";
         assert h <= maxHeight : "The height cannot exceed maxHeight";
