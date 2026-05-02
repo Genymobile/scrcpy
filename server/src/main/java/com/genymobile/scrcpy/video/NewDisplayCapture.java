@@ -64,6 +64,9 @@ public class NewDisplayCapture extends SurfaceCapture {
     private Size physicalSize; // the physical size of the display (without rotation)
 
     private int dpi;
+    private Size requestedDisplaySize;
+    private int requestedDpi;
+    private boolean hasRequestedSize;
 
     public NewDisplayCapture(VirtualDisplayListener vdListener, Options options) {
         this.vdListener = vdListener;
@@ -105,11 +108,20 @@ public class NewDisplayCapture extends SurfaceCapture {
     public void prepare() {
         int displayRotation;
         if (virtualDisplay == null) {
-            if (!newDisplay.hasExplicitSize()) {
-                displaySize = mainDisplaySize;
-            }
-            if (!newDisplay.hasExplicitDpi()) {
-                dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, displaySize);
+            if (hasRequestedSize && requestedDisplaySize != null) {
+                displaySize = requestedDisplaySize;
+                if (requestedDpi != 0) {
+                    dpi = requestedDpi;
+                } else {
+                    dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, displaySize);
+                }
+            } else {
+                if (!newDisplay.hasExplicitSize()) {
+                    displaySize = mainDisplaySize;
+                }
+                if (!newDisplay.hasExplicitDpi()) {
+                    dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, displaySize);
+                }
             }
 
             videoSize = displaySize;
@@ -264,6 +276,32 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     @Override
     public void requestInvalidate() {
+        invalidate();
+    }
+
+    public synchronized void setDisplaySize(int width, int height, int dpi) {
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+        requestedDisplaySize = new Size(width, height);
+        requestedDpi = dpi;
+        hasRequestedSize = true;
+
+        if (virtualDisplay != null) {
+            int newDpi = dpi;
+            if (newDpi == 0) {
+                newDpi = scaleDpi(mainDisplaySize, mainDisplayDpi, requestedDisplaySize);
+            }
+
+            try {
+                virtualDisplay.resize(width, height, newDpi);
+                displaySizeMonitor.setSessionDisplaySize(requestedDisplaySize);
+                Ln.i("Virtual display resized in-place to " + width + "x" + height + "/" + newDpi);
+            } catch (Exception e) {
+                Ln.w("Virtual display resize failed, keeping existing display", e);
+            }
+        }
+
         invalidate();
     }
 }

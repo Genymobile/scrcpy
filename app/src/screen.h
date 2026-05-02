@@ -69,6 +69,19 @@ struct sc_screen {
 
     bool paused;
     AVFrame *resume_frame;
+
+    bool new_display;
+    bool adaptive_new_display;
+    bool vd_resize_pending;
+    bool vd_resize_enabled;
+    bool vd_initial_resize_sent;
+    struct sc_size vd_resize_size;
+    struct sc_size vd_last_sent_size;
+    bool vd_last_sent_valid;
+    uint16_t vd_last_sent_dpi;
+    uint16_t vd_fixed_dpi;
+    uint32_t vd_resize_deadline_ms;
+    double vd_scale;
 };
 
 struct sc_screen_params {
@@ -100,6 +113,10 @@ struct sc_screen_params {
 
     bool fullscreen;
     bool start_fps_counter;
+    bool new_display;
+    bool adaptive_new_display;
+    double adaptive_scale;
+    uint16_t adaptive_dpi;
 };
 
 // initialize screen, create window, renderer and texture (window is hidden)

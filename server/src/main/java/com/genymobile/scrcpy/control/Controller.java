@@ -331,6 +331,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             case ControlMessage.TYPE_RESET_VIDEO:
                 resetVideo();
                 break;
+            case ControlMessage.TYPE_SET_DISPLAY_SIZE:
+                setDisplaySize(msg.getDisplayWidth(), msg.getDisplayHeight(), msg.getDisplayDpi());
+                break;
             default:
                 // do nothing
         }
@@ -752,6 +755,17 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         if (surfaceCapture != null) {
             Ln.i("Video capture reset");
             surfaceCapture.requestInvalidate();
+        }
+    }
+
+    private void setDisplaySize(int width, int height, int dpi) {
+        if (surfaceCapture instanceof com.genymobile.scrcpy.video.NewDisplayCapture) {
+            com.genymobile.scrcpy.video.NewDisplayCapture nd =
+                    (com.genymobile.scrcpy.video.NewDisplayCapture) surfaceCapture;
+            Ln.i("Resize virtual display to " + width + "x" + height + "/" + dpi);
+            nd.setDisplaySize(width, height, dpi);
+        } else {
+            Ln.w("Display resize ignored: not a virtual display capture");
         }
     }
 }

@@ -106,6 +106,8 @@ enum {
     OPT_AUDIO_DUP,
     OPT_GAMEPAD,
     OPT_NEW_DISPLAY,
+    OPT_ADAPTIVE_NEW_DISPLAY,
+    OPT_ADAPTIVE_SCALE,
     OPT_LIST_APPS,
     OPT_START_APP,
     OPT_SCREEN_OFF_TIMEOUT,
@@ -631,6 +633,23 @@ static const struct sc_option options[] = {
                 "    --new-display=1920x1080/420  # force 420 dpi\n"
                 "    --new-display         # main display size and density\n"
                 "    --new-display=/240    # main display size and 240 dpi",
+    },
+    {
+        .longopt_id = OPT_ADAPTIVE_NEW_DISPLAY,
+        .longopt = "adaptive-new-display",
+        .argdesc = "[<width>x<height>][/<dpi>]",
+        .optional_arg = true,
+        .text = "Create a new display that adapts to the scrcpy window size.\n"
+                "When the window is resized, the virtual display is resized "
+                "accordingly and its density is updated.\n"
+                "If /<dpi> is provided, use that fixed density.",
+    },
+    {
+        .longopt_id = OPT_ADAPTIVE_SCALE,
+        .longopt = "adaptive-scale",
+        .argdesc = "<scale>",
+        .text = "Set adaptive scale factor (dpi = scale * 160). "
+                "Default is 1.0 (dpi=160).",
     },
     {
         .longopt_id = OPT_NO_AUDIO,
@@ -1805,6 +1824,29 @@ parse_display_id(const char *s, uint32_t *display_id) {
 }
 
 static bool
+parse_display_dpi(const char *s, uint16_t *dpi_out, bool *has_dpi_out) {
+    *has_dpi_out = false;
+    if (!s) {
+        return true;
+    }
+    const char *slash = strrchr(s, '/');
+    if (!slash) {
+        return true;
+    }
+    const char *dpi_str = slash + 1;
+    if (*dpi_str == '\0') {
+        return false;
+    }
+    long value = 0;
+    if (!sc_str_parse_integer(dpi_str, &value) || value <= 0 || value > 65535) {
+        return false;
+    }
+    *dpi_out = (uint16_t) value;
+    *has_dpi_out = true;
+    return true;
+}
+
+static bool
 parse_log_level(const char *s, enum sc_log_level *log_level) {
     if (!strcmp(s, "verbose")) {
         *log_level = SC_LOG_LEVEL_VERBOSE;
@@ -2797,6 +2839,31 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NEW_DISPLAY:
                 opts->new_display = optarg ? optarg : "";
                 break;
+            case OPT_ADAPTIVE_NEW_DISPLAY:
+                opts->adaptive_new_display = true;
+                opts->new_display = optarg ? optarg : "";
+                if (optarg) {
+                    uint16_t dpi = 0;
+                    bool has_dpi = false;
+                    if (!parse_display_dpi(optarg, &dpi, &has_dpi)) {
+                        LOGE("Invalid adaptive-new-display DPI: %s", optarg);
+                        return false;
+                    }
+                    if (has_dpi) {
+                        opts->adaptive_dpi = dpi;
+                    }
+                }
+                break;
+            case OPT_ADAPTIVE_SCALE: {
+                char *endptr = NULL;
+                double value = strtod(optarg, &endptr);
+                if (!endptr || *endptr != '\0' || value <= 0.0) {
+                    LOGE("Invalid adaptive scale: %s", optarg);
+                    return false;
+                }
+                opts->adaptive_scale = value;
+                break;
+            }
             case OPT_START_APP:
                 opts->start_app = optarg;
                 break;
