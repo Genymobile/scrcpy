@@ -134,7 +134,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         if (virtualDisplay == null) {
             if (flexDisplay) {
                 assert displaySize != null;
-                displaySize = displaySize.constrain(videoConstraints);
+                displaySize = displaySize.constrain(videoConstraints, false);
             } else {
                 if (displaySize == null) {
                     assert !flexDisplay;
@@ -159,7 +159,7 @@ public class NewDisplayCapture extends SurfaceCapture {
             displayRotation = displayInfo.getRotation();
             displaySize = displayInfo.getSize();
             if (flexDisplay) {
-                displaySize = displaySize.constrain(videoConstraints);
+                displaySize = displaySize.constrain(videoConstraints, false);
             } else {
                 // Align the physical display size to avoid unnecessary mismatches with the output size
                 displaySize = displaySize.align(videoConstraints.getAlignment());
@@ -326,7 +326,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         }
 
         VideoConstraints constraints = getVideoConstraints(); // synchronized
-        Size newSize = new Size(width, height).constrain(constraints);
+        Size newSize = new Size(width, height).constrain(constraints, false);
         if (Ln.isEnabled(Ln.Level.VERBOSE)) {
             Ln.v(getClass().getSimpleName() + ": requestResize(" + width + ", " + height + ")");
             Ln.v(getClass().getSimpleName() + ": constrained size = " + newSize);
