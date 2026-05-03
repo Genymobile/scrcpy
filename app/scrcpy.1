@@ -294,7 +294,11 @@ List displays available on the device.
 
 .TP
 .BI "\-m, \-\-max\-size " value
-Limit both the width and height of the video to \fIvalue\fR. The other dimension is computed so that the device aspect\-ratio is preserved.
+Limit both the width and height of the video.
+
+For display mirroring, the other dimension is computed so that the device aspect ratio is preserved (except for flex displays).
+
+For camera mirroring, the value is used to select the camera source size instead.
 
 Default is 0 (unlimited).
 

@@ -502,9 +502,12 @@ static const struct sc_option options[] = {
         .shortopt = 'm',
         .longopt = "max-size",
         .argdesc = "value",
-        .text = "Limit both the width and height of the video to value. The "
-                "other dimension is computed so that the device aspect-ratio "
-                "is preserved.\n"
+        .text = "Limit both the width and height of the video.\n"
+                "For display mirroring, the other dimension is computed so "
+                "that the device aspect ratio is preserved (except for flex "
+                "displays).\n"
+                "For camera mirroring, the value is used to select the camera "
+                "source size instead.\n"
                 "Default is 0 (unlimited).",
     },
     {
