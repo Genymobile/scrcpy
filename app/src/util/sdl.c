@@ -56,25 +56,6 @@ sc_sdl_get_window_size(SDL_Window *window) {
     return size;
 }
 
-struct sc_size
-sc_sdl_get_window_size_in_pixels(SDL_Window *window) {
-    int width;
-    int height;
-    bool ok = SDL_GetWindowSizeInPixels(window, &width, &height);
-    if (!ok) {
-        LOGE("Could not get window size: %s", SDL_GetError());
-        LOGE("Please report the error");
-        // fatal error
-        abort();
-    }
-
-    struct sc_size size = {
-        .width = width,
-        .height = height,
-    };
-    return size;
-}
-
 void
 sc_sdl_set_window_size(SDL_Window *window, struct sc_size size) {
     bool ok = SDL_SetWindowSize(window, size.width, size.height);
@@ -126,25 +107,6 @@ sc_sdl_hide_window(SDL_Window *window) {
         LOGE("Could not hide window: %s", SDL_GetError());
         assert(!"unexpected");
     }
-}
-
-struct sc_size
-sc_sdl_get_render_output_size(SDL_Renderer *renderer) {
-    int width;
-    int height;
-    bool ok = SDL_GetRenderOutputSize(renderer, &width, &height);
-    if (!ok) {
-        LOGE("Could not get render output size: %s", SDL_GetError());
-        LOGE("Please report the error");
-        // fatal error
-        abort();
-    }
-
-    struct sc_size size = {
-        .width = width,
-        .height = height,
-    };
-    return size;
 }
 
 bool
