@@ -3134,6 +3134,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
 
+        if (opts->window_width || opts->window_height) {
+            LOGE("--window-width and --window-height are disabled when using "
+                 "-x/--flex-display; configure the display size with "
+                 "--new-display=WxH instead");
+            return false;
+        }
+
         // Force free resizing
         opts->window_aspect_ratio_lock = false;
     }
