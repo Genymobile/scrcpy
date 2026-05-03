@@ -796,18 +796,17 @@ sc_input_manager_process_touch(struct sc_input_manager *im,
         return;
     }
 
-    struct sc_size drawable_size =
-        sc_sdl_get_window_size_in_pixels(im->screen->window);
+    struct sc_size window_size = sc_sdl_get_window_size(im->screen->window);
 
     // SDL touch event coordinates are normalized in the range [0; 1]
-    int32_t x = event->x * (int32_t) drawable_size.width;
-    int32_t y = event->y * (int32_t) drawable_size.height;
+    int32_t x = event->x * (int32_t) window_size.width;
+    int32_t y = event->y * (int32_t) window_size.height;
 
     struct sc_touch_event evt = {
         .position = {
             .screen_size = im->screen->frame_size,
             .point =
-                sc_screen_convert_drawable_to_frame_coords(im->screen, x, y),
+                sc_screen_convert_window_to_frame_coords(im->screen, x, y),
         },
         .action = sc_touch_action_from_sdl(event->type),
         .pointer_id = event->fingerID,
@@ -919,7 +918,6 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
             && event->clicks == 2) {
         int32_t x = event->x;
         int32_t y = event->y;
-        sc_screen_hidpi_scale_coords(im->screen, &x, &y);
         SDL_FRect *r = &im->screen->rect;
         bool outside = x < r->x || x >= r->x + r->w
                     || y < r->y || y >= r->y + r->h;
