@@ -22,7 +22,8 @@ scrcpy -m 1024   # short version
 ```
 
 The other dimension is computed so that the Android device aspect ratio is
-preserved. That way, a device in 1920×1080 will be mirrored at 1024×576.
+preserved (except for flex displays). That way, a device in 1920×1080 will be
+mirrored at 1024×576.
 
 For camera mirroring, the `--max-size` value is used to select the camera source
 size instead (among the available resolutions).
