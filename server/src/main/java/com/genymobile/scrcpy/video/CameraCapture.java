@@ -68,6 +68,8 @@ public class CameraCapture extends SurfaceCapture {
     private final boolean initialTorch;
     private float zoom;
 
+    private VideoConstraints videoConstraints;
+
     private String cameraId;
     private Size captureSize;
     private Size videoSize; // after OpenGL transforms
@@ -104,7 +106,9 @@ public class CameraCapture extends SurfaceCapture {
     }
 
     @Override
-    protected void init() throws ConfigurationException, IOException {
+    protected void init(VideoConstraints videoConstraints) throws ConfigurationException, IOException {
+        this.videoConstraints = videoConstraints;
+
         cameraThread = new HandlerThread("camera");
         cameraThread.start();
         cameraHandler = new Handler(cameraThread.getLooper());
@@ -126,7 +130,7 @@ public class CameraCapture extends SurfaceCapture {
     @Override
     public void prepare() throws IOException {
         try {
-            int maxSize = getVideoConstraints().getMaxSize();
+            int maxSize = videoConstraints.getMaxSize();
             captureSize = selectSize(cameraId, explicitSize, maxSize, aspectRatio, highSpeed);
             if (captureSize == null) {
                 throw new IOException("Could not select camera size");
@@ -148,7 +152,7 @@ public class CameraCapture extends SurfaceCapture {
         filter.addAngle(angle);
 
         transform = filter.getInverseTransform();
-        videoSize = filter.getOutputSize().constrain(getVideoConstraints());
+        videoSize = filter.getOutputSize().constrain(videoConstraints);
     }
 
     private static String selectCamera(String explicitCameraId, CameraFacing cameraFacing) throws CameraAccessException, ConfigurationException {

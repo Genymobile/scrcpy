@@ -36,6 +36,8 @@ public class ScreenCapture extends SurfaceCapture {
     private Orientation captureOrientation;
     private final float angle;
 
+    private VideoConstraints videoConstraints;
+
     private DisplayInfo displayInfo;
     private Size videoSize;
 
@@ -60,7 +62,8 @@ public class ScreenCapture extends SurfaceCapture {
     }
 
     @Override
-    public void init() {
+    public void init(VideoConstraints videoConstraints) {
+        this.videoConstraints = videoConstraints;
         displayMonitor.start(displayId, this::invalidate);
     }
 
@@ -98,7 +101,7 @@ public class ScreenCapture extends SurfaceCapture {
         filter.addAngle(angle);
 
         transform = filter.getInverseTransform();
-        videoSize = filter.getOutputSize().constrain(getVideoConstraints());
+        videoSize = filter.getOutputSize().constrain(videoConstraints);
     }
 
     @Override

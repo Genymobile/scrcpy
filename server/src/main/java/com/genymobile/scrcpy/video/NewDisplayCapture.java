@@ -59,6 +59,8 @@ public class NewDisplayCapture extends SurfaceCapture {
     private final boolean vdDestroyContent;
     private final boolean vdSystemDecorations;
 
+    private VideoConstraints videoConstraints;
+
     private VirtualDisplay virtualDisplay;
     private Size videoSize;
     private Size displaySize; // the logical size of the display (including rotation)
@@ -82,7 +84,9 @@ public class NewDisplayCapture extends SurfaceCapture {
     }
 
     @Override
-    protected void init() {
+    protected void init(VideoConstraints videoConstraints) {
+        this.videoConstraints = videoConstraints;
+
         displaySize = newDisplay.getSize();
         dpi = newDisplay.getDpi();
         if (displaySize == null || dpi == 0) {
@@ -110,7 +114,7 @@ public class NewDisplayCapture extends SurfaceCapture {
             }
 
             // Align the physical display size to avoid unnecessary mismatches with the output size
-            displaySize = displaySize.align(getVideoConstraints().getAlignment());
+            displaySize = displaySize.align(videoConstraints.getAlignment());
 
             if (!newDisplay.hasExplicitDpi()) {
                 dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, displaySize);
@@ -125,7 +129,7 @@ public class NewDisplayCapture extends SurfaceCapture {
             displayRotation = displayInfo.getRotation();
 
             // Align the physical display size to avoid unnecessary mismatches with the output size
-            displaySize = displayInfo.getSize().align(getVideoConstraints().getAlignment());
+            displaySize = displayInfo.getSize().align(videoConstraints.getAlignment());
         }
 
         VideoFilter filter = new VideoFilter(displaySize);
@@ -139,7 +143,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         filter.addAngle(angle);
 
         Size outputSize = filter.getOutputSize();
-        Size filteredSize = outputSize.constrain(getVideoConstraints());
+        Size filteredSize = outputSize.constrain(videoConstraints);
         if (!filteredSize.equals(outputSize)) {
             filter.addResize(filteredSize);
         }
