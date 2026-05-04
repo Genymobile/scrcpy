@@ -25,6 +25,7 @@ _scrcpy() {
         --display-id=
         --display-ime-policy=
         --display-orientation=
+        --do-not-disturb
         -e --select-tcpip
         -f --fullscreen
         --force-adb-forward

@@ -2,6 +2,7 @@ package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.FakeContext;
 
+import android.app.NotificationManager;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.hardware.camera2.CameraManager;
@@ -32,6 +33,7 @@ public final class ServiceManager {
     private static ClipboardManager clipboardManager;
     private static ActivityManager activityManager;
     private static CameraManager cameraManager;
+    private static NotificationManager notificationManager;
 
     private ServiceManager() {
         /* not instantiable */
@@ -108,5 +110,18 @@ public final class ServiceManager {
             }
         }
         return cameraManager;
+    }
+
+    public static NotificationManager getNotificationManager() {
+        if (notificationManager == null) {
+            try {
+                // a similar method like CameraManager is only available for Android >= 16
+                // https://android.googlesource.com/platform/frameworks/base/+blame/refs/tags/android-16.0.0_r4/core/java/android/app/NotificationManager.java#718
+                notificationManager = (NotificationManager) FakeContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+            } catch (Exception e) {
+                throw new AssertionError(e);
+            }
+        }
+        return notificationManager;
     }
 }
