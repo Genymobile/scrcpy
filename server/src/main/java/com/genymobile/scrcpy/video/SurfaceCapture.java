@@ -17,7 +17,6 @@ public abstract class SurfaceCapture {
     }
 
     private CaptureListener listener;
-    private VideoConstraints constraints;
 
     /**
      * Notify the listener that the capture has been invalidated (for example, because its size changed, or due to a manual user request).
@@ -29,19 +28,20 @@ public abstract class SurfaceCapture {
     /**
      * Called once before the first capture starts.
      */
-    public final void init(CaptureListener listener, VideoConstraints constraints) throws ConfigurationException, IOException {
+    public final void init(CaptureListener listener, VideoConstraints videoConstraints) throws ConfigurationException, IOException {
         this.listener = listener;
-        this.constraints = constraints;
-        init();
+        init(videoConstraints);
     }
 
     /**
      * Called once before the first capture starts.
+     *
+     * @param videoConstraints the video constraints
      */
-    protected abstract void init() throws ConfigurationException, IOException;
+    protected abstract void init(VideoConstraints videoConstraints) throws ConfigurationException, IOException;
 
     /**
-     * Called after the last capture ends (if and only if {@link #init()} has been called).
+     * Called after the last capture ends (if and only if {@link #init(VideoConstraints)} has been called).
      */
     public abstract void release();
 
@@ -80,14 +80,5 @@ public abstract class SurfaceCapture {
      */
     public boolean isClosed() {
         return false;
-    }
-
-    /**
-     * Return the video constraints.
-     *
-     * @return the video constraints
-     */
-    protected VideoConstraints getVideoConstraints() {
-        return constraints;
     }
 }
