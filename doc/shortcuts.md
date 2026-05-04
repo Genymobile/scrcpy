@@ -40,6 +40,7 @@ _<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
  | Click on `VOLUME_UP`                        | <kbd>MOD</kbd>+<kbd>↑</kbd> _(up)_
  | Click on `VOLUME_DOWN`                      | <kbd>MOD</kbd>+<kbd>↓</kbd> _(down)_
  | Click on `POWER`                            | <kbd>MOD</kbd>+<kbd>p</kbd>
+ | Click on `INFO`                             | <kbd>MOD</kbd>+<kbd>i</kbd>
  | Power on                                    | _Right-click²_
  | Turn device screen off (keep mirroring)     | <kbd>MOD</kbd>+<kbd>o</kbd>
  | Turn device screen on                       | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>
@@ -52,7 +53,7 @@ _<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
  | Synchronize clipboards and paste⁵           | <kbd>MOD</kbd>+<kbd>v</kbd>
  | Inject computer clipboard text              | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
  | Open keyboard settings (HID keyboard only)  | <kbd>MOD</kbd>+<kbd>k</kbd>
- | Enable/disable FPS counter (on stdout)      | <kbd>MOD</kbd>+<kbd>i</kbd>
+ | Enable/disable FPS counter (on stdout)      | <kbd>MOD</kbd>+<kbd>q</kbd>
  | Pinch-to-zoom/rotate                        | <kbd>Ctrl</kbd>+_click-and-move_
  | Tilt vertically (slide with 2 fingers)      | <kbd>Shift</kbd>+_click-and-move_
  | Tilt horizontally (slide with 2 fingers)    | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+_click-and-move_

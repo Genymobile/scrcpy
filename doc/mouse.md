@@ -125,6 +125,7 @@ Each character must be one of the following:
  - `h`: trigger shortcut `HOME`
  - `s`: trigger shortcut `APP_SWITCH`
  - `n`: trigger shortcut "expand notification panel"
+ - `i`: trigger shortcut `INFO`
 
 For example:
 

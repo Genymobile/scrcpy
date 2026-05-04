@@ -103,6 +103,11 @@ action_menu(struct sc_input_manager *im, enum sc_action action) {
     send_keycode(im, AKEYCODE_MENU, action, "MENU");
 }
 
+static inline void
+action_info(struct sc_input_manager *im, enum sc_action action) {
+    send_keycode(im, AKEYCODE_INFO, action, "INFO");
+}
+
 // turn the screen on if it was off, press BACK otherwise
 // If the screen is off, it is turned on only on ACTION_DOWN
 static void
@@ -428,6 +433,11 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                     action_power(im, action);
                 }
                 return;
+            case SDLK_i:
+                if (im->kp && !shift && !repeat && !paused) {
+                    action_info(im, action);
+                }
+                return;
             case SDLK_o:
                 if (control && !repeat && down && !paused) {
                     bool on = shift;
@@ -520,7 +530,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                     sc_screen_resize_to_pixel_perfect(im->screen);
                 }
                 return;
-            case SDLK_i:
+            case SDLK_q:
                 if (video && !shift && !repeat && down) {
                     switch_fps_counter_state(im);
                 }
@@ -774,6 +784,11 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
                     } else {
                         expand_settings_panel(im);
                     }
+                }
+                return;
+            case SC_MOUSE_BINDING_INFO:
+                if (im->kp) {
+                    action_info(im, action);
                 }
                 return;
             default:

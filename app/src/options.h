@@ -183,6 +183,7 @@ enum sc_mouse_binding {
     SC_MOUSE_BINDING_HOME,
     SC_MOUSE_BINDING_APP_SWITCH,
     SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL,
+    SC_MOUSE_BINDING_INFO,
 };
 
 struct sc_mouse_binding_set {
