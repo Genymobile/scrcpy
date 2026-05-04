@@ -74,4 +74,12 @@ public abstract class SurfaceCapture {
     public boolean isClosed() {
         return false;
     }
+
+    /**
+     * Set new video constraints (called by the encoder to retry when encoding fails)
+     *
+     * @param videoConstraints the video constraints
+     * @return {@code true} if the implementation accepts the new constraints, {@code false} otherwise.
+     */
+    protected abstract boolean applyNewVideoConstraints(VideoConstraints videoConstraints);
 }

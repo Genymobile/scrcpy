@@ -377,6 +377,16 @@ public class CameraCapture extends SurfaceCapture {
         return videoSize;
     }
 
+    @Override
+    protected boolean applyNewVideoConstraints(VideoConstraints videoConstraints) {
+        if (explicitSize != null) {
+            return false;
+        }
+
+        this.videoConstraints = videoConstraints;
+        return true;
+    }
+
     @SuppressLint("MissingPermission")
     @TargetApi(AndroidVersions.API_31_ANDROID_12)
     private CameraDevice openCamera(String id) throws CameraAccessException, InterruptedException {

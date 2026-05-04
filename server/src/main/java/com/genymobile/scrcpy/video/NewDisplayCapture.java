@@ -314,6 +314,12 @@ public class NewDisplayCapture extends SurfaceCapture {
         return videoSize;
     }
 
+    @Override
+    protected boolean applyNewVideoConstraints(VideoConstraints videoConstraints) {
+        setVideoConstraints(videoConstraints); // with synchronization
+        return true;
+    }
+
     private static int scaleDpi(Size initialSize, int initialDpi, Size size) {
         int den = initialSize.getMax();
         int num = size.getMax();
@@ -349,6 +355,7 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     private synchronized void triggerResize(Size size) {
         if (virtualDisplay != null) {
+            size = size.constrain(videoConstraints); // in case the constraints have changed
             int displayId = virtualDisplay.getDisplay().getDisplayId();
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
             int displayRotation = displayInfo.getRotation();

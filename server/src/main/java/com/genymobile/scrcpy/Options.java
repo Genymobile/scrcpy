@@ -60,6 +60,7 @@ public class Options {
     private String audioEncoder;
     private boolean powerOffScreenOnClose;
     private boolean clipboardAutosync = true;
+    private boolean downsizeOnError = true;
     private boolean cleanup = true;
     private boolean powerOn = true;
 
@@ -231,6 +232,10 @@ public class Options {
 
     public boolean getClipboardAutosync() {
         return clipboardAutosync;
+    }
+
+    public boolean getDownsizeOnError() {
+        return downsizeOnError;
     }
 
     public boolean getCleanup() {
@@ -448,6 +453,9 @@ public class Options {
                     break;
                 case "clipboard_autosync":
                     options.clipboardAutosync = Boolean.parseBoolean(value);
+                    break;
+                case "downsize_on_error":
+                    options.downsizeOnError = Boolean.parseBoolean(value);
                     break;
                 case "cleanup":
                     options.cleanup = Boolean.parseBoolean(value);

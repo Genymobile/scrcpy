@@ -209,4 +209,10 @@ public class ScreenCapture extends SurfaceCapture {
             SurfaceControl.closeTransaction();
         }
     }
+
+    @Override
+    protected boolean applyNewVideoConstraints(VideoConstraints videoConstraints) {
+        this.videoConstraints = videoConstraints;
+        return true;
+    }
 }

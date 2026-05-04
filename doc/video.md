@@ -25,6 +25,9 @@ The other dimension is computed so that the Android device aspect ratio is
 preserved (except for flex displays). That way, a device in 1920×1080 will be
 mirrored at 1024×576.
 
+If encoding fails, scrcpy automatically tries again with a lower definition
+(unless `--no-downsize-on-error` is enabled).
+
 For camera mirroring, the `--max-size` value is used to select the camera source
 size instead (among the available resolutions).
 

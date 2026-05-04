@@ -73,4 +73,14 @@ public class VideoConstraints {
     public int getMinCodecSize() {
         return minCodecSize;
     }
+
+    /**
+     * Return the video constraints with the provided max size.
+     *
+     * @param maxSize the max requested size
+     * @return new video constraints
+     */
+    public VideoConstraints withMaxSize(int maxSize) {
+        return new VideoConstraints(maxSize, alignment, maxCodecLandscapeSize, maxCodecPortraitSize, minCodecSize);
+    }
 }
