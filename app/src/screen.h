@@ -205,17 +205,4 @@ struct sc_point
 sc_screen_convert_window_to_frame_coords(struct sc_screen *screen,
                                         int32_t x, int32_t y);
 
-// convert point from drawable coordinates to frame coordinates
-// x and y are expressed in pixels
-struct sc_point
-sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
-                                          int32_t x, int32_t y);
-
-// Convert coordinates from window to drawable.
-// Events are expressed in window coordinates, but content is expressed in
-// drawable coordinates. They are the same if HiDPI scaling is 1, but differ
-// otherwise.
-void
-sc_screen_hidpi_scale_coords(struct sc_screen *screen, int32_t *x, int32_t *y);
-
 #endif
