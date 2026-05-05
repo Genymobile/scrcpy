@@ -22,6 +22,7 @@ struct sc_screen_otg {
     SDL_Texture *texture;
 
     struct sc_mouse_capture mc;
+    bool otg_automatic_screenshot;
 };
 
 struct sc_screen_otg_params {
@@ -37,6 +38,7 @@ struct sc_screen_otg_params {
     uint16_t window_height;
     bool window_borderless;
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
+    bool otg_automatic_screenshot;
 };
 
 bool

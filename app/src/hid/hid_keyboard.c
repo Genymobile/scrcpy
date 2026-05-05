@@ -343,3 +343,17 @@ void sc_hid_keyboard_generate_open(struct sc_hid_open *hid_open) {
 void sc_hid_keyboard_generate_close(struct sc_hid_close *hid_close) {
     hid_close->hid_id = SC_HID_ID_KEYBOARD;
 }
+
+void
+sc_hid_keyboard_generate_screenshot_press_input(struct sc_hid_input *hid_input) {
+    sc_hid_keyboard_input_init(hid_input);
+
+    uint8_t *keys_data = &hid_input->data[SC_HID_KEYBOARD_INDEX_KEYS];
+    keys_data[0] = 0x66; // Power : Usage ID 0x66
+    keys_data[1] = 0x81; // Volume Down : Usage ID 0x81
+}
+
+void
+sc_hid_keyboard_generate_screenshot_release_input(struct sc_hid_input *hid_input) {
+    sc_hid_keyboard_input_init(hid_input);
+}

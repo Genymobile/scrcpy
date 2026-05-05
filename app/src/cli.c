@@ -114,6 +114,7 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
+    OPT_OTG_AUTOMATIC_SCREENSHOT,
 };
 
 struct sc_option {
@@ -1062,6 +1063,13 @@ static const struct sc_option options[] = {
         .argdesc = "value",
         .text = "Set the initial window height.\n"
                 "Default is 0 (automatic).",
+    },
+    {
+        .longopt_id = OPT_OTG_AUTOMATIC_SCREENSHOT,
+        .longopt = "otg-automatic-screenshot",
+        .text = "Take a screenshot automatically each time mouse capture is exited in OTG mode.\n"
+                "This is particularly useful when OTG mode is used to enable USB debugging on a phone with a broken screen.\n"
+                "The screenshot will display the mouse pointer that will indicate where to move next."
     },
 };
 
@@ -2820,6 +2828,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                                               &opts->display_ime_policy)) {
                     return false;
                 }
+                break;
+            case OPT_OTG_AUTOMATIC_SCREENSHOT:
+                opts->otg_automatic_screenshot = true;
                 break;
             default:
                 // getopt prints the error message on stderr

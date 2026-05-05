@@ -13,7 +13,9 @@
 // Maybe SDL_Keycode is used by most people, but SDL_Scancode is taken from USB
 // HID protocol.
 // 0x65 is Application, typically AT-101 Keyboard ends here.
-#define SC_HID_KEYBOARD_KEYS 0x66
+// Increase the maximum value to 0x82 instead of the previous value 0x66 so that
+// we can send Power (0x66) and Volume Down (0x81) to take screenshots.
+#define SC_HID_KEYBOARD_KEYS 0x82
 
 #define SC_HID_ID_KEYBOARD 1
 
@@ -50,5 +52,11 @@ sc_hid_keyboard_generate_input_from_key(struct sc_hid_keyboard *hid,
 bool
 sc_hid_keyboard_generate_input_from_mods(struct sc_hid_input *hid_input,
                                          uint16_t mods_state);
+
+void
+sc_hid_keyboard_generate_screenshot_press_input(struct sc_hid_input *hid_input);
+
+void
+sc_hid_keyboard_generate_screenshot_release_input(struct sc_hid_input *hid_input);
 
 #endif

@@ -56,6 +56,14 @@ struct sc_key_processor_ops {
     void
     (*process_text)(struct sc_key_processor *kp,
                     const struct sc_text_event *event);
+
+    /**
+     * Take screenshot
+     *
+     * This function is optional.
+     */
+    bool
+    (*take_screenshot)(struct sc_key_processor *kp);
 };
 
 #endif
