@@ -287,8 +287,17 @@ public class SurfaceEncoder implements AsyncProcessor {
                             alive = false;
                             continue;
                         }
-                        // Do not retry on broken pipe, which is expected on close because the socket is closed by the client
-                        Ln.d("[DIAG] Broken pipe with no rotation context, throwing (normal client disconnect)");
+                        // Client disconnected normally (no rotation context).
+                        // Try to accept a new client connection instead of dying.
+                        Ln.i("Client disconnected. Waiting for a new client...");
+                        if (tryReconnect()) {
+                            headerWritten = false; // must re-send video header to new client
+                            firstFrameSent = false;
+                            alive = true;
+                            continue;
+                        }
+                        // No reconnector or reconnection failed, terminate
+                        Ln.d("No reconnection available, stopping stream");
                         throw e;
                     }
                     Ln.e("Capture/encoding error (consecutiveErrors=" + consecutiveErrors + "): " + e.getClass().getName() + ": " + e.getMessage());
@@ -569,23 +578,27 @@ public class SurfaceEncoder implements AsyncProcessor {
             // <https://github.com/Genymobile/scrcpy/issues/4143>
             Looper.prepare();
 
+            boolean fatalError = true;
             try {
                 streamCapture();
+                fatalError = false; // ended normally (all clients disconnected, no reconnector)
             } catch (ConfigurationException e) {
                 // Do not print stack trace, a user-friendly error-message has already been logged
                 Ln.d("Streaming stopped due to configuration error");
             } catch (IOException e) {
-                // Broken pipe is expected on close, because the socket is closed by the client
                 if (!IO.isBrokenPipe(e)) {
                     Ln.e("Video encoding error", e);
                 } else {
-                    Ln.d("[DIAG] Streaming stopped due to broken pipe (client disconnected). Stack trace:\n" + getStackTraceString(e));
+                    // Broken pipe means client disconnected and reconnection was not available.
+                    // This is not a fatal server error.
+                    Ln.d("Streaming stopped due to broken pipe (client disconnected)");
+                    fatalError = false;
                 }
             } catch (RuntimeException e) {
-                Ln.e("[DIAG] Unexpected runtime error during video encoding:\n" + getStackTraceString(e), e);
+                Ln.e("Unexpected runtime error during video encoding:\n" + getStackTraceString(e), e);
             } finally {
-                Ln.d("Screen streaming stopped (totalPacketsWritten=" + totalPacketsWritten + ")");
-                listener.onTerminated(true);
+                Ln.d("Screen streaming stopped (totalPacketsWritten=" + totalPacketsWritten + ", fatalError=" + fatalError + ")");
+                listener.onTerminated(fatalError);
             }
         }, "video");
         thread.start();
