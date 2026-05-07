@@ -352,11 +352,14 @@ public class NewDisplayCapture extends SurfaceCapture {
             int displayId = virtualDisplay.getDisplay().getDisplayId();
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
             int displayRotation = displayInfo.getRotation();
-            if (captureOrientation.isSwap() ^ (displayRotation % 2) != 0) {
+            if (captureOrientation.isSwap()) {
                 size = size.rotate();
             }
             tracker.pushClientRequest(new DisplayProperties(size, displayRotation));
-            virtualDisplay.resize(size.getWidth(), size.getHeight(), dpi);
+
+            // Although the display size (as detected by the DisplayMonitor) is rotated, the virtual display itself is not
+            Size displaySize = (displayRotation % 2) == 0 ? size : size.rotate();
+            virtualDisplay.resize(displaySize.getWidth(), displaySize.getHeight(), dpi);
         }
     }
 }
