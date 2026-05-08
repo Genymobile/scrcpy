@@ -164,23 +164,23 @@ sc_screen_is_relative_mode(struct sc_screen *screen) {
 }
 
 static void
-compute_content_rect(struct sc_size render_size, struct sc_size content_size,
+compute_content_rect(struct sc_size window_size, struct sc_size content_size,
                      bool is_icon, enum sc_render_fit render_fit,
                      SDL_FRect *rect) {
     if (is_icon) {
-        if (content_size.width <= render_size.width
-                && content_size.height <= render_size.height) {
+        if (content_size.width <= window_size.width
+                && content_size.height <= window_size.height) {
             // Center without upscaling
-            rect->x = (render_size.width - content_size.width) / 2.f;
-            rect->y = (render_size.height - content_size.height) / 2.f;
+            rect->x = (window_size.width - content_size.width) / 2.f;
+            rect->y = (window_size.height - content_size.height) / 2.f;
             rect->w = content_size.width;
             rect->h = content_size.height;
             return;
         }
     } else if (render_fit == SC_RENDER_FIT_UNSCALED) {
         // Cast to float first because input sizes are unsigned
-        float x = ((float) render_size.width - content_size.width) / 2.f;
-        float y = ((float) render_size.height - content_size.height) / 2.f;
+        float x = ((float) window_size.width - content_size.width) / 2.f;
+        float y = ((float) window_size.height - content_size.height) / 2.f;
         rect->x = MAX(0, x);
         rect->y = MAX(0, y);
         rect->w = content_size.width;
@@ -189,35 +189,35 @@ compute_content_rect(struct sc_size render_size, struct sc_size content_size,
     } else if (render_fit == SC_RENDER_FIT_STRETCHED) {
         rect->x = 0;
         rect->y = 0;
-        rect->w = render_size.width;
-        rect->h = render_size.height;
+        rect->w = window_size.width;
+        rect->h = window_size.height;
         return;
     }
 
     assert(is_icon || render_fit == SC_RENDER_FIT_LETTERBOX);
 
-    if (is_optimal_size(render_size, content_size)) {
+    if (is_optimal_size(window_size, content_size)) {
         rect->x = 0;
         rect->y = 0;
-        rect->w = render_size.width;
-        rect->h = render_size.height;
+        rect->w = window_size.width;
+        rect->h = window_size.height;
         return;
     }
 
-    bool keep_width = (uint32_t) content_size.width * render_size.height
-                    > (uint32_t) content_size.height * render_size.width;
+    bool keep_width = (uint32_t) content_size.width * window_size.height
+                    > (uint32_t) content_size.height * window_size.width;
     if (keep_width) {
         rect->x = 0;
-        rect->w = render_size.width;
-        rect->h = (float) render_size.width * content_size.height
+        rect->w = window_size.width;
+        rect->h = (float) window_size.width * content_size.height
                                             / content_size.width;
-        rect->y = (render_size.height - rect->h) / 2.f;
+        rect->y = (window_size.height - rect->h) / 2.f;
     } else {
         rect->y = 0;
-        rect->h = render_size.height;
-        rect->w = (float) render_size.height * content_size.width
+        rect->h = window_size.height;
+        rect->w = (float) window_size.height * content_size.width
                                              / content_size.height;
-        rect->x = (render_size.width - rect->w) / 2.f;
+        rect->x = (window_size.width - rect->w) / 2.f;
     }
 }
 
@@ -226,9 +226,8 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
     // Only upscale video frames, not icon
     bool is_icon = !screen->video || screen->disconnected;
 
-    struct sc_size render_size =
-        sc_sdl_get_render_output_size(screen->renderer);
-    compute_content_rect(render_size, screen->content_size, is_icon,
+    struct sc_size window_size = sc_sdl_get_window_size(screen->window);
+    compute_content_rect(window_size, screen->content_size, is_icon,
                          screen->render_fit, &screen->rect);
 }
 
@@ -249,17 +248,30 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, 0);
     sc_sdl_render_clear(renderer);
 
-    bool ok = false;
     SDL_Texture *texture = screen->tex.texture;
     if (!texture) {
         goto end;
     }
 
-    SDL_FRect *geometry = &screen->rect;
+    float scale = SDL_GetWindowPixelDensity(screen->window);
+    if (scale == 0) {
+        // Just in case, but in practice the function can only fail when window
+        // is invalid
+        LOGE("Cannot get scale value: %s", SDL_GetError());
+        scale = 1;
+    }
+
+    SDL_FRect geometry = {
+        .x = screen->rect.x * scale,
+        .y = screen->rect.y * scale,
+        .w = screen->rect.w * scale,
+        .h = screen->rect.h * scale,
+    };
     enum sc_orientation orientation = screen->orientation;
 
+    bool ok = false;
     if (orientation == SC_ORIENTATION_0) {
-        ok = SDL_RenderTexture(renderer, texture, NULL, geometry);
+        ok = SDL_RenderTexture(renderer, texture, NULL, &geometry);
     } else {
         unsigned cw_rotation = sc_orientation_get_rotation(orientation);
         double angle = 90 * cw_rotation;
@@ -267,13 +279,13 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
         const SDL_FRect *dstrect = NULL;
         SDL_FRect rect;
         if (sc_orientation_is_swap(orientation)) {
-            rect.x = geometry->x + (geometry->w - geometry->h) / 2.f;
-            rect.y = geometry->y + (geometry->h - geometry->w) / 2.f;
-            rect.w = geometry->h;
-            rect.h = geometry->w;
+            rect.x = geometry.x + (geometry.w - geometry.h) / 2.f;
+            rect.y = geometry.y + (geometry.h - geometry.w) / 2.f;
+            rect.w = geometry.h;
+            rect.h = geometry.w;
             dstrect = &rect;
         } else {
-            dstrect = geometry;
+            dstrect = &geometry;
         }
 
         SDL_FlipMode flip = sc_orientation_is_mirror(orientation)
@@ -309,9 +321,14 @@ sc_screen_request_resize_display(struct sc_screen *screen, uint16_t width,
 static void
 sc_screen_on_resize(struct sc_screen *screen, const SDL_WindowEvent *event) {
     // This event can be triggered before the window is shown
-    if (screen->window_shown) {
-        sc_screen_render(screen, true);
+    if (!screen->window_shown) {
+        return;
+    }
 
+    if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
+        sc_screen_render(screen, true);
+    } else {
+        assert(event->type == SDL_EVENT_WINDOW_RESIZED);
         if (screen->flex_display) {
             assert(!(event->data1 & ~0xFFFF));
             assert(!(event->data2 & ~0xFFFF));
@@ -353,7 +370,8 @@ event_watcher(void *data, SDL_Event *event) {
     struct sc_screen *screen = data;
     assert(screen->video);
 
-    if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
+    if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
+            || event->type == SDL_EVENT_WINDOW_RESIZED) {
         // In practice, it seems to always be called from the same thread in
         // that specific case. Anyway, it's just a workaround.
         sc_screen_on_resize(screen, &event->window);
@@ -1111,6 +1129,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
             return;
 // If defined, then the actions are already performed by the event watcher
 #ifndef CONTINUOUS_RESIZING_WORKAROUND
+        case SDL_EVENT_WINDOW_RESIZED:
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
             sc_screen_on_resize(screen, &event->window);
             return;
@@ -1219,8 +1238,8 @@ sc_screen_handle_disconnection(struct sc_screen *screen) {
 }
 
 struct sc_point
-sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
-                                           int32_t x, int32_t y) {
+sc_screen_convert_window_to_frame_coords(struct sc_screen *screen,
+                                         int32_t x, int32_t y) {
     assert(screen->video);
 
     enum sc_orientation orientation = screen->orientation;
@@ -1272,29 +1291,4 @@ sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
     }
 
     return result;
-}
-
-struct sc_point
-sc_screen_convert_window_to_frame_coords(struct sc_screen *screen,
-                                         int32_t x, int32_t y) {
-    sc_screen_hidpi_scale_coords(screen, &x, &y);
-    return sc_screen_convert_drawable_to_frame_coords(screen, x, y);
-}
-
-void
-sc_screen_hidpi_scale_coords(struct sc_screen *screen, int32_t *x, int32_t *y) {
-    // take the HiDPI scaling (dw/ww and dh/wh) into account
-
-    struct sc_size window_size = sc_sdl_get_window_size(screen->window);
-    int64_t ww = window_size.width;
-    int64_t wh = window_size.height;
-
-    struct sc_size drawable_size =
-        sc_sdl_get_window_size_in_pixels(screen->window);
-    int64_t dw = drawable_size.width;
-    int64_t dh = drawable_size.height;
-
-    // scale for HiDPI (64 bits for intermediate multiplications)
-    *x = (int64_t) *x * dw / ww;
-    *y = (int64_t) *y * dh / wh;
 }
