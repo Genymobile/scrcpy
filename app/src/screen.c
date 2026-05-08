@@ -271,12 +271,15 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
 
     bool ok = false;
     if (orientation == SC_ORIENTATION_0) {
+        // always align to a physical pixel
+        geometry.x = (int32_t) geometry.x;
+        geometry.y = (int32_t) geometry.y;
         ok = SDL_RenderTexture(renderer, texture, NULL, &geometry);
     } else {
         unsigned cw_rotation = sc_orientation_get_rotation(orientation);
         double angle = 90 * cw_rotation;
 
-        const SDL_FRect *dstrect = NULL;
+        SDL_FRect *dstrect = NULL;
         SDL_FRect rect;
         if (sc_orientation_is_swap(orientation)) {
             rect.x = geometry.x + (geometry.w - geometry.h) / 2.f;
@@ -291,6 +294,9 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
         SDL_FlipMode flip = sc_orientation_is_mirror(orientation)
                               ? SDL_FLIP_HORIZONTAL : 0;
 
+        // always align to a physical pixel
+        dstrect->x = (int32_t) dstrect->x;
+        dstrect->y = (int32_t) dstrect->y;
         ok = SDL_RenderTextureRotated(renderer, texture, NULL, dstrect, angle,
                                       NULL, flip);
     }
