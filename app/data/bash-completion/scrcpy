@@ -181,7 +181,7 @@ _scrcpy() {
             return
             ;;
         --render-fit)
-            COMPREPLY=($(compgen -W 'letterbox unscaled' -- "$cur"))
+            COMPREPLY=($(compgen -W 'letterbox stretched unscaled' -- "$cur"))
             return
             ;;
         --shortcut-mod)
