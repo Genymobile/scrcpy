@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy.control;
 
 import com.genymobile.scrcpy.util.StringUtils;
+import com.genymobile.scrcpy.util.Ln;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
@@ -38,6 +39,25 @@ public class DeviceMessageWriter {
                 byte[] data = msg.getData();
                 dos.writeShort(data.length);
                 dos.write(data);
+                break;
+            case DeviceMessage.TYPE_IMAGE_CLIPBOARD:
+                byte[] imageData = msg.getData();
+                String mimeType = msg.getMimeType();
+
+                byte[] mimeTypeBytes = mimeType.getBytes(StandardCharsets.UTF_8);
+                int messageSize = 1 + 4 + mimeTypeBytes.length + 4 + imageData.length;
+                if (messageSize > MESSAGE_MAX_SIZE) {
+                    Ln.w("Image clipboard message too large: " + messageSize + " bytes, dropping");
+                    return;
+                }
+
+                // Write fixed length fields first
+                // so client can easily detect whether they have received the whole message
+                dos.writeInt(mimeTypeBytes.length);
+                dos.writeInt(imageData.length);
+
+                dos.write(mimeTypeBytes);
+                dos.write(imageData);
                 break;
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);

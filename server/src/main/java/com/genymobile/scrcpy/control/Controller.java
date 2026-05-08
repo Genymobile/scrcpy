@@ -17,6 +17,7 @@ import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.VideoSource;
 import com.genymobile.scrcpy.video.VirtualDisplayListener;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
+import com.genymobile.scrcpy.wrappers.ClipboardManager.ClipboardImage;
 import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
@@ -147,10 +148,19 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                         // This is a notification for the change we are currently applying, ignore it
                         return;
                     }
-                    String text = Device.getClipboardText();
-                    if (text != null) {
-                        DeviceMessage msg = DeviceMessage.createClipboard(text);
+                    // Check for image clipboard first
+                    ClipboardImage clipboardImage = Device.getClipboardImage();
+                    if (clipboardImage != null && clipboardImage.data().length > 0) {
+                        // Send image clipboard data
+                        DeviceMessage msg = DeviceMessage.createImageClipboard(clipboardImage.data(), clipboardImage.mimeType());
                         sender.send(msg);
+                    } else {
+                        // Fall back to text clipboard
+                        String text = Device.getClipboardText();
+                        if (text != null) {
+                            DeviceMessage msg = DeviceMessage.createClipboard(text);
+                            sender.send(msg);
+                        }
                     }
                 });
             } else {
@@ -379,6 +389,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     return true;
                 case ControlMessage.TYPE_SET_CLIPBOARD:
                     setClipboard(msg.getText(), msg.getPaste(), msg.getSequence());
+                    return true;
+                case ControlMessage.TYPE_SET_IMAGE_CLIPBOARD:
+                    setImageClipboard(msg.getSequence(), msg.getPaste(), msg.getText(), msg.getData()); // text field contains mimeType
                     return true;
                 case ControlMessage.TYPE_SET_DISPLAY_POWER:
                     if (supportsInputEvents) {
@@ -686,10 +699,19 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         // particular when COPY or CUT are injected, so it should not be synchronized twice. On Android < 7, do not synchronize at all rather than
         // copying an old clipboard content.
         if (!clipboardAutosync) {
-            String clipboardText = Device.getClipboardText();
-            if (clipboardText != null) {
-                DeviceMessage msg = DeviceMessage.createClipboard(clipboardText);
+            // Try to get image clipboard first
+            ClipboardImage clipboardImage = Device.getClipboardImage();
+            if (clipboardImage != null && clipboardImage.data().length > 0) {
+                // Send image clipboard data
+                DeviceMessage msg = DeviceMessage.createImageClipboard(clipboardImage.data(), clipboardImage.mimeType());
                 sender.send(msg);
+            } else {
+                // Fall back to text clipboard
+                String clipboardText = Device.getClipboardText();
+                if (clipboardText != null) {
+                    DeviceMessage msg = DeviceMessage.createClipboard(clipboardText);
+                    sender.send(msg);
+                }
             }
         }
     }
@@ -700,6 +722,28 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         isSettingClipboard.set(false);
         if (ok) {
             Ln.i("Device clipboard set");
+        }
+
+        // On Android >= 7, also press the PASTE key if requested
+        if (paste && Build.VERSION.SDK_INT >= AndroidVersions.API_24_ANDROID_7_0 && supportsInputEvents) {
+            pressReleaseKeycode(KeyEvent.KEYCODE_PASTE, Device.INJECT_MODE_ASYNC);
+        }
+
+        if (sequence != ControlMessage.SEQUENCE_INVALID) {
+            // Acknowledgement requested
+            DeviceMessage msg = DeviceMessage.createAckClipboard(sequence);
+            sender.send(msg);
+        }
+
+        return ok;
+    }
+
+    private boolean setImageClipboard(long sequence, boolean paste, String mimeType, byte[] imageData) {
+        isSettingClipboard.set(true);
+        boolean ok = Device.setClipboardImage(imageData, mimeType);
+        isSettingClipboard.set(false);
+        if (ok) {
+            Ln.i("Device image clipboard set");
         }
 
         // On Android >= 7, also press the PASTE key if requested

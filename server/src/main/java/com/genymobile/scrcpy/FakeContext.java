@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.annotation.SuppressLint;
@@ -9,10 +10,13 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.IContentProvider;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.Process;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 public final class FakeContext extends ContextWrapper {
 
@@ -23,6 +27,29 @@ public final class FakeContext extends ContextWrapper {
 
     public static FakeContext get() {
         return INSTANCE;
+    }
+
+    private static Context getSystemContext() {
+        Context base = Workarounds.getSystemContext();
+
+        try {
+            // `getFilesDir()` method requires correct app info
+            PackageManager pm = base.getPackageManager();
+            ApplicationInfo appInfo = pm.getApplicationInfo(PACKAGE_NAME, 0);
+
+            Field mPackageInfoField = base.getClass().getDeclaredField("mPackageInfo");
+            mPackageInfoField.setAccessible(true);
+            Object mPackageInfo = mPackageInfoField.get(base);
+
+            Method setApplicationInfoMethod = mPackageInfo.getClass().getDeclaredMethod("setApplicationInfo", ApplicationInfo.class);
+            setApplicationInfoMethod.setAccessible(true);
+            setApplicationInfoMethod.invoke(mPackageInfo, appInfo);
+
+            return base;
+        } catch (Exception e) {
+            Ln.w("Can't set application info to base context" , e);
+            return base;
+        }
     }
 
     private final ContentResolver contentResolver = new ContentResolver(this) {
@@ -41,7 +68,7 @@ public final class FakeContext extends ContextWrapper {
         @SuppressWarnings({"unused", "ProtectedMemberInFinalClass"})
         // @Override (but super-class method not visible)
         protected IContentProvider acquireUnstableProvider(Context c, String name) {
-            return null;
+            return ServiceManager.getActivityManager().getContentProviderExternal(name, new Binder());
         }
 
         @SuppressWarnings("unused")
@@ -58,7 +85,8 @@ public final class FakeContext extends ContextWrapper {
     };
 
     private FakeContext() {
-        super(Workarounds.getSystemContext());
+        super(getSystemContext());
+
     }
 
     @Override

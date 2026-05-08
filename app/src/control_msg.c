@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "device_msg.h"
 #include "util/binary.h"
 #include "util/log.h"
 #include "util/str.h"
@@ -151,6 +152,20 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             size_t len = write_string(&buf[10], msg->set_clipboard.text,
                                       SC_CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH);
             return 10 + len;
+        case SC_CONTROL_MSG_TYPE_SET_IMAGE_CLIPBOARD:
+            sc_write64be(&buf[1], msg->set_image_clipboard.sequence);
+            buf[9] = !!msg->set_image_clipboard.paste;
+
+            size_t mimetype_len = strlen(msg->set_image_clipboard.mimetype);
+            sc_write32be(&buf[10], mimetype_len);
+            memcpy(&buf[14], msg->set_image_clipboard.mimetype, mimetype_len);
+
+            // Write image data length and data
+            sc_write32be(&buf[14 + mimetype_len], msg->set_image_clipboard.size);
+            memcpy(&buf[18 + mimetype_len], msg->set_image_clipboard.data,
+                  msg->set_image_clipboard.size);
+
+            return 18 + mimetype_len + msg->set_image_clipboard.size;
         case SC_CONTROL_MSG_TYPE_SET_DISPLAY_POWER:
             buf[1] = msg->set_display_power.on;
             return 2;
@@ -269,6 +284,13 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
                      msg->set_clipboard.paste ? "paste" : "nopaste",
                      msg->set_clipboard.text);
             break;
+        case SC_CONTROL_MSG_TYPE_SET_IMAGE_CLIPBOARD:
+            LOG_CMSG("image clipboard %" PRIu64_ " %s size=%u mimetype=\"%s\"",
+                    msg->set_image_clipboard.sequence,
+                    msg->set_image_clipboard.paste ? "paste" : "nopaste",
+                    msg->set_image_clipboard.size,
+                    msg->set_image_clipboard.mimetype);
+            break;
         case SC_CONTROL_MSG_TYPE_SET_DISPLAY_POWER:
             LOG_CMSG("display power %s",
                      msg->set_display_power.on ? "on" : "off");
@@ -357,6 +379,10 @@ sc_control_msg_destroy(struct sc_control_msg *msg) {
             break;
         case SC_CONTROL_MSG_TYPE_SET_CLIPBOARD:
             free(msg->set_clipboard.text);
+            break;
+        case SC_CONTROL_MSG_TYPE_SET_IMAGE_CLIPBOARD:
+            free(msg->set_image_clipboard.data);
+            free(msg->set_image_clipboard.mimetype);
             break;
         case SC_CONTROL_MSG_TYPE_START_APP:
             free(msg->start_app.name);

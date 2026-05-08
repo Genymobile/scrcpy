@@ -71,6 +71,45 @@ sc_device_msg_deserialize(const uint8_t *buf, size_t len,
 
             return 5 + size;
         }
+        case DEVICE_MSG_TYPE_IMAGE_CLIPBOARD: {
+            if (len < 9) {
+                // at least type + mimetype length (4 bytes) + data length (4 bytes)
+                return 0; // no complete message
+            }
+
+            uint32_t mimetype_len = sc_read32be(&buf[1]);
+            uint32_t data_len = sc_read32be(&buf[5]);
+
+            if (mimetype_len + data_len > len - 9) {
+                return 0; // no complete message
+            }
+
+            char *mimetype = malloc(mimetype_len + 1);
+            if (!mimetype) {
+                LOG_OOM();
+                return -1;
+            }
+            if (mimetype_len) {
+                memcpy(mimetype, &buf[9], mimetype_len);
+            }
+            mimetype[mimetype_len] = '\0';
+
+            uint8_t *image_data = malloc(data_len);
+            if (!image_data) {
+                LOG_OOM();
+                free(mimetype);
+                return -1;
+            }
+            if (data_len) {
+                memcpy(image_data, &buf[9 + mimetype_len], data_len);
+            }
+
+            msg->image_clipboard.mimetype = mimetype;
+            msg->image_clipboard.data = image_data;
+            msg->image_clipboard.size = data_len;
+
+            return 9 + mimetype_len + data_len;
+        }
         default:
             LOGW("Unknown device message type: %d", (int) msg->type);
             return -1; // error, we cannot recover
@@ -85,6 +124,10 @@ sc_device_msg_destroy(struct sc_device_msg *msg) {
             break;
         case DEVICE_MSG_TYPE_UHID_OUTPUT:
             free(msg->uhid_output.data);
+            break;
+        case DEVICE_MSG_TYPE_IMAGE_CLIPBOARD:
+            free(msg->image_clipboard.data);
+            free(msg->image_clipboard.mimetype);
             break;
         default:
             // nothing to do

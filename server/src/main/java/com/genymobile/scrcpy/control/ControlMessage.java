@@ -28,6 +28,7 @@ public final class ControlMessage {
     public static final int TYPE_CAMERA_SET_TORCH = 18;
     public static final int TYPE_CAMERA_ZOOM_IN = 19;
     public static final int TYPE_CAMERA_ZOOM_OUT = 20;
+    public static final int TYPE_SET_IMAGE_CLIPBOARD = 21;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -173,6 +174,16 @@ public final class ControlMessage {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_CAMERA_SET_TORCH;
         msg.on = on;
+        return msg;
+    }
+
+    public static ControlMessage createSetImageClipboard(long sequence, boolean paste, String mimeType, byte[] data) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_SET_IMAGE_CLIPBOARD;
+        msg.sequence = sequence;
+        msg.paste = paste;
+        msg.text = mimeType;  // Store mimeType in text field temporarily
+        msg.data = data;
         return msg;
     }
 

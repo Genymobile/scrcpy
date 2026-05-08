@@ -7,6 +7,7 @@ import com.genymobile.scrcpy.model.DeviceApp;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ActivityManager;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
+import com.genymobile.scrcpy.wrappers.ClipboardManager.ClipboardImage;
 import com.genymobile.scrcpy.wrappers.DisplayControl;
 import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
@@ -117,6 +118,14 @@ public final class Device {
         return s.toString();
     }
 
+    public static ClipboardImage getClipboardImage() {
+        ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
+        if (clipboardManager == null) {
+            return null;
+        }
+        return clipboardManager.getImage();
+    }
+
     public static boolean setClipboardText(String text) {
         ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
         if (clipboardManager == null) {
@@ -133,6 +142,15 @@ public final class Device {
         }
 
         return clipboardManager.setText(text);
+    }
+
+    public static boolean setClipboardImage(byte[] imageData, String mimeType) {
+        ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
+        if (clipboardManager == null) {
+            return false;
+        }
+
+        return clipboardManager.setImage(imageData, mimeType);
     }
 
     public static boolean setDisplayPower(int displayId, boolean on) {

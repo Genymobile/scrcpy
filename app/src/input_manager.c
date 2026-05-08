@@ -176,11 +176,74 @@ get_device_clipboard(struct sc_input_manager *im, enum sc_copy_key copy_key) {
     return true;
 }
 
+bool
+sc_input_manager_set_device_image_clipboard(struct sc_input_manager *im, bool paste,
+                                           uint64_t sequence) {
+    assert(im->controller && im->kp && !im->camera);
+
+    // Try common image MIME types to check if image clipboard data exists
+    const char* image_mime_types[] = {
+        "image/png",
+        "image/jpeg",
+        "image/jpg",
+        "image/gif",
+        "image/webp",
+        "image/bmp",
+        NULL
+    };
+
+    for (int i = 0; image_mime_types[i]; i++) {
+        const char* mime_type = image_mime_types[i];
+        size_t size;
+        void *img_data = SDL_GetClipboardData(mime_type, &size);
+        if (img_data && size > 0) {
+            size_t mimetype_len = strlen(mime_type);
+
+            // Check if message exceeds max size
+            size_t msg_size = 18 + mimetype_len + size;
+            if (msg_size > SC_CONTROL_MSG_MAX_SIZE) {
+                LOGW("Image clipboard message too large: %zu bytes, dropping",
+                     msg_size);
+                return true;
+            }
+
+            struct sc_control_msg msg;
+            msg.type = SC_CONTROL_MSG_TYPE_SET_IMAGE_CLIPBOARD;
+            msg.set_image_clipboard.sequence = sequence;
+            msg.set_image_clipboard.data = malloc(size);
+            if (msg.set_image_clipboard.data) {
+                memcpy(msg.set_image_clipboard.data, img_data, size);
+                msg.set_image_clipboard.size = size;
+                msg.set_image_clipboard.mimetype = strdup(mime_type);
+                msg.set_image_clipboard.paste = paste;
+
+                bool success = sc_controller_push_msg(im->controller, &msg);
+                SDL_free(img_data);
+                if (success) {
+                    return true;
+                }
+                free(msg.set_image_clipboard.data);
+                free(msg.set_image_clipboard.mimetype);
+            }
+            SDL_free(img_data);
+        }
+    }
+
+    // Return false since we can't actually call the SDL3 functions in this context
+    return false;
+}
+
 static bool
 set_device_clipboard(struct sc_input_manager *im, bool paste,
                      uint64_t sequence) {
     assert(im->controller && im->kp && !im->camera);
 
+    if (sc_input_manager_set_device_image_clipboard(im, paste, sequence)) {
+        // Successfully sent image clipboard, return true
+        return true;
+    }
+
+    // Fallback to text clipboard
     char *text = SDL_GetClipboardText();
     if (!text) {
         LOGW("Could not get clipboard text: %s", SDL_GetError());

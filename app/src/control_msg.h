@@ -46,7 +46,8 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_CAMERA_SET_TORCH,
     SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_IN,
     SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_OUT,
-};
+    SC_CONTROL_MSG_TYPE_SET_IMAGE_CLIPBOARD,
+ };
 
 enum sc_copy_key {
     SC_COPY_KEY_NONE,
@@ -117,6 +118,13 @@ struct sc_control_msg {
         struct {
             bool on;
         } camera_set_torch;
+        struct {
+            uint64_t sequence;
+            uint8_t *data; // owned, to be freed by free()
+            uint32_t size;
+            char *mimetype; // owned, to be freed by free()
+            bool paste;
+        } set_image_clipboard;
     };
 };
 
