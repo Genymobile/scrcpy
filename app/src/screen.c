@@ -72,10 +72,10 @@ static bool
 is_optimal_size(struct sc_size current_size, struct sc_size content_size) {
     // The size is optimal if we can recompute one dimension of the current
     // size from the other
-    return current_size.height == current_size.width * content_size.height
-                                                     / content_size.width
-        || current_size.width == current_size.height * content_size.width
-                                                     / content_size.height;
+    return current_size.height == (uint32_t) current_size.width
+                                * content_size.height / content_size.width
+        || current_size.width == (uint32_t) current_size.height
+                               * content_size.width / content_size.height;
 }
 
 // return the optimal size of the window, with the following constraints:
@@ -107,16 +107,16 @@ get_optimal_size(struct sc_size current_size, struct sc_size content_size,
         return window_size;
     }
 
-    bool keep_width = content_size.width * window_size.height
-                    > content_size.height * window_size.width;
+    bool keep_width = (uint32_t) content_size.width * window_size.height
+                    > (uint32_t) content_size.height * window_size.width;
     if (keep_width) {
         // remove black borders on top and bottom
-        window_size.height = content_size.height * window_size.width
+        window_size.height = (uint32_t) content_size.height * window_size.width
                            / content_size.width;
     } else {
         // remove black borders on left and right (or none at all if it already
         // fits)
-        window_size.width = content_size.width * window_size.height
+        window_size.width = (uint32_t) content_size.width * window_size.height
                           / content_size.height;
     }
 
@@ -177,8 +177,8 @@ compute_content_rect(struct sc_size render_size, struct sc_size content_size,
         return;
     }
 
-    bool keep_width = content_size.width * render_size.height
-                    > content_size.height * render_size.width;
+    bool keep_width = (uint32_t) content_size.width * render_size.height
+                    > (uint32_t) content_size.height * render_size.width;
     if (keep_width) {
         rect->x = 0;
         rect->w = render_size.width;
