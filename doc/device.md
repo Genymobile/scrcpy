@@ -25,7 +25,7 @@ changed manually:
 
 
 ```bash
-# get the current show_touches value
+# get the current stay_on_while_plugged_in value
 adb shell settings get global stay_on_while_plugged_in
 # enable for AC/USB/wireless chargers
 adb shell settings put global stay_on_while_plugged_in 7

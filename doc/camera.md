@@ -150,7 +150,7 @@ scrcpy --video-source=camera --camera-size=1920x1080 --camera-fps=240
 ## Brace expansion tip
 
 All camera options start with `--camera-`, so if your shell supports it, you can
-benefit from [brace expansion] (for example, it is supported _bash_ and _zsh_):
+benefit from [brace expansion] (for example, it is supported by _bash_ and _zsh_):
 
 ```bash
 scrcpy --video-source=camera --camera-{facing=back,ar=16:9,high-speed,fps=120}

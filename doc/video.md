@@ -161,7 +161,7 @@ The orientation can be set separately for display and record if necessary, via
 `--display-orientation` and `--record-orientation`.
 
 The rotation is applied to a recorded file by writing a display transformation
-to the MP4 or MKV target file. Flipping is not supported, so only the 4 first
+to the MP4 or MKV target file. Flipping is not supported, so only the first four
 values are allowed when recording.
 
 
@@ -229,7 +229,7 @@ get a smoother playback (see [#2464]).
 [#2464]: https://github.com/Genymobile/scrcpy/issues/2464
 
 The configuration is available independently for the display,
-[v4l2 sinks](video.md#video4linux) and [audio](audio.md#buffering) playback.
+[v4l2 sinks](v4l2.md#buffering) and [audio](audio.md#buffering) playback.
 
 ```bash
 scrcpy --video-buffer=50     # add 50ms buffering for video playback
