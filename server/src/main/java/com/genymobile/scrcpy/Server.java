@@ -32,7 +32,6 @@ import android.net.LocalServerSocket;
 import android.net.LocalSocket;
 
 import java.io.File;
-import java.io.FileDescriptor;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -104,6 +103,7 @@ public final class Server {
         Workarounds.apply();
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
+        LocalServerSocket reconnectServerSocket = null;
 
         DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, sendDummyByte);
         try {
@@ -160,15 +160,18 @@ public final class Server {
                     // Socket name must match DesktopConnection.getSocketName()
                     String socketName = scid == -1 ? "scrcpy" : "scrcpy" + String.format("_%08x", scid);
                     boolean dummyByte = options.getSendDummyByte();
+                    // Keep a persistent server socket so clients can reconnect at any time
+                    // without race conditions between socket close and re-create
+                    final LocalServerSocket persistentServerSocket = new LocalServerSocket(socketName);
+                    reconnectServerSocket = persistentServerSocket;
+                    Ln.i("Persistent server socket '" + socketName + "' opened for reconnections");
                     surfaceEncoder.setSocketReconnector(() -> {
-                        Ln.i("Opening new server socket '" + socketName + "' for client reconnection...");
-                        try (LocalServerSocket serverSocket = new LocalServerSocket(socketName)) {
-                            LocalSocket newSocket = serverSocket.accept();
-                            if (dummyByte) {
-                                newSocket.getOutputStream().write(0);
-                            }
-                            return newSocket.getFileDescriptor();
+                        Ln.i("Waiting for client reconnection on '" + socketName + "'...");
+                        LocalSocket newSocket = persistentServerSocket.accept();
+                        if (dummyByte) {
+                            newSocket.getOutputStream().write(0);
                         }
+                        return newSocket;
                     });
                 }
 
@@ -212,6 +215,14 @@ public final class Server {
             }
 
             connection.close();
+
+            if (reconnectServerSocket != null) {
+                try {
+                    reconnectServerSocket.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
         }
     }
 

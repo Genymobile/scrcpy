@@ -76,4 +76,18 @@ public final class IO {
     public static boolean isBrokenPipe(Exception e) {
         return e instanceof IOException && isBrokenPipe((IOException) e);
     }
+
+    public static boolean isConnectionError(IOException e) {
+        Throwable cause = e.getCause();
+        if (cause instanceof ErrnoException) {
+            int errno = ((ErrnoException) cause).errno;
+            return errno == OsConstants.EPIPE || errno == OsConstants.EBADF
+                    || errno == OsConstants.ECONNRESET;
+        }
+        return false;
+    }
+
+    public static boolean isConnectionError(Exception e) {
+        return e instanceof IOException && isConnectionError((IOException) e);
+    }
 }

@@ -21,7 +21,6 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.view.Surface;
 
-import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -32,11 +31,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class SurfaceEncoder implements AsyncProcessor {
 
     /**
-     * Callback to re-establish a socket connection when the client disconnects during rotation.
-     * Returns the new FileDescriptor for the video stream, or null if reconnection is not supported.
+     * Callback to re-establish a socket connection when the client disconnects.
+     * Returns the new LocalSocket for the video stream, or null if reconnection is not supported.
      */
     public interface SocketReconnector {
-        FileDescriptor reconnect() throws IOException;
+        android.net.LocalSocket reconnect() throws IOException;
     }
 
     private static final int DEFAULT_I_FRAME_INTERVAL = 10; // seconds
@@ -120,7 +119,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     }
 
     /**
-     * Attempt to reconnect the socket after a broken pipe during rotation.
+     * Attempt to reconnect the socket after a client disconnection.
      * Returns true if reconnection succeeded, false otherwise.
      */
     private boolean tryReconnect() {
@@ -129,13 +128,15 @@ public class SurfaceEncoder implements AsyncProcessor {
             return false;
         }
         try {
-            Ln.i("Client disconnected during rotation. Waiting for new client connection...");
-            FileDescriptor newFd = socketReconnector.reconnect();
-            if (newFd == null) {
-                Ln.w("[DIAG] Reconnector returned null fd");
+            Ln.i("Client disconnected. Waiting for new client connection...");
+            android.net.LocalSocket newSocket = socketReconnector.reconnect();
+            if (newSocket == null) {
+                Ln.w("[DIAG] Reconnector returned null socket");
                 return false;
             }
-            streamer.setFd(newFd);
+            // Use setSocket() to keep a strong reference to the LocalSocket,
+            // preventing GC from closing the underlying file descriptor
+            streamer.setSocket(newSocket);
             Ln.i("New client connected, resuming stream");
             return true;
         } catch (IOException e) {
@@ -241,13 +242,14 @@ public class SurfaceEncoder implements AsyncProcessor {
                 } catch (IllegalStateException | IllegalArgumentException | IOException e) {
                     Ln.w("[DIAG] Exception in streamCapture: " + e.getClass().getName() + ": " + e.getMessage()
                             + " | isBrokenPipe=" + IO.isBrokenPipe(e)
+                            + " | isConnectionError=" + IO.isConnectionError(e)
                             + " | wasReset=" + wasReset
                             + " | pendingReset=" + reset.hasPendingReset()
                             + " | rotationBrokenPipeRecovery=" + rotationBrokenPipeRecovery
                             + " | iteration=" + loopIteration);
                     Ln.w("[DIAG] Full stack trace:\n" + getStackTraceString(e));
 
-                    if (IO.isBrokenPipe(e)) {
+                    if (IO.isConnectionError(e)) {
                         if (reset.hasPendingReset() || wasReset) {
                             if (rotationBrokenPipeRecovery) {
                                 // Socket is permanently broken after a rotation recovery attempt.
@@ -477,7 +479,7 @@ public class SurfaceEncoder implements AsyncProcessor {
                     } catch (IOException e) {
                         boolean pendingNow = reset.hasPendingReset();
                         Ln.w("[DIAG] writePacket failed: " + e.getClass().getName() + ": " + e.getMessage()
-                                + " | isBrokenPipe=" + IO.isBrokenPipe(e)
+                                + " | isConnectionError=" + IO.isConnectionError(e)
                                 + " | pendingResetNow=" + pendingNow
                                 + " | packetSize=" + bufferInfo.size
                                 + " | isConfig=" + isConfig
@@ -485,15 +487,15 @@ public class SurfaceEncoder implements AsyncProcessor {
                                 + " | pts=" + bufferInfo.presentationTimeUs
                                 + " | packetsThisSession=" + packetsThisSession
                                 + " | totalPacketsWritten=" + totalPacketsWritten);
-                        if (IO.isBrokenPipe(e) && pendingNow) {
+                        if (IO.isConnectionError(e) && pendingNow) {
                             // Race condition: rotation was triggered between the hasPendingReset()
                             // check above and the write. The packet may have contained corrupted
                             // encoder output from the resolution change. Exit the encode loop
                             // cleanly so streamCapture() can handle the reset.
-                            Ln.w("[DIAG] Broken pipe caught during encode with pending reset — race condition hit. Exiting encode loop cleanly.");
+                            Ln.w("[DIAG] Connection error during encode with pending reset — exiting encode loop cleanly.");
                             return;
                         }
-                        Ln.w("[DIAG] writePacket broken pipe with NO pending reset — propagating exception");
+                        Ln.w("[DIAG] writePacket connection error with NO pending reset — propagating exception");
                         throw e;
                     }
                 }
@@ -586,12 +588,13 @@ public class SurfaceEncoder implements AsyncProcessor {
                 // Do not print stack trace, a user-friendly error-message has already been logged
                 Ln.d("Streaming stopped due to configuration error");
             } catch (IOException e) {
-                if (!IO.isBrokenPipe(e)) {
+                if (!IO.isConnectionError(e)) {
                     Ln.e("Video encoding error", e);
                 } else {
-                    // Broken pipe means client disconnected and reconnection was not available.
+                    // Connection error (broken pipe, bad fd, connection reset) means client
+                    // disconnected and reconnection was not available.
                     // This is not a fatal server error.
-                    Ln.d("Streaming stopped due to broken pipe (client disconnected)");
+                    Ln.d("Streaming stopped due to connection error (client disconnected)");
                     fatalError = false;
                 }
             } catch (RuntimeException e) {

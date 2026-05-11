@@ -6,6 +6,9 @@ import com.genymobile.scrcpy.util.IO;
 
 import android.media.MediaCodec;
 
+import android.net.LocalSocket;
+
+import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -22,6 +25,9 @@ public final class Streamer {
     private final boolean sendCodecMeta;
     private final boolean sendFrameMeta;
 
+    // Keep a strong reference to the socket to prevent GC from closing the fd
+    private Closeable socketRef;
+
     private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
 
     public Streamer(FileDescriptor fd, Codec codec, boolean sendCodecMeta, boolean sendFrameMeta) {
@@ -35,8 +41,18 @@ public final class Streamer {
         return codec;
     }
 
-    public void setFd(FileDescriptor fd) {
-        this.fd = fd;
+    public void setSocket(LocalSocket socket) {
+        // Close the previous socket (its fd is already broken if we're reconnecting)
+        Closeable prev = this.socketRef;
+        this.socketRef = socket;
+        this.fd = socket.getFileDescriptor();
+        if (prev != null) {
+            try {
+                prev.close();
+            } catch (IOException e) {
+                // ignore
+            }
+        }
     }
 
     public void writeAudioHeader() throws IOException {
