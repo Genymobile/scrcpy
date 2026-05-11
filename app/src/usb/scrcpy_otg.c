@@ -16,6 +16,8 @@
 #include "usb/keyboard_aoa.h"
 #include "usb/mouse_aoa.h"
 #include "util/log.h"
+#include "util/str.h"
+#include "util/term.h"
 
 struct scrcpy_otg {
     struct sc_usb usb;
@@ -56,6 +58,17 @@ event_loop(struct scrcpy_otg *s) {
         }
     }
     return SCRCPY_EXIT_FAILURE;
+}
+
+static void
+set_terminal_title_with_prefix(const char *value) {
+    char title[128];
+    memcpy(title, "scrcpy - ", 9);
+    size_t trunc_len = sc_str_utf8_truncation_index(value, 128 - 9 - 1);
+    assert(trunc_len <= 128 - 9 - 1);
+    memcpy(&title[9], value, trunc_len);
+    title[9 + trunc_len] = '\0';
+    sc_term_set_title(title);
 }
 
 enum scrcpy_exit_code
@@ -179,7 +192,13 @@ scrcpy_otg(struct scrcpy_options *options) {
 
     const char *window_title = options->window_title;
     if (!window_title) {
-        window_title = usb_device.product ? usb_device.product : "scrcpy";
+        window_title = usb_device.product; // might still be NULL
+    }
+
+    if (window_title) {
+        set_terminal_title_with_prefix(window_title);
+    } else {
+        window_title = "scrcpy";
     }
 
     struct sc_screen_params params = {
