@@ -16,6 +16,7 @@
 #endif
 #include "util/log.h"
 #include "util/net.h"
+#include "util/term.h"
 #include "version.h"
 
 #ifdef _WIN32
@@ -31,6 +32,8 @@ main_scrcpy(int argc, char *argv[]) {
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 #endif
+
+    sc_term_set_title("scrcpy");
 
     printf("scrcpy " SCRCPY_VERSION
            " <https://github.com/Genymobile/scrcpy>\n");
@@ -107,6 +110,8 @@ end:
         printf("Press Enter to continue...\n");
         getchar();
     }
+
+    sc_term_set_title("");
 
     return ret;
 }

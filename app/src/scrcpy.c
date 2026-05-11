@@ -40,6 +40,7 @@
 #include "util/acksync.h"
 #include "util/log.h"
 #include "util/rand.h"
+#include "util/term.h"
 #include "util/timeout.h"
 #include "util/tick.h"
 #ifdef HAVE_V4L2
@@ -492,6 +493,14 @@ scrcpy(struct scrcpy_options *options) {
 
     const char *serial = s->server.serial;
     assert(serial);
+
+    // Update the terminal tab title now that we know the device name.
+    // Use --window-title if provided, otherwise fall back to the device name.
+    const char *title_suffix =
+        options->window_title ? options->window_title : info->device_name;
+    char term_title[256];
+    snprintf(term_title, sizeof(term_title), "scrcpy - %s", title_suffix);
+    sc_term_set_title(term_title);
 
     struct sc_file_pusher *fp = NULL;
 
@@ -1008,6 +1017,8 @@ end:
     }
 
     sc_server_destroy(&s->server);
+
+    sc_term_set_title("");
 
     return ret;
 }

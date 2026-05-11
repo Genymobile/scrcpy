@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <SDL3/SDL.h>
 
@@ -16,6 +17,7 @@
 #include "usb/keyboard_aoa.h"
 #include "usb/mouse_aoa.h"
 #include "util/log.h"
+#include "util/term.h"
 
 struct scrcpy_otg {
     struct sc_usb usb;
@@ -182,6 +184,13 @@ scrcpy_otg(struct scrcpy_options *options) {
         window_title = usb_device.product ? usb_device.product : "scrcpy";
     }
 
+    // Update the terminal tab title now that we know the device name.
+    if (options->window_title || usb_device.product) {
+        char term_title[256];
+        snprintf(term_title, sizeof(term_title), "scrcpy - %s", window_title);
+        sc_term_set_title(term_title);
+    }
+
     struct sc_screen_params params = {
         .video = false,
         .camera = false,
@@ -269,6 +278,8 @@ end:
         sc_screen_join(&s->screen);
         sc_screen_destroy(&s->screen);
     }
+
+    sc_term_set_title("");
 
     return ret;
 }
