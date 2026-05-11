@@ -40,6 +40,8 @@
 #include "util/acksync.h"
 #include "util/log.h"
 #include "util/rand.h"
+#include "util/str.h"
+#include "util/term.h"
 #include "util/timeout.h"
 #include "util/tick.h"
 #ifdef HAVE_V4L2
@@ -304,6 +306,17 @@ init_sdl_gamepads(void) {
     SDL_free(joysticks);
 }
 
+static void
+set_terminal_title_with_prefix(const char *value) {
+    char title[128];
+    memcpy(title, "scrcpy - ", 9);
+    size_t trunc_len = sc_str_utf8_truncation_index(value, 128 - 9 - 1);
+    assert(trunc_len <= 128 - 9 - 1);
+    memcpy(&title[9], value, trunc_len);
+    title[9 + trunc_len] = '\0';
+    sc_term_set_title(title);
+}
+
 enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
@@ -493,6 +506,12 @@ scrcpy(struct scrcpy_options *options) {
 
     // It is necessarily initialized here, since the device is connected
     struct sc_server_info *info = &s->server.info;
+
+    const char *window_title =
+        options->window_title ? options->window_title : info->device_name;
+    assert(window_title);
+
+    set_terminal_title_with_prefix(window_title);
 
     const char *serial = s->server.serial;
     assert(serial);
@@ -734,9 +753,6 @@ aoa_complete:
     assert(options->control == !!controller);
 
     if (options->window) {
-        const char *window_title =
-            options->window_title ? options->window_title : info->device_name;
-
         struct sc_screen_params screen_params = {
             .video = options->video_playback,
             .camera = options->video_source == SC_VIDEO_SOURCE_CAMERA,
