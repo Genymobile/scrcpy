@@ -18,4 +18,10 @@
 bool
 sc_term_get_size(unsigned *rows, unsigned *cols);
 
+/**
+ * Set the terminal tab/window title
+ */
+void
+sc_term_set_title(const char *title);
+
 #endif
