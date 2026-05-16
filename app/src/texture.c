@@ -60,6 +60,7 @@ sc_texture_to_sdl_color_space(enum AVColorSpace color_space,
     switch (color_space) {
         case AVCOL_SPC_BT709:
         case AVCOL_SPC_RGB:
+        case AVCOL_SPC_UNSPECIFIED:
             return full_range ? SDL_COLORSPACE_BT709_FULL
                               : SDL_COLORSPACE_BT709_LIMITED;
         case AVCOL_SPC_BT470BG:
