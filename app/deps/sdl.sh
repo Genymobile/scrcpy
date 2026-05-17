@@ -80,5 +80,5 @@ else
     cmake "$SOURCES_DIR/$PROJECT_DIR" "${conf[@]}"
 fi
 
-cmake --build .
+cmake --build . -j
 cmake --install .
