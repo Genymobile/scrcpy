@@ -37,6 +37,7 @@ else
 
     conf=(
         -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR/$DIRNAME"
+        -DCMAKE_BUILD_TYPE=Release
         -DSDL_TESTS=OFF
     )
 
