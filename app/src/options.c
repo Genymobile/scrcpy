@@ -121,6 +121,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .camera_torch = false,
     .keep_active = false,
     .flex_display = false,
+    .ignore_video_encoder_constraints = false,
 };
 
 enum sc_orientation
