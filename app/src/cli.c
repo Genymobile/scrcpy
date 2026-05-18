@@ -109,6 +109,7 @@ enum {
     OPT_KEEP_ACTIVE,
     OPT_BACKGROUND_COLOR,
     OPT_RENDER_FIT,
+    OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
 };
 
 struct sc_option {
@@ -427,6 +428,13 @@ static const struct sc_option options[] = {
         .shortopt = 'h',
         .longopt = "help",
         .text = "Print this help.",
+    },
+    {
+        .longopt_id = OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
+        .longopt = "ignore-video-encoder-constraints",
+        .text = "Do not consider video encoder capabilities.\n"
+                "This is useful if the reported capabilities are incorrect.\n"
+                "It may help to force a value for --min-size-alignment.",
     },
     {
         .shortopt = 'K',
@@ -2924,6 +2932,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case 'x':
                 opts->flex_display = true;
+                break;
+            case OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS:
+                opts->ignore_video_encoder_constraints = true;
                 break;
             default:
                 // getopt prints the error message on stderr
