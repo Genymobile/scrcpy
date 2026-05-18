@@ -78,14 +78,17 @@ public class SurfaceEncoder implements AsyncProcessor {
         int maxLandscapeWidth = caps.getSupportedWidths().getUpper();
         int maxLandscapeHeight = caps.getSupportedHeightsFor(maxLandscapeWidth).getUpper();
         Size maxLandscapeSize = new Size(maxLandscapeWidth, maxLandscapeHeight);
+        Ln.d("Maximum landscape size: " + maxLandscapeSize);
 
         int maxPortraitHeight = caps.getSupportedHeights().getUpper();
         int maxPortraitWidth = caps.getSupportedWidthsFor(maxPortraitHeight).getUpper();
         Size maxPortraitSize = new Size(maxPortraitWidth, maxPortraitHeight);
+        Ln.d("Maximum portrait size: " + maxPortraitSize);
 
         int minWidth = caps.getSupportedWidths().getLower();
         int minHeight = caps.getSupportedHeights().getLower();
         int minSize = Math.max(minWidth, minHeight);
+        Ln.d("Minimum size: " + minSize);
 
         return new VideoConstraints(maxSize, alignment, maxLandscapeSize, maxPortraitSize, minSize);
     }
