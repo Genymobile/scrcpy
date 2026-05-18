@@ -75,6 +75,7 @@ struct sc_server_params {
     bool vd_system_decorations;
     bool keep_active;
     bool flex_display;
+    bool ignore_video_encoder_constraints;
     uint8_t list;
 };
 

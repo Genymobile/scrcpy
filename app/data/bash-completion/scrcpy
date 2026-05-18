@@ -34,6 +34,7 @@ _scrcpy() {
         -G
         --gamepad=
         -h --help
+        --ignore-video-encoder-constraints
         -K
         --keep-active
         --keyboard=

@@ -70,6 +70,7 @@ public class Options {
     private boolean flexDisplay;
 
     private boolean keepActive;
+    private boolean ignoreVideoEncoderConstraints;
 
     private Orientation.Lock captureOrientationLock = Orientation.Lock.Unlocked;
     private Orientation captureOrientation = Orientation.Orient0;
@@ -272,6 +273,10 @@ public class Options {
 
     public boolean getFlexDisplay() {
         return flexDisplay;
+    }
+
+    public boolean getIgnoreVideoEncoderConstraints() {
+        return ignoreVideoEncoderConstraints;
     }
 
     public boolean getList() {
@@ -538,6 +543,9 @@ public class Options {
                     break;
                 case "keep_active":
                     options.keepActive = Boolean.parseBoolean(value);
+                    break;
+                case "ignore_video_encoder_constraints":
+                    options.ignoreVideoEncoderConstraints = Boolean.parseBoolean(value);
                     break;
                 case "send_device_meta":
                     options.sendDeviceMeta = Boolean.parseBoolean(value);

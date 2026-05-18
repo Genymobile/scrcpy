@@ -45,6 +45,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     private final float maxFps;
     private final boolean downsizeOnError;
     private final int minSizeAlignment;
+    private final boolean ignoreVideoEncoderConstraints;
 
     private boolean firstFrameSent;
     private int consecutiveErrors;
@@ -64,31 +65,43 @@ public class SurfaceEncoder implements AsyncProcessor {
         this.encoderName = options.getVideoEncoder();
         this.downsizeOnError = options.getDownsizeOnError();
         this.minSizeAlignment = options.getMinSizeAlignment();
+        this.ignoreVideoEncoderConstraints = options.getIgnoreVideoEncoderConstraints();
     }
 
     private static VideoConstraints createVideoConstraints(int maxSize, int minSizeAlignment, MediaCodecInfo.VideoCapabilities caps) {
-        assert caps != null;
-        int alignment = Math.max(caps.getWidthAlignment(), caps.getHeightAlignment());
-        Ln.d("Video codec size alignment requirement: " + alignment + "px");
-        if (alignment < minSizeAlignment) {
+        int alignment;
+        Size maxLandscapeSize;
+        Size maxPortraitSize;
+        int minSize;
+        if (caps != null) {
+            alignment = Math.max(caps.getWidthAlignment(), caps.getHeightAlignment());
+            Ln.d("Video codec size alignment requirement: " + alignment + "px");
+            if (alignment < minSizeAlignment) {
+                alignment = minSizeAlignment;
+                Ln.d("Actual video size alignment: " + alignment + "px");
+            }
+
+            int maxLandscapeWidth = caps.getSupportedWidths().getUpper();
+            int maxLandscapeHeight = caps.getSupportedHeightsFor(maxLandscapeWidth).getUpper();
+            maxLandscapeSize = new Size(maxLandscapeWidth, maxLandscapeHeight);
+            Ln.d("Maximum landscape size: " + maxLandscapeSize);
+
+            int maxPortraitHeight = caps.getSupportedHeights().getUpper();
+            int maxPortraitWidth = caps.getSupportedWidthsFor(maxPortraitHeight).getUpper();
+            maxPortraitSize = new Size(maxPortraitWidth, maxPortraitHeight);
+            Ln.d("Maximum portrait size: " + maxPortraitSize);
+
+            int minWidth = caps.getSupportedWidths().getLower();
+            int minHeight = caps.getSupportedHeights().getLower();
+            minSize = Math.max(minWidth, minHeight);
+            Ln.d("Minimum size: " + minSize);
+        } else {
             alignment = minSizeAlignment;
             Ln.d("Actual video size alignment: " + alignment + "px");
+            maxLandscapeSize = new Size(8192, 8192);
+            maxPortraitSize = maxLandscapeSize;
+            minSize = 0;
         }
-
-        int maxLandscapeWidth = caps.getSupportedWidths().getUpper();
-        int maxLandscapeHeight = caps.getSupportedHeightsFor(maxLandscapeWidth).getUpper();
-        Size maxLandscapeSize = new Size(maxLandscapeWidth, maxLandscapeHeight);
-        Ln.d("Maximum landscape size: " + maxLandscapeSize);
-
-        int maxPortraitHeight = caps.getSupportedHeights().getUpper();
-        int maxPortraitWidth = caps.getSupportedWidthsFor(maxPortraitHeight).getUpper();
-        Size maxPortraitSize = new Size(maxPortraitWidth, maxPortraitHeight);
-        Ln.d("Maximum portrait size: " + maxPortraitSize);
-
-        int minWidth = caps.getSupportedWidths().getLower();
-        int minHeight = caps.getSupportedHeights().getLower();
-        int minSize = Math.max(minWidth, minHeight);
-        Ln.d("Minimum size: " + minSize);
 
         return new VideoConstraints(maxSize, alignment, maxLandscapeSize, maxPortraitSize, minSize);
     }
@@ -98,8 +111,14 @@ public class SurfaceEncoder implements AsyncProcessor {
         MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
         MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
 
-        MediaCodecInfo.VideoCapabilities caps = mediaCodec.getCodecInfo().getCapabilitiesForType(codec.getMimeType()).getVideoCapabilities();
-        assert caps != null; // caps cannot be null for a video codec
+        MediaCodecInfo.VideoCapabilities caps;
+        if (ignoreVideoEncoderConstraints) {
+            caps = null;
+        } else {
+            caps = mediaCodec.getCodecInfo().getCapabilitiesForType(codec.getMimeType()).getVideoCapabilities();
+            assert caps != null; // caps cannot be null for a video codec
+        }
+
         VideoConstraints constraints = createVideoConstraints(maxSize, minSizeAlignment, caps);
 
         capture.init(captureControl, constraints);

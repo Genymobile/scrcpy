@@ -420,6 +420,9 @@ execute_server(struct sc_server *server,
     if (params->flex_display) {
         ADD_PARAM("flex_display=true");
     }
+    if (params->ignore_video_encoder_constraints) {
+        ADD_PARAM("ignore_video_encoder_constraints=true");
+    }
     if (params->display_ime_policy != SC_DISPLAY_IME_POLICY_UNDEFINED) {
         ADD_PARAM("display_ime_policy=%s",
             sc_server_get_display_ime_policy_name(params->display_ime_policy));
