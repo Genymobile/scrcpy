@@ -296,7 +296,7 @@ init_sdl_gamepads(void) {
         if (SDL_IsGamepad(joystick)) {
             SDL_Event event;
             event.gdevice.type = SDL_EVENT_GAMEPAD_ADDED;
-            event.gdevice.which = i;
+            event.gdevice.which = joystick;
             SDL_PushEvent(&event);
         }
     }
