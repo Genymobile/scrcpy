@@ -300,6 +300,8 @@ init_sdl_gamepads(void) {
             SDL_PushEvent(&event);
         }
     }
+
+    SDL_free(joysticks);
 }
 
 enum scrcpy_exit_code
