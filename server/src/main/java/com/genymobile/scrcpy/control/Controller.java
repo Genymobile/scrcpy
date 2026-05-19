@@ -3,6 +3,7 @@ package com.genymobile.scrcpy.control;
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.AsyncProcessor;
 import com.genymobile.scrcpy.CleanUp;
+import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.display.DisplayInfo;
@@ -23,8 +24,11 @@ import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.SystemClock;
+import android.provider.MediaStore;
 import android.util.Pair;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
@@ -410,6 +414,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     return true;
                 case ControlMessage.TYPE_RESIZE_DISPLAY:
                     resizeDisplay(msg.getWidth(), msg.getHeight());
+                    return true;
+                case ControlMessage.TYPE_SCAN_FILE:
+                    scanFile(msg.getText());
                     return true;
                 default:
                     // fall through
@@ -874,5 +881,24 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private void resizeDisplay(int width, int height) {
         NewDisplayCapture newDisplayCapture = (NewDisplayCapture) surfaceCapture;
         newDisplayCapture.requestResize(width, height);
+    }
+
+    private void scanFile(String path) {
+        try {
+            // MediaStore.scanFile() is @hide; call the same provider method directly.
+            // Equivalent to: adb shell content call --uri content://media --method scan_file --arg <path>
+            Bundle out = FakeContext.get().getContentResolver().call(MediaStore.AUTHORITY, "scan_file", path, null);
+            if (Ln.isEnabled(Ln.Level.VERBOSE)) {
+                if (out == null) {
+                    Ln.v("MediaStore scan_file " + path + " returned null");
+                } else {
+                    @SuppressWarnings("deprecation")
+                    Uri uri = out.getParcelable(Intent.EXTRA_STREAM);
+                    Ln.v("MediaStore scan_file " + path + " -> " + uri);
+                }
+            }
+        } catch (Throwable t) {
+            Ln.e("MediaStore scan failed for " + path, t);
+        }
     }
 }

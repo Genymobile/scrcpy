@@ -5,6 +5,8 @@
 #include <string.h>
 
 #include "adb/adb.h"
+#include "control_msg.h"
+#include "controller.h"
 #include "util/log.h"
 
 #define DEFAULT_PUSH_TARGET "/sdcard/Download/"
@@ -15,8 +17,9 @@ sc_file_pusher_request_destroy(struct sc_file_pusher_request *req) {
 }
 
 bool
-sc_file_pusher_init(struct sc_file_pusher *fp, const char *serial,
-                    const char *push_target) {
+sc_file_pusher_init(struct sc_file_pusher *fp, struct sc_controller *controller,
+                    const char *serial, const char *push_target) {
+    assert(controller);
     assert(serial);
 
     sc_vecdeque_init(&fp->queue);
@@ -54,6 +57,7 @@ sc_file_pusher_init(struct sc_file_pusher *fp, const char *serial,
     fp->stopped = false;
 
     fp->push_target = push_target ? push_target : DEFAULT_PUSH_TARGET;
+    fp->controller = controller;
 
     return true;
 }
@@ -108,6 +112,24 @@ sc_file_pusher_request(struct sc_file_pusher *fp,
     return true;
 }
 
+static bool
+request_scan_file(struct sc_file_pusher *fp) {
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_SCAN_FILE;
+    msg.scan_file.path = strdup(fp->push_target);
+    if (!msg.scan_file.path) {
+        LOG_OOM();
+        return false;
+    }
+
+    if (!sc_controller_push_msg(fp->controller, &msg)) {
+        LOGW("Could not request 'scan file'");
+        return false;
+    }
+
+    return true;
+}
+
 static int
 run_file_pusher(void *data) {
     struct sc_file_pusher *fp = data;
@@ -147,6 +169,7 @@ run_file_pusher(void *data) {
             bool ok = sc_adb_push(intr, serial, req.file, push_target, 0);
             if (ok) {
                 LOGI("%s successfully pushed to %s", req.file, push_target);
+                request_scan_file(fp); // any error already logged
             } else {
                 LOGE("Failed to push %s to %s", req.file, push_target);
             }
