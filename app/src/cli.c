@@ -109,6 +109,7 @@ enum {
     OPT_KEEP_ACTIVE,
     OPT_BACKGROUND_COLOR,
     OPT_RENDER_FIT,
+    OPT_NO_PUSH,
 };
 
 struct sc_option {
@@ -145,6 +146,11 @@ struct sc_getopt_adapter {
 };
 
 static const struct sc_option options[] = {
+   {
+        .longopt_id = OPT_NO_PUSH,
+        .longopt = "no-push",
+        .text = "no push scrcpy server file.",
+    },
     {
         .longopt_id = OPT_ALWAYS_ON_TOP,
         .longopt = "always-on-top",
@@ -2916,6 +2922,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case 'x':
                 opts->flex_display = true;
+                break;
+            case OPT_NO_PUSH:
+                opts->no_push = true;
                 break;
             default:
                 // getopt prints the error message on stderr

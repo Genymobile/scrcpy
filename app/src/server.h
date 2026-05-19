@@ -75,6 +75,7 @@ struct sc_server_params {
     bool vd_system_decorations;
     bool keep_active;
     bool flex_display;
+    bool no_push;
     uint8_t list;
 };
 
