@@ -3373,6 +3373,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("Recording to MP4 container does not support RAW audio");
             return false;
         }
+
+        if (opts->record_format == SC_RECORD_FORMAT_MP4
+                && opts->video_codec == SC_CODEC_VP8) {
+            LOGE("Recording to MP4 container does not support VP8 video");
+            return false;
+        }
     }
 
     if (opts->audio_codec == SC_CODEC_FLAC && opts->audio_bit_rate) {
