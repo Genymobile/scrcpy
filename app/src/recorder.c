@@ -181,7 +181,8 @@ sc_recorder_close_output_file(struct sc_recorder *recorder) {
 
 static inline bool
 sc_recorder_must_wait_for_config_packets(struct sc_recorder *recorder) {
-    if (recorder->video && sc_vecdeque_is_empty(&recorder->video_queue)) {
+    if (recorder->video && recorder->video_expects_config_packet
+            && sc_vecdeque_is_empty(&recorder->video_queue)) {
         // The video queue is empty
         return true;
     }
@@ -207,8 +208,8 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
         sc_cond_wait(&recorder->cond, &recorder->mutex);
     }
 
-    if (recorder->video && sc_vecdeque_is_empty(&recorder->video_queue)) {
-        assert(recorder->stopped);
+    if (recorder->stopped && recorder->video
+            && sc_vecdeque_is_empty(&recorder->video_queue)) {
         // If the recorder is stopped, don't process anything if there are not
         // at least video packets
         sc_mutex_unlock(&recorder->mutex);
@@ -217,7 +218,8 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
     }
 
     AVPacket *video_pkt = NULL;
-    if (!sc_vecdeque_is_empty(&recorder->video_queue)) {
+    if (recorder->video_expects_config_packet &&
+            !sc_vecdeque_is_empty(&recorder->video_queue)) {
         assert(recorder->video);
         video_pkt = sc_vecdeque_pop(&recorder->video_queue);
     }
@@ -579,6 +581,10 @@ sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
              sc_orientation_get_name(recorder->orientation));
     }
 
+    // A config packet is provided for all supported formats except VPx
+    recorder->video_expects_config_packet = ctx->codec_id != AV_CODEC_ID_VP8
+                                         && ctx->codec_id != AV_CODEC_ID_VP9;
+
     recorder->video_init = true;
     sc_cond_signal(&recorder->cond);
     sc_mutex_unlock(&recorder->mutex);
@@ -785,6 +791,7 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
     recorder->audio_init = false;
 
     recorder->audio_expects_config_packet = false;
+    recorder->video_expects_config_packet = false;
 
     sc_recorder_stream_init(&recorder->video_stream);
     sc_recorder_stream_init(&recorder->audio_stream);
