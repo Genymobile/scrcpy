@@ -189,6 +189,11 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             sc_write16be(&buf[1], msg->resize_display.width);
             sc_write16be(&buf[3], msg->resize_display.height);
             return 5;
+        case SC_CONTROL_MSG_TYPE_SCAN_FILE: {
+            size_t len = write_string(&buf[1], msg->scan_file.path,
+                                      SC_CONTROL_MSG_SCAN_FILE_PATH_MAX_LENGTH);
+            return 1 + len;
+        };
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
@@ -341,6 +346,9 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
         case SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_OUT:
             LOG_CMSG("camera zoom out");
             break;
+        case SC_CONTROL_MSG_TYPE_SCAN_FILE:
+            LOG_CMSG("scan file \"%s\"", msg->scan_file.path);
+            break;
         default:
             LOG_CMSG("unknown type: %u", (unsigned) msg->type);
             break;
@@ -368,6 +376,9 @@ sc_control_msg_destroy(struct sc_control_msg *msg) {
             break;
         case SC_CONTROL_MSG_TYPE_START_APP:
             free(msg->start_app.name);
+            break;
+        case SC_CONTROL_MSG_TYPE_SCAN_FILE:
+            free(msg->scan_file.path);
             break;
         default:
             // do nothing

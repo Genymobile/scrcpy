@@ -23,6 +23,7 @@ import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
 import android.util.Pair;
@@ -31,6 +32,7 @@ import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -410,6 +412,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     return true;
                 case ControlMessage.TYPE_RESIZE_DISPLAY:
                     resizeDisplay(msg.getWidth(), msg.getHeight());
+                    return true;
+                case ControlMessage.TYPE_SCAN_FILE:
+                    scanFile(msg.getText());
                     return true;
                 default:
                     // fall through
@@ -874,5 +879,15 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private void resizeDisplay(int width, int height) {
         NewDisplayCapture newDisplayCapture = (NewDisplayCapture) surfaceCapture;
         newDisplayCapture.requestResize(width, height);
+    }
+
+    private void scanFile(String path) {
+        try {
+            @SuppressWarnings("deprecation")
+            Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(new File(path)));
+            Device.sendBroadcast(intent);
+        } catch (Throwable t) {
+            Ln.e("MediaStore scan failed for " + path, t);
+        }
     }
 }

@@ -516,6 +516,27 @@ static void test_serialize_resize_display(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_scan_file(void) {
+    struct sc_control_msg msg = {
+        .type = SC_CONTROL_MSG_TYPE_SCAN_FILE,
+        .scan_file = {
+            .path = "/sdcard/Download",
+        },
+    };
+
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
+    size_t size = sc_control_msg_serialize(&msg, buf);
+    assert(size == 21);
+
+    const uint8_t expected[] = {
+        SC_CONTROL_MSG_TYPE_SCAN_FILE,
+        0x00, 0x00, 0x00, 0x10, // path length
+        '/', 's', 'd', 'c', 'a', 'r', 'd',
+        '/', 'D', 'o', 'w', 'n', 'l', 'o', 'a', 'd', // path
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -544,5 +565,6 @@ int main(int argc, char *argv[]) {
     test_serialize_camera_zoom_in();
     test_serialize_camera_zoom_out();
     test_serialize_resize_display();
+    test_serialize_scan_file();
     return 0;
 }
