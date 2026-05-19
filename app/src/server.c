@@ -1050,7 +1050,7 @@ run_server(void *data) {
             goto error_connection_failed;
         }
     }else{
-        LOGD("no push server!");
+        LOGI("Do not push service files.");
     }
 
     // If --list-* is passed, then the server just prints the requested data
