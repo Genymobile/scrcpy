@@ -3,11 +3,93 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #include "adb/adb.h"
 #include "util/log.h"
 
 #define DEFAULT_PUSH_TARGET "/sdcard/Download/"
+#define MEDIA_SCAN_IMAGE_TARGET "/sdcard/Pictures/"
+#define MEDIA_SCAN_VIDEO_TARGET "/sdcard/Movies/"
+
+static const char *const IMAGE_EXTS[] = {
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".heic", ".heif",
+    ".avif",
+};
+
+static const char *const VIDEO_EXTS[] = {
+    ".mp4", ".mkv", ".mov", ".webm", ".3gp", ".avi", ".m4v",
+};
+
+static bool
+ext_matches(const char *file, const char *const *exts, size_t exts_count) {
+    const char *dot = strrchr(file, '.');
+    if (!dot) {
+        return false;
+    }
+    for (size_t i = 0; i < exts_count; ++i) {
+        if (!strcasecmp(dot, exts[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool
+is_image_file(const char *file) {
+    return ext_matches(file, IMAGE_EXTS,
+                       sizeof(IMAGE_EXTS) / sizeof(IMAGE_EXTS[0]));
+}
+
+static bool
+is_video_file(const char *file) {
+    return ext_matches(file, VIDEO_EXTS,
+                       sizeof(VIDEO_EXTS) / sizeof(VIDEO_EXTS[0]));
+}
+
+static const char *
+resolve_push_target(struct sc_file_pusher *fp, const char *file) {
+    // An explicit --push-target always wins, regardless of file type.
+    if (fp->push_target) {
+        return fp->push_target;
+    }
+    if (fp->media_scan) {
+        if (is_image_file(file)) {
+            return MEDIA_SCAN_IMAGE_TARGET;
+        }
+        if (is_video_file(file)) {
+            return MEDIA_SCAN_VIDEO_TARGET;
+        }
+    }
+    return DEFAULT_PUSH_TARGET;
+}
+
+static const char *
+basename_of(const char *path) {
+    const char *sep = strrchr(path, '/');
+#ifdef _WIN32
+    const char *bsl = strrchr(path, '\\');
+    if (bsl && (!sep || bsl > sep)) {
+        sep = bsl;
+    }
+#endif
+    return sep ? sep + 1 : path;
+}
+
+static char *
+build_remote_path(const char *target, const char *local_file) {
+    const char *base = basename_of(local_file);
+    size_t target_len = strlen(target);
+    bool needs_sep = target_len == 0 || target[target_len - 1] != '/';
+    size_t total = target_len + (needs_sep ? 1 : 0) + strlen(base) + 1;
+    char *result = malloc(total);
+    if (!result) {
+        LOG_OOM();
+        return NULL;
+    }
+    snprintf(result, total, "%s%s%s", target, needs_sep ? "/" : "", base);
+    return result;
+}
 
 static void
 sc_file_pusher_request_destroy(struct sc_file_pusher_request *req) {
@@ -16,7 +98,7 @@ sc_file_pusher_request_destroy(struct sc_file_pusher_request *req) {
 
 bool
 sc_file_pusher_init(struct sc_file_pusher *fp, const char *serial,
-                    const char *push_target) {
+                    const char *push_target, bool media_scan) {
     assert(serial);
 
     sc_vecdeque_init(&fp->queue);
@@ -53,7 +135,10 @@ sc_file_pusher_init(struct sc_file_pusher *fp, const char *serial,
 
     fp->stopped = false;
 
-    fp->push_target = push_target ? push_target : DEFAULT_PUSH_TARGET;
+    // Keep the user-supplied push_target as-is (possibly NULL); the actual
+    // target is resolved per request, see resolve_push_target().
+    fp->push_target = push_target;
+    fp->media_scan = media_scan;
 
     return true;
 }
@@ -116,9 +201,6 @@ run_file_pusher(void *data) {
     const char *serial = fp->serial;
     assert(serial);
 
-    const char *push_target = fp->push_target;
-    assert(push_target);
-
     for (;;) {
         sc_mutex_lock(&fp->mutex);
         while (!fp->stopped && sc_vecdeque_is_empty(&fp->queue)) {
@@ -143,10 +225,23 @@ run_file_pusher(void *data) {
                 LOGE("Failed to install %s", req.file);
             }
         } else {
+            const char *push_target = resolve_push_target(fp, req.file);
             LOGI("Pushing %s...", req.file);
             bool ok = sc_adb_push(intr, serial, req.file, push_target, 0);
             if (ok) {
                 LOGI("%s successfully pushed to %s", req.file, push_target);
+                if (fp->media_scan) {
+                    char *remote = build_remote_path(push_target, req.file);
+                    if (remote) {
+                        if (sc_adb_media_scan(intr, serial, remote, 0)) {
+                            LOGI("MediaStore scan triggered for %s", remote);
+                        } else {
+                            LOGW("MediaStore scan failed for %s "
+                                 "(requires Android 8.0+)", remote);
+                        }
+                        free(remote);
+                    }
+                }
             } else {
                 LOGE("Failed to push %s to %s", req.file, push_target);
             }

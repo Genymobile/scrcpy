@@ -353,6 +353,47 @@ sc_adb_install(struct sc_intr *intr, const char *serial, const char *local,
 }
 
 bool
+sc_adb_media_scan(struct sc_intr *intr, const char *serial,
+                  const char *remote_path, unsigned flags) {
+    assert(serial);
+    assert(remote_path);
+
+    // First try `cmd media_scanner scan-file` (stock Android 8.0+).
+    {
+        const char *const argv[] =
+            SC_ADB_COMMAND("-s", serial, "shell", "cmd", "media_scanner",
+                           "scan-file", remote_path);
+        sc_pid pid = sc_adb_execute(argv, flags | SC_ADB_SILENT);
+        if (process_check_success_intr(intr, pid,
+                                       "adb shell cmd media_scanner",
+                                       flags | SC_ADB_SILENT)) {
+            return true;
+        }
+    }
+
+    // Fallback: MEDIA_SCANNER_SCAN_FILE broadcast. Deprecated in Android 12+
+    // but still honored on many OEM ROMs (ColorOS/OxygenOS, MIUI) which strip
+    // the `media_scanner` shell service.
+    size_t uri_len = strlen("file://") + strlen(remote_path) + 1;
+    char *uri = malloc(uri_len);
+    if (!uri) {
+        LOG_OOM();
+        return false;
+    }
+    snprintf(uri, uri_len, "file://%s", remote_path);
+
+    const char *const argv[] =
+        SC_ADB_COMMAND("-s", serial, "shell", "am", "broadcast",
+                       "-a", "android.intent.action.MEDIA_SCANNER_SCAN_FILE",
+                       "-d", uri);
+    sc_pid pid = sc_adb_execute(argv, flags);
+    bool ok = process_check_success_intr(intr, pid, "adb shell am broadcast",
+                                         flags);
+    free(uri);
+    return ok;
+}
+
+bool
 sc_adb_tcpip(struct sc_intr *intr, const char *serial, uint16_t port,
              unsigned flags) {
     char port_string[5 + 1];
