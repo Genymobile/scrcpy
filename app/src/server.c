@@ -1044,9 +1044,13 @@ run_server(void *data) {
     assert(serial);
     LOGD("Device serial: %s", serial);
 
-    ok = push_server(&server->intr, serial);
-    if (!ok) {
-        goto error_connection_failed;
+    if(!params-> no_push){
+        ok = push_server(&server->intr, serial);
+        if (!ok) {
+            goto error_connection_failed;
+        }
+    }else{
+        LOGD("no push server!");
     }
 
     // If --list-* is passed, then the server just prints the requested data
