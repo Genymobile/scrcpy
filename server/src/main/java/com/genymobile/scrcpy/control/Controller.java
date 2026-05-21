@@ -3,6 +3,7 @@ package com.genymobile.scrcpy.control;
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.AsyncProcessor;
 import com.genymobile.scrcpy.CleanUp;
+import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.display.DisplayInfo;
@@ -23,7 +24,10 @@ import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
+import android.provider.MediaStore;
 import android.os.SystemClock;
 import android.util.Pair;
 import android.view.InputDevice;
@@ -334,6 +338,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         switch (type) {
             case ControlMessage.TYPE_RESET_VIDEO:
                 resetVideo();
+                return true;
+            case ControlMessage.TYPE_SCAN_FILE:
+                scanFile(msg.getText());
                 return true;
             default:
                 // fall through
@@ -874,5 +881,21 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private void resizeDisplay(int width, int height) {
         NewDisplayCapture newDisplayCapture = (NewDisplayCapture) surfaceCapture;
         newDisplayCapture.requestResize(width, height);
+    }
+
+    private void scanFile(String path) {
+        if (path == null || path.isEmpty()) {
+            return;
+        }
+        try {
+            // MediaStore.scanFile() is @hide; call the same provider method directly.
+            // Equivalent to: adb shell content call --uri content://media --method scan_file --arg <path>
+            Bundle out = FakeContext.get().getContentResolver()
+                    .call(MediaStore.AUTHORITY, "scan_file", path, null);
+            Uri uri = (out != null) ? out.<Uri>getParcelable(Intent.EXTRA_STREAM) : null;
+            Ln.i("MediaStore scan " + path + " -> " + uri);
+        } catch (Throwable t) {
+            Ln.e("MediaStore scan failed for " + path, t);
+        }
     }
 }

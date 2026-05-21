@@ -7,6 +7,8 @@
 #include <strings.h>
 
 #include "adb/adb.h"
+#include "control_msg.h"
+#include "controller.h"
 #include "util/log.h"
 
 #define DEFAULT_PUSH_TARGET "/sdcard/Download/"
@@ -99,8 +101,10 @@ sc_file_pusher_request_destroy(struct sc_file_pusher_request *req) {
 
 bool
 sc_file_pusher_init(struct sc_file_pusher *fp, const char *serial,
-                    const char *push_target, bool media_scan) {
+                    const char *push_target, bool media_scan,
+                    struct sc_controller *controller) {
     assert(serial);
+    assert(!media_scan || controller);
 
     sc_vecdeque_init(&fp->queue);
 
@@ -140,6 +144,7 @@ sc_file_pusher_init(struct sc_file_pusher *fp, const char *serial,
     // target is resolved per request, see resolve_push_target().
     fp->push_target = push_target;
     fp->media_scan = media_scan;
+    fp->controller = controller;
 
     return true;
 }
@@ -234,13 +239,14 @@ run_file_pusher(void *data) {
                 if (fp->media_scan) {
                     char *remote = build_remote_path(push_target, req.file);
                     if (remote) {
-                        if (sc_adb_media_scan(intr, serial, remote, 0)) {
-                            LOGI("MediaStore scan triggered for %s", remote);
-                        } else {
-                            LOGW("MediaStore scan failed for %s "
-                                 "(requires Android 8.0+)", remote);
+                        struct sc_control_msg msg;
+                        msg.type = SC_CONTROL_MSG_TYPE_SCAN_FILE;
+                        msg.scan_file.path = remote; // ownership transferred
+                        if (!sc_controller_push_msg(fp->controller, &msg)) {
+                            LOGW("Could not request MediaStore scan for %s",
+                                 remote);
+                            free(remote);
                         }
-                        free(remote);
                     }
                 }
             } else {

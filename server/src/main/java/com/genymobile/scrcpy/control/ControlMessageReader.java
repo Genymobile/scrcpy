@@ -62,6 +62,8 @@ public class ControlMessageReader {
                 return parseCameraSetTorch();
             case ControlMessage.TYPE_RESIZE_DISPLAY:
                 return parseResizeDisplay();
+            case ControlMessage.TYPE_SCAN_FILE:
+                return parseScanFile();
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
@@ -181,6 +183,11 @@ public class ControlMessageReader {
         int width = dis.readUnsignedShort();
         int height = dis.readUnsignedShort();
         return ControlMessage.createResizeDisplay(width, height);
+    }
+
+    private ControlMessage parseScanFile() throws IOException {
+        String path = parseString();
+        return ControlMessage.createScanFile(path);
     }
 
     private Position parsePosition() throws IOException {

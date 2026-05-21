@@ -71,14 +71,6 @@ sc_adb_install(struct sc_intr *intr, const char *serial, const char *local,
                unsigned flags);
 
 /**
- * Trigger a MediaStore scan for a remote file path, so that gallery apps can
- * pick it up. Uses "cmd media_scanner scan-file" (available on Android 8.0+).
- */
-bool
-sc_adb_media_scan(struct sc_intr *intr, const char *serial,
-                  const char *remote_path, unsigned flags);
-
-/**
  * Execute `adb tcpip <port>`
  */
 bool
