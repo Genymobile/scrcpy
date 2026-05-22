@@ -172,25 +172,62 @@ jobs:
           name: build-win32-intermediate
           path: release/work/build-win32/dist-tar/
 
-  build-win64:
-    runs-on: ubuntu-latest
+  build-windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: '64'
+            target: win64
+            runs-on: ubuntu-latest
+            shell: bash
+          - arch: arm64
+            target: winarm64
+            runs-on: windows-11-arm
+            shell: 'msys2 {0}'
+    runs-on: ${{ matrix.runs-on }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Install dependencies
+      - name: Install dependencies (Linux cross-build)
+        if: matrix.target == 'win64'
         run: |
           sudo apt update
           sudo apt install -y meson ninja-build nasm \
              mingw-w64 mingw-w64-tools libz-mingw-w64-dev
 
+      - name: Setup MSYS2 (native Windows ARM64 build)
+        if: matrix.target == 'winarm64'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: CLANGARM64
+          update: true
+          install: >-
+            base-devel
+            unzip
+            wget
+            autoconf
+            automake
+            libtool
+            make
+            mingw-w64-clang-aarch64-toolchain
+            mingw-w64-clang-aarch64-meson
+            mingw-w64-clang-aarch64-ninja
+            mingw-w64-clang-aarch64-cmake
+            mingw-w64-clang-aarch64-pkgconf
+            mingw-w64-clang-aarch64-zlib
+
       - name: Build
-        run: release/build_windows.sh 64
+        run: release/build_windows.sh ${{ matrix.arch }}
 
       # upload-artifact does not preserve permissions
       - name: Tar
         run: |
-            cd release/work/build-win64
+            cd release/work/build-${{ matrix.target }}
             mkdir dist-tar
             cd dist-tar
             tar -C .. -cvf dist.tar.gz dist/
@@ -198,8 +235,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: build-win64-intermediate
-          path: release/work/build-win64/dist-tar/
+          name: build-${{ matrix.target }}-intermediate
+          path: release/work/build-${{ matrix.target }}/dist-tar/
 
   build-macos-aarch64:
     runs-on: macos-latest
@@ -362,7 +399,7 @@ jobs:
   package-win64:
     needs:
       - build-scrcpy-server
-      - build-win64
+      - build-windows
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -393,6 +430,42 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: release-win64
+          path: release/output
+
+  package-winarm64:
+    needs:
+      - build-scrcpy-server
+      - build-windows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download scrcpy-server
+        uses: actions/download-artifact@v8
+        with:
+          name: scrcpy-server
+          path: release/work/build-server/server/
+
+      - name: Download build-winarm64
+        uses: actions/download-artifact@v8
+        with:
+          name: build-winarm64-intermediate
+          path: release/work/build-winarm64/dist-tar/
+
+      # upload-artifact does not preserve permissions
+      - name: Detar
+        run: |
+            cd release/work/build-winarm64
+            tar xf dist-tar/dist.tar.gz
+
+      - name: Package
+        run: release/package_client.sh winarm64 zip
+
+      - name: Upload release
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-winarm64
           path: release/output
 
   package-macos-aarch64:
@@ -473,6 +546,7 @@ jobs:
       - package-linux-x86_64
       - package-win32
       - package-win64
+      - package-winarm64
       - package-macos-aarch64
       - package-macos-x86_64
     runs-on: ubuntu-latest
@@ -502,6 +576,12 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: release-win64
+          path: release/output/
+
+      - name: Download release-winarm64
+        uses: actions/download-artifact@v8
+        with:
+          name: release-winarm64
           path: release/output/
 
       - name: Download release-macos-aarch64
