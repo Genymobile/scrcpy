@@ -1,15 +1,13 @@
 package com.genymobile.scrcpy.video;
 
-import com.genymobile.scrcpy.model.Size;
+import android.media.MediaCodecInfo;
 
 public class VideoConstraints {
     private final int maxSize;
     private final int alignment;
-    private final Size maxCodecLandscapeSize;
-    private final Size maxCodecPortraitSize;
-    private final int minCodecSize;
+    private final MediaCodecInfo.VideoCapabilities caps;
 
-    public VideoConstraints(int maxSize, int alignment, Size maxCodecLandscapeSize, Size maxCodecPortraitSize, int minCodecSize) {
+    public VideoConstraints(int maxSize, int alignment, MediaCodecInfo.VideoCapabilities caps) {
         assert maxSize >= 0 : "Max size must not be negative";
         this.maxSize = maxSize;
 
@@ -17,14 +15,8 @@ public class VideoConstraints {
         assert (alignment & (alignment - 1)) == 0 : "Alignment must be a power-of-two";
         this.alignment = alignment;
 
-        assert maxCodecLandscapeSize != null;
-        this.maxCodecLandscapeSize = maxCodecLandscapeSize;
-
-        assert maxCodecPortraitSize != null;
-        this.maxCodecPortraitSize = maxCodecPortraitSize;
-
-        assert minCodecSize >= 0;
-        this.minCodecSize = minCodecSize;
+        assert caps != null;
+        this.caps = caps;
     }
 
     /**
@@ -48,30 +40,12 @@ public class VideoConstraints {
     }
 
     /**
-     * Return the max landscape size supported by the codec.
+     * Return the video encoder capabilities.
      *
-     * @return the max landscape size
+     * @return the video encoder capabilities
      */
-    public Size getMaxCodecLandscapeSize() {
-        return maxCodecLandscapeSize;
-    }
-
-    /**
-     * Return the max portrait size supported by the codec.
-     *
-     * @return the max portrait size
-     */
-    public Size getMaxCodecPortraitSize() {
-        return maxCodecPortraitSize;
-    }
-
-    /**
-     * Return the min size supported by the codec.
-     *
-     * @return the min size
-     */
-    public int getMinCodecSize() {
-        return minCodecSize;
+    public MediaCodecInfo.VideoCapabilities getEncoderCapabilities() {
+        return caps;
     }
 
     /**
@@ -81,6 +55,6 @@ public class VideoConstraints {
      * @return the new video constraints
      */
     public VideoConstraints withMaxSize(int maxSize) {
-        return new VideoConstraints(maxSize, alignment, maxCodecLandscapeSize, maxCodecPortraitSize, minCodecSize);
+        return new VideoConstraints(maxSize, alignment, caps);
     }
 }

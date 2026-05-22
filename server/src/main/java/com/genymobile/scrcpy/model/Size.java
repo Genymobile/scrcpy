@@ -1,8 +1,12 @@
 package com.genymobile.scrcpy.model;
 
+import com.genymobile.scrcpy.util.BinarySearch;
+import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.video.VideoConstraints;
 
 import android.graphics.Rect;
+import android.media.MediaCodecInfo;
+import android.util.Range;
 
 import java.util.Objects;
 
@@ -38,60 +42,83 @@ public final class Size {
     public Size constrain(VideoConstraints constraints, boolean preserveAspectRatio) {
         int maxSize = constraints.getMaxSize();
         int alignment = constraints.getAlignment();
+        MediaCodecInfo.VideoCapabilities caps = constraints.getEncoderCapabilities();
 
         assert maxSize >= 0 : "Max size may not be negative";
         assert alignment > 0 : "Alignment must be positive";
         assert (alignment & (alignment - 1)) == 0 : "Alignment must be a power-of-two";
 
-        boolean portrait = width < height;
-        Size maxCodecSize = portrait ? constraints.getMaxCodecPortraitSize() : constraints.getMaxCodecLandscapeSize();
+        boolean landscape = width >= height;
+        int major = landscape ? width : height;
+        int minor = landscape ? height : width;
 
-        int maxWidth = maxCodecSize.width;
-        int maxHeight = maxCodecSize.height;
-        if (maxSize > 0) {
-            if (maxWidth > maxSize) {
-                maxWidth = maxSize;
-            }
-            if (maxHeight > maxSize) {
-                maxHeight = maxSize;
-            }
+        Range<Integer> majorRange = landscape ? caps.getSupportedWidths() : caps.getSupportedHeights();
+        int minMajor = majorRange.getLower();
+        int maxMajor = majorRange.getUpper();
+        if (maxMajor > major) {
+            // Never increase the size
+            maxMajor = major;
         }
-        maxWidth = align(maxWidth, alignment);
-        maxHeight = align(maxHeight, alignment);
+        if (maxSize > 0 && maxMajor > maxSize) {
+            maxMajor = maxSize;
+        }
 
-        int w, h;
+        int minBlock = (minMajor + alignment - 1) / alignment;
+        int maxBlock = maxMajor / alignment;
+
+        int bestBlock = BinarySearch.findHighestTrue(
+                minBlock, maxBlock, block -> {
+                    int pixels = block * alignment;
+                    int w = align(width * pixels / major, alignment);
+                    int h = align(height * pixels / major, alignment);
+                    return caps.isSizeSupported(w, h);
+                });
+
+        if (bestBlock < minBlock) {
+            Ln.d("No matching size found, ignore encoder size validation");
+            bestBlock = maxBlock;
+        }
+
+        int bestMajor = bestBlock * alignment;
+        int bestMinor;
+
         if (preserveAspectRatio) {
-            if (width > maxWidth || height > maxHeight) {
-                if (width * maxHeight > height * maxWidth) {
-                    w = maxWidth;
-                    h = height * maxWidth / width;
-                } else {
-                    w = width * maxHeight / height;
-                    h = maxHeight;
-                }
-            } else {
-                w = width;
-                h = height;
-            }
+            bestMinor = align(minor * bestMajor / major, alignment);
         } else {
-            w = Math.min(width, maxWidth);
-            h = Math.min(height, maxHeight);
+            // The minor dimension can potentially be extended
+            int maxMinor = landscape ? caps.getSupportedHeightsFor(bestMajor).getUpper() : caps.getSupportedWidthsFor(bestMajor).getUpper();
+            if (maxMinor > minor) {
+                maxMinor = minor;
+            }
+            if (maxSize > 0 && maxMinor > maxSize) {
+                maxMinor = maxSize;
+            }
+            bestMinor = align(maxMinor, alignment);
+
+            // The major dimension can potentially be extended
+            maxMajor = landscape ? caps.getSupportedWidthsFor(bestMinor).getUpper() : caps.getSupportedHeightsFor(bestMinor).getUpper();
+            if (maxMajor > major) {
+                maxMajor = major;
+            }
+            if (maxSize > 0 && maxMajor > maxSize) {
+                maxMajor = maxSize;
+            }
+            bestMajor = align(maxMajor, alignment);
         }
 
-        w = align(w, alignment);
-        h = align(h, alignment);
-
-        assert w <= maxWidth : "The width cannot exceed maxWidth";
-        assert h <= maxHeight : "The height cannot exceed maxHeight";
-
-        // Minimum codec size must be respected (regardless of requested maxSize)
-        int minCodecSize = alignUp(constraints.getMinCodecSize(), alignment);
-        if (w < minCodecSize) {
-            w = minCodecSize;
+        minMajor = alignUp(minMajor, alignment);
+        if (bestMajor < minMajor) {
+            bestMajor = minMajor;
         }
-        if (h < minCodecSize) {
-            h = minCodecSize;
+
+        int minMinor = landscape ? caps.getSupportedHeights().getLower() : caps.getSupportedWidths().getLower();
+        minMinor = alignUp(minMinor, alignment);
+        if (bestMinor < minMinor) {
+            bestMinor = minMinor;
         }
+
+        int w = landscape ? bestMajor : bestMinor;
+        int h = landscape ? bestMinor : bestMajor;
 
         assert w % alignment == 0 : "The width must be a multiple of alignment";
         assert h % alignment == 0 : "The height must be a multiple of alignment";
