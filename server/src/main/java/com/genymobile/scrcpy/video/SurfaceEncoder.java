@@ -66,18 +66,6 @@ public class SurfaceEncoder implements AsyncProcessor {
         this.minSizeAlignment = options.getMinSizeAlignment();
     }
 
-    private static VideoConstraints createVideoConstraints(int maxSize, int minSizeAlignment, MediaCodecInfo.VideoCapabilities caps) {
-        assert caps != null;
-        int alignment = Math.max(caps.getWidthAlignment(), caps.getHeightAlignment());
-        Ln.d("Video codec size alignment requirement: " + alignment + "px");
-        if (alignment < minSizeAlignment) {
-            alignment = minSizeAlignment;
-            Ln.d("Actual video size alignment: " + alignment + "px");
-        }
-
-        return new VideoConstraints(maxSize, alignment, caps);
-    }
-
     private void streamCapture() throws IOException, ConfigurationException {
         Codec codec = streamer.getCodec();
         MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
@@ -85,7 +73,14 @@ public class SurfaceEncoder implements AsyncProcessor {
 
         MediaCodecInfo.VideoCapabilities caps = mediaCodec.getCodecInfo().getCapabilitiesForType(codec.getMimeType()).getVideoCapabilities();
         assert caps != null; // caps cannot be null for a video codec
-        VideoConstraints constraints = createVideoConstraints(maxSize, minSizeAlignment, caps);
+        int alignment = Math.max(caps.getWidthAlignment(), caps.getHeightAlignment());
+        Ln.d("Video codec size alignment requirement: " + alignment + "px");
+        if (alignment < minSizeAlignment) {
+            alignment = minSizeAlignment;
+            Ln.d("Actual video size alignment: " + alignment + "px");
+        }
+
+        VideoConstraints constraints = new VideoConstraints(maxSize, alignment, caps);
 
         capture.init(captureControl, constraints);
 
