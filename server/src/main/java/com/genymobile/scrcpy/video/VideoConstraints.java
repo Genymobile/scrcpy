@@ -15,7 +15,6 @@ public class VideoConstraints {
         assert (alignment & (alignment - 1)) == 0 : "Alignment must be a power-of-two";
         this.alignment = alignment;
 
-        assert caps != null;
         this.caps = caps;
     }
 
@@ -55,6 +54,16 @@ public class VideoConstraints {
      * @return the new video constraints
      */
     public VideoConstraints withMaxSize(int maxSize) {
+        return new VideoConstraints(maxSize, alignment, caps);
+    }
+
+    /**
+     * Return the video constraints with the provided video capabilities.
+     *
+     * @param caps the video encoder capabilities
+     * @return the new video constraints
+     */
+    public VideoConstraints withCapabilities(MediaCodecInfo.VideoCapabilities caps) {
         return new VideoConstraints(maxSize, alignment, caps);
     }
 }

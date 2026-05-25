@@ -54,6 +54,8 @@ public class SurfaceEncoder implements AsyncProcessor {
 
     private final CaptureControl captureControl = new CaptureControl();
 
+    private VideoConstraints videoConstraints;
+
     public SurfaceEncoder(SurfaceCapture capture, Streamer streamer, Options options) {
         this.capture = capture;
         this.streamer = streamer;
@@ -80,9 +82,10 @@ public class SurfaceEncoder implements AsyncProcessor {
             Ln.d("Actual video size alignment: " + alignment + "px");
         }
 
-        VideoConstraints constraints = new VideoConstraints(maxSize, alignment, caps);
+        // Do not constrain by the declared video encoder capabilities before encoding actually fails
+        videoConstraints = new VideoConstraints(maxSize, alignment, null);
 
-        capture.init(captureControl, constraints);
+        capture.init(captureControl, videoConstraints);
 
         try {
             boolean alive;
@@ -146,7 +149,7 @@ public class SurfaceEncoder implements AsyncProcessor {
                         throw e;
                     }
                     Ln.e("Capture/encoding error: " + e.getClass().getName() + ": " + e.getMessage());
-                    if (!prepareRetry(constraints, size)) {
+                    if (!prepareRetry(caps, size)) {
                         throw e;
                     }
                     // Keep the current resetReasons flags for the retry
@@ -176,17 +179,14 @@ public class SurfaceEncoder implements AsyncProcessor {
         }
     }
 
-    private boolean prepareRetry(VideoConstraints videoConstraints, Size currentSize) {
+    private boolean prepareRetry(MediaCodecInfo.VideoCapabilities caps, Size currentSize) {
         if (firstFrameSent) {
             ++consecutiveErrors;
-            if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-                // Definitively fail
-                return false;
+            if (consecutiveErrors < MAX_CONSECUTIVE_ERRORS) {
+                // Wait a bit to increase the probability that retrying will fix the problem
+                SystemClock.sleep(50);
+                return true;
             }
-
-            // Wait a bit to increase the probability that retrying will fix the problem
-            SystemClock.sleep(50);
-            return true;
         }
 
         if (!downsizeOnError) {
@@ -194,7 +194,22 @@ public class SurfaceEncoder implements AsyncProcessor {
             return false;
         }
 
-        // Downsizing on error is only enabled if an encoding failure occurs before the first frame (downsizing later could be surprising)
+        if (videoConstraints.getEncoderCapabilities() == null) {
+            Ln.i("Applying video encoder constraints");
+            videoConstraints = videoConstraints.withCapabilities(caps);
+            boolean accepted = capture.applyNewVideoConstraints(videoConstraints);
+            if (accepted) {
+                return true;
+            }
+        }
+
+        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            // Definitively fail
+            return false;
+        }
+
+        // Downsizing on error is only enabled if an encoding failure occurs before the first frame, or if the video constraints were not applied
+        // (downsizing later could be surprising)
 
         int newMaxSize = chooseMaxSizeFallback(currentSize);
         if (newMaxSize == 0) {

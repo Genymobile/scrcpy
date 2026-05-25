@@ -48,6 +48,33 @@ public final class Size {
         assert alignment > 0 : "Alignment must be positive";
         assert (alignment & (alignment - 1)) == 0 : "Alignment must be a power-of-two";
 
+        if (caps == null) {
+            int w, h;
+            if (maxSize > 0 && (width > maxSize || height > maxSize)) {
+                if (preserveAspectRatio) {
+                    if (width > height) {
+                        w = maxSize;
+                        h = height * maxSize / width;
+                    } else {
+                        w = width * maxSize / height;
+                        h = maxSize;
+                    }
+                } else {
+                    w = Math.min(width, maxSize);
+                    h = Math.min(height, maxSize);
+                }
+            } else {
+                // No constraints
+                w = width;
+                h = height;
+            }
+
+            w = Math.max(align(w, alignment), alignment);
+            h = Math.max(align(h, alignment), alignment);
+
+            return new Size(w, h);
+        }
+
         boolean landscape = width >= height;
         int major = landscape ? width : height;
         int minor = landscape ? height : width;
