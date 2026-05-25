@@ -139,17 +139,8 @@ The target directory can be changed on start:
 scrcpy --push-target=/sdcard/Movies/
 ```
 
-To make pushed images and videos visible in the gallery, enable `--media-scan`:
-
-```bash
-scrcpy --media-scan
-```
-
-When `--media-scan` is enabled and `--push-target` is *not* set, image files
-are pushed to `/sdcard/Pictures/` and video files to `/sdcard/Movies/` (other
-files keep the default `/sdcard/Download/`). After each push, a MediaStore scan
-is triggered so that gallery apps pick the file up.
-
-If `--push-target` is set explicitly, all files go there regardless of type and
-that location is scanned. Requires Android 8.0 (API 26) or higher on the
-device.
+After each successful push, _scrcpy_ asks `MediaStore` to scan the pushed file
+so that it appears in media apps. Note that some gallery apps only show files
+from a fixed list of folders (typically `DCIM/Camera`) in their main view; the
+file is then still reachable through the system Photo Picker and the folder
+view, but may not appear on the gallery home screen.

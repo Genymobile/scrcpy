@@ -498,8 +498,7 @@ scrcpy(struct scrcpy_options *options) {
     if (options->window && options->control) {
         if (!sc_file_pusher_init(&s->file_pusher, serial,
                                  options->push_target,
-                                 options->media_scan,
-                                 options->media_scan ? &s->controller : NULL)) {
+                                 &s->controller)) {
             goto end;
         }
         fp = &s->file_pusher;

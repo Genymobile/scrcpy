@@ -25,9 +25,8 @@ struct sc_file_pusher_request_queue SC_VECDEQUE(struct sc_file_pusher_request);
 
 struct sc_file_pusher {
     char *serial;
-    const char *push_target; // may be NULL if not explicitly set by user
-    bool media_scan;
-    struct sc_controller *controller; // used to send SCAN_FILE requests, may be NULL
+    const char *push_target;
+    struct sc_controller *controller; // used to send SCAN_FILE requests
     sc_thread thread;
     sc_mutex mutex;
     sc_cond event_cond;
@@ -40,7 +39,7 @@ struct sc_file_pusher {
 
 bool
 sc_file_pusher_init(struct sc_file_pusher *fp, const char *serial,
-                    const char *push_target, bool media_scan,
+                    const char *push_target,
                     struct sc_controller *controller);
 
 void

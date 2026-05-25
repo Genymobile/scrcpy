@@ -109,7 +109,6 @@ enum {
     OPT_KEEP_ACTIVE,
     OPT_BACKGROUND_COLOR,
     OPT_RENDER_FIT,
-    OPT_MEDIA_SCAN,
 };
 
 struct sc_option {
@@ -522,19 +521,6 @@ static const struct sc_option options[] = {
         .argdesc = "value",
         .text = "Limit the frame rate of screen capture (officially supported "
                 "since Android 10, but may work on earlier versions).",
-    },
-    {
-        .longopt_id = OPT_MEDIA_SCAN,
-        .longopt = "media-scan",
-        .text = "When pushing a file by drag & drop, trigger a MediaStore scan "
-                "afterwards so that the gallery and other media apps can pick "
-                "it up.\n"
-                "If --push-target is not set, image files are pushed to "
-                "\"/sdcard/Pictures/\" and video files to \"/sdcard/Movies/\". "
-                "Other files keep the default target.\n"
-                "If --push-target is set explicitly, all files go there and "
-                "are scanned from that location.\n"
-                "Requires Android 8.0 (API 26) or higher on the device.",
     },
     {
         .longopt_id = OPT_MIN_SIZE_ALIGNMENT,
@@ -2645,9 +2631,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_PUSH_TARGET:
                 opts->push_target = optarg;
-                break;
-            case OPT_MEDIA_SCAN:
-                opts->media_scan = true;
                 break;
             case OPT_PREFER_TEXT:
                 if (opts->key_inject_mode != SC_KEY_INJECT_MODE_MIXED) {
