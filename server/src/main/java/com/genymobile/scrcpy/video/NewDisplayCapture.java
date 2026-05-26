@@ -355,7 +355,7 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     private synchronized void triggerResize(Size size) {
         if (virtualDisplay != null) {
-            size = size.constrain(videoConstraints); // in case the constraints have changed
+            size = size.constrain(videoConstraints, false); // in case the constraints have changed
             int displayId = virtualDisplay.getDisplay().getDisplayId();
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
             int displayRotation = displayInfo.getRotation();
