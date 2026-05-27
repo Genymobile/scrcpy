@@ -76,7 +76,7 @@ sc_demuxer_recv_header(struct sc_demuxer *demuxer,
     // which only contains a 12-byte header:
     //
     //  byte 0   byte 1   byte 2   byte 3
-    // 10000000 00000000 00000000 0000000.
+    // 10000000 00000000 00000000 0000000R
     // ^<------------------------------->^
     // |               padding           |
     //  `- session packet flag            `- client resized flag
@@ -94,6 +94,8 @@ sc_demuxer_recv_header(struct sc_demuxer *demuxer,
     //  <-------------> <-----> <-----------------------------...
     //        PTS        packet        raw packet
     //                    size
+    //  <--------------------->
+    //       frame header
     //
     // The most significant bits of the PTS are used for packet flags:
     //

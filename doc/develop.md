@@ -368,7 +368,7 @@ session (a session changes when the device rotates):
 
 ```
      byte 0   byte 1   byte 2   byte 3
-    10000000 00000000 00000000 0000000.
+    10000000 00000000 00000000 0000000R
     ^<------------------------------->^
     |               padding           |
      `- session packet flag            `- client resized flag
