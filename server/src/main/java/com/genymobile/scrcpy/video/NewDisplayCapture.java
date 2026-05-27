@@ -358,6 +358,8 @@ public class NewDisplayCapture extends SurfaceCapture {
             size = size.constrain(videoConstraints, false); // in case the constraints have changed
             int displayId = virtualDisplay.getDisplay().getDisplayId();
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+            @SuppressWarnings("checkstyle:HiddenField") // hides this.dpi on purpose
+            int dpi = displayInfo.getDpi();
             int displayRotation = displayInfo.getRotation();
             if (captureOrientation.isSwap()) {
                 size = size.rotate();
