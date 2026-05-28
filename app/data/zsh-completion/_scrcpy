@@ -93,6 +93,7 @@ arguments=(
     {-s,--serial=}'[The device serial number \(mandatory for multiple devices only\)]:serial:($("${ADB-adb}" devices | awk '\''$2 == "device" {print $1}'\''))'
     {-S,--turn-screen-off}'[Turn the device screen off immediately]'
     '--screen-off-timeout=[Set the screen off timeout in seconds]'
+    '--shortcut-key=[Override one keyboard shortcut key]:shortcut action:(home= back= app-switch= menu= power= screen-power= pause= volume-down= volume-up= rotate-left= rotate-right= copy= cut= paste= fullscreen= resize-to-fit= pixel-perfect= fps-counter= panels= rotate-device= open-keyboard-settings=)'
     '--shortcut-mod=[\[key1,key2+key3,...\] Specify the modifiers to use for scrcpy shortcuts]:shortcut mod:(lctrl rctrl lalt ralt lsuper rsuper)'
     '--start-app=[Start an Android app]'
     {-t,--show-touches}'[Show physical touches]'
