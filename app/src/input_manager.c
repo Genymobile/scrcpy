@@ -1048,7 +1048,7 @@ sc_input_manager_process_gamepad_device(struct sc_input_manager *im,
     if (event->type == SDL_EVENT_GAMEPAD_ADDED) {
         SDL_Gamepad *sdl_gamepad = SDL_OpenGamepad(event->which);
         if (!sdl_gamepad) {
-            LOGW("Could not open gamepad");
+            LOGW("Could not open gamepad: %s", SDL_GetError());
             return;
         }
 
