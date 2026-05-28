@@ -305,43 +305,6 @@ reset_video(struct sc_input_manager *im) {
 }
 
 static void
-camera_set_torch(struct sc_input_manager *im, bool on) {
-    assert(im->controller && im->camera);
-
-    struct sc_control_msg msg;
-    msg.type = SC_CONTROL_MSG_TYPE_CAMERA_SET_TORCH;
-    msg.camera_set_torch.on = on;
-
-    if (!sc_controller_push_msg(im->controller, &msg)) {
-        LOGW("Could not request setting camera torch");
-    }
-}
-
-static void
-camera_zoom_in(struct sc_input_manager *im) {
-    assert(im->controller && im->camera);
-
-    struct sc_control_msg msg;
-    msg.type = SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_IN;
-
-    if (!sc_controller_push_msg(im->controller, &msg)) {
-        LOGW("Could not request camera zoom in");
-    }
-}
-
-static void
-camera_zoom_out(struct sc_input_manager *im) {
-    assert(im->controller && im->camera);
-
-    struct sc_control_msg msg;
-    msg.type = SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_OUT;
-
-    if (!sc_controller_push_msg(im->controller, &msg)) {
-        LOGW("Could not request camera zoom out");
-    }
-}
-
-static void
 apply_orientation_transform(struct sc_input_manager *im,
                             enum sc_orientation transform) {
     struct sc_screen *screen = im->screen;
@@ -423,7 +386,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     bool video = im->screen->video;
     bool disconnected = im->disconnected;
 
-    SDL_Keycode sdl_keycode = event->key;
+    int32_t sdl_keycode = (int32_t) event->key;
     uint16_t mod = event->mod;
     bool down = event->type == SDL_EVENT_KEY_DOWN;
     bool ctrl = event->mod & SDL_KMOD_CTRL;
@@ -439,7 +402,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                     || sc_shortcut_mods_is_shortcut_key(mods, sdl_keycode);
 
     if (down && !repeat && !disconnected) {
-        if (sdl_keycode == im->last_keycode && mod == im->last_mod) {
+        if (sdl_keycode == (int32_t) im->last_keycode && mod == im->last_mod) {
             ++im->key_repeat;
         } else {
             im->key_repeat = 0;
