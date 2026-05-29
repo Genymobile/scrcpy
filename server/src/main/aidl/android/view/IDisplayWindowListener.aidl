@@ -48,4 +48,9 @@ oneway interface IDisplayWindowListener {
      * Called when a display is removed from the hierarchy.
      */
     void onDisplayRemoved(int displayId);
+
+    /**
+     * Called when display animations disabled state changes (added in Android 16).
+     */
+    void onDisplayAnimationsDisabledChanged(int displayId, boolean disabled);
 }

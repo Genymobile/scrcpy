@@ -24,6 +24,11 @@ public class DisplayWindowListener extends IDisplayWindowListener.Stub {
     }
 
     @Override
+    public void onDisplayAnimationsDisabledChanged(int displayId, boolean disabled) {
+        // empty default implementation for Android 16+
+    }
+
+    @Override
     public boolean onTransact(int code, Parcel data, Parcel reply, int flags) throws RemoteException {
         try {
             return super.onTransact(code, data, reply, flags);
