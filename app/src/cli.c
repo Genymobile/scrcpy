@@ -2977,11 +2977,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         opts->video = false;
     }
 
-    if (opts->audio && !opts->audio_playback && !opts->record_filename) {
-        LOGI("No audio playback, no recording: audio disabled");
-        opts->audio = false;
-    }
-
     if (!opts->video && !opts->audio && !opts->control && !otg) {
         LOGE("No video, no audio, no control, no OTG: nothing to do");
         return false;
