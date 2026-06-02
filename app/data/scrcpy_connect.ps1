@@ -2,7 +2,7 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "scrcpy Wireless Connect"
+$form.Text = "scrcpy Wireless"
 $form.Size = New-Object System.Drawing.Size(430, 430)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedDialog"
@@ -14,7 +14,7 @@ $form.Font = New-Object System.Drawing.Font("Segoe UI", 9)
 $form.Padding = New-Object System.Windows.Forms.Padding(18)
 
 $title = New-Object System.Windows.Forms.Label
-$title.Text = "Wireless ADB + scrcpy Launcher"
+$title.Text = "scrcpy Wireless"
 $title.Location = New-Object System.Drawing.Point(20, 15)
 $title.Size = New-Object System.Drawing.Size(220, 28)
 $title.Font = New-Object System.Drawing.Font("Segoe UI", 13, [System.Drawing.FontStyle]::Bold)
