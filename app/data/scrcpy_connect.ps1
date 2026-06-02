@@ -2,7 +2,7 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "scrcpy Wireless"
+$form.Text = "scrcpy Wireless Connect"
 $form.Size = New-Object System.Drawing.Size(430, 430)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedDialog"
