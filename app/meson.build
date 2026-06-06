@@ -22,6 +22,7 @@ src = [
     'src/fps_counter.c',
     'src/frame_buffer.c',
     'src/input_manager.c',
+    'src/keyboard_shortcuts.c',
     'src/keyboard_sdk.c',
     'src/mouse_capture.c',
     'src/mouse_sdk.c',
@@ -260,6 +261,10 @@ if get_option('buildtype') == 'debug'
             'src/control_msg.c',
             'src/util/str.c',
             'src/util/strbuf.c',
+        ]],
+        ['test_keyboard_shortcuts', [
+            'tests/test_keyboard_shortcuts.c',
+            'src/keyboard_shortcuts.c',
         ]],
         ['test_device_msg_deserialize', [
             'tests/test_device_msg_deserialize.c',
