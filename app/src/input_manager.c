@@ -599,6 +599,13 @@ sc_input_manager_process_key(struct sc_input_manager *im,
             return;
         }
 
+        // If the key itself is a shortcut modifier (e.g., the Win key when
+        // Super is a shortcut modifier), do not forward it to the device,
+        // since it is consumed as a modifier for scrcpy shortcuts.
+        if (sc_shortcut_mods_is_shortcut_key(im->sdl_shortcut_mods,
+                                             sdl_keycode)) {
+            return;
+        }
     }
 
     if (!im->kp || paused) {
