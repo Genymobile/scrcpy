@@ -106,6 +106,7 @@ enum {
     OPT_CAMERA_ZOOM,
     OPT_MIN_SIZE_ALIGNMENT,
     OPT_NO_WINDOW_ASPECT_RATIO_LOCK,
+    OPT_NO_TERMINAL_TITLE,
     OPT_KEEP_ACTIVE,
     OPT_BACKGROUND_COLOR,
     OPT_RENDER_FIT,
@@ -658,6 +659,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_NO_POWER_ON,
         .longopt = "no-power-on",
         .text = "Do not power on the device on start.",
+    },
+    {
+        .longopt_id = OPT_NO_TERMINAL_TITLE,
+        .longopt = "no-terminal-title",
+        .text = "Disable automatic terminal title updates.",
     },
     {
         .longopt_id = OPT_NO_VD_DESTROY_CONTENT,
@@ -2900,6 +2906,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_WINDOW_ASPECT_RATIO_LOCK:
                 opts->window_aspect_ratio_lock = false;
+                break;
+            case OPT_NO_TERMINAL_TITLE:
+                opts->terminal_title = false;
                 break;
             case OPT_KEEP_ACTIVE:
                 opts->keep_active = true;

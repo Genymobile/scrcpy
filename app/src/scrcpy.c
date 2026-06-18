@@ -496,11 +496,13 @@ scrcpy(struct scrcpy_options *options) {
 
     // Update the terminal tab title now that we know the device name.
     // Use --window-title if provided, otherwise fall back to the device name.
-    const char *title_suffix =
-        options->window_title ? options->window_title : info->device_name;
-    char term_title[256];
-    snprintf(term_title, sizeof(term_title), "scrcpy - %s", title_suffix);
-    sc_term_set_title(term_title);
+    if (options->terminal_title) {
+        const char *title_suffix =
+            options->window_title ? options->window_title : info->device_name;
+        char term_title[256];
+        snprintf(term_title, sizeof(term_title), "scrcpy - %s", title_suffix);
+        sc_term_set_title(term_title);
+    }
 
     struct sc_file_pusher *fp = NULL;
 
@@ -1018,7 +1020,9 @@ end:
 
     sc_server_destroy(&s->server);
 
-    sc_term_set_title("");
+    if (options->terminal_title) {
+        sc_term_set_title("");
+    }
 
     return ret;
 }

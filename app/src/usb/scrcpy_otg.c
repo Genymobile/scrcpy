@@ -185,7 +185,7 @@ scrcpy_otg(struct scrcpy_options *options) {
     }
 
     // Update the terminal tab title now that we know the device name.
-    if (options->window_title || usb_device.product) {
+    if (options->terminal_title && (options->window_title || usb_device.product)) {
         char term_title[256];
         snprintf(term_title, sizeof(term_title), "scrcpy - %s", window_title);
         sc_term_set_title(term_title);
@@ -279,7 +279,9 @@ end:
         sc_screen_destroy(&s->screen);
     }
 
-    sc_term_set_title("");
+    if (options->terminal_title) {
+        sc_term_set_title("");
+    }
 
     return ret;
 }
