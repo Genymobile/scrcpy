@@ -33,8 +33,6 @@ main_scrcpy(int argc, char *argv[]) {
     setbuf(stderr, NULL);
 #endif
 
-    sc_term_set_title("scrcpy");
-
     printf("scrcpy " SCRCPY_VERSION
            " <https://github.com/Genymobile/scrcpy>\n");
 
@@ -57,6 +55,10 @@ main_scrcpy(int argc, char *argv[]) {
     }
 
     sc_set_log_level(args.opts.log_level);
+
+    if (args.opts.update_terminal_title) {
+        sc_term_set_title("scrcpy");
+    }
 
     if (args.help) {
         scrcpy_print_usage(argv[0]);
@@ -111,7 +113,9 @@ end:
         getchar();
     }
 
-    sc_term_set_title("");
+    if (args.opts.update_terminal_title) {
+        sc_term_set_title("");
+    }
 
     return ret;
 }
