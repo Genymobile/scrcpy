@@ -23,7 +23,7 @@ options for this mouse mode to work. See
 By default, mouse hover (mouse motion without any clicks) events are forwarded
 to the device. This can be disabled with:
 
-```
+```bash
 scrcpy --no-mouse-hover
 ```
 

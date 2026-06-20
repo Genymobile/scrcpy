@@ -2,8 +2,8 @@ package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.FakeContext;
-import com.genymobile.scrcpy.device.DisplayInfo;
-import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.display.DisplayInfo;
+import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.util.Command;
 import com.genymobile.scrcpy.util.Ln;
 
@@ -139,7 +139,13 @@ public final class DisplayManager {
             int layerStack = cls.getDeclaredField("layerStack").getInt(displayInfo);
             int flags = cls.getDeclaredField("flags").getInt(displayInfo);
             int dpi = cls.getDeclaredField("logicalDensityDpi").getInt(displayInfo);
-            String uniqueId = (String) cls.getDeclaredField("uniqueId").get(displayInfo);
+            String uniqueId;
+            try {
+                uniqueId = (String) cls.getDeclaredField("uniqueId").get(displayInfo);
+            } catch (NoSuchFieldException e) {
+                // This field might not exist: <https://github.com/Genymobile/scrcpy/issues/6461>
+                uniqueId = null;
+            }
             return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, dpi, uniqueId);
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);

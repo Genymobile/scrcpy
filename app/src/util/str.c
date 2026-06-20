@@ -50,21 +50,6 @@ truncated:
 }
 
 char *
-sc_str_quote(const char *src) {
-    size_t len = strlen(src);
-    char *quoted = malloc(len + 3);
-    if (!quoted) {
-        LOG_OOM();
-        return NULL;
-    }
-    memcpy(&quoted[1], src, len);
-    quoted[0] = '"';
-    quoted[len + 1] = '"';
-    quoted[len + 2] = '\0';
-    return quoted;
-}
-
-char *
 sc_str_concat(const char *start, const char *end) {
     assert(start);
     assert(end);

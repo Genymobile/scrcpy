@@ -47,7 +47,7 @@ establishment (typically `27183`, see `--port`). It is also possible to force a
 different tunnel port (it may be useful in more complex situations, when more
 redirections are involved):
 
-```
+```bash
 scrcpy --tunnel-port=1234
 ```
 

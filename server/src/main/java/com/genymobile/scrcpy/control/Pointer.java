@@ -1,6 +1,6 @@
 package com.genymobile.scrcpy.control;
 
-import com.genymobile.scrcpy.device.Point;
+import com.genymobile.scrcpy.model.Point;
 
 public class Pointer {
 

@@ -196,6 +196,7 @@ public final class CleanUp {
 
         // Needed for workarounds
         prepareMainLooper();
+        Workarounds.apply();
 
         int displayId = Integer.parseInt(args[0]);
         int restoreStayOn = Integer.parseInt(args[1]);

@@ -1,4 +1,4 @@
-.TH "scrcpy" "1"
+.TH "SCRCPY" "1"
 .SH NAME
 scrcpy \- Display and control your Android device
 
@@ -87,15 +87,21 @@ Default is output.
 .BI "\-\-audio\-output\-buffer " ms
 Configure the size of the SDL audio output buffer (in milliseconds).
 
-If you get "robotic" audio playback, you should test with a higher value (10). Do not change this setting otherwise.
+Do not change this setting unless you have a good reason.
 
-Default is 5.
+Default is 10.
 
 .TP
 .BI "\-b, \-\-video\-bit\-rate " value
 Encode the video at the given bit rate, expressed in bits/s. Unit suffixes are supported: '\fBK\fR' (x1000) and '\fBM\fR' (x1000000).
 
 Default is 8M (8000000).
+
+.TP
+.BI "\-\-background-color " hexcolor
+Set the background color, encoded as hexadecimal color code (#RGB or #RRGGBB).
+
+Default is #222 (dark gray).
 
 .TP
 .BI "\-\-camera\-ar " ar
@@ -130,6 +136,14 @@ The available camera ids can be listed by \fB\-\-list\-cameras\fR.
 .TP
 .BI "\-\-camera\-size " width\fRx\fIheight
 Specify an explicit camera capture size.
+
+.TP
+.BI \-\-camera\-torch
+Turn on the camera torch when the camera starts.
+
+.TP
+.BI "\-\-camera-zoom " zoom
+Specify the camera zoom initial value.
 
 .TP
 .BI "\-\-capture\-orientation " value
@@ -216,7 +230,7 @@ Possible values are "disabled", "uhid" and "aoa":
  - "uhid" simulates physical HID gamepads using the Linux HID kernel module on the device.
  - "aoa" simulates physical HID gamepads using the AOAv2 protocol. It may only work over USB.
 
-Also see \fB\-\-keyboard\f and R\fB\-\-mouse\fR.
+Also see \fB\-\-keyboard\fR and R\fB\-\-mouse\fR.
 .TP
 .B \-h, \-\-help
 Print this help.
@@ -224,6 +238,10 @@ Print this help.
 .TP
 .B \-K
 Same as \fB\-\-keyboard=uhid\fR, or \fB\-\-keyboard=aoa\fR if \fB\-\-otg\fR is set.
+
+.TP
+.B \-\-keep\-active
+Keep the screen on by simulating user activity.
 
 .TP
 .BI "\-\-keyboard " mode
@@ -276,7 +294,11 @@ List displays available on the device.
 
 .TP
 .BI "\-m, \-\-max\-size " value
-Limit both the width and height of the video to \fIvalue\fR. The other dimension is computed so that the device aspect\-ratio is preserved.
+Limit both the width and height of the video.
+
+For display mirroring, the other dimension is computed so that the device aspect ratio is preserved (except for flex displays).
+
+For camera mirroring, the value is used to select the camera source size instead.
 
 Default is 0 (unlimited).
 
@@ -287,6 +309,16 @@ Same as \fB\-\-mouse=uhid\fR, or \fB\-\-mouse=aoa\fR if \fB\-\-otg\fR is set.
 .TP
 .BI "\-\-max\-fps " value
 Limit the framerate of screen capture (officially supported since Android 10, but may work on earlier versions).
+
+.TP
+.BI "\-\-min\-size\-alignment " alignment
+Configure the minimum video size alignment.
+
+This is a power-of-2 value (1, 2, 4, 8 or 16) that the video width and height must be multiples of.
+
+The actual alignment will be the maximum of this value and the video codec's alignment requirement.
+
+Default is 1.
 
 .TP
 .BI "\-\-mouse " mode
@@ -411,6 +443,10 @@ Disable video playback on the computer.
 Disable scrcpy window. Implies --no-video-playback.
 
 .TP
+.B \-\-no\-window\-aspect\-ratio\-lock
+Disable window aspect ratio lock.
+
+.TP
 .BI "\-\-orientation " value
 Same as --display-orientation=value --record-orientation=value.
 
@@ -422,7 +458,7 @@ In this mode, adb (USB debugging) is not necessary, and mirroring is disabled.
 
 LAlt, LSuper or RSuper toggle the mouse capture mode, to give control of the mouse back to the computer.
 
-If any of \fB\-\-hid\-keyboard\fR or \fB\-\-hid\-mouse\fR is set, only enable keyboard or mouse respectively, otherwise enable both.
+Keyboard and mouse may be disabled separately using \fB\-\-keyboard=disabled\fR and \fB\-\-mouse=disabled\fR.
 
 It may only work over USB.
 
@@ -456,7 +492,7 @@ This avoids issues when combining multiple keys to enter special characters,
 but breaks the expected behavior of alpha keys in games (typically WASD).
 
 .TP
-.B "\-\-print\-fps
+.B \-\-print\-fps
 Start FPS counter, to print framerate logs to the console. It can be started or stopped at any time with MOD+i.
 
 .TP
@@ -497,6 +533,18 @@ Request SDL to use the given render driver (this is just a hint).
 Supported names are currently "direct3d", "opengl", "opengles2", "opengles", "metal" and "software".
 
 <https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER>
+
+.TP
+.BI "\-\-render\-fit " mode
+Set the render-fit mode to configure how the rendering fits the window.
+
+Possible values are "letterbox", "stretched" and "unscaled":
+
+ - "letterbox": preserve the aspect ratio and fit the window as best as possible (black bars are added either at the top and bottom or at the sides if needed).
+ - "stretched": fit the window without preserving the aspect ratio.
+ - "unscaled": render the display without scaling.
+
+Default is "letterbox", unless --flex-display is set, in which case it is "unscaled".
 
 .TP
 .B \-\-require\-audio
@@ -547,7 +595,7 @@ Enable "show touches" on start, restore the initial value on exit.
 It only shows physical touches (not clicks from scrcpy).
 
 .TP
-.BI "\-\-tcpip\fR[=[+]\fIip\fR[:\fIport\fR]]
+.B \-\-tcpip\fR[=[+]\fIip\fR[:\fIport\fR]]
 Configure and connect the device over TCP/IP.
 
 If a destination address is provided, then scrcpy connects to this address before starting. The device must listen on the given TCP port (default is 5555).
@@ -668,6 +716,10 @@ Set the initial window height.
 
 Default is 0 (automatic).
 
+.TP
+.B \-x, \-\-flex\-display
+Continuously resize the virtual display to match the window.
+
 .SH EXIT STATUS
 .B scrcpy
 will exit with code 0 on normal program termination. If an initial
@@ -680,7 +732,11 @@ In the following list, MOD is the shortcut modifier. By default, it's (left)
 Alt or (left) Super, but it can be configured by \fB\-\-shortcut\-mod\fR (see above).
 
 .TP
-.B MOD+f
+.B MOD+q
+Quit
+
+.TP
+.B MOD+f, F11
 Switch fullscreen mode
 
 .TP
@@ -815,6 +871,22 @@ Install APK from computer
 .B Drag & drop non-APK file
 Push file to device (see \fB\-\-push\-target\fR)
 
+.TP
+.B MOD+t
+Turn on the camera torch (camera mode only)
+
+.TP
+.B MOD+Shift+t
+Turn off the camera torch (camera mode only)
+
+.TP
+.B MOD+Up
+Zoom camera in (camera mode only)
+
+.TP
+.B MOD+Down
+Zoom camera out (camera mode only)
+
 
 .SH Environment variables
 
@@ -827,8 +899,8 @@ Path to adb.
 Device serial to use if no selector (\fB-s\fR, \fB-d\fR, \fB-e\fR or \fB\-\-tcpip=\fIaddr\fR) is specified.
 
 .TP
-.B SCRCPY_ICON_PATH
-Path to the program icon.
+.B SCRCPY_ICON_DIR
+Path to the icon directory.
 
 .TP
 .B SCRCPY_SERVER_PATH
@@ -852,7 +924,7 @@ Report bugs to <https://github.com/Genymobile/scrcpy/issues>.
 .SH COPYRIGHT
 Copyright \(co 2018 Genymobile <https://www.genymobile.com>
 
-Copyright \(co 2018\-2025 Romain Vimont <rom@rom1v.com>
+Copyright \(co 2018\-2026 Romain Vimont <rom@rom1v.com>
 
 Licensed under the Apache License, Version 2.0.
 

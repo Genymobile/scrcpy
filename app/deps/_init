@@ -1,10 +1,9 @@
-#!/usr/bin/env bash
 # This file is intended to be sourced by other scripts, not executed
 
 process_args() {
     if [[ $# != 3 ]]
     then
-        # <host>: win32 or win64
+        # <host>: linux, macos, win32 or win64
         # <build_type>: native or cross
         # <link_type>: static or shared
         echo "Syntax: $0 <host> <build_type> <link_type>" >&2
@@ -12,8 +11,8 @@ process_args() {
     fi
 
     HOST="$1"
-    BUILD_TYPE="$2" # native or cross
-    LINK_TYPE="$3" # static or shared
+    BUILD_TYPE="$2"
+    LINK_TYPE="$3"
     DIRNAME="$HOST-$BUILD_TYPE-$LINK_TYPE"
 
     if [[ "$BUILD_TYPE" != native && "$BUILD_TYPE" != cross ]]

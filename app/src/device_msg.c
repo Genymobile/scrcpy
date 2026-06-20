@@ -53,7 +53,7 @@ sc_device_msg_deserialize(const uint8_t *buf, size_t len,
             }
             uint16_t id = sc_read16be(&buf[1]);
             size_t size = sc_read16be(&buf[3]);
-            if (size < len - 5) {
+            if (size > len - 5) {
                 return 0; // not available
             }
             uint8_t *data = malloc(size);

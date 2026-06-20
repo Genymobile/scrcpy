@@ -6,7 +6,7 @@
 #include <libavcodec/version.h>
 #include <libavformat/version.h>
 #include <libavutil/version.h>
-#include <SDL2/SDL_version.h>
+#include <SDL3/SDL_version.h>
 
 #ifndef _WIN32
 # define PRIu64_ PRIu64
@@ -59,28 +59,6 @@
 //   from AVFormatContext.codecpar should be used from now on.
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(60, 15, 100)
 # define SCRCPY_LAVC_HAS_CODECPAR_CODEC_SIDEDATA
-#endif
-
-#if SDL_VERSION_ATLEAST(2, 0, 6)
-// <https://github.com/libsdl-org/SDL/commit/d7a318de563125e5bb465b1000d6bc9576fbc6fc>
-# define SCRCPY_SDL_HAS_HINT_TOUCH_MOUSE_EVENTS
-#endif
-
-#if SDL_VERSION_ATLEAST(2, 0, 8)
-// <https://hg.libsdl.org/SDL/rev/dfde5d3f9781>
-# define SCRCPY_SDL_HAS_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR
-#endif
-
-#if SDL_VERSION_ATLEAST(2, 0, 16)
-# define SCRCPY_SDL_HAS_THREAD_PRIORITY_TIME_CRITICAL
-#endif
-
-#if SDL_VERSION_ATLEAST(2, 0, 18)
-# define SCRCPY_SDL_HAS_HINT_APP_NAME
-#endif
-
-#if SDL_VERSION_ATLEAST(2, 0, 14)
-# define SCRCPY_SDL_HAS_HINT_AUDIO_DEVICE_APP_NAME
 #endif
 
 #ifndef HAVE_STRDUP

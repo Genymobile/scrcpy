@@ -3,25 +3,13 @@
 #include <processthreadsapi.h>
 
 #include <assert.h>
+#include <stdlib.h>
 
+#include "util/command.h"
 #include "util/log.h"
 #include "util/str.h"
 
 #define CMD_MAX_LEN 8192
-
-static bool
-build_cmd(char *cmd, size_t len, const char *const argv[]) {
-    // Windows command-line parsing is WTF:
-    // <http://daviddeley.com/autohotkey/parameters/parameters.htm#WINPASS>
-    // only make it work for this very specific program
-    // (don't handle escaping nor quotes)
-    size_t ret = sc_str_join(cmd, argv, ' ', len);
-    if (ret >= len) {
-        LOGE("Command too long (%" SC_PRIsizet " chars)", len - 1);
-        return false;
-    }
-    return true;
-}
 
 enum sc_process_result
 sc_process_execute_p(const char *const argv[], HANDLE *handle, unsigned flags,
@@ -137,8 +125,9 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle, unsigned flags,
         si.lpAttributeList = lpAttributeList;
     }
 
-    char *cmd = malloc(CMD_MAX_LEN);
-    if (!cmd || !build_cmd(cmd, CMD_MAX_LEN, argv)) {
+    assert(argv && *argv);
+    char *cmd = sc_command_serialize_windows(argv);
+    if (!cmd) {
         LOG_OOM();
         goto error_free_attribute_list;
     }

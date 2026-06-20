@@ -305,6 +305,9 @@ execute_server(struct sc_server *server,
         VALIDATE_STRING(params->max_fps);
         ADD_PARAM("max_fps=%s", params->max_fps);
     }
+    if (params->min_size_alignment != 1) {
+        ADD_PARAM("min_size_alignment=%" PRIu8, params->min_size_alignment);
+    }
     if (params->angle) {
         VALIDATE_STRING(params->angle);
         ADD_PARAM("angle=%s", params->angle);
@@ -357,6 +360,13 @@ execute_server(struct sc_server *server,
     if (params->camera_high_speed) {
         ADD_PARAM("camera_high_speed=true");
     }
+    if (params->camera_torch) {
+        ADD_PARAM("camera_torch=true");
+    }
+    if (params->camera_zoom) {
+        VALIDATE_STRING(params->camera_zoom);
+        ADD_PARAM("camera_zoom=%s", params->camera_zoom);
+    }
     if (params->show_touches) {
         ADD_PARAM("show_touches=true");
     }
@@ -407,6 +417,9 @@ execute_server(struct sc_server *server,
         VALIDATE_STRING(params->new_display);
         ADD_PARAM("new_display=%s", params->new_display);
     }
+    if (params->flex_display) {
+        ADD_PARAM("flex_display=true");
+    }
     if (params->display_ime_policy != SC_DISPLAY_IME_POLICY_UNDEFINED) {
         ADD_PARAM("display_ime_policy=%s",
             sc_server_get_display_ime_policy_name(params->display_ime_policy));
@@ -416,6 +429,9 @@ execute_server(struct sc_server *server,
     }
     if (!params->vd_system_decorations) {
         ADD_PARAM("vd_system_decorations=false");
+    }
+    if (params->keep_active) {
+        ADD_PARAM("keep_active=true");
     }
     if (params->list & SC_OPTION_LIST_ENCODERS) {
         ADD_PARAM("list_encoders=true");

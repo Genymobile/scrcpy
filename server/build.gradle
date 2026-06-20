@@ -1,25 +1,27 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace 'com.genymobile.scrcpy'
-    compileSdk 35
+    namespace = 'com.genymobile.scrcpy'
+    compileSdk = 36
     defaultConfig {
-        applicationId "com.genymobile.scrcpy"
+        applicationId = "com.genymobile.scrcpy"
         minSdkVersion 21
-        targetSdkVersion 35
-        versionCode 30303
-        versionName "3.3.3"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        targetSdkVersion 36
+        versionCode 40000
+        versionName "4.0"
+        testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
     buildFeatures {
-        buildConfig true
-        aidl true
+        buildConfig = true
+        aidl = true
+    }
+    lint {
+        disable 'UseRequiresApi'
     }
 }
 

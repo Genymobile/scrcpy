@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy.opengl;
 
-import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.model.Size;
+import com.genymobile.scrcpy.util.Threads;
 
 import android.graphics.SurfaceTexture;
 import android.opengl.EGL14;
@@ -15,13 +16,13 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.view.Surface;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.Semaphore;
 
 public final class OpenGLRunner {
 
     private static HandlerThread handlerThread;
     private static Handler handler;
-    private static boolean quit;
 
     private EGLDisplay eglDisplay;
     private EGLContext eglContext;
@@ -47,32 +48,19 @@ public final class OpenGLRunner {
 
     public static synchronized void initOnce() {
         if (handlerThread == null) {
-            if (quit) {
-                throw new IllegalStateException("Could not init OpenGLRunner after it is quit");
-            }
             handlerThread = new HandlerThread("OpenGLRunner");
             handlerThread.start();
             handler = new Handler(handlerThread.getLooper());
         }
     }
 
-    public static void quit() {
+    public static void shutdown() throws InterruptedException {
         HandlerThread thread;
         synchronized (OpenGLRunner.class) {
             thread = handlerThread;
-            quit = true;
         }
         if (thread != null) {
             thread.quitSafely();
-        }
-    }
-
-    public static void join() throws InterruptedException {
-        HandlerThread thread;
-        synchronized (OpenGLRunner.class) {
-            thread = handlerThread;
-        }
-        if (thread != null) {
             thread.join();
         }
     }
@@ -80,31 +68,17 @@ public final class OpenGLRunner {
     public Surface start(Size inputSize, Size outputSize, Surface outputSurface) throws OpenGLException {
         initOnce();
 
-        // Simulate CompletableFuture, but working for all Android versions
-        final Semaphore sem = new Semaphore(0);
-        Throwable[] throwableRef = new Throwable[1];
-
         // The whole OpenGL execution must be performed on a Handler, so that SurfaceTexture.setOnFrameAvailableListener() works correctly.
         // See <https://github.com/Genymobile/scrcpy/issues/5444>
-        handler.post(() -> {
-            try {
-                run(inputSize, outputSize, outputSurface);
-            } catch (Throwable throwable) {
-                throwableRef[0] = throwable;
-            } finally {
-                sem.release();
-            }
-        });
-
         try {
-            sem.acquire();
-        } catch (InterruptedException e) {
-            // Behave as if this method call was synchronous
-            Thread.currentThread().interrupt();
-        }
-
-        Throwable throwable = throwableRef[0];
-        if (throwable != null) {
+            Threads.executeSynchronouslyOn(handler, new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    run(inputSize, outputSize, outputSurface);
+                    return null;
+                }
+            });
+        } catch (Throwable throwable) {
             if (throwable instanceof OpenGLException) {
                 throw (OpenGLException) throwable;
             }

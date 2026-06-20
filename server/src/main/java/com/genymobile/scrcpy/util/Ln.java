@@ -74,9 +74,11 @@ public final class Ln {
     public static void w(String message, Throwable throwable) {
         if (isEnabled(Level.WARN)) {
             Log.w(TAG, message, throwable);
-            CONSOLE_ERR.print(PREFIX + "WARN: " + message + '\n');
-            if (throwable != null) {
-                throwable.printStackTrace(CONSOLE_ERR);
+            synchronized (CONSOLE_ERR) {
+                CONSOLE_ERR.print(PREFIX + "WARN: " + message + '\n');
+                if (throwable != null) {
+                    throwable.printStackTrace(CONSOLE_ERR);
+                }
             }
         }
     }
@@ -88,9 +90,11 @@ public final class Ln {
     public static void e(String message, Throwable throwable) {
         if (isEnabled(Level.ERROR)) {
             Log.e(TAG, message, throwable);
-            CONSOLE_ERR.print(PREFIX + "ERROR: " + message + '\n');
-            if (throwable != null) {
-                throwable.printStackTrace(CONSOLE_ERR);
+            synchronized (CONSOLE_ERR) {
+                CONSOLE_ERR.print(PREFIX + "ERROR: " + message + '\n');
+                if (throwable != null) {
+                    throwable.printStackTrace(CONSOLE_ERR);
+                }
             }
         }
     }

@@ -109,8 +109,10 @@ public final class FakeContext extends ContextWrapper {
         }
 
         // "semclipboard" is a Samsung-internal service
-        // See <https://github.com/Genymobile/scrcpy/issues/6224>
-        if (Context.CLIPBOARD_SERVICE.equals(name) || "semclipboard".equals(name)) {
+        // See:
+        //  - <https://github.com/Genymobile/scrcpy/issues/6224>
+        //  - <https://github.com/Genymobile/scrcpy/issues/6523>
+        if (Context.CLIPBOARD_SERVICE.equals(name) || "semclipboard".equals(name) || Context.ACTIVITY_SERVICE.equals(name)) {
             try {
                 Field field = service.getClass().getDeclaredField("mContext");
                 field.setAccessible(true);

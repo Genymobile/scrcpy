@@ -1,6 +1,6 @@
 package com.genymobile.scrcpy.video;
 
-import com.genymobile.scrcpy.util.Codec;
+import com.genymobile.scrcpy.model.Codec;
 
 import android.annotation.SuppressLint;
 import android.media.MediaFormat;

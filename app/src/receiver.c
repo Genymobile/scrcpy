@@ -2,7 +2,8 @@
 
 #include <assert.h>
 #include <inttypes.h>
-#include <SDL2/SDL_clipboard.h>
+#include <stdlib.h>
+#include <SDL3/SDL_clipboard.h>
 
 #include "device_msg.h"
 #include "events.h"
@@ -43,7 +44,7 @@ sc_receiver_destroy(struct sc_receiver *receiver) {
 
 static void
 task_set_clipboard(void *userdata) {
-    assert(sc_thread_get_id() == SC_MAIN_THREAD_ID);
+    assert(sc_thread_is_main());
 
     char *text = userdata;
 
@@ -53,8 +54,12 @@ task_set_clipboard(void *userdata) {
     if (same) {
         LOGD("Computer clipboard unchanged");
     } else {
-        LOGI("Device clipboard copied");
-        SDL_SetClipboardText(text);
+        bool ok = SDL_SetClipboardText(text);
+        if (ok) {
+            LOGI("Device clipboard copied");
+        } else {
+            LOGE("Could not set clipboard: %s", SDL_GetError());
+        }
     }
 
     free(text);
@@ -62,7 +67,7 @@ task_set_clipboard(void *userdata) {
 
 static void
 task_uhid_output(void *userdata) {
-    assert(sc_thread_get_id() == SC_MAIN_THREAD_ID);
+    assert(sc_thread_is_main());
 
     struct sc_uhid_output_task_data *data = userdata;
 
@@ -80,7 +85,7 @@ process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
             // Take ownership of the text (do not destroy the msg)
             char *text = msg->clipboard.text;
 
-            bool ok = sc_post_to_main_thread(task_set_clipboard, text);
+            bool ok = sc_run_on_main_thread(task_set_clipboard, text, false);
             if (!ok) {
                 LOGW("Could not post clipboard to main thread");
                 free(text);
@@ -134,14 +139,13 @@ process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
 
             // It is guaranteed that these pointers will still be valid when
             // the main thread will process them (the main thread will stop
-            // processing SC_EVENT_RUN_ON_MAIN_THREAD on exit, when everything
-            // gets deinitialized)
+            // processing on exit, when everything gets deinitialized)
             data->uhid_devices = receiver->uhid_devices;
             data->id = msg->uhid_output.id;
             data->data = msg->uhid_output.data; // take ownership
             data->size = msg->uhid_output.size;
 
-            bool ok = sc_post_to_main_thread(task_uhid_output, data);
+            bool ok = sc_run_on_main_thread(task_uhid_output, data, false);
             if (!ok) {
                 LOGW("Could not post UHID output to main thread");
                 free(data->data);

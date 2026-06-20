@@ -142,7 +142,7 @@ static void test_vecdeque_grow(void) {
     sc_vecdeque_destroy(&vdq);
 }
 
-static void test_vecdeque_push_hole(void) {
+static void test_vecdeque_push_uninitialized(void) {
     struct SC_VECDEQUE(int) vdq = SC_VECDEQUE_INITIALIZER;
 
     bool ok = sc_vecdeque_reserve(&vdq, 20);
@@ -152,7 +152,7 @@ static void test_vecdeque_push_hole(void) {
     assert(sc_vecdeque_size(&vdq) == 0);
 
     for (int i = 0; i < 20; ++i) {
-        int *p = sc_vecdeque_push_hole(&vdq);
+        int *p = sc_vecdeque_push_uninitialized(&vdq);
         assert(p);
         *p = i * 10;
     }
@@ -167,7 +167,7 @@ static void test_vecdeque_push_hole(void) {
     assert(sc_vecdeque_size(&vdq) == 10);
 
     for (int i = 20; i < 30; ++i) {
-        int *p = sc_vecdeque_push_hole(&vdq);
+        int *p = sc_vecdeque_push_uninitialized(&vdq);
         assert(p);
         *p = i * 10;
     }
@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
     test_vecdeque_push_pop();
     test_vecdeque_reserve();
     test_vecdeque_grow();
-    test_vecdeque_push_hole();
+    test_vecdeque_push_uninitialized();
 
     return 0;
 }

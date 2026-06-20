@@ -4,7 +4,7 @@ Camera mirroring is supported for devices with Android 12 or higher.
 
 To capture the camera instead of the device screen:
 
-```
+```bash
 scrcpy --video-source=camera
 ```
 
@@ -34,7 +34,7 @@ scrcpy --video-source=camera --no-audio-playback --record=file.mp4
 
 To list the cameras available (with their declared valid sizes and frame rates):
 
-```
+```bash
 scrcpy --list-cameras
 scrcpy --list-camera-sizes
 ```
@@ -48,7 +48,7 @@ not declared but supported._
 
 It is possible to pass an explicit camera id (as listed by `--list-cameras`):
 
-```
+```bash
 scrcpy --video-source=camera --camera-id=0
 ```
 
@@ -73,7 +73,7 @@ scrcpy --video-source=camera --camera-id=0 --camera-facing=front  # error
 
 It is possible to pass an explicit camera size:
 
-```
+```bash
 scrcpy --video-source=camera --camera-size=1920x1080
 ```
 
@@ -81,7 +81,7 @@ The given size may be listed among the declared valid sizes
 (`--list-camera-sizes`), but may also be anything else (some devices support
 arbitrary sizes):
 
-```
+```bash
 scrcpy --video-source=camera --camera-size=1840x444
 ```
 
@@ -117,7 +117,7 @@ scrcpy --video-source=camera --camera-size=1920x1080 -m3000  # error
 To rotate the captured video, use the [video orientation](video.md#orientation)
 option:
 
-```
+```bash
 scrcpy --video-source=camera --camera-size=1920x1080 --orientation=90
 ```
 
@@ -128,7 +128,7 @@ By default, camera is captured at Android's default frame rate (30 fps).
 
 To configure a different frame rate:
 
-```
+```bash
 scrcpy --video-source=camera --camera-fps=60
 ```
 
@@ -140,8 +140,8 @@ The Android camera API also supports a [high speed capture mode][high speed].
 This mode is restricted to specific resolutions and frame rates, listed by
 `--list-camera-sizes`.
 
-```
-scrcpy --video-source=camera --camera-size=1920x1080 --camera-fps=240
+```bash
+scrcpy --video-source=camera --camera-size=1920x1080 --camera-high-speed --camera-fps=240
 ```
 
 [high speed]: https://developer.android.com/reference/android/hardware/camera2/CameraConstrainedHighSpeedCaptureSession
@@ -150,7 +150,8 @@ scrcpy --video-source=camera --camera-size=1920x1080 --camera-fps=240
 ## Brace expansion tip
 
 All camera options start with `--camera-`, so if your shell supports it, you can
-benefit from [brace expansion] (for example, it is supported _bash_ and _zsh_):
+benefit from [brace expansion] (for example, it is supported by _bash_ and
+_zsh_):
 
 ```bash
 scrcpy --video-source=camera --camera-{facing=back,ar=16:9,high-speed,fps=120}
@@ -163,6 +164,30 @@ scrcpy --video-source=camera --camera-facing=back --camera-ar=16:9 --camera-high
 ```
 
 [brace expansion]: https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html
+
+
+## Torch
+
+The camera torch can be turned on at startup by `--camera-torch`:
+
+```
+scrcpy --video-source=camera --camera-torch
+```
+
+It can also be turned on and off dynamically with <kbd>MOD</kbd>+<kbd>t</kbd>
+and <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>t</kbd>, respectively.
+
+
+## Zoom
+
+The camera zoom can be set with `--camera-zoom`:
+
+```bash
+scrcpy --video-source=camera --camera-zoom=1.5
+```
+
+It can also be adjusted dynamically using <kbd>MOD</kbd>+<kbd>↑</kbd> _(up)_ and
+<kbd>MOD</kbd>+<kbd>↓</kbd> _(down)_.
 
 
 ## Webcam

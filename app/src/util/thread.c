@@ -4,7 +4,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <SDL2/SDL_thread.h>
+#include <SDL3/SDL_init.h>
+#include <SDL3/SDL_mutex.h>
 
 #include "util/log.h"
 
@@ -31,11 +32,7 @@ static SDL_ThreadPriority
 to_sdl_thread_priority(enum sc_thread_priority priority) {
     switch (priority) {
         case SC_THREAD_PRIORITY_TIME_CRITICAL:
-#ifdef SCRCPY_SDL_HAS_THREAD_PRIORITY_TIME_CRITICAL
             return SDL_THREAD_PRIORITY_TIME_CRITICAL;
-#else
-            // fall through
-#endif
         case SC_THREAD_PRIORITY_HIGH:
             return SDL_THREAD_PRIORITY_HIGH;
         case SC_THREAD_PRIORITY_NORMAL:
@@ -51,8 +48,8 @@ to_sdl_thread_priority(enum sc_thread_priority priority) {
 bool
 sc_thread_set_priority(enum sc_thread_priority priority) {
     SDL_ThreadPriority sdl_priority = to_sdl_thread_priority(priority);
-    int r = SDL_SetThreadPriority(sdl_priority);
-    if (r) {
+    bool ok = SDL_SetCurrentThreadPriority(sdl_priority);
+    if (!ok) {
         LOGD("Could not set thread priority: %s", SDL_GetError());
         return false;
     }
@@ -67,7 +64,7 @@ sc_thread_join(sc_thread *thread, int *status) {
 
 bool
 sc_mutex_init(sc_mutex *mutex) {
-    SDL_mutex *sdl_mutex = SDL_CreateMutex();
+    SDL_Mutex *sdl_mutex = SDL_CreateMutex();
     if (!sdl_mutex) {
         LOG_OOM();
         return false;
@@ -89,40 +86,30 @@ void
 sc_mutex_lock(sc_mutex *mutex) {
     // SDL mutexes are recursive, but we don't want to use recursive mutexes
     assert(!sc_mutex_held(mutex));
-    int r = SDL_LockMutex(mutex->mutex);
+    SDL_LockMutex(mutex->mutex);
 #ifndef NDEBUG
-    if (r) {
-        LOGE("Could not lock mutex: %s", SDL_GetError());
-        abort();
-    }
-
     atomic_store_explicit(&mutex->locker, sc_thread_get_id(),
                           memory_order_relaxed);
-#else
-    (void) r;
 #endif
 }
 
 void
 sc_mutex_unlock(sc_mutex *mutex) {
-#ifndef NDEBUG
     assert(sc_mutex_held(mutex));
+#ifndef NDEBUG
     atomic_store_explicit(&mutex->locker, 0, memory_order_relaxed);
 #endif
-    int r = SDL_UnlockMutex(mutex->mutex);
-#ifndef NDEBUG
-    if (r) {
-        LOGE("Could not lock mutex: %s", SDL_GetError());
-        abort();
-    }
-#else
-    (void) r;
-#endif
+    SDL_UnlockMutex(mutex->mutex);
 }
 
 sc_thread_id
 sc_thread_get_id(void) {
-    return SDL_ThreadID();
+    return SDL_GetCurrentThreadID();
+}
+
+bool
+sc_thread_is_main(void) {
+    return SDL_IsMainThread();
 }
 
 #ifndef NDEBUG
@@ -136,7 +123,7 @@ sc_mutex_held(struct sc_mutex *mutex) {
 
 bool
 sc_cond_init(sc_cond *cond) {
-    SDL_cond *sdl_cond = SDL_CreateCond();
+    SDL_Condition *sdl_cond = SDL_CreateCondition();
     if (!sdl_cond) {
         LOG_OOM();
         return false;
@@ -148,22 +135,15 @@ sc_cond_init(sc_cond *cond) {
 
 void
 sc_cond_destroy(sc_cond *cond) {
-    SDL_DestroyCond(cond->cond);
+    SDL_DestroyCondition(cond->cond);
 }
 
 void
 sc_cond_wait(sc_cond *cond, sc_mutex *mutex) {
-    int r = SDL_CondWait(cond->cond, mutex->mutex);
+    SDL_WaitCondition(cond->cond, mutex->mutex);
 #ifndef NDEBUG
-    if (r) {
-        LOGE("Could not wait on condition: %s", SDL_GetError());
-        abort();
-    }
-
     atomic_store_explicit(&mutex->locker, sc_thread_get_id(),
                           memory_order_relaxed);
-#else
-    (void) r;
 #endif
 }
 
@@ -177,44 +157,22 @@ sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, sc_tick deadline) {
     // Round up to the next millisecond to guarantee that the deadline is
     // reached when returning due to timeout
     uint32_t ms = SC_TICK_TO_MS(deadline - now + SC_TICK_FROM_MS(1) - 1);
-    int r = SDL_CondWaitTimeout(cond->cond, mutex->mutex, ms);
+    bool signaled = SDL_WaitConditionTimeout(cond->cond, mutex->mutex, ms);
 #ifndef NDEBUG
-    if (r < 0) {
-        LOGE("Could not wait on condition with timeout: %s", SDL_GetError());
-        abort();
-    }
-
     atomic_store_explicit(&mutex->locker, sc_thread_get_id(),
                           memory_order_relaxed);
 #endif
-    assert(r == 0 || r == SDL_MUTEX_TIMEDOUT);
     // The deadline is reached on timeout
-    assert(r != SDL_MUTEX_TIMEDOUT || sc_tick_now() >= deadline);
-    return r == 0;
+    assert(signaled || sc_tick_now() >= deadline);
+    return signaled;
 }
 
 void
 sc_cond_signal(sc_cond *cond) {
-    int r = SDL_CondSignal(cond->cond);
-#ifndef NDEBUG
-    if (r) {
-        LOGE("Could not signal a condition: %s", SDL_GetError());
-        abort();
-    }
-#else
-    (void) r;
-#endif
+    SDL_SignalCondition(cond->cond);
 }
 
 void
 sc_cond_broadcast(sc_cond *cond) {
-    int r = SDL_CondBroadcast(cond->cond);
-#ifndef NDEBUG
-    if (r) {
-        LOGE("Could not broadcast a condition: %s", SDL_GetError());
-        abort();
-    }
-#else
-    (void) r;
-#endif
+    SDL_BroadcastCondition(cond->cond);
 }

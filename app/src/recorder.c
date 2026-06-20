@@ -212,6 +212,7 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
         // If the recorder is stopped, don't process anything if there are not
         // at least video packets
         sc_mutex_unlock(&recorder->mutex);
+        LOGW("Recording stopped before headers were processed");
         return false;
     }
 
@@ -362,13 +363,12 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
         }
 
         if (pts_origin == AV_NOPTS_VALUE) {
-            if (!recorder->audio) {
-                assert(video_pkt);
+            if (!recorder->audio && video_pkt) {
                 pts_origin = video_pkt->pts;
-            } else if (!recorder->video) {
-                assert(audio_pkt);
+            } else if (!recorder->video && audio_pkt) {
                 pts_origin = audio_pkt->pts;
-            } else if (video_pkt && audio_pkt) {
+            } else if (recorder->video && recorder->audio && video_pkt
+                    && audio_pkt) {
                 pts_origin = MIN(video_pkt->pts, audio_pkt->pts);
             } else if (recorder->stopped) {
                 if (video_pkt) {
@@ -444,7 +444,7 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
     int ret = av_write_trailer(recorder->ctx);
     if (ret < 0) {
         LOGE("Failed to write trailer to %s", recorder->filename);
-        error = false;
+        error = true;
     }
 
 end:
@@ -541,7 +541,10 @@ sc_recorder_set_orientation(AVStream *stream, enum sc_orientation orientation) {
 
 static bool
 sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
-                                   AVCodecContext *ctx) {
+                                   AVCodecContext *ctx,
+                                   const struct sc_stream_session *session) {
+    (void) session;
+
     struct sc_recorder *recorder = DOWNCAST_VIDEO(sink);
     // only written from this thread, no need to lock
     assert(!recorder->video_init);
@@ -635,7 +638,10 @@ sc_recorder_video_packet_sink_push(struct sc_packet_sink *sink,
 
 static bool
 sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
-                                   AVCodecContext *ctx) {
+                                   AVCodecContext *ctx,
+                                   const struct sc_stream_session *session) {
+    (void) session;
+
     struct sc_recorder *recorder = DOWNCAST_AUDIO(sink);
     assert(recorder->audio);
     // only written from this thread, no need to lock
