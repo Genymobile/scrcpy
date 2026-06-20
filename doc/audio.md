@@ -98,6 +98,15 @@ scrcpy --audio-source=playback --audio-dup
 scrcpy --audio-dup  # --audio-source=playback is implied
 ```
 
+It can also request voice communication playback capture, if supported and
+permitted by the device:
+
+```bash
+scrcpy --audio-source=playback --audio-playback-capture-voice
+# or simply:
+scrcpy --audio-playback-capture-voice  # --audio-source=playback is implied
+```
+
 However, it requires Android 13, and Android apps can opt-out (so they are not
 captured).
 
