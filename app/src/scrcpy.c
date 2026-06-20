@@ -380,6 +380,7 @@ scrcpy(struct scrcpy_options *options) {
         .video = options->video,
         .audio = options->audio,
         .audio_dup = options->audio_dup,
+        .audio_playback_capture_voice = options->audio_playback_capture_voice,
         .show_touches = options->show_touches,
         .stay_awake = options->stay_awake,
         .video_codec_options = options->video_codec_options,
