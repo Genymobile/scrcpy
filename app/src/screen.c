@@ -811,10 +811,9 @@ sc_screen_destroy(struct sc_screen *screen) {
     sc_mutex_destroy(&screen->mutex);
 
     SDL_Event event;
-    int nevents = SDL_PeepEvents(&event, 1, SDL_GETEVENT,
-                                 SC_EVENT_DISCONNECTED_ICON_LOADED,
-                                 SC_EVENT_DISCONNECTED_ICON_LOADED);
-    if (nevents == 1) {
+    bool has_event =
+        sc_dequeue_event(SC_EVENT_DISCONNECTED_ICON_LOADED, &event);
+    if (has_event) {
         assert(event.type == SC_EVENT_DISCONNECTED_ICON_LOADED);
         // The event was posted, but not handled, the icon must be freed
         SDL_Surface *dangling_icon = event.user.data1;

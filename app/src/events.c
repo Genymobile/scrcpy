@@ -26,6 +26,11 @@ sc_push_event_impl(uint32_t type, void *ptr, const char *name) {
 }
 
 bool
+sc_dequeue_event(uint32_t type, SDL_Event *event) {
+    return SDL_PeepEvents(event, 1, SDL_GETEVENT, type, type) == 1;
+}
+
+bool
 sc_main_thread_init(void) {
     stopped = false;
     return sc_mutex_init(&mutex);
