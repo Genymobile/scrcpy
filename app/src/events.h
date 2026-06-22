@@ -29,6 +29,8 @@ sc_push_event_impl(uint32_t type, void *ptr, const char *name);
 #define sc_push_event(TYPE) sc_push_event_impl(TYPE, NULL, # TYPE)
 #define sc_push_event_with_data(TYPE, PTR) sc_push_event_impl(TYPE, PTR, # TYPE)
 
+bool sc_dequeue_event(uint32_t type, SDL_Event *event);
+
 typedef SDL_MainThreadCallback sc_runnable_fn;
 
 bool
