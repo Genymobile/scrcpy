@@ -84,3 +84,14 @@ sc_term_set_title(const char *title) {
     fflush(stdout);
 #endif
 }
+
+void
+sc_term_save_title(void) {
+    printf("\033[22;2t");
+}
+
+void
+sc_term_restore_title(void) {
+    printf("\033[23;2t");
+    fflush(stdout);
+}
