@@ -24,4 +24,17 @@ sc_term_get_size(unsigned *rows, unsigned *cols);
 void
 sc_term_set_title(const char *title);
 
+/**
+ * Request the terminal to save the current title on its stack (if supported).
+ */
+void
+sc_term_save_title(void);
+
+/**
+ * Request the terminal to restore the latest title from its stack (if
+ * supported).
+ */
+void
+sc_term_restore_title(void);
+
 #endif

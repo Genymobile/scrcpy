@@ -49,6 +49,8 @@ main_scrcpy(int argc, char *argv[]) {
 
     enum scrcpy_exit_code ret;
 
+    bool term_title_saved = false;
+
     if (!scrcpy_parse_args(&args, argc, argv)) {
         ret = SCRCPY_EXIT_FAILURE;
         goto end;
@@ -57,7 +59,9 @@ main_scrcpy(int argc, char *argv[]) {
     sc_set_log_level(args.opts.log_level);
 
     if (args.opts.update_terminal_title) {
+        sc_term_save_title();
         sc_term_set_title("scrcpy");
+        term_title_saved = true;
     }
 
     if (args.help) {
@@ -113,8 +117,9 @@ end:
         getchar();
     }
 
-    if (args.opts.update_terminal_title) {
-        sc_term_set_title("");
+    if (term_title_saved) {
+        sc_term_set_title(""); // fallback if restore is ignored
+        sc_term_restore_title();
     }
 
     return ret;
