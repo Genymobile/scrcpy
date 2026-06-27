@@ -153,6 +153,12 @@ public class CameraCapture extends SurfaceCapture {
 
         transform = filter.getInverseTransform();
         videoSize = filter.getOutputSize().align(videoConstraints.getAlignment());
+
+        if (!videoSize.equals(captureSize) && transform == null) {
+            // The camera stream can only be rendered on a surface matching the input size.
+            // If the video constraints change the size, an intermediate OpenGL filter is required.
+            transform = AffineMatrix.IDENTITY;
+        }
     }
 
     private static String selectCamera(String explicitCameraId, CameraFacing cameraFacing) throws CameraAccessException, ConfigurationException {
