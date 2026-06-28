@@ -26,6 +26,7 @@ import android.os.IBinder;
 import android.view.Surface;
 
 import java.io.IOException;
+import java.util.Locale;
 
 public class ScreenCapture extends SurfaceCapture {
 
@@ -133,7 +134,7 @@ public class ScreenCapture extends SurfaceCapture {
                     .createVirtualDisplay("scrcpy", inputSize.getWidth(), inputSize.getHeight(), displayId, surface);
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
-            if (Build.BRAND.equalsIgnoreCase("oculus") && Build.MODEL.toLowerCase().startsWith("quest")) {
+            if (Build.BRAND.equalsIgnoreCase("oculus") && Build.MODEL.toLowerCase(Locale.ROOT).startsWith("quest")) {
                 // Workaround for buggy createVirtualDisplay on Quest
                 try {
                     virtualDisplay = (VirtualDisplay) VirtualDisplay.class.getDeclaredConstructors()[0].newInstance(null, null, null, surface);
