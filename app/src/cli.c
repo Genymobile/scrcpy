@@ -110,6 +110,7 @@ enum {
     OPT_BACKGROUND_COLOR,
     OPT_RENDER_FIT,
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
+    OPT_NO_TERMINAL_TITLE,
 };
 
 struct sc_option {
@@ -666,6 +667,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_NO_POWER_ON,
         .longopt = "no-power-on",
         .text = "Do not power on the device on start.",
+    },
+    {
+        .longopt_id = OPT_NO_TERMINAL_TITLE,
+        .longopt = "no-terminal-title",
+        .text = "Disable terminal title updates.",
     },
     {
         .longopt_id = OPT_NO_VD_DESTROY_CONTENT,
@@ -2935,6 +2941,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS:
                 opts->ignore_video_encoder_constraints = true;
+                break;
+            case OPT_NO_TERMINAL_TITLE:
+                opts->update_terminal_title = false;
                 break;
             default:
                 // getopt prints the error message on stderr
