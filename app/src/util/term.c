@@ -63,6 +63,39 @@ sc_term_stdout_isatty(void) {
 #endif
 }
 
+// Return true if VT/ANSI escape sequences written to stdout are processed by
+// the terminal (rather than printed verbatim).
+//
+// On Linux, a tty always processes escape sequences, so this is equivalent to
+// sc_term_stdout_isatty(). On Windows, VT processing must be explicitly enabled
+// (and is not supported by legacy console hosts), otherwise the escape
+// sequences would be printed verbatim.
+static bool
+sc_term_stdout_supports_vt(void) {
+#ifdef _WIN32
+    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (handle == INVALID_HANDLE_VALUE || !handle) {
+        return false;
+    }
+
+    DWORD mode;
+    if (!GetConsoleMode(handle, &mode)) {
+        // stdout is not a console (redirected to a file or a pipe)
+        return false;
+    }
+
+    if (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) {
+        return true;
+    }
+
+    // Try to enable VT processing (supported since Windows 10). On legacy
+    // console hosts, this fails, so no escape sequence must be emitted.
+    return SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+#else
+    return isatty(STDOUT_FILENO);
+#endif
+}
+
 void
 sc_term_set_title(const char *title) {
     if (!sc_term_stdout_isatty()) {
@@ -87,14 +120,14 @@ sc_term_set_title(const char *title) {
 
 void
 sc_term_save_title(void) {
-    if (sc_term_stdout_isatty()) {
+    if (sc_term_stdout_supports_vt()) {
         printf("\033[22;2t");
     }
 }
 
 void
 sc_term_restore_title(void) {
-    if (sc_term_stdout_isatty()) {
+    if (sc_term_stdout_supports_vt()) {
         printf("\033[23;2t");
         fflush(stdout);
     }
