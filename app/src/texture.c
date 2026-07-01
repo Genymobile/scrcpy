@@ -81,6 +81,9 @@ sc_texture_create_frame_texture(struct sc_texture *tex,
                                 struct sc_size size,
                                 enum AVColorSpace color_space,
                                 enum AVColorRange color_range) {
+    LOGV("Creating new texture: size=%" PRIu16 "x%" PRIu16 " color_space=%d "
+         "color_range=%d", size.width, size.height, color_space, color_range);
+
     SDL_PropertiesID props = SDL_CreateProperties();
     if (!props) {
         return NULL;
