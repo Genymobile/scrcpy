@@ -511,7 +511,9 @@ scrcpy(struct scrcpy_options *options) {
         options->window_title ? options->window_title : info->device_name;
     assert(window_title);
 
-    set_terminal_title_with_prefix(window_title);
+    if (options->update_terminal_title) {
+        set_terminal_title_with_prefix(window_title);
+    }
 
     const char *serial = s->server.serial;
     assert(serial);

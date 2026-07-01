@@ -196,7 +196,9 @@ scrcpy_otg(struct scrcpy_options *options) {
     }
 
     if (window_title) {
-        set_terminal_title_with_prefix(window_title);
+        if (options->update_terminal_title) {
+            set_terminal_title_with_prefix(window_title);
+        }
     } else {
         window_title = "scrcpy";
     }

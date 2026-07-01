@@ -17,6 +17,8 @@ By default, the window title is the device model. It can be changed:
 scrcpy --window-title='My device'
 ```
 
+It also updates the terminal title, unless `--no-terminal-title` is set.
+
 ## Position and size
 
 The initial window position and size may be specified:
