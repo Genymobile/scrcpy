@@ -244,6 +244,12 @@ run_demuxer(void *data) {
         session = &session_data;
         sc_demuxer_parse_session(header, session);
 
+        if (!session_data.video.width || !session_data.video.height) {
+            LOGE("Invalid session video size: %" PRIu32 "x%" PRIu32,
+                 session_data.video.width, session_data.video.height);
+            goto finally_free_context;
+        }
+
         codec_ctx->width = session_data.video.width;
         codec_ctx->height = session_data.video.height;
         codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
