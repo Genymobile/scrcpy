@@ -403,6 +403,7 @@ sc_screen_frame_sink_open(struct sc_frame_sink *sink,
 
     screen->current_session = *session;
 
+    assert(session->video.width && session->video.height);
     if (session->video.width > 0xFFFF || session->video.height > 0xFFFF) {
         LOGE("Size too large: %" PRIu32 "x%" PRIu32, session->video.width,
                                                      session->video.height);
@@ -920,6 +921,12 @@ sc_screen_apply_frame(struct sc_screen *screen, bool can_resize) {
 
     AVFrame *frame = screen->frame;
     struct sc_size new_frame_size = {frame->width, frame->height};
+
+    if (!new_frame_size.width || !new_frame_size.height) {
+        LOGE("Invalid frame size: %" PRIu32 "x%" PRIu32,
+             new_frame_size.width, new_frame_size.height);
+        return false;
+    }
 
     if (screen->frame_size.width != new_frame_size.width
             || screen->frame_size.height != new_frame_size.height) {
