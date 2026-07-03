@@ -54,7 +54,7 @@ sc_parse_touch_cmd(const char *cmd_str, struct sc_finger_action *action) {
         char *y_str = strtok_r(NULL, " ", &saveptr);
         char *dur_str = strtok_r(NULL, " ", &saveptr);
 
-        if (!x_str || !y_str) {
+        if (!x_str || !y_str || strtok_r(NULL, " ", &saveptr)) {
             LOGE("Usage: click <x> <y> [duration_ms]");
             free(cmd);
             return false;
@@ -71,7 +71,8 @@ sc_parse_touch_cmd(const char *cmd_str, struct sc_finger_action *action) {
         char *y2_str = strtok_r(NULL, " ", &saveptr);
         char *dur_str = strtok_r(NULL, " ", &saveptr);
 
-        if (!x1_str || !y1_str || !x2_str || !y2_str) {
+        if (!x1_str || !y1_str || !x2_str || !y2_str
+                || strtok_r(NULL, " ", &saveptr)) {
             LOGE("Usage: swipe <x1> <y1> <x2> <y2> [duration_ms]");
             free(cmd);
             return false;
