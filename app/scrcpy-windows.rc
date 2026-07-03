@@ -9,10 +9,10 @@ BEGIN
     BLOCK "040904E4"
     BEGIN
       VALUE "FileDescription", "Display and control your Android device"
-      VALUE "InternalName", "scrcpy"
+      VALUE "InternalName", "scrcpy-auto"
       VALUE "LegalCopyright", "Romain Vimont, Genymobile"
-      VALUE "OriginalFilename", "scrcpy.exe"
-      VALUE "ProductName", "scrcpy"
+      VALUE "OriginalFilename", "scrcpy-auto.exe"
+      VALUE "ProductName", "scrcpy-auto"
       VALUE "ProductVersion", "4.0"
     END
   END

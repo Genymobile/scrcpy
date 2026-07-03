@@ -1,4 +1,4 @@
-_scrcpy() {
+_scrcpy_auto() {
     local cur prev words cword
     local opts="
         --always-on-top
@@ -243,4 +243,4 @@ _scrcpy() {
     [[ $COMPREPLY == *= ]] && compopt -o nospace
 }
 
-complete -F _scrcpy scrcpy
+complete -F _scrcpy_auto scrcpy-auto

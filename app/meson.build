@@ -192,7 +192,7 @@ configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
 
-executable('scrcpy', src,
+executable('scrcpy-auto', src,
            dependencies: dependencies,
            include_directories: src_dir,
            install: true,
@@ -201,22 +201,22 @@ executable('scrcpy', src,
 # <https://mesonbuild.com/Builtin-options.html#directories>
 datadir = get_option('datadir') # by default 'share'
 
-install_man('scrcpy.1')
-install_data('data/scrcpy.png',
+install_man('scrcpy-auto.1')
+install_data('data/scrcpy-auto.png',
              install_dir: datadir / 'icons/hicolor/256x256/apps')
-install_data('data/disconnected.png',
+install_data('data/scrcpy-auto-disconnected.png',
              install_dir: datadir / 'icons/hicolor/256x256/apps')
-install_data('data/zsh-completion/_scrcpy',
+install_data('data/zsh-completion/_scrcpy-auto',
              install_dir: datadir / 'zsh/site-functions')
-install_data('data/bash-completion/scrcpy',
+install_data('data/bash-completion/scrcpy-auto',
              install_dir: datadir / 'bash-completion/completions')
 
 # Desktop entry file for application launchers
 if host_machine.system() == 'linux'
-    # Install a launcher (ex: /usr/local/share/applications/scrcpy.desktop)
-    install_data('data/scrcpy.desktop',
+    # Install a launcher (ex: /usr/local/share/applications/scrcpy-auto.desktop)
+    install_data('data/scrcpy-auto.desktop',
                  install_dir: datadir / 'applications')
-    install_data('data/scrcpy-console.desktop',
+    install_data('data/scrcpy-auto-console.desktop',
                  install_dir: datadir / 'applications')
 endif
 
