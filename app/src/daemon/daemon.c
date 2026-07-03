@@ -674,6 +674,17 @@ handle_control(struct sc_daemon *d, sc_socket socket, int64_t id,
         return;
     }
 
+    // Reject malformed commands up front with an explicit client-visible
+    // error (execution failures would only give a generic message)
+    if (!sc_control_exec_check((const char *const *) cmds, count)) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "invalid control command syntax; expected: "
+                   "\"click <x> <y> [duration_ms]\", "
+                   "\"swipe <x1> <y1> <x2> <y2> [duration_ms]\", "
+                   "\"input <text>\", \"sleep <ms>\", steps joined by \"&&\"");
+        goto free_cmds;
+    }
+
     if (!acquire_session(d, socket, id)) {
         goto free_cmds;
     }

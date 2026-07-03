@@ -39,4 +39,11 @@ sc_control_exec_run(struct sc_controller *controller,
                     const char *const *cmds, unsigned count,
                     uint64_t pointer_id_base);
 
+/**
+ * Validate command syntax without executing anything (logs the reason on
+ * failure). Lets callers reject malformed requests up front.
+ */
+bool
+sc_control_exec_check(const char *const *cmds, unsigned count);
+
 #endif

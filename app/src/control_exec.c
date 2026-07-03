@@ -457,6 +457,56 @@ sc_run_control_thread(void *data) {
 }
 
 bool
+sc_control_exec_check(const char *const *cmds, unsigned count) {
+    for (unsigned i = 0; i < count; i++) {
+        // Mirror sc_execute_one_control_arg(): split on "&&", then classify
+        // each step like sc_execute_single_step()
+        char *dup = strdup(cmds[i]);
+        if (!dup) {
+            LOG_OOM();
+            return false;
+        }
+
+        bool ok = true;
+        char *remaining = dup;
+        while (remaining) {
+            char *sep = strstr(remaining, "&&");
+            if (sep) {
+                *sep = '\0';
+            }
+
+            const char *step = remaining;
+            while (*step == ' ') {
+                step++;
+            }
+
+            if (*step && strncmp(step, "sleep", 5)
+                    && strncmp(step, "input ", 6)) {
+                struct sc_finger_action action;
+                if (strncmp(step, "click ", 6) && strncmp(step, "swipe ", 6)) {
+                    LOGE("Unknown control command: %s", step);
+                    ok = false;
+                    break;
+                }
+                // Trailing spaces before a "&&" are harmless for strtok
+                if (!sc_parse_touch_cmd(step, &action)) {
+                    ok = false;
+                    break;
+                }
+            }
+
+            remaining = sep ? sep + 2 : NULL;
+        }
+
+        free(dup);
+        if (!ok) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool
 sc_control_exec_run(struct sc_controller *controller,
                     struct sc_size screen_size,
                     const char *const *cmds, unsigned count,
