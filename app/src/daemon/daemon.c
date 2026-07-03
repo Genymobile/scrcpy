@@ -38,8 +38,6 @@
 #define SC_DAEMON_WAIT_TICK SC_TICK_FROM_MS(500)
 #define SC_DAEMON_BACKOFF_MIN_MS 1000
 #define SC_DAEMON_BACKOFF_MAX_MS 30000
-// Touch pointer ids are allocated in [1, SC_DAEMON_POINTER_ID_MAX]
-#define SC_DAEMON_POINTER_ID_MAX 900
 
 enum sc_daemon_state {
     SC_DAEMON_STATE_CONNECTING,
@@ -101,7 +99,6 @@ struct sc_daemon {
     struct sc_frame_keeper keeper;
 
     sc_mutex clipboard_mutex; // serialize clipboard-based text injection
-    uint64_t next_pointer_base;
 
     char *serial;                // guarded by mutex, may be NULL
     char device_name[SC_DEVICE_NAME_FIELD_LENGTH]; // guarded by mutex
@@ -240,6 +237,9 @@ sc_daemon_session_stop(struct sc_daemon *d) {
     s->controller_initialized = false;
     s->controller_started = false;
 
+    // Never serve a frame from a previous session
+    sc_frame_keeper_reset(&d->keeper);
+
     sc_mutex_lock(&d->mutex);
     s->connected = false;
     s->conn_failed = false;
@@ -288,7 +288,9 @@ sc_daemon_session_start(struct sc_daemon *d) {
         .show_touches = options->show_touches,
         .stay_awake = options->stay_awake,
         .video_codec_options = options->video_codec_options,
+        .audio_codec_options = options->audio_codec_options,
         .video_encoder = options->video_encoder,
+        .audio_encoder = options->audio_encoder,
         .camera_id = options->camera_id,
         .camera_size = options->camera_size,
         .camera_ar = options->camera_ar,
@@ -411,7 +413,8 @@ send_error(sc_socket socket, int64_t id, const char *code, const char *msg) {
         return false;
     }
 
-    char head[64];
+    // Large enough for the template + a 20-char int64 + any error code
+    char head[128];
     snprintf(head, sizeof(head), "{\"id\":%" PRId64 ",\"ok\":false,"
                                  "\"error\":{\"code\":\"%s\",\"message\":",
              id, code);
@@ -594,7 +597,13 @@ handle_screencap(struct sc_daemon *d, sc_socket socket, int64_t id,
     int64_t max_age_ms;
     if (sc_json_get_int64(json, "max_age_ms", &max_age_ms)
             && max_age_ms >= 0) {
-        min_tick = now - SC_TICK_FROM_MS(max_age_ms);
+        // Clamp to avoid int64 overflow in SC_TICK_FROM_MS and negative
+        // min_tick (which would bypass the wait-for-first-frame loop)
+        int64_t max_age_capped = MIN(max_age_ms, (int64_t) 1 << 40); // ~35y ms
+        min_tick = now - SC_TICK_FROM_MS(max_age_capped);
+        if (min_tick < 0) {
+            min_tick = 0;
+        }
         if (sc_frame_keeper_last_tick(&d->keeper) < min_tick
                 && d->session.controller_started) {
             // Ask the device encoder for a fresh keyframe
@@ -649,7 +658,7 @@ handle_screencap(struct sc_daemon *d, sc_socket socket, int64_t id,
 
 static void
 handle_control(struct sc_daemon *d, sc_socket socket, int64_t id,
-               const struct sc_json *json) {
+               const struct sc_json *json, unsigned conn_index) {
     if (!d->opts->control) {
         send_error(socket, id, "E_BAD_REQUEST",
                    "control is disabled (--no-control)");
@@ -669,14 +678,12 @@ handle_control(struct sc_daemon *d, sc_socket socket, int64_t id,
         goto free_cmds;
     }
 
-    // Allocate a disjoint pointer id range (doc/daemon.md §9.5)
-    sc_mutex_lock(&d->mutex);
-    if (d->next_pointer_base + count > SC_DAEMON_POINTER_ID_MAX) {
-        d->next_pointer_base = 1;
-    }
-    uint64_t pointer_base = d->next_pointer_base;
-    d->next_pointer_base += count;
-    sc_mutex_unlock(&d->mutex);
+    // Each connection thread executes one request at a time, so deriving the
+    // range from the connection slot guarantees concurrent requests use
+    // disjoint pointer ids (doc/daemon.md §9.5): at most
+    // 1 + 16*100 + 99 = 1700, far below the reserved values
+    // (SC_POINTER_ID_MOUSE, ...) at the top of the uint64 range
+    uint64_t pointer_base = 1 + (uint64_t) conn_index * SC_MAX_CONTROL_CMDS;
 
     // Serialize clipboard-based text injection between concurrent requests
     bool needs_clipboard = false;
@@ -716,7 +723,7 @@ free_cmds:
 // Handle one request; returns false if the connection must be closed
 static bool
 handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
-               size_t json_len) {
+               size_t json_len, unsigned conn_index) {
     struct sc_json json;
     if (!sc_json_parse(&json, json_str, json_len)) {
         send_error(socket, 0, "E_BAD_REQUEST", "invalid JSON");
@@ -741,7 +748,7 @@ handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
     } else if (!strcmp(op, "screencap")) {
         handle_screencap(d, socket, id, &json);
     } else if (!strcmp(op, "control")) {
-        handle_control(d, socket, id, &json);
+        handle_control(d, socket, id, &json, conn_index);
     } else if (!strcmp(op, "shutdown")) {
         send_ok(socket, id, NULL, NULL, 0);
         LOGI("Daemon: shutdown requested by client");
@@ -760,11 +767,16 @@ handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
 
 // ---- IPC threads ----
 
+// Defined in the supervisor section below
+static bool
+sc_daemon_interruptible_sleep(struct sc_daemon *d, sc_tick duration);
+
 static int
 run_connection(void *data) {
     struct sc_daemon_conn *conn = data;
     struct sc_daemon *d = conn->daemon;
     sc_socket socket = conn->socket;
+    unsigned conn_index = (unsigned) (conn - d->conns);
 
     if (send_hello(d, socket)) {
         for (;;) {
@@ -773,7 +785,7 @@ run_connection(void *data) {
             if (!sc_daemon_read_json(socket, &json, &len)) {
                 break;
             }
-            bool keep_open = handle_request(d, socket, json, len);
+            bool keep_open = handle_request(d, socket, json, len, conn_index);
             free(json);
             if (!keep_open) {
                 break;
@@ -813,8 +825,15 @@ run_accept(void *data) {
     for (;;) {
         sc_socket client = net_accept(d->listen_socket);
         if (client == SC_SOCKET_NONE) {
-            // Interrupted (stop) or fatal listen error
-            break;
+            // Either interrupted for stopping, or a transient accept error
+            // (connection aborted in the backlog, fd exhaustion, ...):
+            // net_accept() does not distinguish them, so check the stop flag
+            // and keep accepting otherwise
+            if (sc_daemon_interruptible_sleep(d, SC_TICK_FROM_MS(100))) {
+                break;
+            }
+            LOGW("Daemon: accept failed, retrying");
+            continue;
         }
 
         net_set_tcp_nodelay(client, true);
@@ -897,6 +916,11 @@ sc_daemon_drain_requests(struct sc_daemon *d, enum sc_daemon_state state) {
     sc_mutex_lock(&d->mutex);
     sc_daemon_set_state_locked(d, state);
     while (d->in_flight) {
+        if (g_stop_signal) {
+            // Cannot abort in-flight requests, but record the stop request
+            // so that the supervisor exits once they complete
+            d->stop = true;
+        }
         sc_cond_timedwait(&d->cond, &d->mutex,
                           sc_tick_now() + SC_DAEMON_WAIT_TICK);
     }
@@ -915,7 +939,6 @@ sc_daemon_run(struct scrcpy_options *opts) {
 
     d->opts = opts;
     d->state = SC_DAEMON_STATE_CONNECTING;
-    d->next_pointer_base = 1;
     d->start_tick = sc_tick_now();
 
     bool mutex_ok = false;

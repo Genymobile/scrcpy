@@ -164,3 +164,11 @@ sc_frame_keeper_last_tick(struct sc_frame_keeper *fk) {
     sc_mutex_unlock(&fk->mutex);
     return tick;
 }
+
+void
+sc_frame_keeper_reset(struct sc_frame_keeper *fk) {
+    sc_mutex_lock(&fk->mutex);
+    av_frame_unref(fk->latest);
+    fk->last_frame_tick = 0;
+    sc_mutex_unlock(&fk->mutex);
+}

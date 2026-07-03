@@ -19,6 +19,11 @@ Implementation notes (deviations from the original proposal):
  - Client exit code 2 reuses `SCRCPY_EXIT_DISCONNECTED`.
  - The clipboard-injection mutex serializes whole `control` requests that
    contain an `input` step (coarser than §9.5, same guarantee).
+ - Touch pointer-id ranges are derived from the connection slot index
+   (disjoint by construction) instead of a wrapping allocator.
+ - Control step durations (`click`/`swipe` duration, `sleep`) are capped at
+   60 s per step so a request cannot block daemon teardown for hours
+   (§14 edge case).
 
 ---
 

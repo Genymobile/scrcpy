@@ -3202,7 +3202,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
         if (opts->record_filename || otg || v4l2 || opts->list
-                || opts->start_app || opts->window) {
+                || opts->start_app) {
             LOGE("--client-port only supports --control, --screencap, "
                  "--daemon-status and --daemon-stop");
             return false;
@@ -3213,6 +3213,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                  "(--control, --screencap, --daemon-status, --daemon-stop)");
             return false;
         }
+        // The client never opens a window nor a device session
+        opts->window = false;
+        opts->video_playback = false;
+        opts->audio_playback = false;
         return true; // skip the remaining session-oriented adjustments
     }
 

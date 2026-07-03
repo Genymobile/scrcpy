@@ -10,12 +10,28 @@
 #include "util/log.h"
 #include "util/thread.h"
 
+// Cap client-provided durations so that a single command cannot block the
+// executor (and, in daemon mode, session teardown) for hours
+#define SC_CONTROL_EXEC_MAX_STEP_MS (60 * 1000)
+
 struct sc_finger_action {
     int x1, y1; // start
     int x2, y2; // end (same as start for click)
     int duration; // ms
     bool is_swipe;
 };
+
+static int
+sc_parse_duration_ms(const char *s, int def) {
+    int ms = s ? atoi(s) : def;
+    if (ms < 0) {
+        ms = 0;
+    } else if (ms > SC_CONTROL_EXEC_MAX_STEP_MS) {
+        LOGW("Duration capped to %d ms", SC_CONTROL_EXEC_MAX_STEP_MS);
+        ms = SC_CONTROL_EXEC_MAX_STEP_MS;
+    }
+    return ms;
+}
 
 static bool
 sc_parse_touch_cmd(const char *cmd_str, struct sc_finger_action *action) {
@@ -46,7 +62,7 @@ sc_parse_touch_cmd(const char *cmd_str, struct sc_finger_action *action) {
 
         action->x1 = action->x2 = atoi(x_str);
         action->y1 = action->y2 = atoi(y_str);
-        action->duration = dur_str ? atoi(dur_str) : 100;
+        action->duration = sc_parse_duration_ms(dur_str, 100);
         action->is_swipe = false;
     } else if (strcmp(token, "swipe") == 0) {
         char *x1_str = strtok_r(NULL, " ", &saveptr);
@@ -65,7 +81,7 @@ sc_parse_touch_cmd(const char *cmd_str, struct sc_finger_action *action) {
         action->y1 = atoi(y1_str);
         action->x2 = atoi(x2_str);
         action->y2 = atoi(y2_str);
-        action->duration = dur_str ? atoi(dur_str) : 300;
+        action->duration = sc_parse_duration_ms(dur_str, 300);
         action->is_swipe = true;
     } else {
         LOGE("Unknown touch command: %s", token);
@@ -249,51 +265,35 @@ sc_execute_input_cmd(struct sc_controller *controller, const char *cmd_str) {
     // Skip "input " prefix
     const char *text = cmd_str + 6; // strlen("input ")
 
-    // Skip optional surrounding quotes
+    // Strip optional surrounding quotes
     size_t len = strlen(text);
+    char *text_dup;
     if (len >= 2
             && ((text[0] == '\'' && text[len - 1] == '\'')
              || (text[0] == '"' && text[len - 1] == '"'))) {
-        // Strip quotes
-        char *unquoted = strndup(text + 1, len - 2);
-        if (!unquoted) {
-            LOG_OOM();
-            return false;
-        }
-
-        struct sc_control_msg msg;
-        msg.type = SC_CONTROL_MSG_TYPE_SET_CLIPBOARD;
-        msg.set_clipboard.sequence = SC_SEQUENCE_INVALID;
-        msg.set_clipboard.text = unquoted;
-        msg.set_clipboard.paste = true;
-
-        if (!sc_controller_push_msg(controller, &msg)) {
-            free(unquoted);
-            LOGE("Could not inject text");
-            return false;
-        }
-
-        LOGI("Text injected: %s", unquoted);
+        text_dup = strndup(text + 1, len - 2);
     } else {
-        char *text_dup = strdup(text);
-        if (!text_dup) {
-            LOG_OOM();
-            return false;
-        }
+        text_dup = strdup(text);
+    }
+    if (!text_dup) {
+        LOG_OOM();
+        return false;
+    }
 
-        struct sc_control_msg msg;
-        msg.type = SC_CONTROL_MSG_TYPE_SET_CLIPBOARD;
-        msg.set_clipboard.sequence = SC_SEQUENCE_INVALID;
-        msg.set_clipboard.text = text_dup;
-        msg.set_clipboard.paste = true;
+    // Log before pushing: the message owns the text, and the controller
+    // thread may free it as soon as it is queued
+    LOGI("Injecting text: %s", text_dup);
 
-        if (!sc_controller_push_msg(controller, &msg)) {
-            free(text_dup);
-            LOGE("Could not inject text");
-            return false;
-        }
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_SET_CLIPBOARD;
+    msg.set_clipboard.sequence = SC_SEQUENCE_INVALID;
+    msg.set_clipboard.text = text_dup;
+    msg.set_clipboard.paste = true;
 
-        LOGI("Text injected: %s", text_dup);
+    if (!sc_controller_push_msg(controller, &msg)) {
+        free(text_dup);
+        LOGE("Could not inject text");
+        return false;
     }
 
     return true;
@@ -314,7 +314,7 @@ sc_execute_single_step(struct sc_controller *controller, const char *cmd,
     if (!strncmp(cmd, "sleep ", 6) || !strcmp(cmd, "sleep")) {
         int ms = 0;
         if (strlen(cmd) > 6) {
-            ms = atoi(cmd + 6);
+            ms = sc_parse_duration_ms(cmd + 6, 0);
         }
         if (ms > 0) {
             SDL_Delay(ms);

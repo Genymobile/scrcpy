@@ -62,4 +62,11 @@ sc_frame_keeper_get_since(struct sc_frame_keeper *fk, AVFrame *dst,
 sc_tick
 sc_frame_keeper_last_tick(struct sc_frame_keeper *fk);
 
+/**
+ * Drop the retained frame (called between device sessions so that a stale
+ * frame from a previous session is never served).
+ */
+void
+sc_frame_keeper_reset(struct sc_frame_keeper *fk);
+
 #endif
