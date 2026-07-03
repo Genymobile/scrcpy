@@ -95,6 +95,7 @@ sc_parse_touch_cmd(const char *cmd_str, struct sc_finger_action *action) {
 
 static bool
 sc_execute_touch_cmds(struct sc_controller *controller,
+                      struct sc_size screen_size,
                       const char *const *cmds, unsigned count,
                       uint64_t base_pointer_id) {
     struct sc_finger_action actions[SC_MAX_CONTROL_CMDS];
@@ -114,8 +115,7 @@ sc_execute_touch_cmds(struct sc_controller *controller,
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
-    msg.inject_touch_event.position.screen_size =
-        (struct sc_size){UINT16_MAX, UINT16_MAX};
+    msg.inject_touch_event.position.screen_size = screen_size;
     msg.inject_touch_event.action_button = 0;
     msg.inject_touch_event.buttons = 0;
 
@@ -189,6 +189,7 @@ sc_execute_touch_cmds(struct sc_controller *controller,
 
 static bool
 sc_execute_continuous_swipe(struct sc_controller *controller,
+                            struct sc_size screen_size,
                             const struct sc_finger_action *segments,
                             unsigned count, uint64_t pointer_id) {
     int total_duration = 0;
@@ -198,8 +199,7 @@ sc_execute_continuous_swipe(struct sc_controller *controller,
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
-    msg.inject_touch_event.position.screen_size =
-        (struct sc_size){UINT16_MAX, UINT16_MAX};
+    msg.inject_touch_event.position.screen_size = screen_size;
     msg.inject_touch_event.action_button = 0;
     msg.inject_touch_event.buttons = 0;
 
@@ -300,7 +300,8 @@ sc_execute_input_cmd(struct sc_controller *controller, const char *cmd_str) {
 }
 
 static bool
-sc_execute_single_step(struct sc_controller *controller, const char *cmd,
+sc_execute_single_step(struct sc_controller *controller,
+                       struct sc_size screen_size, const char *cmd,
                        uint64_t pointer_id) {
     // Trim leading whitespace
     while (*cmd == ' ') {
@@ -327,7 +328,8 @@ sc_execute_single_step(struct sc_controller *controller, const char *cmd,
     }
 
     if (!strncmp(cmd, "click ", 6) || !strncmp(cmd, "swipe ", 6)) {
-        return sc_execute_touch_cmds(controller, &cmd, 1, pointer_id);
+        return sc_execute_touch_cmds(controller, screen_size, &cmd, 1,
+                                     pointer_id);
     }
 
     LOGE("Unknown control command: %s", cmd);
@@ -338,11 +340,13 @@ sc_execute_single_step(struct sc_controller *controller, const char *cmd,
 // serially; consecutive connected swipes without sleep are merged into one
 // continuous stroke.
 static bool
-sc_execute_one_control_arg(struct sc_controller *controller, const char *arg,
+sc_execute_one_control_arg(struct sc_controller *controller,
+                           struct sc_size screen_size, const char *arg,
                            uint64_t pointer_id) {
     if (!strstr(arg, "&&")) {
         // No "&&": execute as a single command
-        return sc_execute_single_step(controller, arg, pointer_id);
+        return sc_execute_single_step(controller, screen_size, arg,
+                                      pointer_id);
     }
 
     // Split by "&&" into steps array
@@ -416,14 +420,17 @@ sc_execute_one_control_arg(struct sc_controller *controller, const char *arg,
             }
 
             if (seg_count > 1) {
-                ok = sc_execute_continuous_swipe(controller, segments,
-                                                seg_count, pointer_id);
+                ok = sc_execute_continuous_swipe(controller, screen_size,
+                                                 segments, seg_count,
+                                                 pointer_id);
             } else {
-                ok = sc_execute_single_step(controller, steps[i], pointer_id);
+                ok = sc_execute_single_step(controller, screen_size, steps[i],
+                                            pointer_id);
             }
             i = j;
         } else {
-            ok = sc_execute_single_step(controller, steps[i], pointer_id);
+            ok = sc_execute_single_step(controller, screen_size, steps[i],
+                                        pointer_id);
             i++;
         }
     }
@@ -434,6 +441,7 @@ sc_execute_one_control_arg(struct sc_controller *controller, const char *arg,
 
 struct sc_control_thread_args {
     struct sc_controller *controller;
+    struct sc_size screen_size;
     const char *arg;
     uint64_t pointer_id;
     bool ok;
@@ -442,18 +450,19 @@ struct sc_control_thread_args {
 static int
 sc_run_control_thread(void *data) {
     struct sc_control_thread_args *args = data;
-    args->ok = sc_execute_one_control_arg(args->controller, args->arg,
-                                          args->pointer_id);
+    args->ok = sc_execute_one_control_arg(args->controller, args->screen_size,
+                                          args->arg, args->pointer_id);
     return 0;
 }
 
 bool
 sc_control_exec_run(struct sc_controller *controller,
+                    struct sc_size screen_size,
                     const char *const *cmds, unsigned count,
                     uint64_t pointer_id_base) {
     if (count == 1) {
         // Single --control arg: execute directly
-        return sc_execute_one_control_arg(controller, cmds[0],
+        return sc_execute_one_control_arg(controller, screen_size, cmds[0],
                                           pointer_id_base);
     }
 
@@ -488,8 +497,8 @@ sc_control_exec_run(struct sc_controller *controller,
         }
 
         if (touch_count > 0) {
-            if (!sc_execute_touch_cmds(controller, touch_cmds, touch_count,
-                                       pointer_id_base)) {
+            if (!sc_execute_touch_cmds(controller, screen_size, touch_cmds,
+                                       touch_count, pointer_id_base)) {
                 return false;
             }
         }
@@ -504,6 +513,7 @@ sc_control_exec_run(struct sc_controller *controller,
 
     for (unsigned i = 0; i < count; i++) {
         thread_args[i].controller = controller;
+        thread_args[i].screen_size = screen_size;
         thread_args[i].arg = cmds[i];
         thread_args[i].pointer_id = pointer_id_base + i;
         thread_args[i].ok = false;

@@ -24,6 +24,16 @@ Implementation notes (deviations from the original proposal):
  - Control step durations (`click`/`swipe` duration, `sleep`) are capped at
    60 s per step so a request cannot block daemon teardown for hours
    (§14 edge case).
+ - **Touch coordinate space**: the device-side `PositionMapper` ignores
+   touch events whose `screen_size` does not match the video size. In
+   daemon mode with video enabled, injected events therefore carry the
+   actual video size and `click`/`swipe` coordinates are interpreted in
+   video-frame space — i.e. exactly the pixel space of the PNGs returned
+   by `screencap`. In one-shot mode (and `--no-video` daemons) video is
+   disabled and the device uses raw device coordinates.
+ - `--control` takes a required argument (`--control help` prints the
+   command reference), so both `--control "click 1 2"` and
+   `--control="click 1 2"` work.
 
 ---
 

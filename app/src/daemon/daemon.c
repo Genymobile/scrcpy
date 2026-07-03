@@ -678,6 +678,21 @@ handle_control(struct sc_daemon *d, sc_socket socket, int64_t id,
         goto free_cmds;
     }
 
+    // With video captured, the device-side PositionMapper IGNORES touch
+    // events whose screen_size does not match the video size, so send the
+    // actual video size and interpret coordinates in video (screenshot)
+    // space; without video, the device uses raw coordinates
+    struct sc_size screen_size = {UINT16_MAX, UINT16_MAX};
+    if (d->opts->video
+            && !sc_frame_keeper_wait_size(&d->keeper,
+                                          sc_tick_now()
+                                              + SC_DAEMON_SCREENCAP_DEADLINE,
+                                          &screen_size)) {
+        release_session(d);
+        send_error(socket, id, "E_NOT_READY", "no video frame received yet");
+        goto free_cmds;
+    }
+
     // Each connection thread executes one request at a time, so deriving the
     // range from the connection slot guarantees concurrent requests use
     // disjoint pointer ids (doc/daemon.md §9.5): at most
@@ -698,7 +713,7 @@ handle_control(struct sc_daemon *d, sc_socket socket, int64_t id,
         sc_mutex_lock(&d->clipboard_mutex);
     }
 
-    bool ok = sc_control_exec_run(&d->session.controller,
+    bool ok = sc_control_exec_run(&d->session.controller, screen_size,
                                   (const char *const *) cmds, count,
                                   pointer_base);
 

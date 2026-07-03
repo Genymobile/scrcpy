@@ -926,7 +926,10 @@ aoa_complete:
     if (options->control && options->control_cmd_count) {
         assert(controller);
 
-        bool ok = sc_control_exec_run(controller, options->control_cmds,
+        // One-shot control mode disables video, so the device uses raw
+        // coordinates and ignores screen_size (see control_exec.h)
+        struct sc_size raw = {UINT16_MAX, UINT16_MAX};
+        bool ok = sc_control_exec_run(controller, raw, options->control_cmds,
                                       options->control_cmd_count, 1);
 
         // Wait for messages to be sent

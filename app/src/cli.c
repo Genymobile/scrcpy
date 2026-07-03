@@ -593,11 +593,10 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_CONTROL_CMD,
         .longopt = "control",
         .argdesc = "command",
-        .optional_arg = true,
         .text = "Send a control command to the device and exit.\n"
-                "Use --control or --control --help for detailed usage.\n"
+                "Use --control help for detailed usage.\n"
                 "Can be specified multiple times for multi-finger gestures.\n"
-                "Available commands: click, swipe, input.",
+                "Available commands: click, swipe, input, sleep.",
     },
     {
         .longopt_id = OPT_CLIENT_PORT,
@@ -3226,10 +3225,20 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (!opts->daemon_port && opts->control_cmd_count) {
+        if (opts->screencap_filename) {
+            // One-shot control mode exits right after the commands, and
+            // touch coordinates require video to be disabled (the device
+            // ignores events not matching the video size); use a daemon
+            // (--daemon-port/--client-port) to combine both operations
+            LOGE("--control and --screencap cannot be combined in one-shot "
+                 "mode (use a daemon with --client-port)");
+            return false;
+        }
         // Control command mode: send commands and exit
         opts->video_playback = false;
         opts->audio_playback = false;
         opts->audio = false;
+        opts->video = false;
         opts->window = false;
         opts->control = true;
     }

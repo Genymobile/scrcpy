@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <libavutil/frame.h>
 
+#include "coords.h"
 #include "trait/frame_sink.h"
 #include "util/thread.h"
 #include "util/tick.h"
@@ -25,6 +26,7 @@ struct sc_frame_keeper {
     AVFrame *latest; // most recent frame (NULL if none yet)
     AVFrame *tmp; // preserve latest on av_frame_ref() error
     sc_tick last_frame_tick; // when `latest` was received
+    struct sc_size size; // dimensions of `latest` (0x0 if none yet)
     bool opened;
 };
 
@@ -68,5 +70,13 @@ sc_frame_keeper_last_tick(struct sc_frame_keeper *fk);
  */
 void
 sc_frame_keeper_reset(struct sc_frame_keeper *fk);
+
+/**
+ * Get the dimensions of the latest frame (the video size), waiting until
+ * `deadline` if no frame was received yet.
+ */
+bool
+sc_frame_keeper_wait_size(struct sc_frame_keeper *fk, sc_tick deadline,
+                          struct sc_size *size);
 
 #endif

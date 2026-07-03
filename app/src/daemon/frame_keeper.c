@@ -55,6 +55,8 @@ sc_frame_keeper_frame_sink_push(struct sc_frame_sink *sink,
     av_frame_unref(fk->tmp);
 
     fk->last_frame_tick = sc_tick_now();
+    fk->size.width = fk->latest->width;
+    fk->size.height = fk->latest->height;
     sc_cond_broadcast(&fk->cond);
 
     sc_mutex_unlock(&fk->mutex);
@@ -96,6 +98,8 @@ sc_frame_keeper_init(struct sc_frame_keeper *fk) {
     }
 
     fk->last_frame_tick = 0;
+    fk->size.width = 0;
+    fk->size.height = 0;
     fk->opened = false;
 
     static const struct sc_frame_sink_ops ops = {
@@ -170,5 +174,30 @@ sc_frame_keeper_reset(struct sc_frame_keeper *fk) {
     sc_mutex_lock(&fk->mutex);
     av_frame_unref(fk->latest);
     fk->last_frame_tick = 0;
+    fk->size.width = 0;
+    fk->size.height = 0;
     sc_mutex_unlock(&fk->mutex);
+}
+
+bool
+sc_frame_keeper_wait_size(struct sc_frame_keeper *fk, sc_tick deadline,
+                          struct sc_size *size) {
+    bool ok = false;
+
+    sc_mutex_lock(&fk->mutex);
+    while (!fk->last_frame_tick) {
+        if (!sc_cond_timedwait(&fk->cond, &fk->mutex, deadline)) {
+            goto end; // timeout
+        }
+        if (!fk->opened && !fk->last_frame_tick) {
+            goto end; // closed without a frame
+        }
+    }
+
+    *size = fk->size;
+    ok = true;
+
+end:
+    sc_mutex_unlock(&fk->mutex);
+    return ok;
 }
