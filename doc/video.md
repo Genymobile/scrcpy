@@ -22,13 +22,25 @@ scrcpy -m 1024   # short version
 ```
 
 The other dimension is computed so that the Android device aspect ratio is
-preserved. That way, a device in 1920×1080 will be mirrored at 1024×576.
+preserved (except for flex displays). That way, a device in 1920×1080 will be
+mirrored at 1024×576.
 
 If encoding fails, scrcpy automatically tries again with a lower definition
 (unless `--no-downsize-on-error` is enabled).
 
 For camera mirroring, the `--max-size` value is used to select the camera source
 size instead (among the available resolutions).
+
+The size is rounded to a multiple of the _alignment_ required by the encoder, a
+power-of-2 value (1, 2, 4, 8 or 16) that the video width and height must be
+multiples of.
+
+The alignment can be forced to a minimum value. For instance, to force the width
+and height to be multiples of 8:
+
+```bash
+scrcpy --min-size-alignment=8
+```
 
 
 ## Bit rate
@@ -52,7 +64,7 @@ scrcpy --max-fps=15
 
 The actual capture frame rate may be printed to the console:
 
-```
+```bash
 scrcpy --print-fps
 ```
 
@@ -161,7 +173,7 @@ The orientation can be set separately for display and record if necessary, via
 `--display-orientation` and `--record-orientation`.
 
 The rotation is applied to a recorded file by writing a display transformation
-to the MP4 or MKV target file. Flipping is not supported, so only the 4 first
+to the MP4 or MKV target file. Flipping is not supported, so only the first four
 values are allowed when recording.
 
 
@@ -169,7 +181,7 @@ values are allowed when recording.
 
 To rotate the video content by a custom angle (in degrees, clockwise):
 
-```
+```bash
 scrcpy --angle=23
 ```
 
@@ -216,7 +228,7 @@ scrcpy --list-displays
 A secondary display may only be controlled if the device runs at least Android
 10 (otherwise it is mirrored as read-only).
 
-It is also possible to create a [virtual display](virtual_display.md).
+It is also possible to create a [virtual display](virtual-display.md).
 
 
 ## Buffering
@@ -229,7 +241,7 @@ get a smoother playback (see [#2464]).
 [#2464]: https://github.com/Genymobile/scrcpy/issues/2464
 
 The configuration is available independently for the display,
-[v4l2 sinks](video.md#video4linux) and [audio](audio.md#buffering) playback.
+[v4l2 sinks](v4l2.md#buffering) and [audio](audio.md#buffering) playback.
 
 ```bash
 scrcpy --video-buffer=50     # add 50ms buffering for video playback
@@ -271,7 +283,7 @@ scrcpy --record=file.mkv --no-audio-playback
 
 To disable video forwarding completely, so that only audio is forwarded:
 
-```
+```bash
 scrcpy --no-video
 ```
 

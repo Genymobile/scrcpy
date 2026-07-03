@@ -30,13 +30,13 @@ the following files to a directory accessible from your `PATH`:
 
 It is also available in scrcpy releases.
 
-The client requires [FFmpeg] and [LibSDL2]. Just follow the instructions.
+The client requires [FFmpeg] and [SDL]. Just follow the instructions.
 
 [adb]: https://developer.android.com/studio/command-line/adb.html
 [platform-tools]: https://developer.android.com/studio/releases/platform-tools.html
 [platform-tools-windows]: https://dl.google.com/android/repository/platform-tools-latest-windows.zip
 [ffmpeg]: https://en.wikipedia.org/wiki/FFmpeg
-[LibSDL2]: https://en.wikipedia.org/wiki/Simple_DirectMedia_Layer
+[SDL]: https://en.wikipedia.org/wiki/Simple_DirectMedia_Layer
 
 
 
@@ -50,12 +50,12 @@ Install the required packages from your package manager.
 
 ```bash
 # runtime dependencies
-sudo apt install ffmpeg libsdl2-2.0-0 adb libusb-1.0-0
+sudo apt install ffmpeg libsdl3-0 adb libusb-1.0-0
 
 # client build dependencies
-sudo apt install gcc git pkg-config meson ninja-build libsdl2-dev \
+sudo apt install gcc git pkg-config meson ninja-build libsdl3-dev \
                  libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev \
-                 libswresample-dev libusb-1.0-0-dev
+                 libswresample-dev libusb-1.0-0-dev libv4l-dev
 
 # server build dependencies
 sudo apt install openjdk-17-jdk
@@ -77,7 +77,7 @@ pip3 install meson
 sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
 
 # client build dependencies
-sudo dnf install SDL2-devel ffms2-devel libusb1-devel libavdevice-free-devel meson gcc make
+sudo dnf install SDL3-devel ffms2-devel libusb1-devel libavdevice-free-devel meson gcc make
 
 # server build dependencies
 sudo dnf install java-devel
@@ -121,7 +121,7 @@ install the required packages:
 
 ```bash
 # runtime dependencies
-pacman -S mingw-w64-x86_64-SDL2 \
+pacman -S mingw-w64-x86_64-sdl3 \
           mingw-w64-x86_64-ffmpeg \
           mingw-w64-x86_64-libusb
 
@@ -136,7 +136,7 @@ For a 32 bits version, replace `x86_64` by `i686`:
 
 ```bash
 # runtime dependencies
-pacman -S mingw-w64-i686-SDL2 \
+pacman -S mingw-w64-i686-sdl3 \
           mingw-w64-i686-ffmpeg \
           mingw-w64-i686-libusb
 
@@ -154,7 +154,11 @@ install it manually and make it available from the `PATH`:
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
 
-### Mac OS
+When following the rest of the build instructions below, make sure you use the
+MinGW terminal within MSYS2.
+
+
+### macOS
 
 Install the packages with [Homebrew]:
 
@@ -162,7 +166,7 @@ Install the packages with [Homebrew]:
 
 ```bash
 # runtime dependencies
-brew install sdl2 ffmpeg libusb
+brew install sdl3 ffmpeg libusb
 
 # client build dependencies
 brew install pkg-config meson
@@ -232,10 +236,10 @@ install` must be run as root)._
 
 #### Option 2: Use prebuilt server
 
- - [`scrcpy-server-v3.3.4`][direct-scrcpy-server]  
-   <sub>SHA-256: `8588238c9a5a00aa542906b6ec7e6d5541d9ffb9b5d0f6e1bc0e365e2303079e`</sub>
+ - [`scrcpy-server-v4.0`][direct-scrcpy-server]  
+   <sub>SHA-256: `84924bd564a1eb6089c872c7521f968058977f91f5ff02514a8c74aff3210f3a`</sub>
 
-[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v3.3.4/scrcpy-server-v3.3.4
+[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v4.0/scrcpy-server-v4.0
 
 Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:
@@ -271,8 +275,14 @@ This installs several files:
  - `/usr/local/share/scrcpy/scrcpy-server` (server to push to the device)
  - `/usr/local/share/man/man1/scrcpy.1` (manpage)
  - `/usr/local/share/icons/hicolor/256x256/apps/scrcpy.png` (app icon)
+ - `/usr/local/share/icons/hicolor/256x256/apps/disconnected.png` (device
+   disconnected icon)
  - `/usr/local/share/zsh/site-functions/_scrcpy` (zsh completion)
  - `/usr/local/share/bash-completion/completions/scrcpy` (bash completion)
+ - `/usr/local/share/applications/scrcpy.desktop` (app-without-console desktop
+   entry file)
+ - `/usr/local/share/applications/scrcpy-console.desktop` (app-with-console
+   desktop entry file)
 
 You can then run `scrcpy`.
 

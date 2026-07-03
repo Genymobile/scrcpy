@@ -1,6 +1,6 @@
 package com.genymobile.scrcpy.util;
 
-import com.genymobile.scrcpy.device.DisplayInfo;
+import com.genymobile.scrcpy.display.DisplayInfo;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 
 import android.view.Display;

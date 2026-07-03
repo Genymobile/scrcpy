@@ -167,6 +167,12 @@ sc_hid_buttons_from_buttons_state(uint8_t buttons_state) {
 }
 
 void
+sc_hid_mouse_init(struct sc_hid_mouse *hid) {
+    hid->residual_hscroll = 0;
+    hid->residual_vscroll = 0;
+}
+
+void
 sc_hid_mouse_generate_input_from_motion(struct sc_hid_input *hid_input,
                                     const struct sc_mouse_motion_event *event) {
     sc_hid_mouse_input_init(hid_input);
@@ -192,22 +198,37 @@ sc_hid_mouse_generate_input_from_click(struct sc_hid_input *hid_input,
     data[4] = 0; // no horizontal scrolling
 }
 
+static int8_t
+consume_scroll_integer(float *scroll) {
+    float value = CLAMP(*scroll, -127, 127);
+    int8_t consume = value; // truncate towards 0
+    float residual = value - consume;
+    *scroll = residual;
+    return consume;
+}
+
 bool
-sc_hid_mouse_generate_input_from_scroll(struct sc_hid_input *hid_input,
+sc_hid_mouse_generate_input_from_scroll(struct sc_hid_mouse *hid,
+                                        struct sc_hid_input *hid_input,
                                     const struct sc_mouse_scroll_event *event) {
-    if (!event->vscroll_int && !event->hscroll_int) {
-        // Need a full integral value for HID
+    sc_hid_mouse_input_init(hid_input);
+
+    hid->residual_hscroll += event->hscroll;
+    hid->residual_vscroll += event->vscroll;
+    int8_t hscroll = consume_scroll_integer(&hid->residual_hscroll);
+    int8_t vscroll = consume_scroll_integer(&hid->residual_vscroll);
+
+    if (!hscroll && !vscroll) {
+        // Not enough scrolling to inject a scroll event
         return false;
     }
-
-    sc_hid_mouse_input_init(hid_input);
 
     uint8_t *data = hid_input->data;
     data[0] = 0; // buttons state irrelevant (and unknown)
     data[1] = 0; // no x motion
     data[2] = 0; // no y motion
-    data[3] = CLAMP(event->vscroll_int, -127, 127);
-    data[4] = CLAMP(event->hscroll_int, -127, 127);
+    data[3] = vscroll;
+    data[4] = hscroll;
     return true;
 }
 

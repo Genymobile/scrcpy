@@ -3,21 +3,29 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 void
 sc_opengl_init(struct sc_opengl *gl) {
-    gl->GetString = SDL_GL_GetProcAddress("glGetString");
+    gl->GetString = (const GLubyte *(*)(GLenum))
+                    SDL_GL_GetProcAddress("glGetString");
     assert(gl->GetString);
 
-    gl->TexParameterf = SDL_GL_GetProcAddress("glTexParameterf");
+    gl->BindTexture = (void (*)(GLenum, GLuint))
+                      SDL_GL_GetProcAddress("glBindTexture");
+    assert(gl->BindTexture);
+
+    gl->TexParameterf = (void (*)(GLenum, GLenum, GLfloat))
+                        SDL_GL_GetProcAddress("glTexParameterf");
     assert(gl->TexParameterf);
 
-    gl->TexParameteri = SDL_GL_GetProcAddress("glTexParameteri");
+    gl->TexParameteri = (void (*)(GLenum, GLenum, GLint))
+                        SDL_GL_GetProcAddress("glTexParameteri");
     assert(gl->TexParameteri);
 
     // optional
-    gl->GenerateMipmap = SDL_GL_GetProcAddress("glGenerateMipmap");
+    gl->GenerateMipmap = (void (*)(GLenum))
+                         SDL_GL_GetProcAddress("glGenerateMipmap");
 
     const char *version = (const char *) gl->GetString(GL_VERSION);
     assert(version);

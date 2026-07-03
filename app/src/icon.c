@@ -10,37 +10,41 @@
 #include <libavutil/avutil.h>
 #include <libavutil/pixdesc.h>
 #include <libavutil/pixfmt.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #include "config.h"
 #include "util/env.h"
-#ifdef PORTABLE
-# include "util/file.h"
-#endif
+#include "util/file.h"
 #include "util/log.h"
 
-#define SCRCPY_PORTABLE_ICON_FILENAME "icon.png"
-#define SCRCPY_DEFAULT_ICON_PATH \
-    PREFIX "/share/icons/hicolor/256x256/apps/scrcpy.png"
+#define SCRCPY_DEFAULT_ICON_DIR PREFIX "/share/icons/hicolor/256x256/apps"
 
 static char *
-get_icon_path(void) {
-    char *icon_path = sc_get_env("SCRCPY_ICON_PATH");
-    if (icon_path) {
+get_icon_path(const char *filename) {
+    char *icon_path;
+
+    char *icon_dir = sc_get_env("SCRCPY_ICON_DIR");
+    if (icon_dir) {
         // if the envvar is set, use it
-        LOGD("Using SCRCPY_ICON_PATH: %s", icon_path);
+        icon_path = sc_file_build_path(icon_dir, filename);
+        free(icon_dir);
+        if (!icon_path) {
+            LOG_OOM();
+            return NULL;
+        }
+        LOGD("Using icon from SCRCPY_ICON_DIR: %s", icon_path);
         return icon_path;
     }
 
 #ifndef PORTABLE
-    LOGD("Using icon: " SCRCPY_DEFAULT_ICON_PATH);
-    icon_path = strdup(SCRCPY_DEFAULT_ICON_PATH);
+    icon_path = sc_file_build_path(SCRCPY_DEFAULT_ICON_DIR, filename);
     if (!icon_path) {
         LOG_OOM();
         return NULL;
     }
+    LOGD("Using icon: %s", icon_path);
 #else
-    icon_path = sc_file_get_local_path(SCRCPY_PORTABLE_ICON_FILENAME);
+    icon_path = sc_file_get_local_path(filename);
     if (!icon_path) {
         LOGE("Could not get icon path");
         return NULL;
@@ -156,13 +160,7 @@ free_ctx:
     return result;
 }
 
-#if !SDL_VERSION_ATLEAST(2, 0, 10)
-// SDL_PixelFormatEnum has been introduced in SDL 2.0.10. Use int for older SDL
-// versions.
-typedef int SDL_PixelFormatEnum;
-#endif
-
-static SDL_PixelFormatEnum
+static SDL_PixelFormat
 to_sdl_pixel_format(enum AVPixelFormat fmt) {
     switch (fmt) {
         case AV_PIX_FMT_RGB24: return SDL_PIXELFORMAT_RGB24;
@@ -172,20 +170,18 @@ to_sdl_pixel_format(enum AVPixelFormat fmt) {
         case AV_PIX_FMT_ABGR: return SDL_PIXELFORMAT_ABGR32;
         case AV_PIX_FMT_BGRA: return SDL_PIXELFORMAT_BGRA32;
         case AV_PIX_FMT_RGB565BE: return SDL_PIXELFORMAT_RGB565;
-        case AV_PIX_FMT_RGB555BE: return SDL_PIXELFORMAT_RGB555;
+        case AV_PIX_FMT_RGB555BE: return SDL_PIXELFORMAT_XRGB1555;
         case AV_PIX_FMT_BGR565BE: return SDL_PIXELFORMAT_BGR565;
-        case AV_PIX_FMT_BGR555BE: return SDL_PIXELFORMAT_BGR555;
-        case AV_PIX_FMT_RGB444BE: return SDL_PIXELFORMAT_RGB444;
-#if SDL_VERSION_ATLEAST(2, 0, 12)
-        case AV_PIX_FMT_BGR444BE: return SDL_PIXELFORMAT_BGR444;
-#endif
+        case AV_PIX_FMT_BGR555BE: return SDL_PIXELFORMAT_XBGR1555;
+        case AV_PIX_FMT_RGB444BE: return SDL_PIXELFORMAT_XRGB4444;
+        case AV_PIX_FMT_BGR444BE: return SDL_PIXELFORMAT_XBGR4444;
         case AV_PIX_FMT_PAL8: return SDL_PIXELFORMAT_INDEX8;
         default: return SDL_PIXELFORMAT_UNKNOWN;
     }
 }
 
 static SDL_Surface *
-load_from_path(const char *path) {
+sc_icon_load_from_full_path(const char *path) {
     AVFrame *frame = decode_image(path);
     if (!frame) {
         return NULL;
@@ -203,20 +199,16 @@ load_from_path(const char *path) {
         goto error;
     }
 
-    SDL_PixelFormatEnum format = to_sdl_pixel_format(frame->format);
+    SDL_PixelFormat format = to_sdl_pixel_format(frame->format);
     if (format == SDL_PIXELFORMAT_UNKNOWN) {
         LOGE("Unsupported icon pixel format: %s (%d)", desc->name,
                                                        frame->format);
         goto error;
     }
 
-    int bits_per_pixel = av_get_bits_per_pixel(desc);
     SDL_Surface *surface =
-        SDL_CreateRGBSurfaceWithFormatFrom(frame->data[0],
-                                           frame->width, frame->height,
-                                           bits_per_pixel,
-                                           frame->linesize[0],
-                                           format);
+        SDL_CreateSurfaceFrom(frame->width, frame->height, format,
+                              frame->data[0], frame->linesize[0]);
 
     if (!surface) {
         LOGE("Could not create icon surface");
@@ -248,17 +240,35 @@ load_from_path(const char *path) {
 #endif
         }
 
-        SDL_Palette *palette = surface->format->palette;
-        assert(palette);
-        int ret = SDL_SetPaletteColors(palette, colors, 0, 256);
-        if (ret) {
+        SDL_Palette *palette = SDL_CreateSurfacePalette(surface);
+        if (!palette) {
+            LOGE("Could not create palette");
+            SDL_DestroySurface(surface);
+            goto error;
+        }
+
+        bool ok = SDL_SetPaletteColors(palette, colors, 0, 256);
+        if (!ok) {
             LOGE("Could not set palette colors");
-            SDL_FreeSurface(surface);
+            SDL_DestroySurface(surface);
             goto error;
         }
     }
 
-    surface->userdata = frame; // frame owns the data
+    SDL_PropertiesID props = SDL_GetSurfaceProperties(surface);
+    if (!props) {
+        LOGE("Could not get surface properties: %s", SDL_GetError());
+        SDL_DestroySurface(surface);
+        goto error;
+    }
+
+    // frame owns the data
+    bool ok = SDL_SetPointerProperty(props, "sc_frame", frame);
+    if (!ok) {
+        LOGE("Could not set pointer property: %s", SDL_GetError());
+        SDL_DestroySurface(surface);
+        goto error;
+    }
 
     return surface;
 
@@ -268,21 +278,23 @@ error:
 }
 
 SDL_Surface *
-scrcpy_icon_load(void) {
-    char *icon_path = get_icon_path();
+sc_icon_load(const char *filename) {
+    char *icon_path = get_icon_path(filename);
     if (!icon_path) {
         return NULL;
     }
 
-    SDL_Surface *icon = load_from_path(icon_path);
+    SDL_Surface *icon = sc_icon_load_from_full_path(icon_path);
     free(icon_path);
     return icon;
 }
 
 void
-scrcpy_icon_destroy(SDL_Surface *icon) {
-    AVFrame *frame = icon->userdata;
+sc_icon_destroy(SDL_Surface *icon) {
+    SDL_PropertiesID props = SDL_GetSurfaceProperties(icon);
+    assert(props);
+    AVFrame *frame = SDL_GetPointerProperty(props, "sc_frame", NULL);
     assert(frame);
     av_frame_free(&frame);
-    SDL_FreeSurface(icon);
+    SDL_DestroySurface(icon);
 }

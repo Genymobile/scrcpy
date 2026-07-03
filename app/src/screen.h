@@ -5,22 +5,28 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/frame.h>
 #include <libavutil/pixfmt.h>
 
 #include "controller.h"
 #include "coords.h"
-#include "display.h"
+#include "disconnect.h"
 #include "fps_counter.h"
 #include "frame_buffer.h"
 #include "input_manager.h"
 #include "mouse_capture.h"
 #include "options.h"
+#include "texture.h"
 #include "trait/key_processor.h"
 #include "trait/frame_sink.h"
 #include "trait/mouse_processor.h"
+#include "util/thread.h"
+
+#ifdef __APPLE__
+# define SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
+#endif
 
 struct sc_screen {
     struct sc_frame_sink frame_sink; // frame sink trait
@@ -30,12 +36,27 @@ struct sc_screen {
 #endif
 
     bool video;
+    bool camera;
+    bool window_aspect_ratio_lock;
+    bool flex_display;
 
-    struct sc_display display;
+    struct sc_controller *controller;
+
+    struct sc_screen_bg_color {
+        uint8_t r;
+        uint8_t g;
+        uint8_t b;
+    } bg;
+
+    struct sc_texture tex;
     struct sc_input_manager im;
     struct sc_mouse_capture mc; // only used in mouse relative mode
-    struct sc_frame_buffer fb;
     struct sc_fps_counter fps_counter;
+
+    struct sc_mutex mutex;
+    struct sc_frame_buffer fb; // protected by mutex
+    // When true, a frame size change must not cause the window to be resized
+    bool prevent_auto_resize; // protected by mutex
 
     // The initial requested window properties
     struct {
@@ -48,6 +69,13 @@ struct sc_screen {
     } req;
 
     SDL_Window *window;
+    SDL_Renderer *renderer;
+#ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
+    SDL_GLContext gl_context;
+#endif
+
+    enum sc_render_fit render_fit;
+
     struct sc_size frame_size;
     struct sc_size content_size; // rotated frame_size
 
@@ -59,20 +87,32 @@ struct sc_screen {
     // client orientation
     enum sc_orientation orientation;
     // rectangle of the content (excluding black borders)
-    struct SDL_Rect rect;
-    bool has_frame;
-    bool fullscreen;
-    bool maximized;
-    bool minimized;
+    struct SDL_FRect rect;
+    bool window_shown;
+
+    // only accessed from the thread calling sc_frame_sink_ops functions
+    struct sc_stream_session current_session;
 
     AVFrame *frame;
 
     bool paused;
     AVFrame *resume_frame;
+
+    bool disconnected;
+    bool disconnect_started;
+    struct sc_disconnect disconnect;
+
+    // Track resize requests caused by frame-size changes
+    struct sc_resize_tracker {
+        sc_tick time; // 0 means none
+        struct sc_size size;
+    } resize_tracker;
 };
 
 struct sc_screen_params {
     bool video;
+    bool camera;
+    bool flex_display;
 
     struct sc_controller *controller;
     struct sc_file_pusher *fp;
@@ -93,8 +133,12 @@ struct sc_screen_params {
     uint16_t window_width;
     uint16_t window_height;
 
+    uint32_t background_color;
+
+    bool window_aspect_ratio_lock;
     bool window_borderless;
 
+    enum sc_render_fit render_fit;
     enum sc_orientation orientation;
     bool mipmaps;
 
@@ -107,7 +151,7 @@ bool
 sc_screen_init(struct sc_screen *screen, const struct sc_screen_params *params);
 
 // request to interrupt any inner thread
-// must be called before screen_join()
+// must be called before sc_screen_join()
 void
 sc_screen_interrupt(struct sc_screen *screen);
 
@@ -148,27 +192,17 @@ void
 sc_screen_set_paused(struct sc_screen *screen, bool paused);
 
 // react to SDL events
-// If this function returns false, scrcpy must exit with an error.
-bool
+void
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event);
+
+// run the event loop once the device is disconnected
+void
+sc_screen_handle_disconnection(struct sc_screen *screen);
 
 // convert point from window coordinates to frame coordinates
 // x and y are expressed in pixels
 struct sc_point
 sc_screen_convert_window_to_frame_coords(struct sc_screen *screen,
                                         int32_t x, int32_t y);
-
-// convert point from drawable coordinates to frame coordinates
-// x and y are expressed in pixels
-struct sc_point
-sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
-                                          int32_t x, int32_t y);
-
-// Convert coordinates from window to drawable.
-// Events are expressed in window coordinates, but content is expressed in
-// drawable coordinates. They are the same if HiDPI scaling is 1, but differ
-// otherwise.
-void
-sc_screen_hidpi_scale_coords(struct sc_screen *screen, int32_t *x, int32_t *y);
 
 #endif

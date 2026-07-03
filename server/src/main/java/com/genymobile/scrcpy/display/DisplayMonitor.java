@@ -1,9 +1,7 @@
-package com.genymobile.scrcpy.video;
+package com.genymobile.scrcpy.display;
 
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.device.Device;
-import com.genymobile.scrcpy.device.DisplayInfo;
-import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.DisplayWindowListener;
@@ -15,10 +13,10 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.view.IDisplayWindowListener;
 
-public class DisplaySizeMonitor {
+public class DisplayMonitor {
 
     public interface Listener {
-        void onDisplaySizeChanged();
+        void onDisplayPropertiesChanged(DisplayProperties props);
     }
 
     // On Android 14, DisplayListener may be broken (it never sends events). This is fixed in recent Android 14 upgrades, but we can't really
@@ -34,7 +32,7 @@ public class DisplaySizeMonitor {
 
     private int displayId = Device.DISPLAY_ID_NONE;
 
-    private Size sessionDisplaySize;
+    private DisplayProperties props;
 
     private Listener listener;
 
@@ -52,11 +50,16 @@ public class DisplaySizeMonitor {
             Handler handler = new Handler(handlerThread.getLooper());
             displayListenerHandle = ServiceManager.getDisplayManager().registerDisplayListener(eventDisplayId -> {
                 if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v("DisplaySizeMonitor: onDisplayChanged(" + eventDisplayId + ")");
+                    Ln.v("DisplayMonitor: onDisplayChanged(" + eventDisplayId + ")");
                 }
 
                 if (eventDisplayId == displayId) {
-                    checkDisplaySizeChanged();
+                    try {
+                        checkDisplayPropertiesChanged();
+                    } catch (Throwable e) {
+                        Ln.e("DisplayMonitor error", e);
+                        throw e;
+                    }
                 }
             }, handler);
         } else {
@@ -64,11 +67,16 @@ public class DisplaySizeMonitor {
                 @Override
                 public void onDisplayConfigurationChanged(int eventDisplayId, Configuration newConfig) {
                     if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                        Ln.v("DisplaySizeMonitor: onDisplayConfigurationChanged(" + eventDisplayId + ")");
+                        Ln.v("DisplayMonitor: onDisplayConfigurationChanged(" + eventDisplayId + ")");
                     }
 
                     if (eventDisplayId == displayId) {
-                        checkDisplaySizeChanged();
+                        try {
+                            checkDisplayPropertiesChanged();
+                        } catch (Throwable e) {
+                            Ln.e("DisplayMonitor error", e);
+                            throw e;
+                        }
                     }
                 }
             };
@@ -98,43 +106,38 @@ public class DisplaySizeMonitor {
         }
     }
 
-    private synchronized Size getSessionDisplaySize() {
-        return sessionDisplaySize;
+    private synchronized DisplayProperties getAndSetDisplayProperties(DisplayProperties props) {
+        DisplayProperties oldProps = this.props;
+        this.props = props;
+        return oldProps;
     }
 
-    public synchronized void setSessionDisplaySize(Size sessionDisplaySize) {
-        this.sessionDisplaySize = sessionDisplaySize;
+    public synchronized void setSessionDisplayProperties(DisplayProperties props) {
+        this.props = props;
     }
 
-    private void checkDisplaySizeChanged() {
+    private void checkDisplayPropertiesChanged() {
         DisplayInfo di = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
         if (di == null) {
             Ln.w("DisplayInfo for " + displayId + " cannot be retrieved");
-            // We can't compare with the current size, so reset unconditionally
+            // We can't compare with the current properties, so reset unconditionally
+            DisplayProperties oldProps = getAndSetDisplayProperties(null); // exchange with synchronization
             if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v("DisplaySizeMonitor: requestReset(): " + getSessionDisplaySize() + " -> (unknown)");
+                Ln.v("DisplayMonitor: " + oldProps + " -> (unknown)");
             }
-            setSessionDisplaySize(null);
-            listener.onDisplaySizeChanged();
+            listener.onDisplayPropertiesChanged(null);
         } else {
-            Size size = di.getSize();
+            DisplayProperties newProps = new DisplayProperties(di.getSize(), di.getRotation());
 
-            // The field is hidden on purpose, to read it with synchronization
-            @SuppressWarnings("checkstyle:HiddenField")
-            Size sessionDisplaySize = getSessionDisplaySize(); // synchronized
-
-            // .equals() also works if sessionDisplaySize == null
-            if (!size.equals(sessionDisplaySize)) {
-                // Reset only if the size is different
+            DisplayProperties oldProps = getAndSetDisplayProperties(newProps); // exchange with synchronization
+            if (!newProps.equals(oldProps)) {
+                // Reset only if the properties are different
                 if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v("DisplaySizeMonitor: requestReset(): " + sessionDisplaySize + " -> " + size);
+                    Ln.v("DisplayMonitor: " + oldProps + " -> " + newProps);
                 }
-                // Set the new size immediately, so that a future onDisplayChanged() event called before the asynchronous prepare()
-                // considers that the current size is the requested size (to avoid a duplicate requestReset())
-                setSessionDisplaySize(size);
-                listener.onDisplaySizeChanged();
+                listener.onDisplayPropertiesChanged(newProps);
             } else if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v("DisplaySizeMonitor: Size not changed (" + size + "): do not requestReset()");
+                Ln.v("DisplayMonitor: " + newProps + " (unchanged)");
             }
         }
     }

@@ -8,6 +8,7 @@
 #include "options.h"
 
 enum sc_pause_on_exit {
+    SC_PAUSE_ON_EXIT_UNDEFINED,
     SC_PAUSE_ON_EXIT_TRUE,
     SC_PAUSE_ON_EXIT_FALSE,
     SC_PAUSE_ON_EXIT_IF_ERROR,

@@ -200,7 +200,9 @@ run_screencap(void *data) {
 
 static bool
 sc_screencap_video_packet_sink_open(struct sc_packet_sink *sink,
-                                    AVCodecContext *ctx) {
+                                    AVCodecContext *ctx,
+                                    const struct sc_stream_session *session) {
+    (void) session;
     struct sc_screencap *screencap = DOWNCAST_VIDEO(sink);
 
     // Create our own decoder context using the same codec

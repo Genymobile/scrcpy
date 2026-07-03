@@ -182,12 +182,21 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             size_t len = write_string_tiny(&buf[1], msg->start_app.name, 255);
             return 1 + len;
         }
+        case SC_CONTROL_MSG_TYPE_CAMERA_SET_TORCH:
+            buf[1] = msg->camera_set_torch.on ? 1 : 0;
+            return 2;
+        case SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY:
+            sc_write16be(&buf[1], msg->resize_display.width);
+            sc_write16be(&buf[3], msg->resize_display.height);
+            return 5;
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
         case SC_CONTROL_MSG_TYPE_ROTATE_DEVICE:
         case SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
         case SC_CONTROL_MSG_TYPE_RESET_VIDEO:
+        case SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_IN:
+        case SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_OUT:
             // no additional data
             return 1;
         default:
@@ -268,6 +277,10 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             LOG_CMSG("display power %s",
                      msg->set_display_power.on ? "on" : "off");
             break;
+        case SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY:
+            LOG_CMSG("resize display %" PRIu16 "x%" PRIu16,
+                     msg->resize_display.width, msg->resize_display.height);
+            break;
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
             LOG_CMSG("expand notification panel");
             break;
@@ -317,6 +330,16 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             break;
         case SC_CONTROL_MSG_TYPE_RESET_VIDEO:
             LOG_CMSG("reset video");
+            break;
+        case SC_CONTROL_MSG_TYPE_CAMERA_SET_TORCH:
+            LOG_CMSG("camera set torch %s",
+                     msg->camera_set_torch.on ? "on" : "off");
+            break;
+        case SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_IN:
+            LOG_CMSG("camera zoom in");
+            break;
+        case SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_OUT:
+            LOG_CMSG("camera zoom out");
             break;
         default:
             LOG_CMSG("unknown type: %u", (unsigned) msg->type);

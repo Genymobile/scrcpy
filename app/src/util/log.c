@@ -50,13 +50,13 @@ log_level_sdl_to_sc(SDL_LogPriority priority) {
 void
 sc_set_log_level(enum sc_log_level level) {
     SDL_LogPriority sdl_log = log_level_sc_to_sdl(level);
-    SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, sdl_log);
-    SDL_LogSetPriority(SDL_LOG_CATEGORY_CUSTOM, sdl_log);
+    SDL_SetLogPriority(SDL_LOG_CATEGORY_APPLICATION, sdl_log);
+    SDL_SetLogPriority(SDL_LOG_CATEGORY_CUSTOM, sdl_log);
 }
 
 enum sc_log_level
 sc_get_log_level(void) {
-    SDL_LogPriority sdl_log = SDL_LogGetPriority(SDL_LOG_CATEGORY_APPLICATION);
+    SDL_LogPriority sdl_log = SDL_GetLogPriority(SDL_LOG_CATEGORY_APPLICATION);
     return log_level_sdl_to_sc(sdl_log);
 }
 
@@ -128,7 +128,7 @@ sc_av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     free(local_fmt);
 }
 
-static const char *const sc_sdl_log_priority_names[SDL_NUM_LOG_PRIORITIES] = {
+static const char *const sc_sdl_log_priority_names[SDL_LOG_PRIORITY_COUNT] = {
     [SDL_LOG_PRIORITY_VERBOSE] = "VERBOSE",
     [SDL_LOG_PRIORITY_DEBUG] = "DEBUG",
     [SDL_LOG_PRIORITY_INFO] = "INFO",
@@ -144,14 +144,18 @@ sc_sdl_log_print(void *userdata, int category, SDL_LogPriority priority,
     (void) category;
 
     FILE *out = priority < SDL_LOG_PRIORITY_WARN ? stdout : stderr;
-    assert(priority < SDL_NUM_LOG_PRIORITIES);
+    assert(priority < SDL_LOG_PRIORITY_COUNT);
     const char *prio_name = sc_sdl_log_priority_names[priority];
     fprintf(out, "%s: %s\n", prio_name, message);
 }
 
 void
 sc_log_configure(void) {
-    SDL_LogSetOutputFunction(sc_sdl_log_print, NULL);
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
+    SDL_SetLogOutputFunction(sc_sdl_log_print, NULL);
     // Redirect FFmpeg logs to SDL logs
     av_log_set_callback(sc_av_log_callback);
 }

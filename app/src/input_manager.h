@@ -5,8 +5,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_keycode.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_keycode.h>
 
 #include "controller.h"
 #include "file_pusher.h"
@@ -23,6 +23,8 @@ struct sc_input_manager {
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;
     struct sc_gamepad_processor *gp;
+
+    bool camera;
 
     struct sc_mouse_bindings mouse_bindings;
     bool legacy_paste;
@@ -44,6 +46,8 @@ struct sc_input_manager {
     uint16_t last_mod;
 
     uint64_t next_sequence; // used for request acknowledgements
+
+    bool disconnected;
 };
 
 struct sc_input_manager_params {
@@ -53,6 +57,7 @@ struct sc_input_manager_params {
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;
     struct sc_gamepad_processor *gp;
+    bool camera;
 
     struct sc_mouse_bindings mouse_bindings;
     bool legacy_paste;

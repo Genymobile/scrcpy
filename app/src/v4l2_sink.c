@@ -128,9 +128,8 @@ run_v4l2_sink(void *data) {
         }
 
         vs->has_frame = false;
-        sc_mutex_unlock(&vs->mutex);
-
         sc_frame_buffer_consume(&vs->fb, vs->frame);
+        sc_mutex_unlock(&vs->mutex);
 
         bool ok = encode_and_write_frame(vs, vs->frame);
         av_frame_unref(vs->frame);
@@ -146,9 +145,11 @@ run_v4l2_sink(void *data) {
 }
 
 static bool
-sc_v4l2_sink_open(struct sc_v4l2_sink *vs, const AVCodecContext *ctx) {
+sc_v4l2_sink_open(struct sc_v4l2_sink *vs, const AVCodecContext *ctx,
+                  const struct sc_stream_session *session) {
     assert(ctx->pix_fmt == AV_PIX_FMT_YUV420P);
     (void) ctx;
+    (void) session;
 
     bool ok = sc_frame_buffer_init(&vs->fb);
     if (!ok) {
@@ -309,26 +310,28 @@ sc_v4l2_sink_close(struct sc_v4l2_sink *vs) {
 
 static bool
 sc_v4l2_sink_push(struct sc_v4l2_sink *vs, const AVFrame *frame) {
-    bool previous_skipped;
-    bool ok = sc_frame_buffer_push(&vs->fb, frame, &previous_skipped);
+    sc_mutex_lock(&vs->mutex);
+    bool previous_skipped = sc_frame_buffer_has_frame(&vs->fb);
+    bool ok = sc_frame_buffer_push(&vs->fb, frame);
     if (!ok) {
+        sc_mutex_unlock(&vs->mutex);
         return false;
     }
 
     if (!previous_skipped) {
-        sc_mutex_lock(&vs->mutex);
         vs->has_frame = true;
         sc_cond_signal(&vs->cond);
-        sc_mutex_unlock(&vs->mutex);
     }
 
+    sc_mutex_unlock(&vs->mutex);
     return true;
 }
 
 static bool
-sc_v4l2_frame_sink_open(struct sc_frame_sink *sink, const AVCodecContext *ctx) {
+sc_v4l2_frame_sink_open(struct sc_frame_sink *sink, const AVCodecContext *ctx,
+                        const struct sc_stream_session *session) {
     struct sc_v4l2_sink *vs = DOWNCAST(sink);
-    return sc_v4l2_sink_open(vs, ctx);
+    return sc_v4l2_sink_open(vs, ctx, session);
 }
 
 static void

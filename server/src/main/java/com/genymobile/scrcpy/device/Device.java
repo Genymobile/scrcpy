@@ -2,6 +2,8 @@ package com.genymobile.scrcpy.device;
 
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.FakeContext;
+import com.genymobile.scrcpy.display.DisplayInfo;
+import com.genymobile.scrcpy.model.DeviceApp;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ActivityManager;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
@@ -12,8 +14,8 @@ import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import com.genymobile.scrcpy.wrappers.WindowManager;
 
 import android.annotation.SuppressLint;
-import android.content.Intent;
 import android.app.ActivityOptions;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -84,6 +86,11 @@ public final class Device {
     public static boolean isScreenOn(int displayId) {
         assert displayId != DISPLAY_ID_NONE;
         return ServiceManager.getPowerManager().isScreenOn(displayId);
+    }
+
+    public static void keepActive(int displayId) {
+        assert displayId != DISPLAY_ID_NONE;
+        ServiceManager.getPowerManager().userActivity(displayId);
     }
 
     public static void expandNotificationPanel() {

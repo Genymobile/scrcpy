@@ -3,13 +3,14 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #ifdef _WIN32
 # include "adb/adb.h"
 #endif
 #include "events.h"
-#include "usb/screen_otg.h"
+#include "screen.h"
+#include "sdl_hints.h"
 #include "usb/aoa_hid.h"
 #include "usb/gamepad_aoa.h"
 #include "usb/keyboard_aoa.h"
@@ -23,7 +24,7 @@ struct scrcpy_otg {
     struct sc_mouse_aoa mouse;
     struct sc_gamepad_aoa gamepad;
 
-    struct sc_screen_otg screen_otg;
+    struct sc_screen screen;
 };
 
 static void
@@ -31,7 +32,7 @@ sc_usb_on_disconnected(struct sc_usb *usb, void *userdata) {
     (void) usb;
     (void) userdata;
 
-    sc_push_event(SC_EVENT_USB_DEVICE_DISCONNECTED);
+    sc_push_event(SC_EVENT_DEVICE_DISCONNECTED);
 }
 
 static enum scrcpy_exit_code
@@ -39,17 +40,18 @@ event_loop(struct scrcpy_otg *s) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
-            case SC_EVENT_USB_DEVICE_DISCONNECTED:
+            case SC_EVENT_DEVICE_DISCONNECTED:
                 LOGW("Device disconnected");
+                sc_screen_handle_event(&s->screen, &event);
                 return SCRCPY_EXIT_DISCONNECTED;
             case SC_EVENT_AOA_OPEN_ERROR:
                 LOGE("AOA open error");
                 return SCRCPY_EXIT_FAILURE;
-            case SDL_QUIT:
+            case SDL_EVENT_QUIT:
                 LOGD("User requested to quit");
                 return SCRCPY_EXIT_SUCCESS;
             default:
-                sc_screen_otg_handle_event(&s->screen_otg, &event);
+                sc_screen_handle_event(&s->screen, &event);
                 break;
         }
     }
@@ -63,42 +65,34 @@ scrcpy_otg(struct scrcpy_options *options) {
 
     const char *serial = options->serial;
 
-    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
-        LOGW("Could not enable linear filtering");
-    }
-
-    if (!SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1")) {
-        LOGW("Could not allow joystick background events");
-    }
+    sc_sdl_set_hints(options->render_driver, options->disable_screensaver);
 
     // Minimal SDL initialization
-    if (SDL_Init(SDL_INIT_EVENTS)) {
+    if (!SDL_Init(SDL_INIT_EVENTS)) {
         LOGE("Could not initialize SDL: %s", SDL_GetError());
         return SCRCPY_EXIT_FAILURE;
     }
 
     if (options->gamepad_input_mode != SC_GAMEPAD_INPUT_MODE_DISABLED) {
-        if (SDL_Init(SDL_INIT_GAMECONTROLLER)) {
-            LOGE("Could not initialize SDL controller: %s", SDL_GetError());
+        if (!SDL_Init(SDL_INIT_GAMEPAD)) {
+            LOGE("Could not initialize SDL gamepad: %s", SDL_GetError());
             // Not fatal, keyboard/mouse should still work
         }
     }
 
     atexit(SDL_Quit);
 
-    if (!SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1")) {
-        LOGW("Could not enable mouse focus clickthrough");
-    }
-
     enum scrcpy_exit_code ret = SCRCPY_EXIT_FAILURE;
 
-    struct sc_keyboard_aoa *keyboard = NULL;
-    struct sc_mouse_aoa *mouse = NULL;
-    struct sc_gamepad_aoa *gamepad = NULL;
+    struct sc_key_processor *kp = NULL;
+    struct sc_mouse_processor *mp = NULL;
+    struct sc_gamepad_processor *gp = NULL;
     bool usb_device_initialized = false;
     bool usb_connected = false;
     bool aoa_started = false;
     bool aoa_initialized = false;
+    bool screen_initialized = false;
+    bool disconnected = false;
 
 #ifdef _WIN32
     // On Windows, only one process could open a USB device
@@ -161,7 +155,7 @@ scrcpy_otg(struct scrcpy_options *options) {
         if (!ok) {
             goto end;
         }
-        keyboard = &s->keyboard;
+        kp = &s->keyboard.key_processor;
     }
 
     if (enable_mouse) {
@@ -169,12 +163,12 @@ scrcpy_otg(struct scrcpy_options *options) {
         if (!ok) {
             goto end;
         }
-        mouse = &s->mouse;
+        mp = &s->mouse.mouse_processor;
     }
 
     if (enable_gamepad) {
         sc_gamepad_aoa_init(&s->gamepad, &s->aoa);
-        gamepad = &s->gamepad;
+        gp = &s->gamepad.gamepad_processor;
     }
 
     ok = sc_aoa_start(&s->aoa);
@@ -188,10 +182,18 @@ scrcpy_otg(struct scrcpy_options *options) {
         window_title = usb_device.product ? usb_device.product : "scrcpy";
     }
 
-    struct sc_screen_otg_params params = {
-        .keyboard = keyboard,
-        .mouse = mouse,
-        .gamepad = gamepad,
+    struct sc_screen_params params = {
+        .video = false,
+        .camera = false,
+        .controller = false,
+        .fp = NULL,
+        .kp = kp,
+        .mp = mp,
+        .gp = gp,
+        .mouse_bindings = options->mouse_bindings,
+        .legacy_paste = false,
+        .clipboard_autosync = false,
+        .shortcut_mods = options->shortcut_mods,
         .window_title = window_title,
         .always_on_top = options->always_on_top,
         .window_x = options->window_x,
@@ -199,20 +201,24 @@ scrcpy_otg(struct scrcpy_options *options) {
         .window_width = options->window_width,
         .window_height = options->window_height,
         .window_borderless = options->window_borderless,
-        .shortcut_mods = options->shortcut_mods,
+        .orientation = SC_ORIENTATION_0,
+        .mipmaps = options->mipmaps,
+        .fullscreen = false,
+        .start_fps_counter = false,
     };
 
-    ok = sc_screen_otg_init(&s->screen_otg, &params);
+    ok = sc_screen_init(&s->screen, &params);
     if (!ok) {
         goto end;
     }
+    screen_initialized = true;
 
     // usb_device not needed anymore
     sc_usb_device_destroy(&usb_device);
     usb_device_initialized = false;
 
     ret = event_loop(s);
-    LOGD("quit...");
+    disconnected = ret == SCRCPY_EXIT_DISCONNECTED;
 
 end:
     if (aoa_started) {
@@ -220,13 +226,25 @@ end:
     }
     sc_usb_stop(&s->usb);
 
-    if (mouse) {
+    if (screen_initialized) {
+        sc_screen_interrupt(&s->screen);
+
+        if (disconnected) {
+            sc_screen_handle_disconnection(&s->screen);
+        }
+        LOGD("Quit...");
+
+        // Close the window immediately
+        sc_screen_hide_window(&s->screen);
+    }
+
+    if (mp) {
         sc_mouse_aoa_destroy(&s->mouse);
     }
-    if (keyboard) {
+    if (kp) {
         sc_keyboard_aoa_destroy(&s->keyboard);
     }
-    if (gamepad) {
+    if (gp) {
         sc_gamepad_aoa_destroy(&s->gamepad);
     }
 
@@ -246,6 +264,11 @@ end:
     }
 
     sc_usb_destroy(&s->usb);
+
+    if (screen_initialized) {
+        sc_screen_join(&s->screen);
+        sc_screen_destroy(&s->screen);
+    }
 
     return ret;
 }

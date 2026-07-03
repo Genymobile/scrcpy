@@ -3,10 +3,10 @@ package com.genymobile.scrcpy;
 import com.genymobile.scrcpy.audio.AudioCodec;
 import com.genymobile.scrcpy.audio.AudioSource;
 import com.genymobile.scrcpy.device.Device;
-import com.genymobile.scrcpy.device.NewDisplay;
-import com.genymobile.scrcpy.device.Orientation;
-import com.genymobile.scrcpy.device.Size;
-import com.genymobile.scrcpy.util.CodecOption;
+import com.genymobile.scrcpy.model.CodecOption;
+import com.genymobile.scrcpy.model.NewDisplay;
+import com.genymobile.scrcpy.model.Orientation;
+import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.video.CameraAspectRatio;
 import com.genymobile.scrcpy.video.CameraFacing;
@@ -27,6 +27,7 @@ public class Options {
     private boolean video = true;
     private boolean audio = true;
     private int maxSize;
+    private int minSizeAlignment = 1;
     private VideoCodec videoCodec = VideoCodec.H264;
     private AudioCodec audioCodec = AudioCodec.OPUS;
     private VideoSource videoSource = VideoSource.DISPLAY;
@@ -44,8 +45,10 @@ public class Options {
     private Size cameraSize;
     private CameraFacing cameraFacing;
     private CameraAspectRatio cameraAspectRatio;
+    private float cameraZoom = 1;
     private int cameraFps;
     private boolean cameraHighSpeed;
+    private boolean cameraTorch;
     private boolean showTouches;
     private boolean stayAwake;
     private int screenOffTimeout = -1;
@@ -64,6 +67,9 @@ public class Options {
     private NewDisplay newDisplay;
     private boolean vdDestroyContent = true;
     private boolean vdSystemDecorations = true;
+    private boolean flexDisplay;
+
+    private boolean keepActive;
 
     private Orientation.Lock captureOrientationLock = Orientation.Lock.Unlocked;
     private Orientation captureOrientation = Orientation.Orient0;
@@ -78,7 +84,7 @@ public class Options {
     private boolean sendDeviceMeta = true; // send device name and size
     private boolean sendFrameMeta = true; // send PTS so that the client may record properly
     private boolean sendDummyByte = true; // write a byte on start to detect connection issues
-    private boolean sendCodecMeta = true; // write the codec metadata before the stream
+    private boolean sendStreamMeta = true; // write the stream metadata (codec and session)
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -98,6 +104,10 @@ public class Options {
 
     public int getMaxSize() {
         return maxSize;
+    }
+
+    public int getMinSizeAlignment() {
+        return minSizeAlignment;
     }
 
     public VideoCodec getVideoCodec() {
@@ -168,12 +178,20 @@ public class Options {
         return cameraAspectRatio;
     }
 
+    public float getCameraZoom() {
+        return cameraZoom;
+    }
+
     public int getCameraFps() {
         return cameraFps;
     }
 
     public boolean getCameraHighSpeed() {
         return cameraHighSpeed;
+    }
+
+    public boolean getCameraTorch() {
+        return cameraTorch;
     }
 
     public boolean getShowTouches() {
@@ -248,6 +266,14 @@ public class Options {
         return vdSystemDecorations;
     }
 
+    public boolean getKeepActive() {
+        return keepActive;
+    }
+
+    public boolean getFlexDisplay() {
+        return flexDisplay;
+    }
+
     public boolean getList() {
         return listEncoders || listDisplays || listCameras || listCameraSizes || listApps;
     }
@@ -284,8 +310,8 @@ public class Options {
         return sendDummyByte;
     }
 
-    public boolean getSendCodecMeta() {
-        return sendCodecMeta;
+    public boolean getSendStreamMeta() {
+        return sendStreamMeta;
     }
 
     @SuppressWarnings("MethodLength")
@@ -359,7 +385,14 @@ public class Options {
                     options.audioDup = Boolean.parseBoolean(value);
                     break;
                 case "max_size":
-                    options.maxSize = Integer.parseInt(value) & ~7; // multiple of 8
+                    options.maxSize = Integer.parseInt(value);
+                    break;
+                case "min_size_alignment":
+                    int align = Integer.parseInt(value);
+                    if (align < 1 || align > 16 || (align & (align - 1)) != 0) {
+                        throw new IllegalArgumentException("min_size_alignment (" + align + ") must be 1, 2, 4, 8 or 16");
+                    }
+                    options.minSizeAlignment = align;
                     break;
                 case "video_bit_rate":
                     options.videoBitRate = Integer.parseInt(value);
@@ -414,6 +447,7 @@ public class Options {
                     if (!value.isEmpty()) {
                         options.audioEncoder = value;
                     }
+                    break;
                 case "power_off_on_close":
                     options.powerOffScreenOnClose = Boolean.parseBoolean(value);
                     break;
@@ -468,11 +502,19 @@ public class Options {
                         options.cameraAspectRatio = parseCameraAspectRatio(value);
                     }
                     break;
+                case "camera_zoom":
+                    if (!value.isEmpty()) {
+                        options.cameraZoom = Float.parseFloat(value);
+                    }
+                    break;
                 case "camera_fps":
                     options.cameraFps = Integer.parseInt(value);
                     break;
                 case "camera_high_speed":
                     options.cameraHighSpeed = Boolean.parseBoolean(value);
+                    break;
+                case "camera_torch":
+                    options.cameraTorch = Boolean.parseBoolean(value);
                     break;
                 case "new_display":
                     options.newDisplay = parseNewDisplay(value);
@@ -483,6 +525,9 @@ public class Options {
                 case "vd_system_decorations":
                     options.vdSystemDecorations = Boolean.parseBoolean(value);
                     break;
+                case "flex_display":
+                    options.flexDisplay = Boolean.parseBoolean(value);
+                    break;
                 case "capture_orientation":
                     Pair<Orientation.Lock, Orientation> pair = parseCaptureOrientation(value);
                     options.captureOrientationLock = pair.first;
@@ -490,6 +535,9 @@ public class Options {
                     break;
                 case "display_ime_policy":
                     options.displayImePolicy = parseDisplayImePolicy(value);
+                    break;
+                case "keep_active":
+                    options.keepActive = Boolean.parseBoolean(value);
                     break;
                 case "send_device_meta":
                     options.sendDeviceMeta = Boolean.parseBoolean(value);
@@ -500,8 +548,8 @@ public class Options {
                 case "send_dummy_byte":
                     options.sendDummyByte = Boolean.parseBoolean(value);
                     break;
-                case "send_codec_meta":
-                    options.sendCodecMeta = Boolean.parseBoolean(value);
+                case "send_stream_meta":
+                    options.sendStreamMeta = Boolean.parseBoolean(value);
                     break;
                 case "raw_stream":
                     boolean rawStream = Boolean.parseBoolean(value);
@@ -509,7 +557,7 @@ public class Options {
                         options.sendDeviceMeta = false;
                         options.sendFrameMeta = false;
                         options.sendDummyByte = false;
-                        options.sendCodecMeta = false;
+                        options.sendStreamMeta = false;
                     }
                     break;
                 default:

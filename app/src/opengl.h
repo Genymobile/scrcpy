@@ -4,7 +4,7 @@
 #include "common.h"
 
 #include <stdbool.h>
-#include <SDL2/SDL_opengl.h>
+#include <SDL3/SDL_opengl.h>
 
 struct sc_opengl {
     const char *version;
@@ -14,6 +14,9 @@ struct sc_opengl {
 
     const GLubyte *
     (*GetString)(GLenum name);
+
+    void
+    (*BindTexture)(GLenum target, GLuint texture);
 
     void
     (*TexParameterf)(GLenum target, GLenum pname, GLfloat param);

@@ -12,7 +12,7 @@
 set -e
 
 SCRCPY_DEBUG=false
-SCRCPY_VERSION_NAME=3.3.4
+SCRCPY_VERSION_NAME=4.0
 
 PLATFORM=${ANDROID_PLATFORM:-36}
 BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-36.0.0}
@@ -62,6 +62,8 @@ SRC=( \
     com/genymobile/scrcpy/audio/*.java \
     com/genymobile/scrcpy/control/*.java \
     com/genymobile/scrcpy/device/*.java \
+    com/genymobile/scrcpy/display/*.java \
+    com/genymobile/scrcpy/model/*.java \
     com/genymobile/scrcpy/opengl/*.java \
     com/genymobile/scrcpy/util/*.java \
     com/genymobile/scrcpy/video/*.java \

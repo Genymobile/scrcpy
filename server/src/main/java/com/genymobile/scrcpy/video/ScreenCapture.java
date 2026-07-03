@@ -3,11 +3,13 @@ package com.genymobile.scrcpy.video;
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.control.PositionMapper;
-import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Device;
-import com.genymobile.scrcpy.device.DisplayInfo;
-import com.genymobile.scrcpy.device.Orientation;
-import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.display.DisplayInfo;
+import com.genymobile.scrcpy.display.DisplayMonitor;
+import com.genymobile.scrcpy.display.DisplayProperties;
+import com.genymobile.scrcpy.model.ConfigurationException;
+import com.genymobile.scrcpy.model.Orientation;
+import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.opengl.AffineOpenGLFilter;
 import com.genymobile.scrcpy.opengl.OpenGLFilter;
 import com.genymobile.scrcpy.opengl.OpenGLRunner;
@@ -29,16 +31,17 @@ public class ScreenCapture extends SurfaceCapture {
 
     private final VirtualDisplayListener vdListener;
     private final int displayId;
-    private int maxSize;
     private final Rect crop;
     private Orientation.Lock captureOrientationLock;
     private Orientation captureOrientation;
     private final float angle;
 
+    private VideoConstraints videoConstraints;
+
     private DisplayInfo displayInfo;
     private Size videoSize;
 
-    private final DisplaySizeMonitor displaySizeMonitor = new DisplaySizeMonitor();
+    private final DisplayMonitor displayMonitor = new DisplayMonitor();
 
     private IBinder display;
     private VirtualDisplay virtualDisplay;
@@ -50,7 +53,6 @@ public class ScreenCapture extends SurfaceCapture {
         this.vdListener = vdListener;
         this.displayId = options.getDisplayId();
         assert displayId != Device.DISPLAY_ID_NONE;
-        this.maxSize = options.getMaxSize();
         this.crop = options.getCrop();
         this.captureOrientationLock = options.getCaptureOrientationLock();
         this.captureOrientation = options.getCaptureOrientation();
@@ -60,8 +62,9 @@ public class ScreenCapture extends SurfaceCapture {
     }
 
     @Override
-    public void init() {
-        displaySizeMonitor.start(displayId, this::invalidate);
+    public void init(VideoConstraints videoConstraints) {
+        this.videoConstraints = videoConstraints;
+        displayMonitor.start(displayId, (props) -> getCaptureControl().reset(CaptureControl.RESET_REASON_DISPLAY_PROPERTIES_CHANGED));
     }
 
     @Override
@@ -77,27 +80,28 @@ public class ScreenCapture extends SurfaceCapture {
         }
 
         Size displaySize = displayInfo.getSize();
-        displaySizeMonitor.setSessionDisplaySize(displaySize);
+        int displayRotation = displayInfo.getRotation();
+        displayMonitor.setSessionDisplayProperties(new DisplayProperties(displaySize, displayRotation));
 
         if (captureOrientationLock == Orientation.Lock.LockedInitial) {
             // The user requested to lock the video orientation to the current orientation
             captureOrientationLock = Orientation.Lock.LockedValue;
-            captureOrientation = Orientation.fromRotation(displayInfo.getRotation());
+            captureOrientation = Orientation.fromRotation(displayRotation);
         }
 
         VideoFilter filter = new VideoFilter(displaySize);
 
         if (crop != null) {
-            boolean transposed = (displayInfo.getRotation() % 2) != 0;
+            boolean transposed = (displayRotation % 2) != 0;
             filter.addCrop(crop, transposed);
         }
 
         boolean locked = captureOrientationLock != Orientation.Lock.Unlocked;
-        filter.addOrientation(displayInfo.getRotation(), locked, captureOrientation);
+        filter.addOrientation(displayRotation, locked, captureOrientation);
         filter.addAngle(angle);
 
         transform = filter.getInverseTransform();
-        videoSize = filter.getOutputSize().limit(maxSize).round8();
+        videoSize = filter.getOutputSize().constrain(videoConstraints);
     }
 
     @Override
@@ -129,17 +133,26 @@ public class ScreenCapture extends SurfaceCapture {
                     .createVirtualDisplay("scrcpy", inputSize.getWidth(), inputSize.getHeight(), displayId, surface);
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
-            try {
-                display = createDisplay();
+            if (Build.BRAND.equalsIgnoreCase("oculus") && Build.MODEL.toLowerCase().startsWith("quest")) {
+                // Workaround for buggy createVirtualDisplay on Quest
+                try {
+                    virtualDisplay = (VirtualDisplay) VirtualDisplay.class.getDeclaredConstructors()[0].newInstance(null, null, null, surface);
+                } catch (ReflectiveOperationException e) {
+                    Ln.e("Could not create VirtualDisplay", e);
+                }
+            } else {
+                try {
+                    display = createDisplay();
 
-                Size deviceSize = displayInfo.getSize();
-                int layerStack = displayInfo.getLayerStack();
-                setDisplaySurface(display, surface, deviceSize.toRect(), inputSize.toRect(), layerStack);
-                Ln.d("Display: using SurfaceControl API");
-            } catch (Exception surfaceControlException) {
-                Ln.e("Could not create display using DisplayManager", displayManagerException);
-                Ln.e("Could not create display using SurfaceControl", surfaceControlException);
-                throw new AssertionError("Could not create display");
+                    Size deviceSize = displayInfo.getSize();
+                    int layerStack = displayInfo.getLayerStack();
+                    setDisplaySurface(display, surface, deviceSize.toRect(), inputSize.toRect(), layerStack);
+                    Ln.d("Display: using SurfaceControl API");
+                } catch (Exception surfaceControlException) {
+                    Ln.e("Could not create display using DisplayManager", displayManagerException);
+                    Ln.e("Could not create display using SurfaceControl", surfaceControlException);
+                    throw new AssertionError("Could not create display");
+                }
             }
         }
 
@@ -170,7 +183,7 @@ public class ScreenCapture extends SurfaceCapture {
 
     @Override
     public void release() {
-        displaySizeMonitor.stopAndRelease();
+        displayMonitor.stopAndRelease();
 
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
@@ -188,8 +201,8 @@ public class ScreenCapture extends SurfaceCapture {
     }
 
     @Override
-    public boolean setMaxSize(int newMaxSize) {
-        maxSize = newMaxSize;
+    protected boolean applyNewVideoConstraints(VideoConstraints videoConstraints) {
+        this.videoConstraints = videoConstraints;
         return true;
     }
 
@@ -210,10 +223,5 @@ public class ScreenCapture extends SurfaceCapture {
         } finally {
             SurfaceControl.closeTransaction();
         }
-    }
-
-    @Override
-    public void requestInvalidate() {
-        invalidate();
     }
 }

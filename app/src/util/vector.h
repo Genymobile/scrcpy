@@ -259,21 +259,21 @@ sc_vector_growsize_(size_t value)
 })
 
 /**
- * Insert an hole of size `count` to the given index
+ * Insert `count` uninitialized items at the given index
  *
- * The items in range [index; size-1] will be moved. The items in the hole are
+ * The items in range [index; size-1] will be moved. The items in the gap are
  * left uninitialized.
  *
  * \param pv a pointer to the vector
- * \param index the index where the hole is to be inserted
- * \param count the number of items in the hole
+ * \param index the index where the uninitialized items are to be inserted
+ * \param count the number of items in the gap
  * \retval true if no allocation failed
  * \retval false on allocation failure (the vector is left untouched)
  */
-#define sc_vector_insert_hole(pv, index, count) \
-    sc_vector_insert_hole_(pv, (size_t) index, (size_t) count);
+#define sc_vector_insert_uninitialized(pv, index, count) \
+    sc_vector_insert_uninitialized_(pv, (size_t) index, (size_t) count);
 
-#define sc_vector_insert_hole_(pv, index, count) \
+#define sc_vector_insert_uninitialized_(pv, index, count) \
 ({ \
     bool ok = sc_vector_reserve(pv, (pv)->size + (count)); \
     if (ok) { \
@@ -303,7 +303,7 @@ sc_vector_growsize_(size_t value)
 
 #define sc_vector_insert_(pv, index, item) \
 ({ \
-    bool ok = sc_vector_insert_hole_(pv, index, 1); \
+    bool ok = sc_vector_insert_uninitialized_(pv, index, 1); \
     if (ok) { \
         (pv)->data[index] = (item); \
     } \
@@ -328,7 +328,7 @@ sc_vector_growsize_(size_t value)
 #define sc_vector_insert_all_(pv, index, items, count) \
 ({ \
     sc_vector_check_same_ptr_type_((pv)->data, items); \
-    bool ok = sc_vector_insert_hole_(pv, index, count); \
+    bool ok = sc_vector_insert_uninitialized_(pv, index, count); \
     if (ok) { \
         memcpy(&(pv)->data[index], items, count * sizeof(*(pv)->data)); \
     } \

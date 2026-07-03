@@ -1,4 +1,6 @@
-package com.genymobile.scrcpy.device;
+package com.genymobile.scrcpy.display;
+
+import com.genymobile.scrcpy.model.Size;
 
 public final class DisplayInfo {
     private final int displayId;

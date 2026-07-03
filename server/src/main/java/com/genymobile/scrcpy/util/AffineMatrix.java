@@ -1,7 +1,7 @@
 package com.genymobile.scrcpy.util;
 
-import com.genymobile.scrcpy.device.Point;
-import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.model.Point;
+import com.genymobile.scrcpy.model.Size;
 
 /**
  * Represents a 2D affine transform (a 3x3 matrix):

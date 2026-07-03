@@ -5,16 +5,17 @@
 #ifdef HAVE_V4L2
 # include <libavdevice/avdevice.h>
 #endif
-#define SDL_MAIN_HANDLED // avoid link error on Linux Windows Subsystem
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #include "cli.h"
+#include "events.h"
 #include "options.h"
 #include "scrcpy.h"
-#include "usb/scrcpy_otg.h"
+#ifdef HAVE_USB
+# include "usb/scrcpy_otg.h"
+#endif
 #include "util/log.h"
 #include "util/net.h"
-#include "util/thread.h"
 #include "version.h"
 
 #ifdef _WIN32
@@ -38,7 +39,7 @@ main_scrcpy(int argc, char *argv[]) {
         .opts = scrcpy_options_default,
         .help = false,
         .version = false,
-        .pause_on_exit = SC_PAUSE_ON_EXIT_FALSE,
+        .pause_on_exit = SC_PAUSE_ON_EXIT_UNDEFINED,
     };
 
 #ifndef NDEBUG
@@ -66,9 +67,6 @@ main_scrcpy(int argc, char *argv[]) {
         goto end;
     }
 
-    // The current thread is the main thread
-    SC_MAIN_THREAD_ID = sc_thread_get_id();
-
 #ifdef SCRCPY_LAVF_REQUIRES_REGISTER_ALL
     av_register_all();
 #endif
@@ -86,11 +84,21 @@ main_scrcpy(int argc, char *argv[]) {
 
     sc_log_configure();
 
+    if (!sc_main_thread_init()) {
+        ret = SCRCPY_EXIT_FAILURE;
+        goto net_cleanup;
+    }
+
 #ifdef HAVE_USB
     ret = args.opts.otg ? scrcpy_otg(&args.opts) : scrcpy(&args.opts);
 #else
     ret = scrcpy(&args.opts);
 #endif
+
+    sc_main_thread_destroy();
+
+net_cleanup:
+    net_cleanup();
 
 end:
     if (args.pause_on_exit == SC_PAUSE_ON_EXIT_TRUE ||

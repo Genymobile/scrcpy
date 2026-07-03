@@ -3,9 +3,9 @@ set -ex
 . $(dirname ${BASH_SOURCE[0]})/_init
 process_args "$@"
 
-VERSION=7.1.1
+VERSION=8.1.1
 URL="https://ffmpeg.org/releases/ffmpeg-$VERSION.tar.xz"
-SHA256SUM=733984395e0dbbe5c046abda2dc49a5544e7e0e1e2366bba849222ae9e3a03b1
+SHA256SUM=b6863adde98898f42602017462871b5f6333e65aec803fdd7a6308639c52edf3
 
 PROJECT_DIR="ffmpeg-$VERSION"
 FILENAME="$PROJECT_DIR.tar.xz"
@@ -52,7 +52,6 @@ else
         --disable-programs
         --disable-doc
         --disable-swscale
-        --disable-postproc
         --disable-avfilter
         --disable-network
         --disable-everything

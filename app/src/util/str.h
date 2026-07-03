@@ -33,14 +33,6 @@ size_t
 sc_str_join(char *dst, const char *const tokens[], char sep, size_t n);
 
 /**
- * Quote a string
- *
- * Return a new allocated string, surrounded with quotes (`"`).
- */
-char *
-sc_str_quote(const char *src);
-
-/**
  * Concat two strings
  *
  * Return a new allocated string, contanining the concatenation of the two
