@@ -62,7 +62,7 @@ sc_parse_touch_cmd(const char *cmd_str, struct sc_finger_action *action) {
 
         action->x1 = action->x2 = atoi(x_str);
         action->y1 = action->y2 = atoi(y_str);
-        action->duration = sc_parse_duration_ms(dur_str, 100);
+        action->duration = sc_parse_duration_ms(dur_str, 300);
         action->is_swipe = false;
     } else if (strcmp(token, "swipe") == 0) {
         char *x1_str = strtok_r(NULL, " ", &saveptr);
@@ -164,8 +164,11 @@ sc_execute_touch_cmds(struct sc_controller *controller,
                 }
 
                 active[i] = false;
-            } else if (actions[i].is_swipe) {
-                // Interpolate position
+            } else {
+                // Interpolate position. For clicks, start == end, so this
+                // keeps sending MOVE events at the same point: a periodic
+                // event stream makes holds (long-press) much more reliable
+                // than a bare DOWN followed by a late UP
                 float progress = (float)t / actions[i].duration;
                 int x = actions[i].x1
                     + (int)((actions[i].x2 - actions[i].x1) * progress);
