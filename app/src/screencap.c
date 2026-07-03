@@ -14,8 +14,8 @@
 #define DOWNCAST_VIDEO(SINK) \
     container_of(SINK, struct sc_screencap, video_packet_sink)
 
-static bool
-sc_screencap_save_frame_as_png(const char *filename, AVFrame *frame) {
+bool
+sc_frame_to_png(const AVFrame *frame, uint8_t **out_data, size_t *out_size) {
     bool success = false;
 
     const AVCodec *png_codec = avcodec_find_encoder(AV_CODEC_ID_PNG);
@@ -90,20 +90,14 @@ sc_screencap_save_frame_as_png(const char *filename, AVFrame *frame) {
         goto free_pkt;
     }
 
-    // Write PNG data to file
-    FILE *fp = fopen(filename, "wb");
-    if (!fp) {
-        LOGE("Could not open output file: %s", filename);
+    uint8_t *data = malloc(pkt->size);
+    if (!data) {
+        LOG_OOM();
         goto free_pkt;
     }
-
-    size_t written = fwrite(pkt->data, 1, pkt->size, fp);
-    fclose(fp);
-
-    if (written != (size_t)pkt->size) {
-        LOGE("Failed to write PNG data to %s", filename);
-        goto free_pkt;
-    }
+    memcpy(data, pkt->data, pkt->size);
+    *out_data = data;
+    *out_size = pkt->size;
 
     success = true;
 
@@ -113,6 +107,38 @@ free_rgb_frame:
     av_frame_free(&rgb_frame);
 free_png_ctx:
     avcodec_free_context(&png_ctx);
+
+    return success;
+}
+
+static bool
+sc_screencap_save_frame_as_png(const char *filename, const AVFrame *frame) {
+    uint8_t *data;
+    size_t size;
+    if (!sc_frame_to_png(frame, &data, &size)) {
+        return false;
+    }
+
+    bool success = false;
+
+    FILE *fp = fopen(filename, "wb");
+    if (!fp) {
+        LOGE("Could not open output file: %s", filename);
+        goto free_data;
+    }
+
+    size_t written = fwrite(data, 1, size, fp);
+    fclose(fp);
+
+    if (written != size) {
+        LOGE("Failed to write PNG data to %s", filename);
+        goto free_data;
+    }
+
+    success = true;
+
+free_data:
+    free(data);
 
     return success;
 }

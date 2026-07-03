@@ -8,6 +8,8 @@
 #include <SDL3/SDL.h>
 
 #include "cli.h"
+#include "daemon/client.h"
+#include "daemon/daemon.h"
 #include "events.h"
 #include "options.h"
 #include "scrcpy.h"
@@ -83,6 +85,18 @@ main_scrcpy(int argc, char *argv[]) {
     }
 
     sc_log_configure();
+
+    if (args.opts.client_port) {
+        // Thin client of a running daemon: no SDL, no adb, no device session
+        ret = sc_client_run(&args.opts);
+        goto net_cleanup;
+    }
+
+    if (args.opts.daemon_port) {
+        // Persistent daemon mode (doc/daemon.md)
+        ret = sc_daemon_run(&args.opts);
+        goto net_cleanup;
+    }
 
     if (!sc_main_thread_init()) {
         ret = SCRCPY_EXIT_FAILURE;

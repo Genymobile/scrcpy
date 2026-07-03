@@ -104,6 +104,11 @@ enum {
     OPT_DISPLAY_IME_POLICY,
     OPT_SCREENCAP,
     OPT_CONTROL_CMD,
+    OPT_DAEMON_PORT,
+    OPT_CLIENT_PORT,
+    OPT_DAEMON_STOP,
+    OPT_DAEMON_STATUS,
+    OPT_DAEMON_RECONNECT,
     OPT_CAMERA_TORCH,
     OPT_CAMERA_ZOOM,
     OPT_MIN_SIZE_ALIGNMENT,
@@ -593,6 +598,46 @@ static const struct sc_option options[] = {
                 "Use --control or --control --help for detailed usage.\n"
                 "Can be specified multiple times for multi-finger gestures.\n"
                 "Available commands: click, swipe, input.",
+    },
+    {
+        .longopt_id = OPT_CLIENT_PORT,
+        .longopt = "client-port",
+        .argdesc = "port",
+        .text = "Run as a thin client of a scrcpy-auto daemon listening on "
+                "127.0.0.1:port (see --daemon-port).\n"
+                "Operations (--control, --screencap, --daemon-status, "
+                "--daemon-stop) are executed by the daemon, without starting "
+                "a new device session.",
+    },
+    {
+        .longopt_id = OPT_DAEMON_PORT,
+        .longopt = "daemon-port",
+        .argdesc = "port",
+        .text = "Run as a persistent daemon listening on 127.0.0.1:port.\n"
+                "The device session is kept alive and served to thin clients "
+                "(see --client-port). Requires --no-window.",
+    },
+    {
+        .longopt_id = OPT_DAEMON_RECONNECT,
+        .longopt = "daemon-reconnect",
+        .argdesc = "auto[:max]|none",
+        .text = "Set the daemon reconnection policy when the device is "
+                "disconnected.\n"
+                "\"auto\" retries forever with backoff (default), "
+                "\"auto:MAX\" gives up after MAX consecutive failures, "
+                "\"none\" exits on disconnection.",
+    },
+    {
+        .longopt_id = OPT_DAEMON_STATUS,
+        .longopt = "daemon-status",
+        .text = "Print the daemon state as JSON on stdout (requires "
+                "--client-port).",
+    },
+    {
+        .longopt_id = OPT_DAEMON_STOP,
+        .longopt = "daemon-stop",
+        .text = "Ask the daemon to shut down gracefully (requires "
+                "--client-port).",
     },
     {
         .shortopt = 'N',
@@ -2070,6 +2115,33 @@ parse_ip(const char *optarg, uint32_t *ipv4) {
 }
 
 static bool
+parse_daemon_reconnect(const char *optarg, struct scrcpy_options *opts) {
+    if (!strcmp(optarg, "none")) {
+        opts->daemon_reconnect_none = true;
+        opts->daemon_reconnect_max = 0;
+        return true;
+    }
+    if (!strcmp(optarg, "auto")) {
+        opts->daemon_reconnect_none = false;
+        opts->daemon_reconnect_max = 0;
+        return true;
+    }
+    if (!strncmp(optarg, "auto:", 5)) {
+        long value;
+        if (!parse_integer_arg(optarg + 5, &value, false, 1, 0x7FFFFFFF,
+                               "daemon-reconnect max")) {
+            return false;
+        }
+        opts->daemon_reconnect_none = false;
+        opts->daemon_reconnect_max = (unsigned) value;
+        return true;
+    }
+    LOGE("Unsupported --daemon-reconnect value: %s "
+         "(expected auto, auto:MAX or none)", optarg);
+    return false;
+}
+
+static bool
 parse_port(const char *optarg, uint16_t *port) {
     long value;
     if (!parse_integer_arg(optarg, &value, false, 0, 0xFFFF, "port")) {
@@ -2997,6 +3069,29 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 opts->control_cmds[opts->control_cmd_count++] = optarg;
                 break;
+            case OPT_DAEMON_PORT:
+                if (!parse_port(optarg, &opts->daemon_port)
+                        || !opts->daemon_port) {
+                    return false;
+                }
+                break;
+            case OPT_CLIENT_PORT:
+                if (!parse_port(optarg, &opts->client_port)
+                        || !opts->client_port) {
+                    return false;
+                }
+                break;
+            case OPT_DAEMON_STOP:
+                opts->daemon_stop = true;
+                break;
+            case OPT_DAEMON_STATUS:
+                opts->daemon_status = true;
+                break;
+            case OPT_DAEMON_RECONNECT:
+                if (!parse_daemon_reconnect(optarg, opts)) {
+                    return false;
+                }
+                break;
             case OPT_MIN_SIZE_ALIGNMENT:
                 if (!parse_min_size_alignment(optarg,
                                               &opts->min_size_alignment)) {
@@ -3059,7 +3154,74 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     v4l2 = !!opts->v4l2_device;
 #endif
 
-    if (opts->control_cmd_count) {
+    // Persistent daemon mode validation (doc/daemon.md §5.2)
+    if (opts->daemon_port && opts->client_port) {
+        LOGE("--daemon-port and --client-port are mutually exclusive");
+        return false;
+    }
+
+    if (opts->daemon_port) {
+        if (opts->window) {
+            LOGE("--daemon-port requires --no-window");
+            return false;
+        }
+        if (opts->control_cmd_count || opts->screencap_filename) {
+            LOGE("--control and --screencap cannot be passed to the daemon; "
+                 "use them with --client-port instead");
+            return false;
+        }
+        if (opts->record_filename || otg || v4l2 || opts->list
+                || opts->start_app) {
+            LOGE("--daemon-port is incompatible with --record, --otg, "
+                 "--v4l2-sink, --list-* and --start-app");
+            return false;
+        }
+        if (opts->daemon_stop || opts->daemon_status) {
+            LOGE("--daemon-stop and --daemon-status require --client-port");
+            return false;
+        }
+        // The daemon captures video for screenshots (no playback) and needs
+        // control for input injection
+        opts->video_playback = false;
+        opts->audio_playback = false;
+        opts->audio = false;
+        if (opts->video && !opts->control) {
+            LOGI("Daemon: control disabled, serving screenshots only");
+        }
+    } else if (opts->daemon_reconnect_none || opts->daemon_reconnect_max) {
+        LOGE("--daemon-reconnect requires --daemon-port");
+        return false;
+    }
+
+    if (opts->client_port) {
+        if (opts->serial || opts->select_usb || opts->select_tcpip
+                || opts->tcpip) {
+            LOGE("Device selection options (-s, -d, -e, --tcpip) are "
+                 "incompatible with --client-port (the daemon owns the "
+                 "device)");
+            return false;
+        }
+        if (opts->record_filename || otg || v4l2 || opts->list
+                || opts->start_app || opts->window) {
+            LOGE("--client-port only supports --control, --screencap, "
+                 "--daemon-status and --daemon-stop");
+            return false;
+        }
+        if (!opts->control_cmd_count && !opts->screencap_filename
+                && !opts->daemon_status && !opts->daemon_stop) {
+            LOGE("--client-port requires at least one operation "
+                 "(--control, --screencap, --daemon-status, --daemon-stop)");
+            return false;
+        }
+        return true; // skip the remaining session-oriented adjustments
+    }
+
+    if (opts->daemon_stop || opts->daemon_status) {
+        LOGE("--daemon-stop and --daemon-status require --client-port");
+        return false;
+    }
+
+    if (!opts->daemon_port && opts->control_cmd_count) {
         // Control command mode: send commands and exit
         opts->video_playback = false;
         opts->audio_playback = false;
@@ -3086,7 +3248,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->video && !opts->video_playback && !opts->record_filename
-            && !opts->screencap_filename && !v4l2) {
+            && !opts->screencap_filename && !v4l2 && !opts->daemon_port) {
+        // In daemon mode, video is consumed by the frame keeper
         LOGI("No video playback, no recording, no screencap, no V4L2 sink: "
              "video disabled");
         opts->video = false;

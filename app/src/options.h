@@ -347,6 +347,13 @@ struct scrcpy_options {
     bool camera_torch;
     bool keep_active;
     bool flex_display;
+    // Persistent daemon mode (doc/daemon.md)
+    uint16_t daemon_port; // 0 if disabled
+    uint16_t client_port; // 0 if disabled
+    bool daemon_stop;
+    bool daemon_status;
+    bool daemon_reconnect_none;
+    unsigned daemon_reconnect_max; // 0 means unlimited
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

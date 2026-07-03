@@ -4,6 +4,8 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <libavcodec/avcodec.h>
 
 #include "trait/packet_sink.h"
@@ -37,6 +39,15 @@ struct sc_screencap_callbacks {
     void (*on_ended)(struct sc_screencap *screencap, bool success,
                      void *userdata);
 };
+
+/**
+ * Encode a decoded frame to PNG.
+ *
+ * On success, `*out_data` receives a malloc'd buffer (owned by the caller)
+ * and `*out_size` its size.
+ */
+bool
+sc_frame_to_png(const AVFrame *frame, uint8_t **out_data, size_t *out_size);
 
 bool
 sc_screencap_init(struct sc_screencap *screencap, const char *filename,

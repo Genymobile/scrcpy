@@ -1,8 +1,24 @@
 # Persistent daemon mode — design document
 
-Status: **proposal / implementation specification** (no code yet)
+Status: **v1 implemented** (phases 0–2 plus reconnection; see §15 — remaining:
+`--client-serial` registry resolution, protocol/registry unit tests in the
+meson test harness)
 Target branch: `feat/control`
 Applies to: scrcpy-auto (fork of scrcpy 4.0)
+
+Implementation notes (deviations from the original proposal):
+ - Instead of refactoring `scrcpy()` into a shared `sc_session` module
+   (§15 phase 0), the daemon owns a dedicated lean session bring-up in
+   `app/src/daemon/daemon.c` (server + video demuxer + decoder + frame
+   keeper + controller only). One-shot mode is untouched, which removes the
+   riskiest refactor. Only the `--control` executors moved, to
+   `app/src/control_exec.c`.
+ - The frame keeper does not wrap `sc_frame_buffer` (whose frames are
+   consume-once); it keeps its own re-readable latest frame
+   (`app/src/daemon/frame_keeper.c`).
+ - Client exit code 2 reuses `SCRCPY_EXIT_DISCONNECTED`.
+ - The clipboard-injection mutex serializes whole `control` requests that
+   contain an `input` step (coarser than §9.5, same guarantee).
 
 ---
 
