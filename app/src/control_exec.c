@@ -62,7 +62,7 @@ sc_parse_touch_cmd(const char *cmd_str, struct sc_finger_action *action) {
 
         action->x1 = action->x2 = atoi(x_str);
         action->y1 = action->y2 = atoi(y_str);
-        action->duration = sc_parse_duration_ms(dur_str, 300);
+        action->duration = sc_parse_duration_ms(dur_str, 200);
         action->is_swipe = false;
     } else if (strcmp(token, "swipe") == 0) {
         char *x1_str = strtok_r(NULL, " ", &saveptr);

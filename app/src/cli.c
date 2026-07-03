@@ -1581,7 +1581,7 @@ print_control_usage(void) {
         "  click <x> <y> [duration_ms]\n"
         "      Tap at the given coordinates (hold implemented as a\n"
         "      zero-distance swipe, so the touch stays alive).\n"
-        "      Default duration: 300ms. Use longer duration for long-press.\n"
+        "      Default duration: 200ms. Use longer duration for long-press.\n"
         "\n"
         "      Examples:\n"
         "          scrcpy --control=\"click 540 1200\"\n"
