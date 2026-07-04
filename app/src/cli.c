@@ -111,6 +111,7 @@ enum {
     OPT_DAEMON_RECONNECT,
     OPT_AUTO_TEST_REPORT,
     OPT_ACTION,
+    OPT_NOTE,
     OPT_CAMERA_TORCH,
     OPT_CAMERA_ZOOM,
     OPT_MIN_SIZE_ALIGNMENT,
@@ -657,6 +658,18 @@ static const struct sc_option options[] = {
         .text = "Human-readable description of a client operation, recorded in "
                 "the test report (used with --client-port and "
                 "--control/--screencap).",
+    },
+    {
+        .longopt_id = OPT_NOTE,
+        .longopt = "note",
+        .argdesc = "title: description",
+        .text = "Record a standalone annotation in the test report, "
+                "independent of any control command (used with "
+                "--client-port).\n"
+                "The value is a \"title: description\" pair, e.g. "
+                "--note=\"assert: Login button clicked\" or "
+                "--note=\"thinking: expected button not found\". Useful to "
+                "mark test-case boundaries, assertions and reasoning.",
     },
     {
         .shortopt = 'N',
@@ -3118,6 +3131,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_ACTION:
                 opts->action = optarg;
                 break;
+            case OPT_NOTE:
+                opts->note = optarg;
+                break;
             case OPT_MIN_SIZE_ALIGNMENT:
                 if (!parse_min_size_alignment(optarg,
                                               &opts->min_size_alignment)) {
@@ -3244,9 +3260,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
         if (!opts->control_cmd_count && !opts->screencap_filename
-                && !opts->daemon_status && !opts->daemon_stop) {
-            LOGE("--client-port requires at least one operation "
-                 "(--control, --screencap, --daemon-status, --daemon-stop)");
+                && !opts->daemon_status && !opts->daemon_stop && !opts->note) {
+            LOGE("--client-port requires at least one operation (--control, "
+                 "--screencap, --note, --daemon-status, --daemon-stop)");
             return false;
         }
         // The client never opens a window nor a device session

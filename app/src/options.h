@@ -357,6 +357,7 @@ struct scrcpy_options {
     // Test-report platform (DESIGN-test-report.md)
     const char *auto_test_report; // daemon: report directory, NULL if disabled
     const char *action; // client: human-readable description of the operation
+    const char *note; // client: standalone "title: description" annotation
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

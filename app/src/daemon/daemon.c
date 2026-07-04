@@ -1045,6 +1045,52 @@ handle_inject_scroll(struct sc_daemon *d, sc_socket socket, int64_t id,
                sc_controller_push_msg(&d->session.controller, &msg));
 }
 
+// Standalone test-report annotation ("title: description"), not tied to any
+// control command. Logged as a note event; always acked.
+static void
+handle_note(struct sc_daemon *d, sc_socket socket, int64_t id,
+            const struct sc_json *json) {
+    char *note;
+    if (!sc_json_get_string(json, "note", &note)) {
+        send_error(socket, id, "E_BAD_REQUEST", "expected \"note\"");
+        return;
+    }
+
+    if (d->report_active) {
+        struct sc_strbuf eb;
+        if (sc_strbuf_init(&eb, 128)) {
+            const char *colon = strchr(note, ':');
+            bool w;
+            if (colon) {
+                size_t tlen = colon - note;
+                while (tlen > 0 && note[tlen - 1] == ' ') {
+                    tlen--; // trim trailing spaces of the title
+                }
+                char *title = strndup(note, tlen);
+                const char *text = colon + 1;
+                while (*text == ' ') {
+                    text++; // trim leading spaces of the description
+                }
+                w = sc_strbuf_append_staticstr(&eb, "\"title\":")
+                 && sc_json_append_escaped(&eb, title ? title : "")
+                 && sc_strbuf_append_staticstr(&eb, ",\"text\":")
+                 && sc_json_append_escaped(&eb, text);
+                free(title);
+            } else {
+                w = sc_strbuf_append_staticstr(&eb, "\"title\":\"note\",\"text\":")
+                 && sc_json_append_escaped(&eb, note);
+            }
+            if (w) {
+                report_log(d, "note", NULL, eb.s);
+            }
+            free(eb.s);
+        }
+    }
+
+    free(note);
+    send_ok(socket, id, NULL, NULL, 0);
+}
+
 enum sc_conn_action {
     SC_CONN_CONTINUE,      // keep reading requests
     SC_CONN_CLOSE,         // close the connection
@@ -1088,6 +1134,8 @@ handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
         handle_inject_text(d, socket, id, &json);
     } else if (!strcmp(op, "inject_scroll")) {
         handle_inject_scroll(d, socket, id, &json);
+    } else if (!strcmp(op, "note")) {
+        handle_note(d, socket, id, &json);
     } else if (!strcmp(op, "subscribe_video")) {
         if (!d->opts->video) {
             send_error(socket, id, "E_BAD_REQUEST",

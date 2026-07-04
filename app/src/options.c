@@ -129,6 +129,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .daemon_reconnect_max = 0,
     .auto_test_report = NULL,
     .action = NULL,
+    .note = NULL,
 };
 
 enum sc_orientation

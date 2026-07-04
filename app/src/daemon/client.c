@@ -170,6 +170,42 @@ end:
 }
 
 static bool
+do_note(sc_socket socket, const struct scrcpy_options *opts, int64_t id) {
+    struct sc_strbuf buf;
+    if (!sc_strbuf_init(&buf, 128)) {
+        return false;
+    }
+    char head[48];
+    snprintf(head, sizeof(head), "{\"id\":%" PRId64 ",\"op\":\"note\",\"note\":",
+             id);
+    bool w = sc_strbuf_append_str(&buf, head)
+          && sc_json_append_escaped(&buf, opts->note)
+          && sc_strbuf_append_char(&buf, '}');
+    if (!w) {
+        free(buf.s);
+        return false;
+    }
+    bool sent = sc_daemon_write_frame(socket, buf.s, buf.len, NULL, 0);
+    free(buf.s);
+    if (!sent) {
+        LOGE("Client: could not send note");
+        return false;
+    }
+
+    struct sc_json json;
+    char *doc;
+    if (!client_read(socket, &json, &doc)) {
+        return false;
+    }
+    bool ok = response_ok(&json, doc);
+    free(doc);
+    if (ok) {
+        LOGI("Note recorded");
+    }
+    return ok;
+}
+
+static bool
 do_status(sc_socket socket, int64_t id) {
     char req[64];
     snprintf(req, sizeof(req), "{\"id\":%" PRId64 ",\"op\":\"status\"}", id);
@@ -261,10 +297,17 @@ sc_client_run(const struct scrcpy_options *opts) {
     free(serial);
     free(hello_doc);
 
-    // Execute requested operations in order: control, screencap, status,
-    // shutdown (doc/daemon.md §8.6)
+    // Execute requested operations in order: note, control, screencap,
+    // status, shutdown (doc/daemon.md §8.6)
     int64_t id = 1;
     ret = SCRCPY_EXIT_SUCCESS;
+
+    if (opts->note) {
+        if (!do_note(socket, opts, id++)) {
+            ret = SCRCPY_EXIT_FAILURE;
+            goto end;
+        }
+    }
 
     if (opts->control_cmd_count) {
         if (!do_control(socket, opts, id++)) {
