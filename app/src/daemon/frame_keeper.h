@@ -27,6 +27,9 @@ struct sc_frame_keeper {
     AVFrame *tmp; // preserve latest on av_frame_ref() error
     sc_tick last_frame_tick; // when `latest` was received
     struct sc_size size; // dimensions of `latest` (0x0 if none yet)
+    // Video PTS (µs) for frame-accurate test-report correlation
+    int64_t first_frame_pts; // AV_NOPTS_VALUE until the first frame
+    int64_t last_frame_pts;  // AV_NOPTS_VALUE until the first frame
     bool opened;
 };
 
@@ -70,6 +73,13 @@ sc_frame_keeper_last_tick(struct sc_frame_keeper *fk);
  */
 void
 sc_frame_keeper_reset(struct sc_frame_keeper *fk);
+
+/**
+ * Current position in the recording, in milliseconds, derived from the video
+ * PTS clock (frame-accurate, drift-free). Returns false if no frame yet.
+ */
+bool
+sc_frame_keeper_video_time_ms(struct sc_frame_keeper *fk, int64_t *out_ms);
 
 /**
  * Get the dimensions of the latest frame (the video size), waiting until

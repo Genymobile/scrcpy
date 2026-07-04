@@ -354,6 +354,9 @@ struct scrcpy_options {
     bool daemon_status;
     bool daemon_reconnect_none;
     unsigned daemon_reconnect_max; // 0 means unlimited
+    // Test-report platform (DESIGN-test-report.md)
+    const char *auto_test_report; // daemon: report directory, NULL if disabled
+    const char *action; // client: human-readable description of the operation
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

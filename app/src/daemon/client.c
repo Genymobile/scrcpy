@@ -46,6 +46,16 @@ send_request(sc_socket socket, const char *json) {
     return sc_daemon_write_frame(socket, json, strlen(json), NULL, 0);
 }
 
+// Append the optional ,"action":"..." field (for --auto-test-report)
+static bool
+append_action(struct sc_strbuf *buf, const struct scrcpy_options *opts) {
+    if (!opts->action) {
+        return true;
+    }
+    return sc_strbuf_append_staticstr(buf, ",\"action\":")
+        && sc_json_append_escaped(buf, opts->action);
+}
+
 static bool
 do_control(sc_socket socket, const struct scrcpy_options *opts, int64_t id) {
     struct sc_strbuf buf;
@@ -63,7 +73,9 @@ do_control(sc_socket socket, const struct scrcpy_options *opts, int64_t id) {
         }
         w = w && sc_json_append_escaped(&buf, opts->control_cmds[i]);
     }
-    w = w && sc_strbuf_append_staticstr(&buf, "]}");
+    w = w && sc_strbuf_append_char(&buf, ']');
+    w = w && append_action(&buf, opts);
+    w = w && sc_strbuf_append_char(&buf, '}');
     if (!w) {
         free(buf.s);
         return false;
@@ -89,11 +101,24 @@ do_control(sc_socket socket, const struct scrcpy_options *opts, int64_t id) {
 static bool
 do_screencap(sc_socket socket, const struct scrcpy_options *opts,
              int64_t id) {
-    char req[96];
-    snprintf(req, sizeof(req),
-             "{\"id\":%" PRId64 ",\"op\":\"screencap\",\"format\":\"png\"}",
+    struct sc_strbuf buf;
+    if (!sc_strbuf_init(&buf, 128)) {
+        return false;
+    }
+    char head[64];
+    snprintf(head, sizeof(head),
+             "{\"id\":%" PRId64 ",\"op\":\"screencap\",\"format\":\"png\"",
              id);
-    if (!send_request(socket, req)) {
+    bool w = sc_strbuf_append_str(&buf, head)
+          && append_action(&buf, opts)
+          && sc_strbuf_append_char(&buf, '}');
+    if (!w) {
+        free(buf.s);
+        return false;
+    }
+    bool sent = sc_daemon_write_frame(socket, buf.s, buf.len, NULL, 0);
+    free(buf.s);
+    if (!sent) {
         LOGE("Client: could not send screencap request");
         return false;
     }

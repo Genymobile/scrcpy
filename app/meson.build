@@ -37,6 +37,7 @@ src = [
     'src/daemon/frame_keeper.c',
     'src/daemon/protocol.c',
     'src/daemon/registry.c',
+    'src/daemon/report.c',
     'src/screencap.c',
     'src/scrcpy.c',
     'src/screen.c',

@@ -23,6 +23,7 @@
 #include "daemon/frame_keeper.h"
 #include "daemon/protocol.h"
 #include "daemon/registry.h"
+#include "daemon/report.h"
 #include "decoder.h"
 #include "demuxer.h"
 #include "screencap.h"
@@ -100,6 +101,12 @@ struct sc_daemon {
     struct sc_daemon_session session;
     struct sc_frame_keeper keeper;
     struct sc_broadcaster broadcaster; // encoded-video push to web clients
+
+    // Test-report platform (DESIGN-test-report.md)
+    struct sc_report report;
+    bool report_active;      // --auto-test-report was given
+    bool report_initialized; // report dir/log created (once)
+    bool report_recording;   // recorder running this session
 
     sc_mutex clipboard_mutex; // serialize clipboard-based text injection
 
@@ -240,6 +247,12 @@ sc_daemon_session_stop(struct sc_daemon *d) {
     s->controller_initialized = false;
     s->controller_started = false;
 
+    // Finalize the recording (reads the keeper video-time, so before reset)
+    if (d->report_recording) {
+        sc_report_stop_recording(&d->report);
+        d->report_recording = false;
+    }
+
     // Never serve a frame from a previous session
     sc_frame_keeper_reset(&d->keeper);
 
@@ -365,6 +378,29 @@ sc_daemon_session_start(struct sc_daemon *d) {
         // Forward the encoded stream to web subscribers (second packet sink)
         sc_packet_source_add_sink(&s->demuxer.packet_source,
                                   &d->broadcaster.packet_sink);
+
+        // Test report: record the encoded stream (third packet sink)
+        if (d->report_active) {
+            if (!d->report_initialized) {
+                if (!sc_report_init(&d->report, options->auto_test_report,
+                                    &d->keeper, s->server.serial,
+                                    s->server.info.device_name)) {
+                    sc_daemon_session_stop(d);
+                    return false;
+                }
+                d->report_initialized = true;
+            }
+            if (!sc_report_start_recording(&d->report, true,
+                                           SC_ORIENTATION_0)) {
+                LOGE("Test report: could not start recording");
+                sc_daemon_session_stop(d);
+                return false;
+            }
+            d->report_recording = true;
+            sc_packet_source_add_sink(&s->demuxer.packet_source,
+                                      sc_report_video_sink(&d->report));
+        }
+
         if (!sc_demuxer_start(&s->demuxer)) {
             sc_daemon_session_stop(d);
             return false;
@@ -573,6 +609,11 @@ handle_status(struct sc_daemon *d, sc_socket socket, int64_t id) {
     free(buf.s);
 }
 
+// Log an operation to the test report if active (defined below)
+static void
+report_log(struct sc_daemon *d, const char *op, const char *action,
+           const char *extra);
+
 static void
 handle_screencap(struct sc_daemon *d, sc_socket socket, int64_t id,
                  const struct sc_json *json) {
@@ -653,6 +694,17 @@ handle_screencap(struct sc_daemon *d, sc_socket socket, int64_t id,
         return;
     }
 
+    // Test report: log the screenshot (timestamp + dimensions, no image copy)
+    if (d->report_active) {
+        char *action = NULL;
+        sc_json_get_string(json, "action", &action);
+        char rextra[64];
+        snprintf(rextra, sizeof(rextra),
+                 "\"video_size\":{\"w\":%d,\"h\":%d}", width, height);
+        report_log(d, "screencap", action, rextra);
+        free(action);
+    }
+
     char extra[128];
     snprintf(extra, sizeof(extra),
              "\"width\":%d,\"height\":%d,\"frame_age_ms\":%" PRId64
@@ -726,6 +778,33 @@ handle_control(struct sc_daemon *d, sc_socket socket, int64_t id,
         }
     }
 
+    // Test report: log the gesture at its start (t_ms = when it began); the
+    // raw cmds + video size let the web renderer reconstruct the finger paths
+    if (d->report_active) {
+        char *action = NULL;
+        sc_json_get_string(json, "action", &action);
+        struct sc_strbuf eb;
+        if (sc_strbuf_init(&eb, 128)) {
+            char sz[64];
+            snprintf(sz, sizeof(sz),
+                     "\"video_size\":{\"w\":%u,\"h\":%u},\"cmds\":[",
+                     screen_size.width, screen_size.height);
+            bool w = sc_strbuf_append_str(&eb, sz);
+            for (unsigned i = 0; w && i < count; ++i) {
+                if (i) {
+                    w = sc_strbuf_append_char(&eb, ',');
+                }
+                w = w && sc_json_append_escaped(&eb, cmds[i]);
+            }
+            w = w && sc_strbuf_append_char(&eb, ']');
+            if (w) {
+                report_log(d, "control", action, eb.s);
+            }
+            free(eb.s);
+        }
+        free(action);
+    }
+
     if (needs_clipboard) {
         sc_mutex_lock(&d->clipboard_mutex);
     }
@@ -758,6 +837,16 @@ static int64_t
 json_int_or(const struct sc_json *json, const char *key, int64_t def) {
     int64_t v;
     return sc_json_get_int64(json, key, &v) ? v : def;
+}
+
+// Log an operation to the test report if active. `action` and `extra` may be
+// NULL. Takes ownership of nothing.
+static void
+report_log(struct sc_daemon *d, const char *op, const char *action,
+           const char *extra) {
+    if (d->report_active && d->report_initialized) {
+        sc_report_log_event(&d->report, op, action, extra);
+    }
 }
 
 // Parse an "action" string into a motion action; returns false if invalid
@@ -969,7 +1058,7 @@ handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
     struct sc_json json;
     if (!sc_json_parse(&json, json_str, json_len)) {
         send_error(socket, 0, "E_BAD_REQUEST", "invalid JSON");
-        return false;
+        return SC_CONN_CONTINUE;
     }
 
     int64_t id = 0;
@@ -1231,6 +1320,9 @@ sc_daemon_run(struct scrcpy_options *opts) {
     d->opts = opts;
     d->state = SC_DAEMON_STATE_CONNECTING;
     d->start_tick = sc_tick_now();
+    d->report_active = opts->auto_test_report != NULL;
+    d->report_initialized = false;
+    d->report_recording = false;
 
     bool mutex_ok = false;
     bool cond_ok = false;
@@ -1358,6 +1450,13 @@ sc_daemon_run(struct scrcpy_options *opts) {
         }
 
         LOGW("Daemon: device disconnected");
+        if (d->report_active) {
+            // A test report captures a single session: end the test on the
+            // first disconnect (decision: --auto-test-report ends immediately)
+            LOGI("Daemon: test report ended (device disconnected)");
+            ret = SCRCPY_EXIT_SUCCESS;
+            break;
+        }
         if (opts->daemon_reconnect_none) {
             LOGI("Daemon: reconnection disabled, exiting");
             ret = SCRCPY_EXIT_FAILURE;
@@ -1407,6 +1506,9 @@ end:
     }
     if (broadcaster_ok) {
         sc_broadcaster_destroy(&d->broadcaster);
+    }
+    if (d->report_initialized) {
+        sc_report_destroy(&d->report);
     }
     if (keeper_ok) {
         sc_frame_keeper_destroy(&d->keeper);

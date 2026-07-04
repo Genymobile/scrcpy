@@ -109,6 +109,8 @@ enum {
     OPT_DAEMON_STOP,
     OPT_DAEMON_STATUS,
     OPT_DAEMON_RECONNECT,
+    OPT_AUTO_TEST_REPORT,
+    OPT_ACTION,
     OPT_CAMERA_TORCH,
     OPT_CAMERA_ZOOM,
     OPT_MIN_SIZE_ALIGNMENT,
@@ -637,6 +639,24 @@ static const struct sc_option options[] = {
         .longopt = "daemon-stop",
         .text = "Ask the daemon to shut down gracefully (requires "
                 "--client-port).",
+    },
+    {
+        .longopt_id = OPT_AUTO_TEST_REPORT,
+        .longopt = "auto-test-report",
+        .argdesc = "dir",
+        .text = "Record a test report into the given directory (daemon mode).\n"
+                "Starts recording the screen to <dir>/recording.mp4 "
+                "immediately and logs every client operation (with its "
+                "timestamp and optional --action) to <dir>/events.jsonl, for "
+                "rendering as an interactive report in scrcpy-auto-web.",
+    },
+    {
+        .longopt_id = OPT_ACTION,
+        .longopt = "action",
+        .argdesc = "text",
+        .text = "Human-readable description of a client operation, recorded in "
+                "the test report (used with --client-port and "
+                "--control/--screencap).",
     },
     {
         .shortopt = 'N',
@@ -3092,6 +3112,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_AUTO_TEST_REPORT:
+                opts->auto_test_report = optarg;
+                break;
+            case OPT_ACTION:
+                opts->action = optarg;
+                break;
             case OPT_MIN_SIZE_ALIGNMENT:
                 if (!parse_min_size_alignment(optarg,
                                               &opts->min_size_alignment)) {
@@ -3180,6 +3206,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("--daemon-stop and --daemon-status require --client-port");
             return false;
         }
+        if (opts->auto_test_report && !opts->video) {
+            LOGE("--auto-test-report requires video capture (not --no-video)");
+            return false;
+        }
         // The daemon captures video for screenshots (no playback) and needs
         // control for input injection
         opts->video_playback = false;
@@ -3188,9 +3218,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         if (opts->video && !opts->control) {
             LOGI("Daemon: control disabled, serving screenshots only");
         }
-    } else if (opts->daemon_reconnect_none || opts->daemon_reconnect_max) {
-        LOGE("--daemon-reconnect requires --daemon-port");
-        return false;
+    } else {
+        if (opts->daemon_reconnect_none || opts->daemon_reconnect_max) {
+            LOGE("--daemon-reconnect requires --daemon-port");
+            return false;
+        }
+        if (opts->auto_test_report) {
+            LOGE("--auto-test-report requires --daemon-port");
+            return false;
+        }
     }
 
     if (opts->client_port) {
