@@ -398,8 +398,18 @@ allowing pipelining (v1 clients send sequentially, the field future-proofs).
 | `ping` | — | — |
 | `status` | — | `state`, `device` object, `uptime_ms`, `last_frame_age_ms` |
 | `screencap` | `format` (`"png"`, only value in v1), `max_age_ms` (optional, §9.4) | `width`, `height`, `payload_len` + PNG bytes as payload |
-| `control` | `cmds`: array of strings — each string one `--control` argument, same mini-language and same parallel/`&&` semantics as the CLI (`sc_execute_control_cmds`, `app/src/scrcpy.c:764`) | — (returns after execution completes, like the CLI does) |
+| `control` | `cmds`: array of strings — each string one `--control` argument, same mini-language and same parallel/`&&` semantics as the CLI (`sc_control_exec_run`, `app/src/control_exec.c`) | — (returns after execution completes, like the CLI does) |
+| `inject_touch` | `action` (`down`/`up`/`move`), `x`, `y` (video-pixel space), optional `pointer_id`, `buttons` | — (non-blocking; enqueues one touch event) |
+| `inject_key` | `action` (`down`/`up`), `keycode` (Android), optional `metastate`, `repeat` | — |
+| `inject_text` | `text` (UTF-8) | — |
+| `inject_scroll` | `x`, `y` (video-pixel space), optional `hscroll`, `vscroll` | — |
+| `subscribe_video` | — | turns the connection into a one-way encoded-video push stream (see §8.7); no `ok` reply — the first `video_meta` event is the ack |
 | `shutdown` | — | — (daemon exits after responding) |
+
+The `inject_*` ops are single, non-blocking realtime events (unlike `control`,
+which runs a whole gesture and blocks). They exist for interactive front-ends
+such as `scrcpy-auto-web`. Touch/scroll coordinates are in video-pixel space;
+the daemon stamps the current video size, matching the device position mapper.
 
 Response envelope:
 
@@ -407,6 +417,33 @@ Response envelope:
 {"id":7,"ok":true, ...op-specific fields..., "payload_len":0}
 {"id":7,"ok":false,"error":{"code":"E_DEVICE_DISCONNECTED","message":"..."}}
 ```
+
+### 8.7 Video subscription (encoded stream push)
+
+After `subscribe_video`, the daemon stops treating the connection as
+request/response and instead **pushes** the encoded video stream on it, as a
+sequence of protocol frames (a second daemon connection is used for input, so
+the two never interleave). The frames:
+
+```json
+{"event":"video_meta","codec":"h264","width":W,"height":H}
+{"event":"video","config":true,"key":false,"payload_len":N}   + N bytes (SPS/PPS)
+{"event":"video","config":false,"key":BOOL,"payload_len":N}   + N bytes (frame)
+```
+
+A newly subscribing client first receives the current `video_meta` and the
+stored config packet, then live frames. On device reconnection / resolution
+change, a fresh `video_meta` (and a new config packet) is pushed to all
+subscribers so they can reconfigure their decoder. Implemented by
+`app/src/daemon/broadcaster.c`, a second packet sink on the video demuxer
+(the first still decodes for `screencap`). The bytes are the device encoder's
+Annex-B output, forwarded verbatim — no re-encoding — so a browser can decode
+them directly with WebCodecs.
+
+Caveat: the broadcaster writes to subscribers under a lock held on the demuxer
+thread; a stalled subscriber applies backpressure to the video pipeline. Fine
+for a localhost bridge; a per-subscriber queue would be needed for slow/remote
+consumers.
 
 ### 8.4 Error codes
 

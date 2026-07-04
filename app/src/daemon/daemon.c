@@ -18,6 +18,8 @@
 #include "control_exec.h"
 #include "control_msg.h"
 #include "controller.h"
+#include "coords.h"
+#include "daemon/broadcaster.h"
 #include "daemon/frame_keeper.h"
 #include "daemon/protocol.h"
 #include "daemon/registry.h"
@@ -97,6 +99,7 @@ struct sc_daemon {
 
     struct sc_daemon_session session;
     struct sc_frame_keeper keeper;
+    struct sc_broadcaster broadcaster; // encoded-video push to web clients
 
     sc_mutex clipboard_mutex; // serialize clipboard-based text injection
 
@@ -359,6 +362,9 @@ sc_daemon_session_start(struct sc_daemon *d) {
                                   &s->decoder.packet_sink);
         sc_frame_source_add_sink(&s->decoder.frame_source,
                                  &d->keeper.frame_sink);
+        // Forward the encoded stream to web subscribers (second packet sink)
+        sc_packet_source_add_sink(&s->demuxer.packet_source,
+                                  &d->broadcaster.packet_sink);
         if (!sc_demuxer_start(&s->demuxer)) {
             sc_daemon_session_stop(d);
             return false;
@@ -746,8 +752,218 @@ free_cmds:
     }
 }
 
-// Handle one request; returns false if the connection must be closed
+// ---- realtime input injection (single, non-blocking events) ----
+
+static int64_t
+json_int_or(const struct sc_json *json, const char *key, int64_t def) {
+    int64_t v;
+    return sc_json_get_int64(json, key, &v) ? v : def;
+}
+
+// Parse an "action" string into a motion action; returns false if invalid
 static bool
+parse_motion_action(const struct sc_json *json,
+                    enum android_motionevent_action *out) {
+    char *s;
+    if (!sc_json_get_string(json, "action", &s)) {
+        return false;
+    }
+    bool ok = true;
+    if (!strcmp(s, "down")) {
+        *out = AMOTION_EVENT_ACTION_DOWN;
+    } else if (!strcmp(s, "up")) {
+        *out = AMOTION_EVENT_ACTION_UP;
+    } else if (!strcmp(s, "move")) {
+        *out = AMOTION_EVENT_ACTION_MOVE;
+    } else {
+        ok = false;
+    }
+    free(s);
+    return ok;
+}
+
+// Ready + control gate common to the inject_* ops; on success in_flight was
+// incremented (release_session() must be called)
+static bool
+inject_acquire(struct sc_daemon *d, sc_socket socket, int64_t id) {
+    if (!d->opts->control) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "control is disabled (--no-control)");
+        return false;
+    }
+    return acquire_session(d, socket, id);
+}
+
+static void
+reply_push(struct sc_daemon *d, sc_socket socket, int64_t id, bool pushed) {
+    release_session(d);
+    if (pushed) {
+        send_ok(socket, id, NULL, NULL, 0);
+    } else {
+        send_error(socket, id, "E_INTERNAL", "could not enqueue event");
+    }
+}
+
+static void
+handle_inject_touch(struct sc_daemon *d, sc_socket socket, int64_t id,
+                    const struct sc_json *json) {
+    enum android_motionevent_action action;
+    int64_t x, y;
+    if (!parse_motion_action(json, &action)
+            || !sc_json_get_int64(json, "x", &x)
+            || !sc_json_get_int64(json, "y", &y)) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "expected action(down|up|move), x, y");
+        return;
+    }
+
+    if (!inject_acquire(d, socket, id)) {
+        return;
+    }
+
+    struct sc_size size = {UINT16_MAX, UINT16_MAX};
+    if (d->opts->video
+            && !sc_frame_keeper_wait_size(&d->keeper,
+                                          sc_tick_now()
+                                              + SC_DAEMON_SCREENCAP_DEADLINE,
+                                          &size)) {
+        release_session(d);
+        send_error(socket, id, "E_NOT_READY", "no video frame received yet");
+        return;
+    }
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+    msg.inject_touch_event.action = action;
+    msg.inject_touch_event.action_button = 0;
+    msg.inject_touch_event.buttons =
+        (enum android_motionevent_buttons) json_int_or(json, "buttons", 0);
+    msg.inject_touch_event.pointer_id =
+        (uint64_t) json_int_or(json, "pointer_id", 0);
+    msg.inject_touch_event.position.screen_size = size;
+    msg.inject_touch_event.position.point.x = (int32_t) x;
+    msg.inject_touch_event.position.point.y = (int32_t) y;
+    msg.inject_touch_event.pressure =
+        action == AMOTION_EVENT_ACTION_UP ? 0.0f : 1.0f;
+
+    reply_push(d, socket, id,
+               sc_controller_push_msg(&d->session.controller, &msg));
+}
+
+static void
+handle_inject_key(struct sc_daemon *d, sc_socket socket, int64_t id,
+                  const struct sc_json *json) {
+    char *action_str;
+    int64_t keycode;
+    if (!sc_json_get_string(json, "action", &action_str)
+            || !sc_json_get_int64(json, "keycode", &keycode)) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "expected action(down|up), keycode");
+        return;
+    }
+    enum android_keyevent_action action;
+    bool valid = true;
+    if (!strcmp(action_str, "down")) {
+        action = AKEY_EVENT_ACTION_DOWN;
+    } else if (!strcmp(action_str, "up")) {
+        action = AKEY_EVENT_ACTION_UP;
+    } else {
+        valid = false;
+    }
+    free(action_str);
+    if (!valid) {
+        send_error(socket, id, "E_BAD_REQUEST", "action must be down or up");
+        return;
+    }
+
+    if (!inject_acquire(d, socket, id)) {
+        return;
+    }
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_KEYCODE;
+    msg.inject_keycode.action = action;
+    msg.inject_keycode.keycode = (enum android_keycode) keycode;
+    msg.inject_keycode.repeat = (uint32_t) json_int_or(json, "repeat", 0);
+    msg.inject_keycode.metastate =
+        (enum android_metastate) json_int_or(json, "metastate", 0);
+
+    reply_push(d, socket, id,
+               sc_controller_push_msg(&d->session.controller, &msg));
+}
+
+static void
+handle_inject_text(struct sc_daemon *d, sc_socket socket, int64_t id,
+                   const struct sc_json *json) {
+    char *text;
+    if (!sc_json_get_string(json, "text", &text)) {
+        send_error(socket, id, "E_BAD_REQUEST", "expected text");
+        return;
+    }
+
+    if (!inject_acquire(d, socket, id)) {
+        free(text);
+        return;
+    }
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_TEXT;
+    msg.inject_text.text = text; // ownership moves to the controller on success
+
+    bool pushed = sc_controller_push_msg(&d->session.controller, &msg);
+    if (!pushed) {
+        free(text);
+    }
+    reply_push(d, socket, id, pushed);
+}
+
+static void
+handle_inject_scroll(struct sc_daemon *d, sc_socket socket, int64_t id,
+                     const struct sc_json *json) {
+    int64_t x, y;
+    if (!sc_json_get_int64(json, "x", &x)
+            || !sc_json_get_int64(json, "y", &y)) {
+        send_error(socket, id, "E_BAD_REQUEST", "expected x, y, hscroll, "
+                   "vscroll");
+        return;
+    }
+
+    if (!inject_acquire(d, socket, id)) {
+        return;
+    }
+
+    struct sc_size size = {UINT16_MAX, UINT16_MAX};
+    if (d->opts->video
+            && !sc_frame_keeper_wait_size(&d->keeper,
+                                          sc_tick_now()
+                                              + SC_DAEMON_SCREENCAP_DEADLINE,
+                                          &size)) {
+        release_session(d);
+        send_error(socket, id, "E_NOT_READY", "no video frame received yet");
+        return;
+    }
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
+    msg.inject_scroll_event.position.screen_size = size;
+    msg.inject_scroll_event.position.point.x = (int32_t) x;
+    msg.inject_scroll_event.position.point.y = (int32_t) y;
+    msg.inject_scroll_event.hscroll = (float) json_int_or(json, "hscroll", 0);
+    msg.inject_scroll_event.vscroll = (float) json_int_or(json, "vscroll", 0);
+    msg.inject_scroll_event.buttons = 0;
+
+    reply_push(d, socket, id,
+               sc_controller_push_msg(&d->session.controller, &msg));
+}
+
+enum sc_conn_action {
+    SC_CONN_CONTINUE,      // keep reading requests
+    SC_CONN_CLOSE,         // close the connection
+    SC_CONN_SUBSCRIBE_VIDEO, // hand the connection to the video broadcaster
+};
+
+// Handle one request
+static enum sc_conn_action
 handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
                size_t json_len, unsigned conn_index) {
     struct sc_json json;
@@ -762,10 +978,10 @@ handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
     char *op;
     if (!sc_json_get_string(&json, "op", &op)) {
         send_error(socket, id, "E_BAD_REQUEST", "missing \"op\"");
-        return true;
+        return SC_CONN_CONTINUE;
     }
 
-    bool keep_open = true;
+    enum sc_conn_action action = SC_CONN_CONTINUE;
 
     if (!strcmp(op, "ping")) {
         send_ok(socket, id, NULL, NULL, 0);
@@ -775,6 +991,29 @@ handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
         handle_screencap(d, socket, id, &json);
     } else if (!strcmp(op, "control")) {
         handle_control(d, socket, id, &json, conn_index);
+    } else if (!strcmp(op, "inject_touch")) {
+        handle_inject_touch(d, socket, id, &json);
+    } else if (!strcmp(op, "inject_key")) {
+        handle_inject_key(d, socket, id, &json);
+    } else if (!strcmp(op, "inject_text")) {
+        handle_inject_text(d, socket, id, &json);
+    } else if (!strcmp(op, "inject_scroll")) {
+        handle_inject_scroll(d, socket, id, &json);
+    } else if (!strcmp(op, "subscribe_video")) {
+        if (!d->opts->video) {
+            send_error(socket, id, "E_BAD_REQUEST",
+                       "video is disabled (--no-video)");
+        } else {
+            // Ready check only; the broadcaster sends video_meta as the ack
+            sc_mutex_lock(&d->mutex);
+            bool ready = d->state == SC_DAEMON_STATE_READY && !d->stop;
+            sc_mutex_unlock(&d->mutex);
+            if (ready) {
+                action = SC_CONN_SUBSCRIBE_VIDEO;
+            } else {
+                send_error(socket, id, "E_NOT_READY", "session not ready");
+            }
+        }
     } else if (!strcmp(op, "shutdown")) {
         send_ok(socket, id, NULL, NULL, 0);
         LOGI("Daemon: shutdown requested by client");
@@ -782,13 +1021,13 @@ handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
         d->stop = true;
         sc_cond_broadcast(&d->cond);
         sc_mutex_unlock(&d->mutex);
-        keep_open = false;
+        action = SC_CONN_CLOSE;
     } else {
         send_error(socket, id, "E_BAD_REQUEST", "unknown op");
     }
 
     free(op);
-    return keep_open;
+    return action;
 }
 
 // ---- IPC threads ----
@@ -811,9 +1050,26 @@ run_connection(void *data) {
             if (!sc_daemon_read_json(socket, &json, &len)) {
                 break;
             }
-            bool keep_open = handle_request(d, socket, json, len, conn_index);
+            enum sc_conn_action action =
+                handle_request(d, socket, json, len, conn_index);
             free(json);
-            if (!keep_open) {
+            if (action == SC_CONN_CLOSE) {
+                break;
+            }
+            if (action == SC_CONN_SUBSCRIBE_VIDEO) {
+                // Hand this connection to the video broadcaster: the daemon
+                // now pushes encoded frames on it. Block until the client
+                // closes (recv returns <= 0) or the socket is interrupted
+                // (broadcaster write failure, or daemon shutdown).
+                if (!sc_broadcaster_subscribe(&d->broadcaster, socket)) {
+                    break;
+                }
+                uint8_t discard[256];
+                while (net_recv(socket, discard, sizeof(discard)) > 0) {
+                    // The bridge does not send on the video channel; drain
+                    // anything unexpected until the socket closes
+                }
+                sc_broadcaster_unsubscribe(&d->broadcaster, socket);
                 break;
             }
         }
@@ -971,6 +1227,7 @@ sc_daemon_run(struct scrcpy_options *opts) {
     bool cond_ok = false;
     bool clip_ok = false;
     bool keeper_ok = false;
+    bool broadcaster_ok = false;
     bool listening = false;
     bool registry_written = false;
 
@@ -990,6 +1247,10 @@ sc_daemon_run(struct scrcpy_options *opts) {
         goto end;
     }
     keeper_ok = true;
+    if (!sc_broadcaster_init(&d->broadcaster)) {
+        goto end;
+    }
+    broadcaster_ok = true;
 
     // Bind first: this is the "already running?" check (doc/daemon.md §6.1)
     d->listen_socket = net_socket();
@@ -1134,6 +1395,9 @@ end:
     }
     if (registry_written) {
         sc_registry_remove(opts->daemon_port);
+    }
+    if (broadcaster_ok) {
+        sc_broadcaster_destroy(&d->broadcaster);
     }
     if (keeper_ok) {
         sc_frame_keeper_destroy(&d->keeper);
