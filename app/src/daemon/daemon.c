@@ -1009,6 +1009,15 @@ handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
             bool ready = d->state == SC_DAEMON_STATE_READY && !d->stop;
             sc_mutex_unlock(&d->mutex);
             if (ready) {
+                // Force a fresh keyframe so a mid-stream subscriber can start
+                // decoding immediately instead of waiting for the device's
+                // next periodic I-frame
+                if (d->opts->control) {
+                    struct sc_control_msg msg = {
+                        .type = SC_CONTROL_MSG_TYPE_RESET_VIDEO,
+                    };
+                    sc_controller_push_msg(&d->session.controller, &msg);
+                }
                 action = SC_CONN_SUBSCRIBE_VIDEO;
             } else {
                 send_error(socket, id, "E_NOT_READY", "session not ready");
