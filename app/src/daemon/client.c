@@ -205,6 +205,44 @@ do_note(sc_socket socket, const struct scrcpy_options *opts, int64_t id) {
     return ok;
 }
 
+// Invoke a plugin command (doc/addons.md): the daemon runs the registered
+// add-on for `name` with `args`. The add-on's own screenshot/note/click steps
+// come back as their own requests, so this blocks until the add-on finishes.
+static bool
+do_plugin(sc_socket socket, const char *name, const char *args, int64_t id) {
+    struct sc_strbuf buf;
+    if (!sc_strbuf_init(&buf, 128)) {
+        return false;
+    }
+    char head[48];
+    snprintf(head, sizeof(head), "{\"id\":%" PRId64 ",\"op\":\"plugin\","
+                                 "\"name\":", id);
+    bool w = sc_strbuf_append_str(&buf, head)
+          && sc_json_append_escaped(&buf, name)
+          && sc_strbuf_append_staticstr(&buf, ",\"args\":")
+          && sc_json_append_escaped(&buf, args ? args : "")
+          && sc_strbuf_append_char(&buf, '}');
+    if (!w) {
+        free(buf.s);
+        return false;
+    }
+    bool sent = sc_daemon_write_frame(socket, buf.s, buf.len, NULL, 0);
+    free(buf.s);
+    if (!sent) {
+        LOGE("Client: could not send plugin request");
+        return false;
+    }
+
+    struct sc_json json;
+    char *doc;
+    if (!client_read(socket, &json, &doc)) {
+        return false;
+    }
+    bool ok = response_ok(&json, doc);
+    free(doc);
+    return ok;
+}
+
 static bool
 do_status(sc_socket socket, int64_t id) {
     char req[64];
@@ -304,6 +342,14 @@ sc_client_run(const struct scrcpy_options *opts) {
 
     if (opts->note) {
         if (!do_note(socket, opts, id++)) {
+            ret = SCRCPY_EXIT_FAILURE;
+            goto end;
+        }
+    }
+
+    for (unsigned i = 0; i < opts->plugin_count; ++i) {
+        if (!do_plugin(socket, opts->plugin_names[i], opts->plugin_args[i],
+                       id++)) {
             ret = SCRCPY_EXIT_FAILURE;
             goto end;
         }

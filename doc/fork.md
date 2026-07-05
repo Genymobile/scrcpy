@@ -75,6 +75,8 @@ app/src/daemon/client.{c,h}     thin client mode
 app/src/daemon/protocol.{c,h}   IPC framing + minimal JSON (uses jsmn)
 app/src/daemon/frame_keeper.{c,h} latest-frame sink for screenshots
 app/src/daemon/broadcaster.{c,h}  encoded-video push sink (web streaming)
+app/src/daemon/report.{c,h}       test-report recorder + event logger
+app/src/daemon/addon.{c,h}        plugin add-ons (doc/addons.md)
 app/src/daemon/registry.{c,h}   on-disk daemon registry
 app/src/third_party/jsmn.h      vendored JSON tokenizer (MIT)
 doc/daemon.md                   daemon design + implementation notes

@@ -235,6 +235,8 @@ struct sc_port_range {
 #define SC_WINDOW_POSITION_UNDEFINED (-0x8000)
 
 #define SC_MAX_CONTROL_CMDS 100
+#define SC_MAX_ADDONS 32
+#define SC_MAX_PLUGIN_CALLS 32
 
 struct scrcpy_options {
     const char *serial;
@@ -358,6 +360,13 @@ struct scrcpy_options {
     const char *auto_test_report; // daemon: report directory, NULL if disabled
     const char *action; // client: human-readable description of the operation
     const char *note; // client: standalone "title: description" annotation
+    // Plugin system (doc/addons.md)
+    const char *add_ons[SC_MAX_ADDONS]; // daemon: add-on entrypoint scripts
+    unsigned add_on_count;
+    // client: unknown --name=value options captured as plugin calls
+    const char *plugin_names[SC_MAX_PLUGIN_CALLS];
+    const char *plugin_args[SC_MAX_PLUGIN_CALLS];
+    unsigned plugin_count;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

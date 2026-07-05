@@ -404,6 +404,7 @@ allowing pipelining (v1 clients send sequentially, the field future-proofs).
 | `inject_text` | `text` (UTF-8) | — |
 | `inject_scroll` | `x`, `y` (video-pixel space), optional `hscroll`, `vscroll` | — |
 | `note` | `note`: a `"title: description"` annotation | — (logged to the test report as a `note` event with `title`/`text`; standalone, not tied to any control command) |
+| `plugin` | `name`, `args` | runs the loaded add-on registered for `name` with `args` (doc/addons.md); blocks until the script exits; auto-logs a `plugin` report event |
 | `subscribe_video` | — | turns the connection into a one-way encoded-video push stream (see §8.7); no `ok` reply — the first `video_meta` event is the ack |
 | `shutdown` | — | — (daemon exits after responding) |
 

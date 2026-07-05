@@ -31,6 +31,7 @@ src = [
     'src/receiver.c',
     'src/recorder.c',
     'src/control_exec.c',
+    'src/daemon/addon.c',
     'src/daemon/broadcaster.c',
     'src/daemon/client.c',
     'src/daemon/daemon.c',

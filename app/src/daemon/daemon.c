@@ -19,11 +19,14 @@
 #include "control_msg.h"
 #include "controller.h"
 #include "coords.h"
+#include "daemon/addon.h"
 #include "daemon/broadcaster.h"
 #include "daemon/frame_keeper.h"
 #include "daemon/protocol.h"
 #include "daemon/registry.h"
 #include "daemon/report.h"
+#include "util/file.h"
+#include "util/process.h"
 #include "decoder.h"
 #include "demuxer.h"
 #include "screencap.h"
@@ -85,6 +88,7 @@ struct sc_daemon_conn {
     sc_thread thread;
     bool in_use;   // guarded by daemon mutex
     bool finished; // guarded by daemon mutex
+    sc_pid plugin_pid; // running add-on child, or SC_PROCESS_NONE (mutex)
 };
 
 struct sc_daemon {
@@ -107,6 +111,8 @@ struct sc_daemon {
     bool report_active;      // --auto-test-report was given
     bool report_initialized; // report dir/log created (once)
     bool report_recording;   // recorder running this session
+
+    struct sc_addons addons; // loaded plugins (doc/addons.md)
 
     sc_mutex clipboard_mutex; // serialize clipboard-based text injection
 
@@ -1091,6 +1097,103 @@ handle_note(struct sc_daemon *d, sc_socket socket, int64_t id,
     send_ok(socket, id, NULL, NULL, 0);
 }
 
+// Run a loaded add-on (doc/addons.md). The op runs the entrypoint script with
+// the command value as $1 and runtime info in the environment, and blocks
+// until it exits. The script's own screenshot/note/click steps come back as
+// separate requests on other connections, logged in real time.
+static void
+handle_plugin(struct sc_daemon *d, sc_socket socket, int64_t id,
+              const struct sc_json *json, unsigned conn_index) {
+    char *name;
+    if (!sc_json_get_string(json, "name", &name)) {
+        send_error(socket, id, "E_BAD_REQUEST", "expected plugin \"name\"");
+        return;
+    }
+    char *args = NULL;
+    sc_json_get_string(json, "args", &args); // optional
+
+    const char *path = sc_addons_find(&d->addons, name);
+    if (!path) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "no add-on provides --%s", name);
+        send_error(socket, id, "E_BAD_REQUEST", msg);
+        goto end;
+    }
+
+    // Auto-log the plugin start event so it always appears on the timeline
+    if (d->report_active) {
+        struct sc_strbuf eb;
+        if (sc_strbuf_init(&eb, 128)) {
+            bool w = sc_strbuf_append_staticstr(&eb, "\"name\":")
+                  && sc_json_append_escaped(&eb, name)
+                  && sc_strbuf_append_staticstr(&eb, ",\"args\":")
+                  && sc_json_append_escaped(&eb, args ? args : "");
+            if (w) {
+                report_log(d, "plugin", NULL, eb.s);
+            }
+            free(eb.s);
+        }
+    }
+
+    // Runtime info for the script
+    char serial[256];
+    sc_mutex_lock(&d->mutex);
+    snprintf(serial, sizeof(serial), "%s", d->serial ? d->serial : "");
+    sc_mutex_unlock(&d->mutex);
+
+    struct sc_size size = {0, 0};
+    if (d->opts->video) {
+        sc_frame_keeper_wait_size(&d->keeper,
+                                  sc_tick_now() + SC_TICK_FROM_MS(200), &size);
+    }
+    char *exe = sc_file_get_executable_path();
+
+    char e_port[32], e_host[40], e_serial[300], e_report[600];
+    char e_name[160], e_w[32], e_h[32], e_exe[1200];
+    snprintf(e_port, sizeof(e_port), "SC_DAEMON_PORT=%u", d->opts->daemon_port);
+    snprintf(e_host, sizeof(e_host), "SC_DAEMON_HOST=127.0.0.1");
+    snprintf(e_serial, sizeof(e_serial), "SC_DEVICE_SERIAL=%s", serial);
+    snprintf(e_report, sizeof(e_report), "SC_REPORT_DIR=%s",
+             d->opts->auto_test_report ? d->opts->auto_test_report : "");
+    snprintf(e_name, sizeof(e_name), "SC_ADDON_NAME=%s", name);
+    snprintf(e_w, sizeof(e_w), "SC_VIDEO_WIDTH=%u", size.width);
+    snprintf(e_h, sizeof(e_h), "SC_VIDEO_HEIGHT=%u", size.height);
+    snprintf(e_exe, sizeof(e_exe), "SCRCPY_AUTO=%s", exe ? exe : "scrcpy-auto");
+    const char *env[] = {e_port, e_host, e_serial, e_report,
+                         e_name, e_w, e_h, e_exe};
+
+    sc_pid pid;
+    bool started = sc_addon_run(path, args, env, ARRAY_LEN(env), &pid);
+    free(exe);
+    if (!started) {
+        send_error(socket, id, "E_INTERNAL", "could not start add-on");
+        goto end;
+    }
+
+    // Register the pid so daemon shutdown can terminate a hung plugin
+    sc_mutex_lock(&d->mutex);
+    d->conns[conn_index].plugin_pid = pid;
+    sc_mutex_unlock(&d->mutex);
+
+    sc_exit_code code = sc_process_wait(pid, true);
+
+    sc_mutex_lock(&d->mutex);
+    d->conns[conn_index].plugin_pid = SC_PROCESS_NONE;
+    sc_mutex_unlock(&d->mutex);
+
+    if (code == 0) {
+        send_ok(socket, id, NULL, NULL, 0);
+    } else {
+        char msg[64];
+        snprintf(msg, sizeof(msg), "add-on exited with code %d", (int) code);
+        send_error(socket, id, "E_INTERNAL", msg);
+    }
+
+end:
+    free(name);
+    free(args);
+}
+
 enum sc_conn_action {
     SC_CONN_CONTINUE,      // keep reading requests
     SC_CONN_CLOSE,         // close the connection
@@ -1136,6 +1239,8 @@ handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
         handle_inject_scroll(d, socket, id, &json);
     } else if (!strcmp(op, "note")) {
         handle_note(d, socket, id, &json);
+    } else if (!strcmp(op, "plugin")) {
+        handle_plugin(d, socket, id, &json, conn_index);
     } else if (!strcmp(op, "subscribe_video")) {
         if (!d->opts->video) {
             send_error(socket, id, "E_BAD_REQUEST",
@@ -1372,6 +1477,11 @@ sc_daemon_run(struct scrcpy_options *opts) {
     d->report_initialized = false;
     d->report_recording = false;
 
+    for (unsigned i = 0; i < SC_DAEMON_MAX_CLIENTS; ++i) {
+        d->conns[i].plugin_pid = SC_PROCESS_NONE;
+    }
+    sc_addons_load(&d->addons, opts->add_ons, opts->add_on_count);
+
     bool mutex_ok = false;
     bool cond_ok = false;
     bool clip_ok = false;
@@ -1535,6 +1645,10 @@ end:
             if (conn->in_use && !conn->finished) {
                 net_interrupt(conn->socket);
             }
+            // Terminate a running add-on so its blocking wait returns
+            if (conn->plugin_pid != SC_PROCESS_NONE) {
+                sc_process_terminate(conn->plugin_pid);
+            }
         }
         sc_mutex_unlock(&d->mutex);
         for (unsigned i = 0; i < SC_DAEMON_MAX_CLIENTS; ++i) {
@@ -1555,6 +1669,7 @@ end:
     if (broadcaster_ok) {
         sc_broadcaster_destroy(&d->broadcaster);
     }
+    sc_addons_destroy(&d->addons);
     if (d->report_initialized) {
         sc_report_destroy(&d->report);
     }

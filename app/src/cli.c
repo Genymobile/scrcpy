@@ -112,6 +112,7 @@ enum {
     OPT_AUTO_TEST_REPORT,
     OPT_ACTION,
     OPT_NOTE,
+    OPT_ADD_ON,
     OPT_CAMERA_TORCH,
     OPT_CAMERA_ZOOM,
     OPT_MIN_SIZE_ALIGNMENT,
@@ -658,6 +659,17 @@ static const struct sc_option options[] = {
         .text = "Human-readable description of a client operation, recorded in "
                 "the test report (used with --client-port and "
                 "--control/--screencap).",
+    },
+    {
+        .longopt_id = OPT_ADD_ON,
+        .longopt = "add-on",
+        .argdesc = "path",
+        .text = "Load a plugin entrypoint script (daemon mode), giving it a "
+                "custom --<command> option (doc/addons.md).\n"
+                "The script is queried once for its command name, then run "
+                "when a client passes that option. Can be given multiple "
+                "times. Plugins let external tools (e.g. AI workflows) add "
+                "commands without changing scrcpy-auto.",
     },
     {
         .longopt_id = OPT_NOTE,
@@ -3134,6 +3146,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NOTE:
                 opts->note = optarg;
                 break;
+            case OPT_ADD_ON:
+                if (opts->add_on_count >= SC_MAX_ADDONS) {
+                    LOGE("Too many --add-on plugins (max %d)", SC_MAX_ADDONS);
+                    return false;
+                }
+                opts->add_ons[opts->add_on_count++] = optarg;
+                break;
             case OPT_MIN_SIZE_ALIGNMENT:
                 if (!parse_min_size_alignment(optarg,
                                               &opts->min_size_alignment)) {
@@ -3202,6 +3221,17 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 
+    // Plugin system (doc/addons.md)
+    if (opts->add_on_count && !opts->daemon_port) {
+        LOGE("--add-on requires --daemon-port");
+        return false;
+    }
+    if (opts->plugin_count && !opts->client_port) {
+        LOGE("plugin options (--%s=...) require --client-port",
+             opts->plugin_names[0]);
+        return false;
+    }
+
     if (opts->daemon_port) {
         if (opts->window) {
             LOGE("--daemon-port requires --no-window");
@@ -3260,9 +3290,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
         if (!opts->control_cmd_count && !opts->screencap_filename
-                && !opts->daemon_status && !opts->daemon_stop && !opts->note) {
+                && !opts->daemon_status && !opts->daemon_stop && !opts->note
+                && !opts->plugin_count) {
             LOGE("--client-port requires at least one operation (--control, "
-                 "--screencap, --note, --daemon-status, --daemon-stop)");
+                 "--screencap, --note, a plugin --<command>, --daemon-status, "
+                 "--daemon-stop)");
             return false;
         }
         // The client never opens a window nor a device session
@@ -3878,6 +3910,51 @@ scrcpy_launched_by_double_click(void) {
 }
 #endif
 
+// Is `name` (length `len`) a built-in long option?
+static bool
+sc_is_known_longopt(const char *name, size_t len) {
+    for (size_t i = 0; i < ARRAY_LEN(options); ++i) {
+        const char *lo = options[i].longopt;
+        if (lo && strlen(lo) == len && !memcmp(lo, name, len)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Extract unknown "--name=value" options as plugin calls (doc/addons.md) and
+// build a filtered argv (without them) for getopt. `out` must hold `argc`
+// pointers. The plugin option token is split in place at '='.
+static void
+sc_extract_plugin_calls(int argc, char *argv[], struct scrcpy_options *opts,
+                        char *out[], int *out_argc) {
+    int n = 0;
+    out[n++] = argv[0];
+    for (int i = 1; i < argc; ++i) {
+        char *tok = argv[i];
+        if (tok[0] == '-' && tok[1] == '-' && tok[2]) {
+            char *eq = strchr(tok + 2, '=');
+            if (eq) {
+                size_t namelen = eq - (tok + 2);
+                if (namelen > 0 && !sc_is_known_longopt(tok + 2, namelen)) {
+                    if (opts->plugin_count < SC_MAX_PLUGIN_CALLS) {
+                        *eq = '\0'; // split "--name\0value"
+                        opts->plugin_names[opts->plugin_count] = tok + 2;
+                        opts->plugin_args[opts->plugin_count] = eq + 1;
+                        opts->plugin_count++;
+                    } else {
+                        LOGW("Too many plugin options (max %d)",
+                             SC_MAX_PLUGIN_CALLS);
+                    }
+                    continue; // not a built-in option: hide from getopt
+                }
+            }
+        }
+        out[n++] = tok;
+    }
+    *out_argc = n;
+}
+
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     struct sc_getopt_adapter adapter;
@@ -3886,8 +3963,14 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         return false;
     }
 
-    bool ret = parse_args_with_getopt(args, argc, argv, adapter.optstring,
-                                      adapter.longopts);
+    // Pull unknown --name=value options out as plugin calls before getopt,
+    // which would otherwise reject them.
+    char *filtered[argc];
+    int filtered_argc;
+    sc_extract_plugin_calls(argc, argv, &args->opts, filtered, &filtered_argc);
+
+    bool ret = parse_args_with_getopt(args, filtered_argc, filtered,
+                                      adapter.optstring, adapter.longopts);
 
     sc_getopt_adapter_destroy(&adapter);
 

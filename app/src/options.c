@@ -130,6 +130,8 @@ const struct scrcpy_options scrcpy_options_default = {
     .auto_test_report = NULL,
     .action = NULL,
     .note = NULL,
+    .add_on_count = 0,
+    .plugin_count = 0,
 };
 
 enum sc_orientation
