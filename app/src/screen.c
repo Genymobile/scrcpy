@@ -772,6 +772,13 @@ sc_screen_hide_window(struct sc_screen *screen) {
 }
 
 void
+sc_screen_show_window(struct sc_screen *screen) {
+    sc_sdl_show_window(screen->window);
+    screen->window_shown = true;
+}
+
+
+void
 sc_screen_interrupt(struct sc_screen *screen) {
     sc_fps_counter_interrupt(&screen->fps_counter);
 }

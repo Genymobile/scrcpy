@@ -170,6 +170,13 @@ sc_screen_destroy(struct sc_screen *screen);
 void
 sc_screen_hide_window(struct sc_screen *screen);
 
+// On Windows hotkey toggle, we may need an explicit show API.
+// It is already handled by SDL_Window visibility in sc_screen.c.
+// This function is intentionally minimal and does not affect rendering.
+void
+sc_screen_show_window(struct sc_screen *screen);
+
+
 // toggle the fullscreen mode
 void
 sc_screen_toggle_fullscreen(struct sc_screen *screen);

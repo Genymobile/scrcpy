@@ -12,7 +12,13 @@
 // not needed here, but winsock2.h must never be included AFTER windows.h
 # include <winsock2.h>
 # include <windows.h>
+# include <windowsx.h>
 #endif
+
+#ifdef _WIN32
+#include "win_quick_toggle.h"
+#endif
+
 
 #include "audio_player.h"
 #include "controller.h"
@@ -114,7 +120,27 @@ sdl_configure_ctrl_c_windows(void) {
 static enum scrcpy_exit_code
 event_loop(struct scrcpy *s, bool has_screen) {
     SDL_Event event;
+
+#ifdef _WIN32
+    // Ensure WM_HOTKEY is processed even when SDL does not translate it.
+    // This does not interfere with SDL's own event handling.
+    MSG msg;
+#endif
+
     while (SDL_WaitEvent(&event)) {
+#ifdef _WIN32
+        while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+            if (msg.message == WM_QUIT) {
+                // Let the normal SDL quit path handle shutdown.
+                DispatchMessage(&msg);
+                continue;
+            }
+
+            if (!sc_win_quick_toggle_handle_msg(&msg)) {
+                DispatchMessage(&msg);
+            }
+        }
+#endif
         switch (event.type) {
             case SC_EVENT_DEVICE_DISCONNECTED:
                 LOGW("Device disconnected");
@@ -420,7 +446,11 @@ scrcpy(struct scrcpy_options *options) {
     sdl_configure_ctrl_c_windows();
 #endif
 
+    // Windows hotkey is registered only once the SDL window exists,
+    // right after sc_screen_init().
+
     // Set hints before starting the server thread to avoid race conditions in
+
     // SDL
     sc_sdl_set_hints(options->render_driver, options->disable_screensaver);
 
@@ -767,6 +797,14 @@ aoa_complete:
         }
         screen_initialized = true;
 
+#ifdef _WIN32
+        // Enable global quick-toggle hotkey (Ctrl+`).
+        // Hotkey only hides/shows the existing window; it does not affect
+        // streaming or the normal SDL quit path.
+        sc_win_quick_toggle_init(s->screen.window);
+#endif
+
+
         if (options->video_playback) {
             struct sc_frame_source *src = &s->video_decoder.frame_source;
             if (options->video_buffer) {
@@ -929,6 +967,13 @@ end:
         // called once the video demuxer thread is joined (it may take time)
         sc_screen_hide_window(&s->screen);
     }
+
+#ifdef _WIN32
+    if (screen_initialized) {
+        sc_win_quick_toggle_destroy();
+    }
+#endif
+
 
     if (timeout_started) {
         sc_timeout_join(&s->timeout);
