@@ -54,16 +54,13 @@ sc_frame_keeper_frame_sink_push(struct sc_frame_sink *sink,
     fk->tmp = swap;
     av_frame_unref(fk->tmp);
 
-    fk->last_frame_tick = sc_tick_now();
+    sc_tick now = sc_tick_now();
+    if (!fk->first_frame_tick) {
+        fk->first_frame_tick = now; // recording start reference (wall clock)
+    }
+    fk->last_frame_tick = now;
     fk->size.width = fk->latest->width;
     fk->size.height = fk->latest->height;
-    // Track the video PTS (µs) for frame-accurate test-report correlation
-    if (fk->latest->pts != AV_NOPTS_VALUE) {
-        if (fk->first_frame_pts == AV_NOPTS_VALUE) {
-            fk->first_frame_pts = fk->latest->pts;
-        }
-        fk->last_frame_pts = fk->latest->pts;
-    }
     sc_cond_broadcast(&fk->cond);
 
     sc_mutex_unlock(&fk->mutex);
@@ -107,8 +104,7 @@ sc_frame_keeper_init(struct sc_frame_keeper *fk) {
     fk->last_frame_tick = 0;
     fk->size.width = 0;
     fk->size.height = 0;
-    fk->first_frame_pts = AV_NOPTS_VALUE;
-    fk->last_frame_pts = AV_NOPTS_VALUE;
+    fk->first_frame_tick = 0;
     fk->opened = false;
 
     static const struct sc_frame_sink_ops ops = {
@@ -185,20 +181,19 @@ sc_frame_keeper_reset(struct sc_frame_keeper *fk) {
     fk->last_frame_tick = 0;
     fk->size.width = 0;
     fk->size.height = 0;
-    fk->first_frame_pts = AV_NOPTS_VALUE;
-    fk->last_frame_pts = AV_NOPTS_VALUE;
+    fk->first_frame_tick = 0;
     sc_mutex_unlock(&fk->mutex);
 }
 
 bool
 sc_frame_keeper_video_time_ms(struct sc_frame_keeper *fk, int64_t *out_ms) {
     sc_mutex_lock(&fk->mutex);
-    bool ok = fk->first_frame_pts != AV_NOPTS_VALUE
-           && fk->last_frame_pts != AV_NOPTS_VALUE;
+    bool ok = fk->first_frame_tick != 0;
     if (ok) {
-        // PTS is in microseconds (device encoder clock, same clock the
-        // recording uses), so this is the exact position in recording.mp4
-        *out_ms = (fk->last_frame_pts - fk->first_frame_pts) / 1000;
+        // Wall-clock elapsed since the first frame = the position in the
+        // real-time mp4 playback timeline. (Frame PTS would freeze while the
+        // screen is static, since the encoder only emits frames on change.)
+        *out_ms = SC_TICK_TO_MS(sc_tick_now() - fk->first_frame_tick);
         if (*out_ms < 0) {
             *out_ms = 0;
         }

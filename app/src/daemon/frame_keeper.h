@@ -28,8 +28,11 @@ struct sc_frame_keeper {
     sc_tick last_frame_tick; // when `latest` was received
     struct sc_size size; // dimensions of `latest` (0x0 if none yet)
     // Video PTS (µs) for frame-accurate test-report correlation
-    int64_t first_frame_pts; // AV_NOPTS_VALUE until the first frame
-    int64_t last_frame_pts;  // AV_NOPTS_VALUE until the first frame
+    // Host tick when the first frame was received (0 until then). Report
+    // event times are wall-clock elapsed from here — the mp4 plays back in
+    // real time (static screens hold a frame), whereas the encoder emits
+    // frames only on change, so frame PTS would freeze during static periods.
+    sc_tick first_frame_tick;
     bool opened;
 };
 
