@@ -34,9 +34,6 @@ main_scrcpy(int argc, char *argv[]) {
     setbuf(stderr, NULL);
 #endif
 
-    printf("scrcpy " SCRCPY_VERSION
-           " <https://github.com/Genymobile/scrcpy>\n");
-
     struct scrcpy_cli_args args = {
         .opts = scrcpy_options_default,
         .help = false,
@@ -55,7 +52,13 @@ main_scrcpy(int argc, char *argv[]) {
         goto end;
     }
 
-    sc_set_log_level(args.opts.log_level);
+    sc_set_log_level(args.opts.json ? SC_LOG_LEVEL_ERROR : args.opts.log_level);
+
+    // Banner on stdout, except under --json (stdout must stay pure JSON there)
+    if (!args.opts.json) {
+        printf("scrcpy " SCRCPY_VERSION
+               " <https://github.com/Genymobile/scrcpy>\n");
+    }
 
     if (args.help) {
         scrcpy_print_usage(argv[0]);

@@ -31,7 +31,53 @@ scrcpy-auto --client-port 27400 --prompt="Click the Login button"
 Any `--NAME=VALUE` the built-in parser does not recognize is treated as a
 plugin call and forwarded to the daemon, which runs the registered add-on for
 `NAME` with `VALUE`. The `=` form is required (`--name=value`). If no add-on
-provides `NAME`, the daemon returns an error.
+provides `NAME`, the client reports an error.
+
+An add-on may also declare **extra named arguments** beyond its primary value
+(see the entrypoint contract). The client discovers these from the daemon (the
+daemon advertises every add-on's schema in its hello), so it knows that, e.g.,
+`--ref-images` belongs to the `--prompt` add-on and groups them into one call:
+
+```bash
+scrcpy-auto --client-port 27400 \
+  --prompt="Click the Like button" \
+  --ref-images=~/ref/like_button.png \
+  --ref-images=~/ref/like_alt.png
+```
+
+A `list` argument may be repeated (as above) or comma-separated
+(`--ref-images=a.png,b.png`); a non‑list argument may appear only once. An
+argument given without its command (`--ref-images` but no `--prompt`), an
+unknown `--flag`, or a command repeated in one call are all rejected client‑side
+with a clear message.
+
+### Reference-image transport (`path`/`pathlist` args)
+
+An argument declared as `path`/`pathlist` holds files the **daemon** must read.
+The client picks the optimal strategy automatically, based on `--daemon-host`
+(default `127.0.0.1`):
+
+- **Local daemon** (loopback host): the paths are sent as‑is and the daemon
+  reads the files directly — no copy.
+- **Remote daemon**: the client reads each file and **uploads the bytes** over
+  the connection (the `upload` op, §7 of doc/daemon.md); the daemon stores them
+  in a per‑connection temp file and the plugin receives those daemon‑side paths.
+  The daemon never needs access to the client's filesystem.
+
+Either way the plugin only ever sees paths in `SC_ARG_<NAME>` and is oblivious
+to locality.
+
+### Machine-readable output (`--json`)
+
+With `--json`, human logs are suppressed and the client prints the plugin's
+**result object** (see below) to stdout; on failure it prints
+`{"error":{…}}` and exits non‑zero. This is the interface for AI/automation
+harnesses:
+
+```bash
+scrcpy-auto --client-port 27400 --json \
+  --prompt="Click the Login button" --ref-images=~/ref/login.png
+```
 
 You can combine a plugin call with `--note` to label it in the report:
 
@@ -45,8 +91,27 @@ scrcpy-auto --client-port 27400 \
 
 The daemon runs the script with the environment variable `SC_ADDON_MODE` set:
 
-- **`register`** — print the command name (one line) to stdout and exit 0.
-  Called once at daemon startup.
+- **`register`** — print the command **metadata** to stdout and exit 0. Called
+  once at daemon startup. The output is line based (Unified Plugin Protocol);
+  unknown keys are ignored (forward-compatible):
+
+  ```
+  name=<command>                                       # the --<command> option
+  result=<field>                                       # result field name (opt.)
+  arg=<name>:<string|list|path|pathlist>:<required|optional>   # extra arg (0+)
+  env=<NAME>:<required|optional>[:<description>]        # declared env var (0+)
+  meta=<key>:<value>                                    # free-form metadata (0+)
+  ```
+
+  The command's own value (`--<command>=VALUE`) is an implicit required string
+  argument, so only *additional* arguments need an `arg=` line. `list`/`pathlist`
+  accept multiple values (repeated flag or comma-separated); `path`/`pathlist`
+  mark file paths (adaptive transport, above). A `required` `env` that is unset
+  in the daemon's environment fails the run (`E_PLUGIN`). For back-compat, a bare
+  command name on its own line (no `name=`) is accepted and declares nothing
+  else. Each declaration is surfaced to the client (flag grouping) and the web
+  UI (panel) via the daemon hello.
+
 - **`run`** — perform the operation. `$1` is the command value. The daemon
   waits for the script to exit; exit 0 = success, non‑zero = failure (returned
   to the client).
@@ -62,6 +127,20 @@ In `run` mode the script receives these environment variables:
 | `SC_VIDEO_WIDTH`, `SC_VIDEO_HEIGHT` | current video size (0 if no frame yet) |
 | `SC_ADDON_NAME` | the command name being run |
 | `SCRCPY_AUTO` | path to the scrcpy-auto binary (for callbacks) |
+| `SC_ARG_<NAME>` | each declared argument's value (name upper-cased, `-`→`_`); the primary is also `SC_ARG_<COMMAND>` |
+| `SC_RESULT_FILE` | path to write the structured result JSON to (see below) |
+
+`list`/`pathlist` arguments arrive newline-separated in their `SC_ARG_<NAME>`.
+For example `--prompt="hi" --ref-images=a.png --ref-images=b.png` yields
+`$1`=`hi`, `SC_ARG_PROMPT`=`hi`, and `SC_ARG_REF_IMAGES`=`a.png\nb.png`.
+
+### Returning a result (`SC_RESULT_FILE`)
+
+To return structured data to the caller (for `--json` and the web UI), the
+script writes a JSON object to `$SC_RESULT_FILE`. The daemon reads it back after
+the script exits and attaches it to the response as `result`. By convention a
+result contains at least `{"result":…,"reason":…,"thinking":…}` (extensions
+allowed). A script that writes nothing simply returns no `result`.
 
 The script does its real work by calling back into scrcpy-auto, e.g.
 `"$SCRCPY_AUTO" --client-port "$SC_DAEMON_PORT" --screencap out.png`.
@@ -106,19 +185,23 @@ The web report renders `plugin` events with a 🧩 marker.
 
 ```sh
 #!/bin/sh
-# Provides: --prompt="<instruction>"
+# Provides: --prompt="<instruction>" [--ref-images=<path>[,<path>...]]
 case "$SC_ADDON_MODE" in
-  register) echo "prompt"; exit 0 ;;
+  register)
+    printf 'name=prompt\n'
+    printf 'arg=ref-images:list:optional\n'
+    exit 0 ;;
 esac
 
-PROMPT="$1"
+PROMPT="$1"                      # also $SC_ARG_PROMPT
 SC="$SCRCPY_AUTO --client-port $SC_DAEMON_PORT"
 
 # 1. capture the current screen
 shot="${SC_REPORT_DIR:-/tmp}/prompt-$$.png"
 $SC --screencap "$shot" || exit 1
 
-# 2. ask the model where to act (your program prints "X Y")
+# 2. ask the model where to act, passing the screenshot + any reference images
+#    ($SC_ARG_REF_IMAGES is newline-separated; empty if --ref-images was omitted)
 coords=$(python3 "$(dirname "$0")/analyze.py" "$shot" "$PROMPT") || exit 1
 
 # 3. record the AI's decision, then perform the action
@@ -129,6 +212,11 @@ $SC --control="click $coords 100"
 Run it:
 
 ```bash
-scrcpy-auto --client-port 27400 --prompt="Click the Login button" \
-            --note="AI Prompt: Click the Login button"
+scrcpy-auto --client-port 27400 --prompt="Click the Like button" \
+            --ref-images=~/ref/like_button.png \
+            --note="AI Prompt: Click the Like button"
 ```
+
+A complete stdlib-only reference implementation (`prompt.py`) that sends the
+screenshot **and** the reference images to an OpenAI-compatible multimodal
+endpoint lives outside this repo; the entrypoint above is the minimal shape.

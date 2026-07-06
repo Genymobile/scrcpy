@@ -11,7 +11,11 @@
 #include "util/strbuf.h"
 
 // Protocol version, bumped only on incompatible changes (see doc/daemon.md §8)
-#define SC_DAEMON_PROTOCOL_VERSION 1
+// v2: hello advertises add-on argument schemas ("plugins"); plugin op carries
+//     named args ("arg_names"/"arg_values") beyond the primary value.
+// v3: hello plugin schema is keyed ("name|key=value|..."); plugin op response
+//     carries a "result" object; new "upload" op for remote byte transfer.
+#define SC_DAEMON_PROTOCOL_VERSION 3
 
 // Sanity cap for a frame (JSON document or binary payload)
 #define SC_DAEMON_MAX_FRAME_SIZE (64 * 1024 * 1024) // 64 MiB
@@ -72,6 +76,14 @@ sc_json_parse(struct sc_json *json, const char *buf, size_t len);
  */
 const struct sc_json_tok *
 sc_json_get(const struct sc_json *json, const char *key);
+
+/**
+ * Get the raw JSON text of a top-level key's value (verbatim document
+ * substring, including nested braces for an object/array value). Returns a
+ * malloc'd NUL-terminated copy (owned by the caller), or NULL if absent.
+ */
+char *
+sc_json_get_raw(const struct sc_json *json, const char *key);
 
 /**
  * Get a top-level string value as a malloc'd unescaped copy (owned by the

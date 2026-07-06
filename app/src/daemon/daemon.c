@@ -1,6 +1,7 @@
 #include "daemon.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
@@ -39,6 +40,10 @@
 #include "util/tick.h"
 
 #define SC_DAEMON_MAX_CLIENTS 16
+// Files a single client connection may upload before they are cleaned up
+#define SC_DAEMON_MAX_UPLOADS 64
+// Cap on a plugin result file the daemon will read back (256 KiB)
+#define SC_DAEMON_MAX_RESULT_SIZE (256 * 1024)
 #define SC_DAEMON_SCREENCAP_DEADLINE SC_TICK_FROM_MS(2000)
 // Poll interval for stop-signal checks in supervisor waits
 #define SC_DAEMON_WAIT_TICK SC_TICK_FROM_MS(500)
@@ -89,6 +94,8 @@ struct sc_daemon_conn {
     bool in_use;   // guarded by daemon mutex
     bool finished; // guarded by daemon mutex
     sc_pid plugin_pid; // running add-on child, or SC_PROCESS_NONE (mutex)
+    char *uploads[SC_DAEMON_MAX_UPLOADS]; // temp files to unlink on close (mutex)
+    unsigned upload_count; // guarded by daemon mutex
 };
 
 struct sc_daemon {
@@ -478,6 +485,77 @@ send_error(sc_socket socket, int64_t id, const char *code, const char *msg) {
     return send_frame(socket, &buf, NULL, 0);
 }
 
+// Base temp directory ($TMPDIR or /tmp).
+static const char *
+temp_dir(void) {
+    const char *t = getenv("TMPDIR");
+    return (t && *t) ? t : "/tmp";
+}
+
+// Create a unique temp file "<tmp>/scrcpy-auto-<tag>-XXXXXX"; on success writes
+// its malloc'd path to *out_path and returns an open fd (caller closes), else -1.
+static int
+make_temp_file(const char *tag, char **out_path) {
+    char tmpl[512];
+    snprintf(tmpl, sizeof(tmpl), "%s/scrcpy-auto-%s-XXXXXX", temp_dir(), tag);
+    int fd = mkstemp(tmpl);
+    if (fd < 0) {
+        return -1;
+    }
+    *out_path = strdup(tmpl);
+    if (!*out_path) {
+        close(fd);
+        unlink(tmpl);
+        return -1;
+    }
+    return fd;
+}
+
+static bool
+write_all_fd(int fd, const uint8_t *data, size_t len) {
+    size_t off = 0;
+    while (off < len) {
+        ssize_t w = write(fd, data + off, len - off);
+        if (w < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            return false;
+        }
+        off += (size_t) w;
+    }
+    return true;
+}
+
+// Read a plugin result file (<= cap) and return its contents as a malloc'd
+// string only if it is valid JSON; otherwise NULL (warns on invalid).
+static char *
+read_result_file(const char *path) {
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        return NULL;
+    }
+    char *buf = malloc(SC_DAEMON_MAX_RESULT_SIZE + 1);
+    if (!buf) {
+        fclose(f);
+        return NULL;
+    }
+    size_t n = fread(buf, 1, SC_DAEMON_MAX_RESULT_SIZE, f);
+    fclose(f);
+    buf[n] = '\0';
+    if (n == 0) {
+        free(buf);
+        return NULL;
+    }
+    struct sc_json probe;
+    if (!sc_json_parse(&probe, buf, n)) {
+        LOGW("Add-on result file is not valid JSON; ignoring");
+        free(buf);
+        return NULL;
+    }
+    return buf;
+}
+
 // Send {"id":<id>,"ok":true[,<extra>]} (+ optional payload); `extra` must be
 // valid inner JSON without braces, or NULL
 static bool
@@ -530,6 +608,61 @@ append_status_fields(struct sc_daemon *d, struct sc_strbuf *buf) {
         && sc_json_append_escaped(buf, device_name);
 }
 
+// Append the type keyword for an argument (Unified Plugin Protocol §4).
+static const char *
+arg_type_str(const struct sc_addon_arg *arg) {
+    if (arg->is_path) {
+        return arg->is_list ? "pathlist" : "path";
+    }
+    return arg->is_list ? "list" : "string";
+}
+
+// Append ",\"plugins\":[...]" advertising each add-on's metadata. Each element
+// is a keyed string "<name>[|<key>=<value>]..." (arg=/result=/meta=), a flat
+// array of strings so it reads with sc_json_get_string_array. The C client
+// consumes only "arg=" tokens; the web UI reads the rest (doc/addons.md §5).
+static bool
+append_plugins(struct sc_daemon *d, struct sc_strbuf *buf) {
+    if (!sc_strbuf_append_staticstr(buf, ",\"plugins\":[")) {
+        return false;
+    }
+    for (unsigned i = 0; i < d->addons.count; ++i) {
+        const struct sc_addon *a = &d->addons.list[i];
+        struct sc_strbuf spec;
+        if (!sc_strbuf_init(&spec, 64)) {
+            return false;
+        }
+        bool w = sc_strbuf_append_str(&spec, a->name);
+        if (w && a->result_field) {
+            w = sc_strbuf_append_staticstr(&spec, "|result=")
+             && sc_strbuf_append_str(&spec, a->result_field);
+        }
+        for (unsigned j = 0; w && j < a->arg_count; ++j) {
+            const struct sc_addon_arg *arg = &a->args[j];
+            w = sc_strbuf_append_staticstr(&spec, "|arg=")
+             && sc_strbuf_append_str(&spec, arg->name)
+             && sc_strbuf_append_char(&spec, ':')
+             && sc_strbuf_append_str(&spec, arg_type_str(arg))
+             && sc_strbuf_append_char(&spec, ':')
+             && sc_strbuf_append_str(&spec,
+                                     arg->required ? "required" : "optional");
+        }
+        for (unsigned j = 0; w && j < a->meta_count; ++j) {
+            w = sc_strbuf_append_staticstr(&spec, "|meta=")
+             && sc_strbuf_append_str(&spec, a->metas[j].key)
+             && sc_strbuf_append_char(&spec, ':')
+             && sc_strbuf_append_str(&spec, a->metas[j].value);
+        }
+        w = w && (i == 0 || sc_strbuf_append_char(buf, ','))
+          && sc_json_append_escaped(buf, spec.s);
+        free(spec.s);
+        if (!w) {
+            return false;
+        }
+    }
+    return sc_strbuf_append_char(buf, ']');
+}
+
 static bool
 send_hello(struct sc_daemon *d, sc_socket socket) {
     struct sc_strbuf buf;
@@ -549,6 +682,7 @@ send_hello(struct sc_daemon *d, sc_socket socket) {
 
     bool w = sc_strbuf_append_staticstr(&buf, "{\"event\":\"hello\",")
           && append_status_fields(d, &buf)
+          && append_plugins(d, &buf)
           && sc_strbuf_append_str(&buf, pid);
     if (!w) {
         free(buf.s);
@@ -1097,10 +1231,39 @@ handle_note(struct sc_daemon *d, sc_socket socket, int64_t id,
     send_ok(socket, id, NULL, NULL, 0);
 }
 
+// Build a malloc'd "SC_ARG_<NAME>=<value>" env entry, upper-casing NAME and
+// replacing any non-alphanumeric character with '_' (so `env` always gets a
+// valid identifier). Returns NULL on OOM.
+static char *
+make_arg_env(const char *arg_name, const char *value) {
+    struct sc_strbuf b;
+    if (!sc_strbuf_init(&b, 32)) {
+        return NULL;
+    }
+    bool w = sc_strbuf_append_staticstr(&b, "SC_ARG_");
+    for (const char *p = arg_name; w && *p; ++p) {
+        char c = *p;
+        if (c >= 'a' && c <= 'z') {
+            c = (char) (c - 'a' + 'A');
+        } else if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))) {
+            c = '_';
+        }
+        w = sc_strbuf_append_char(&b, c);
+    }
+    w = w && sc_strbuf_append_char(&b, '=')
+          && sc_strbuf_append_str(&b, value ? value : "");
+    if (!w) {
+        free(b.s);
+        return NULL;
+    }
+    return b.s;
+}
+
 // Run a loaded add-on (doc/addons.md). The op runs the entrypoint script with
-// the command value as $1 and runtime info in the environment, and blocks
-// until it exits. The script's own screenshot/note/click steps come back as
-// separate requests on other connections, logged in real time.
+// the command value as $1 and runtime info in the environment (including every
+// declared argument as SC_ARG_<NAME>), and blocks until it exits. The script's
+// own screenshot/note/click steps come back as separate requests on other
+// connections, logged in real time.
 static void
 handle_plugin(struct sc_daemon *d, sc_socket socket, int64_t id,
               const struct sc_json *json, unsigned conn_index) {
@@ -1111,12 +1274,38 @@ handle_plugin(struct sc_daemon *d, sc_socket socket, int64_t id,
     }
     char *args = NULL;
     sc_json_get_string(json, "args", &args); // optional
+    char *result_path = NULL; // SC_RESULT_FILE temp path (cleaned at end)
 
-    const char *path = sc_addons_find(&d->addons, name);
-    if (!path) {
+    // Optional named arguments (parallel string arrays), each exported to the
+    // script as SC_ARG_<NAME>; the primary value stays available as $1.
+    char *arg_names[SC_MAX_ADDON_ARGS];
+    char *arg_values[SC_MAX_ADDON_ARGS];
+    unsigned name_count = 0, value_count = 0;
+    bool has_names = sc_json_get_string_array(json, "arg_names", arg_names,
+                                              SC_MAX_ADDON_ARGS, &name_count);
+    bool has_values = sc_json_get_string_array(json, "arg_values", arg_values,
+                                               SC_MAX_ADDON_ARGS, &value_count);
+    if (has_names != has_values || name_count != value_count) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "arg_names/arg_values must be matching string arrays");
+        goto end;
+    }
+
+    const struct sc_addon *addon = sc_addons_get(&d->addons, name);
+    if (!addon) {
         char msg[128];
         snprintf(msg, sizeof(msg), "no add-on provides --%s", name);
         send_error(socket, id, "E_BAD_REQUEST", msg);
+        goto end;
+    }
+    const char *path = addon->path;
+
+    const char *missing = sc_addon_missing_env(addon);
+    if (missing) {
+        char msg[192];
+        snprintf(msg, sizeof(msg),
+                 "add-on --%s requires environment variable %s", name, missing);
+        send_error(socket, id, "E_PLUGIN", msg);
         goto end;
     }
 
@@ -1159,12 +1348,44 @@ handle_plugin(struct sc_daemon *d, sc_socket socket, int64_t id,
     snprintf(e_w, sizeof(e_w), "SC_VIDEO_WIDTH=%u", size.width);
     snprintf(e_h, sizeof(e_h), "SC_VIDEO_HEIGHT=%u", size.height);
     snprintf(e_exe, sizeof(e_exe), "SCRCPY_AUTO=%s", exe ? exe : "scrcpy-auto");
-    const char *env[] = {e_port, e_host, e_serial, e_report,
-                         e_name, e_w, e_h, e_exe};
+
+    // Result channel: the script writes its {result,reason,thinking,...} JSON to
+    // SC_RESULT_FILE and the daemon reads it back into the response.
+    int rfd = make_temp_file("result", &result_path);
+    if (rfd >= 0) {
+        close(rfd); // reserve the path; the script (over)writes it
+    }
+    char e_result[600];
+    snprintf(e_result, sizeof(e_result), "SC_RESULT_FILE=%s",
+             result_path ? result_path : "");
+
+    // Base env + result file + the primary as SC_ARG_<COMMAND> + one per arg
+    const char *env[9 + 1 + SC_MAX_ADDON_ARGS] = {
+        e_port, e_host, e_serial, e_report, e_name, e_w, e_h, e_exe, e_result};
+    unsigned env_count = 9;
+    char *arg_env[1 + SC_MAX_ADDON_ARGS];
+    unsigned arg_env_count = 0;
+
+    char *primary_env = make_arg_env(name, args ? args : "");
+    if (primary_env) {
+        arg_env[arg_env_count++] = primary_env;
+        env[env_count++] = primary_env;
+    }
+    for (unsigned i = 0; i < name_count; ++i) {
+        char *e = make_arg_env(arg_names[i], arg_values[i]);
+        if (e) {
+            arg_env[arg_env_count++] = e;
+            env[env_count++] = e;
+        }
+    }
 
     sc_pid pid;
-    bool started = sc_addon_run(path, args, env, ARRAY_LEN(env), &pid);
+    bool started = sc_addon_run(path, args, env, env_count, &pid);
     free(exe);
+    // The env strings were copied into the child at exec time; safe to free now
+    for (unsigned i = 0; i < arg_env_count; ++i) {
+        free(arg_env[i]);
+    }
     if (!started) {
         send_error(socket, id, "E_INTERNAL", "could not start add-on");
         goto end;
@@ -1181,17 +1402,119 @@ handle_plugin(struct sc_daemon *d, sc_socket socket, int64_t id,
     d->conns[conn_index].plugin_pid = SC_PROCESS_NONE;
     sc_mutex_unlock(&d->mutex);
 
+    // Read back the structured result the script wrote (if any, valid JSON)
+    char *result_json = NULL;
+    if (result_path) {
+        result_json = read_result_file(result_path);
+        unlink(result_path);
+        free(result_path);
+        result_path = NULL;
+    }
+
     if (code == 0) {
-        send_ok(socket, id, NULL, NULL, 0);
+        bool sent = false;
+        if (result_json) {
+            struct sc_strbuf eb;
+            if (sc_strbuf_init(&eb, 256)) {
+                if (sc_strbuf_append_staticstr(&eb, "\"result\":")
+                        && sc_strbuf_append_str(&eb, result_json)) {
+                    send_ok(socket, id, eb.s, NULL, 0);
+                    sent = true;
+                }
+                free(eb.s);
+            }
+        }
+        if (!sent) {
+            send_ok(socket, id, NULL, NULL, 0);
+        }
     } else {
         char msg[64];
         snprintf(msg, sizeof(msg), "add-on exited with code %d", (int) code);
         send_error(socket, id, "E_INTERNAL", msg);
     }
+    free(result_json);
 
 end:
+    if (result_path) {
+        unlink(result_path);
+        free(result_path);
+    }
+    for (unsigned i = 0; i < name_count; ++i) {
+        free(arg_names[i]);
+    }
+    for (unsigned i = 0; i < value_count; ++i) {
+        free(arg_values[i]);
+    }
     free(name);
     free(args);
+}
+
+// Receive a file uploaded by a remote client (doc/addons.md §7): the request
+// carries "payload_len" and that many raw bytes follow the JSON frame. The
+// bytes are stored in a per-connection temp file (removed on disconnect) and
+// its daemon-side path is returned, to be passed as a path/pathlist plugin arg.
+static void
+handle_upload(struct sc_daemon *d, sc_socket socket, int64_t id,
+              const struct sc_json *json, unsigned conn_index) {
+    int64_t payload_len = 0;
+    sc_json_get_int64(json, "payload_len", &payload_len);
+    if (payload_len < 0 || (uint64_t) payload_len > SC_DAEMON_MAX_FRAME_SIZE) {
+        send_error(socket, id, "E_BAD_REQUEST", "invalid upload payload_len");
+        return;
+    }
+
+    uint8_t *data = NULL;
+    if (payload_len > 0
+            && !sc_daemon_read_payload(socket, (size_t) payload_len, &data)) {
+        // The stream is now desynchronized; closing follows on the next read
+        send_error(socket, id, "E_BAD_REQUEST", "could not read upload payload");
+        return;
+    }
+
+    char *path = NULL;
+    int fd = make_temp_file("upload", &path);
+    if (fd < 0) {
+        free(data);
+        send_error(socket, id, "E_INTERNAL", "could not create upload file");
+        return;
+    }
+    bool ok = payload_len == 0 || write_all_fd(fd, data, (size_t) payload_len);
+    close(fd);
+    free(data);
+    if (!ok) {
+        unlink(path);
+        free(path);
+        send_error(socket, id, "E_INTERNAL", "could not write upload file");
+        return;
+    }
+
+    // Track for cleanup when the connection closes
+    sc_mutex_lock(&d->mutex);
+    struct sc_daemon_conn *conn = &d->conns[conn_index];
+    bool tracked = conn->upload_count < SC_DAEMON_MAX_UPLOADS;
+    if (tracked) {
+        conn->uploads[conn->upload_count++] = path;
+    }
+    sc_mutex_unlock(&d->mutex);
+    if (!tracked) {
+        unlink(path);
+        free(path);
+        send_error(socket, id, "E_BAD_REQUEST", "too many uploads");
+        return;
+    }
+
+    struct sc_strbuf eb;
+    if (!sc_strbuf_init(&eb, 128)) {
+        send_error(socket, id, "E_INTERNAL", "out of memory");
+        return; // path stays tracked and will be cleaned on disconnect
+    }
+    if (sc_strbuf_append_staticstr(&eb, "\"path\":")
+            && sc_json_append_escaped(&eb, path)) {
+        send_ok(socket, id, eb.s, NULL, 0);
+    } else {
+        send_error(socket, id, "E_INTERNAL", "out of memory");
+    }
+    free(eb.s);
 }
 
 enum sc_conn_action {
@@ -1241,6 +1564,8 @@ handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
         handle_note(d, socket, id, &json);
     } else if (!strcmp(op, "plugin")) {
         handle_plugin(d, socket, id, &json, conn_index);
+    } else if (!strcmp(op, "upload")) {
+        handle_upload(d, socket, id, &json, conn_index);
     } else if (!strcmp(op, "subscribe_video")) {
         if (!d->opts->video) {
             send_error(socket, id, "E_BAD_REQUEST",
@@ -1329,6 +1654,13 @@ run_connection(void *data) {
     net_close(socket);
 
     sc_mutex_lock(&d->mutex);
+    // Remove any files this connection uploaded (doc/addons.md §7)
+    for (unsigned i = 0; i < conn->upload_count; ++i) {
+        unlink(conn->uploads[i]);
+        free(conn->uploads[i]);
+        conn->uploads[i] = NULL;
+    }
+    conn->upload_count = 0;
     conn->finished = true;
     sc_mutex_unlock(&d->mutex);
 
@@ -1391,6 +1723,7 @@ run_accept(void *data) {
         conn->socket = client;
         conn->in_use = true;
         conn->finished = false;
+        conn->upload_count = 0;
         if (!sc_thread_create(&conn->thread, run_connection, "scrcpy-ipc",
                               conn)) {
             conn->in_use = false;
@@ -1479,6 +1812,7 @@ sc_daemon_run(struct scrcpy_options *opts) {
 
     for (unsigned i = 0; i < SC_DAEMON_MAX_CLIENTS; ++i) {
         d->conns[i].plugin_pid = SC_PROCESS_NONE;
+        d->conns[i].upload_count = 0;
     }
     sc_addons_load(&d->addons, opts->add_ons, opts->add_on_count);
 

@@ -54,11 +54,13 @@ The load-bearing defines live in `app/src/server.c`:
 
 ### 2.3 Persistent daemon mode
 
-`--daemon-port` / `--client-port` (see `doc/daemon.md` for the full spec):
-a per-device daemon keeps the device session alive and serves
+`--daemon-port` / `--client-port` / `--daemon-host` (see `doc/daemon.md` for the
+full spec): a per-device daemon keeps the device session alive and serves
 screenshot/control requests from thin clients over a length-prefixed JSON
-protocol on 127.0.0.1, with reconnection supervision and an on-disk registry.
-All daemon code lives under `app/src/daemon/`.
+protocol, with reconnection supervision and an on-disk registry. `--daemon-host`
+(default `127.0.0.1`) lets a client reach a remote daemon; `--json` makes the
+client emit machine-readable output (a plugin's result object, or an error
+object). All daemon code lives under `app/src/daemon/`.
 
 ## 3. File inventory
 
@@ -76,7 +78,13 @@ app/src/daemon/protocol.{c,h}   IPC framing + minimal JSON (uses jsmn)
 app/src/daemon/frame_keeper.{c,h} latest-frame sink for screenshots
 app/src/daemon/broadcaster.{c,h}  encoded-video push sink (web streaming)
 app/src/daemon/report.{c,h}       test-report recorder + event logger
-app/src/daemon/addon.{c,h}        plugin add-ons (doc/addons.md)
+app/src/daemon/addon.{c,h}        plugin add-ons (doc/addons.md); the Unified
+                                  Plugin Protocol (metadata, adaptive path/upload
+                                  transport, SC_RESULT_FILE result) spans addon.c
+                                  (register parse) + daemon.c (hello advertise,
+                                  SC_ARG_*/SC_RESULT_FILE env, upload op, result
+                                  read-back) + client.c (discover/group, --json,
+                                  --daemon-host locality + upload) — keep in sync
 app/src/daemon/registry.{c,h}   on-disk daemon registry
 app/src/third_party/jsmn.h      vendored JSON tokenizer (MIT)
 doc/daemon.md                   daemon design + implementation notes

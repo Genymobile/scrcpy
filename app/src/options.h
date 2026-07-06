@@ -237,6 +237,11 @@ struct sc_port_range {
 #define SC_MAX_CONTROL_CMDS 100
 #define SC_MAX_ADDONS 32
 #define SC_MAX_PLUGIN_CALLS 32
+// Extra named arguments a single add-on may declare beyond its primary value
+#define SC_MAX_ADDON_ARGS 8
+// Declared environment variables and metadata entries a single add-on may have
+#define SC_MAX_ADDON_ENVS 8
+#define SC_MAX_ADDON_META 8
 
 struct scrcpy_options {
     const char *serial;
@@ -352,6 +357,8 @@ struct scrcpy_options {
     // Persistent daemon mode (doc/daemon.md)
     uint16_t daemon_port; // 0 if disabled
     uint16_t client_port; // 0 if disabled
+    const char *daemon_host; // client: daemon host (NULL => 127.0.0.1)
+    bool json; // client: emit machine-readable JSON instead of human logs
     bool daemon_stop;
     bool daemon_status;
     bool daemon_reconnect_none;

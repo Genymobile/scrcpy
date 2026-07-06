@@ -106,6 +106,8 @@ enum {
     OPT_CONTROL_CMD,
     OPT_DAEMON_PORT,
     OPT_CLIENT_PORT,
+    OPT_DAEMON_HOST,
+    OPT_JSON,
     OPT_DAEMON_STOP,
     OPT_DAEMON_STATUS,
     OPT_DAEMON_RECONNECT,
@@ -619,6 +621,24 @@ static const struct sc_option options[] = {
         .text = "Run as a persistent daemon listening on 127.0.0.1:port.\n"
                 "The device session is kept alive and served to thin clients "
                 "(see --client-port). Requires --no-window.",
+    },
+    {
+        .longopt_id = OPT_DAEMON_HOST,
+        .longopt = "daemon-host",
+        .argdesc = "host",
+        .text = "Host the thin client connects to (default 127.0.0.1).\n"
+                "A loopback host is treated as local: reference-image paths are "
+                "read directly by the daemon. A remote host makes the client "
+                "upload image bytes so the daemon never needs the client's "
+                "filesystem (doc/addons.md).",
+    },
+    {
+        .longopt_id = OPT_JSON,
+        .longopt = "json",
+        .text = "Emit machine-readable JSON on stdout instead of human logs "
+                "(client mode).\n"
+                "For a plugin call, prints the plugin's result object; on "
+                "failure prints a JSON error object and exits non-zero.",
     },
     {
         .longopt_id = OPT_DAEMON_RECONNECT,
@@ -3125,6 +3145,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                         || !opts->client_port) {
                     return false;
                 }
+                break;
+            case OPT_DAEMON_HOST:
+                opts->daemon_host = optarg;
+                break;
+            case OPT_JSON:
+                opts->json = true;
                 break;
             case OPT_DAEMON_STOP:
                 opts->daemon_stop = true;

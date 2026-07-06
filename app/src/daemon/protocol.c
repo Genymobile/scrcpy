@@ -153,6 +153,22 @@ sc_json_get(const struct sc_json *json, const char *key) {
     return NULL;
 }
 
+char *
+sc_json_get_raw(const struct sc_json *json, const char *key) {
+    const struct sc_json_tok *tok = sc_json_get(json, key);
+    if (!tok) {
+        return NULL;
+    }
+    size_t len = (size_t) (tok->end - tok->start);
+    char *out = malloc(len + 1);
+    if (!out) {
+        return NULL;
+    }
+    memcpy(out, json->buf + tok->start, len);
+    out[len] = '\0';
+    return out;
+}
+
 // Unescape a JSON string token into a malloc'd NUL-terminated buffer
 static char *
 unescape(const char *s, size_t len) {

@@ -379,14 +379,23 @@ printf (the schema is small and flat). No new external build dependency.
 On connect, the **daemon speaks first** (avoids a client round trip):
 
 ```json
-{"event":"hello","protocol":1,"app":"scrcpy-auto","version":"4.0",
- "pid":12345,"serial":"DEVICEID_XX1","device_name":"Pixel 8",
- "state":"ready"}
+{"event":"hello","protocol":3,"app":"scrcpy-auto","version":"4.0",
+ "pid":12345,"serial":"DEVICEID_XX1","device_name":"Pixel 8","state":"ready",
+ "plugins":["exec_prompt|arg=ref-images:pathlist:optional|result=exec_prompt_result|meta=description:AI action"]}
 ```
 
 The client checks `protocol`. Mismatch → client aborts with exit code 2 and a
 message telling the user to update one side. `protocol` is bumped only on
 incompatible changes; additive fields are allowed without a bump.
+
+`plugins` advertises each loaded add-on's metadata so the client can map its
+`--NAME=VALUE` flags onto the right invocation and the web UI can build its panel
+(doc/addons.md). Each element is a keyed string
+`"<command>[|<key>=<value>]..."` with `arg=<name>:<type>:<req>`,
+`result=<field>`, and `meta=<k>:<v>` fields (`type` ∈
+`string|list|path|pathlist`). It is a flat array of strings so it parses with
+the same `sc_json_get_string_array` used elsewhere; the C client reads only the
+`arg=` fields.
 
 ### 8.3 Requests
 
@@ -404,7 +413,8 @@ allowing pipelining (v1 clients send sequentially, the field future-proofs).
 | `inject_text` | `text` (UTF-8) | — |
 | `inject_scroll` | `x`, `y` (video-pixel space), optional `hscroll`, `vscroll` | — |
 | `note` | `note`: a `"title: description"` annotation | — (logged to the test report as a `note` event with `title`/`text`; standalone, not tied to any control command) |
-| `plugin` | `name`, `args` | runs the loaded add-on registered for `name` with `args` (doc/addons.md); blocks until the script exits; auto-logs a `plugin` report event |
+| `plugin` | `name`, `args`, optional `arg_names`/`arg_values` (parallel string arrays of the declared extra arguments) | runs the loaded add-on registered for `name` with `args` as `$1`, each extra argument exported as `SC_ARG_<NAME>`, and a `SC_RESULT_FILE` temp path (doc/addons.md); blocks until the script exits; auto-logs a `plugin` report event; returns `result` (the JSON the script wrote to `SC_RESULT_FILE`, if any) |
+| `upload` | `name` (a basename), `payload_len` + that many raw payload bytes after the JSON frame | stores the payload in a per-connection temp file (removed on disconnect) and returns its daemon-side `path`; used to ship a `path`/`pathlist` argument's bytes when the client (or web server) is remote |
 | `subscribe_video` | — | turns the connection into a one-way encoded-video push stream (see §8.7); no `ok` reply — the first `video_meta` event is the ack |
 | `shutdown` | — | — (daemon exits after responding) |
 
