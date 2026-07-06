@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #ifdef _WIN32
 # include <windows.h>
@@ -554,6 +555,97 @@ read_result_file(const char *path) {
         return NULL;
     }
     return buf;
+}
+
+// Copy a file (best-effort). Returns true on success.
+static bool
+copy_file(const char *src, const char *dst) {
+    FILE *in = fopen(src, "rb");
+    if (!in) {
+        return false;
+    }
+    FILE *out = fopen(dst, "wb");
+    if (!out) {
+        fclose(in);
+        return false;
+    }
+    char buf[65536];
+    size_t n;
+    bool ok = true;
+    while ((n = fread(buf, 1, sizeof(buf), in)) > 0) {
+        if (fwrite(buf, 1, n, out) != n) {
+            ok = false;
+            break;
+        }
+    }
+    fclose(in);
+    if (fclose(out) != 0) {
+        ok = false;
+    }
+    if (!ok) {
+        unlink(dst);
+    }
+    return ok;
+}
+
+// Copy a plugin's path/pathlist argument files into <report>/assets/ (so the
+// report bundle is self-contained and can render reference images), appending
+// their relative paths to `eb` as ,"assets":[...]. Best-effort.
+static void
+copy_plugin_assets(struct sc_daemon *d, const struct sc_addon *addon,
+                   char *const *arg_names, char *const *arg_values,
+                   unsigned count, struct sc_strbuf *eb) {
+    static unsigned counter = 0; // unique filenames (guarded by daemon mutex)
+    if (!d->opts->auto_test_report || !addon) {
+        return;
+    }
+    char dir[600];
+    snprintf(dir, sizeof(dir), "%s/assets", d->opts->auto_test_report);
+    mkdir(dir, 0755); // ignore EEXIST
+
+    bool started = false;
+    for (unsigned i = 0; i < count; ++i) {
+        bool is_path = false;
+        for (unsigned j = 0; j < addon->arg_count; ++j) {
+            if (!strcmp(addon->args[j].name, arg_names[i])
+                    && addon->args[j].is_path) {
+                is_path = true;
+                break;
+            }
+        }
+        if (!is_path) {
+            continue;
+        }
+        char *dup = strdup(arg_values[i]);
+        if (!dup) {
+            continue;
+        }
+        char *saveptr = NULL;
+        for (char *p = strtok_r(dup, "\n", &saveptr); p;
+             p = strtok_r(NULL, "\n", &saveptr)) {
+            const char *bn = strrchr(p, '/');
+            bn = bn ? bn + 1 : p;
+            sc_mutex_lock(&d->mutex);
+            unsigned idx = counter++;
+            sc_mutex_unlock(&d->mutex);
+            char dst[1024];
+            char rel[512];
+            snprintf(dst, sizeof(dst), "%s/%u-%s", dir, idx, bn);
+            snprintf(rel, sizeof(rel), "assets/%u-%s", idx, bn);
+            if (copy_file(p, dst)) {
+                bool w = started ? sc_strbuf_append_char(eb, ',')
+                                 : sc_strbuf_append_staticstr(eb, ",\"assets\":[");
+                started = true;
+                if (w) {
+                    sc_json_append_escaped(eb, rel);
+                }
+            }
+        }
+        free(dup);
+    }
+    if (started) {
+        sc_strbuf_append_char(eb, ']');
+    }
 }
 
 // Send {"id":<id>,"ok":true[,<extra>]} (+ optional payload); `extra` must be
@@ -1318,6 +1410,9 @@ handle_plugin(struct sc_daemon *d, sc_socket socket, int64_t id,
                   && sc_strbuf_append_staticstr(&eb, ",\"args\":")
                   && sc_json_append_escaped(&eb, args ? args : "");
             if (w) {
+                // Preserve any reference-image (path) args in the report bundle
+                copy_plugin_assets(d, addon, arg_names, arg_values, name_count,
+                                   &eb);
                 report_log(d, "plugin", NULL, eb.s);
             }
             free(eb.s);
