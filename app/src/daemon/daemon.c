@@ -1411,6 +1411,21 @@ handle_plugin(struct sc_daemon *d, sc_socket socket, int64_t id,
         result_path = NULL;
     }
 
+    // Record the plugin's structured result on the report timeline (at the end
+    // of the operation) so the report can show the full result JSON.
+    if (result_json && d->report_active) {
+        struct sc_strbuf rb;
+        if (sc_strbuf_init(&rb, 256)) {
+            if (sc_strbuf_append_staticstr(&rb, "\"name\":")
+                    && sc_json_append_escaped(&rb, name)
+                    && sc_strbuf_append_staticstr(&rb, ",\"result\":")
+                    && sc_strbuf_append_str(&rb, result_json)) {
+                report_log(d, "result", NULL, rb.s);
+            }
+            free(rb.s);
+        }
+    }
+
     if (code == 0) {
         bool sent = false;
         if (result_json) {
