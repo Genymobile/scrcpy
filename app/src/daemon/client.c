@@ -452,16 +452,24 @@ count_flag(const struct scrcpy_options *opts, const char *flag) {
     return c;
 }
 
-// Collect argument `argname` from the raw flags. For a list arg, multiple
-// occurrences are joined with '\n'. On present, sets *out to a malloc'd string
-// (caller frees). Returns 1 if present, 0 if absent, -1 on error.
+// Collect argument `argname` for command `cmdname` from the raw flags. A flag
+// matches either the bare form "--<argname>" or the qualified form
+// "--<cmdname>.<argname>" (used to disambiguate an argument name shared by
+// several invoked add-ons). For a list arg, multiple occurrences are joined
+// with '\n'. On present, sets *out to a malloc'd string (caller frees).
+// Returns 1 if present, 0 if absent, -1 on error.
 static int
-collect_arg(const struct scrcpy_options *opts, const char *argname,
-            bool is_list, char **out) {
+collect_arg(const struct scrcpy_options *opts, const char *cmdname,
+            const char *argname, bool is_list, char **out) {
+    size_t clen = strlen(cmdname);
     struct sc_strbuf b;
     bool have = false;
     for (unsigned i = 0; i < opts->plugin_count; ++i) {
-        if (strcmp(opts->plugin_names[i], argname)) {
+        const char *name = opts->plugin_names[i];
+        bool match = !strcmp(name, argname) // bare "--<argname>"
+                  || (!strncmp(name, cmdname, clen) && name[clen] == '.'
+                      && !strcmp(name + clen + 1, argname)); // "--<cmd>.<arg>"
+        if (!match) {
             continue;
         }
         if (!have) {
@@ -530,6 +538,51 @@ upload_paths(struct plugin_ctx *ctx, const char *joined) {
     return out.s;
 }
 
+// If `flag` has the qualified form "<command>.<arg>" for one of the known
+// commands, return that command's schema and set *arg to the argument part;
+// otherwise return NULL (the flag is treated as a bare argument name). Command
+// names are plain identifiers and never contain a '.'.
+static const struct plugin_schema *
+split_qualified(const struct plugin_schema *schemas, unsigned n,
+                const char *flag, const char **arg) {
+    for (unsigned i = 0; i < n; ++i) {
+        const char *name = schemas[i].name;
+        if (!name) {
+            continue;
+        }
+        size_t len = strlen(name);
+        if (!strncmp(flag, name, len) && flag[len] == '.' && flag[len + 1]) {
+            *arg = flag + len + 1;
+            return &schemas[i];
+        }
+    }
+    return NULL;
+}
+
+// Resolve a bare argument flag to the invoked command that declares it. Returns
+// that command's schema, or NULL if no invoked command declares it. Sets
+// *ambiguous when more than one invoked command declares the same name, in
+// which case the user must disambiguate with the qualified --<command>.<arg>
+// form.
+static const struct plugin_schema *
+bare_arg_owner(const struct plugin_schema *schemas, unsigned n,
+               const struct scrcpy_options *opts, const char *argname,
+               bool *ambiguous) {
+    const struct plugin_schema *owner = NULL;
+    *ambiguous = false;
+    for (unsigned i = 0; i < n; ++i) {
+        if (find_arg(&schemas[i], argname) >= 0
+                && count_flag(opts, schemas[i].name) > 0) {
+            if (owner) {
+                *ambiguous = true;
+            } else {
+                owner = &schemas[i];
+            }
+        }
+    }
+    return owner;
+}
+
 // Group the raw --name=value flags into add-on invocations using the daemon's
 // advertised schema, validate them, and run each. `specs` are the (mutable)
 // spec strings from the hello; they are consumed (tokenized) here.
@@ -542,28 +595,56 @@ run_plugins(struct plugin_ctx *ctx, char **specs, unsigned spec_count) {
         parse_schema(specs[i], &schemas[i]);
     }
 
-    // Every raw flag must be a command, or a declared arg of an invoked command
+    // Every raw flag must be a command, a qualified argument (--<cmd>.<arg>),
+    // or a bare argument that resolves to exactly one invoked command.
     for (unsigned i = 0; i < opts->plugin_count; ++i) {
         const char *flag = opts->plugin_names[i];
         if (find_command(schemas, n, flag)) {
+            continue; // it is a command
+        }
+        const char *argname;
+        const struct plugin_schema *q =
+            split_qualified(schemas, n, flag, &argname);
+        if (q) { // qualified form: --<command>.<arg>
+            if (find_arg(q, argname) < 0) {
+                LOGE("Client: unknown argument --%s (add-on --%s has no "
+                     "argument \"%s\")", flag, q->name, argname);
+                return false;
+            }
+            if (!count_flag(opts, q->name)) {
+                LOGE("Client: --%s given, but add-on --%s was not invoked",
+                     flag, q->name);
+                return false;
+            }
             continue;
         }
-        const struct plugin_schema *owner = NULL;
-        for (unsigned j = 0; j < n && !owner; ++j) {
+        // bare form: must be declared by exactly one invoked command
+        bool ambiguous;
+        const struct plugin_schema *owner =
+            bare_arg_owner(schemas, n, opts, flag, &ambiguous);
+        if (ambiguous) {
+            LOGE("Client: --%s is ambiguous (declared by more than one invoked "
+                 "add-on); qualify it as --<command>.%s", flag, flag);
+            return false;
+        }
+        if (owner) {
+            continue; // resolved to the unique invoked owner
+        }
+        // not owned by any invoked command: give the most specific error
+        const struct plugin_schema *decl = NULL;
+        for (unsigned j = 0; j < n && !decl; ++j) {
             if (find_arg(&schemas[j], flag) >= 0) {
-                owner = &schemas[j];
+                decl = &schemas[j];
             }
         }
-        if (!owner) {
+        if (decl) {
+            LOGE("Client: --%s is an argument of --%s, which was not given",
+                 flag, decl->name);
+        } else {
             LOGE("Client: unknown option --%s (no add-on provides it; is the "
                  "daemon running with --add-on?)", flag);
-            return false;
         }
-        if (!count_flag(opts, owner->name)) {
-            LOGE("Client: --%s is an argument of --%s, which was not given",
-                 flag, owner->name);
-            return false;
-        }
+        return false;
     }
 
     // A command may be invoked at most once per client call (arg grouping)
@@ -588,7 +669,8 @@ run_plugins(struct plugin_ctx *ctx, char **specs, unsigned spec_count) {
         bool ok = true;
         for (unsigned j = 0; j < s->arg_count; ++j) {
             char *val = NULL;
-            int r = collect_arg(opts, s->arg_names[j], s->arg_is_list[j], &val);
+            int r = collect_arg(opts, s->name, s->arg_names[j],
+                                s->arg_is_list[j], &val);
             if (r < 0) {
                 ok = false;
                 break;

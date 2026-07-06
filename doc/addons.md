@@ -51,6 +51,28 @@ argument given without its command (`--ref-images` but no `--prompt`), an
 unknown `--flag`, or a command repeated in one call are all rejected client‑side
 with a clear message.
 
+#### Shared argument names — the qualified `--<command>.<arg>` form
+
+Different add-ons may declare arguments with the **same name** (e.g. both
+`--exec_prompt` and `--assert_prompt` accept `--ref-images`). A **bare**
+`--ref-images` is routed to the invoked add-on that declares it, which is
+unambiguous as long as only one such add-on is invoked in the call. When **more
+than one** invoked add-on declares the same argument, the bare form is rejected
+as ambiguous, and each value must be attached to its command with the
+**qualified** `--<command>.<arg>` form:
+
+```bash
+scrcpy-auto --client-port 27400 \
+  --exec_prompt="Tap the Like button"   --exec_prompt.ref-images=~/ref/like.png \
+  --assert_prompt="Is it now liked?"    --assert_prompt.ref-images=~/ref/liked.png
+```
+
+The prefix before the first `.` must match an invoked command; the suffix must
+be one of that command's declared arguments (both are validated client‑side).
+The daemon still receives the plain argument (`SC_ARG_REF_IMAGES`) — the
+`<command>.` prefix is only a client-side routing hint and is stripped before
+the call is sent, so entrypoint scripts need no changes to benefit from it.
+
 ### Reference-image transport (`path`/`pathlist` args)
 
 An argument declared as `path`/`pathlist` holds files the **daemon** must read.
