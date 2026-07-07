@@ -1,5 +1,5 @@
-#ifndef SC_DELAY_BUFFER_H
-#define SC_DELAY_BUFFER_H
+#ifndef SC_VIDEO_REGULATOR_H
+#define SC_VIDEO_REGULATOR_H
 
 #include "common.h"
 
@@ -36,7 +36,7 @@ struct sc_delayed_packet {
 
 struct sc_delayed_packet_queue SC_VECDEQUE(struct sc_delayed_packet);
 
-struct sc_delay_buffer {
+struct sc_video_regulator {
     struct sc_frame_source frame_source; // frame source trait
     struct sc_frame_sink frame_sink; // frame sink trait
 
@@ -53,20 +53,20 @@ struct sc_delay_buffer {
     bool stopped;
 };
 
-struct sc_delay_buffer_callbacks {
-    bool (*on_new_frame)(struct sc_delay_buffer *db, const AVFrame *frame,
+struct sc_video_regulator_callbacks {
+    bool (*on_new_frame)(struct sc_video_regulator *vr, const AVFrame *frame,
                          void *userdata);
 };
 
 /**
- * Initialize a delay buffer.
+ * Initialize a video regulator.
  *
  * \param delay a (strictly) positive delay
  * \param first_frame_asap if true, do not delay the first frame (useful for
                            a video stream).
  */
 void
-sc_delay_buffer_init(struct sc_delay_buffer *db, sc_tick delay,
-                     bool first_frame_asap);
+sc_video_regulator_init(struct sc_video_regulator *vr, sc_tick delay,
+                        bool first_frame_asap);
 
 #endif

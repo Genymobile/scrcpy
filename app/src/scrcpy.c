@@ -17,7 +17,6 @@
 #include "audio_player.h"
 #include "controller.h"
 #include "decoder.h"
-#include "delay_buffer.h"
 #include "demuxer.h"
 #include "events.h"
 #include "file_pusher.h"
@@ -47,6 +46,7 @@
 #ifdef HAVE_V4L2
 # include "v4l2_sink.h"
 #endif
+#include "video_regulator.h"
 
 struct scrcpy {
     struct sc_server server;
@@ -57,10 +57,10 @@ struct scrcpy {
     struct sc_decoder video_decoder;
     struct sc_decoder audio_decoder;
     struct sc_recorder recorder;
-    struct sc_delay_buffer video_buffer;
+    struct sc_video_regulator video_regulator;
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
-    struct sc_delay_buffer v4l2_buffer;
+    struct sc_video_regulator v4l2_regulator;
 #endif
     struct sc_controller controller;
     struct sc_file_pusher file_pusher;
@@ -792,10 +792,10 @@ aoa_complete:
         if (options->video_playback) {
             struct sc_frame_source *src = &s->video_decoder.frame_source;
             if (options->video_buffer) {
-                sc_delay_buffer_init(&s->video_buffer,
-                                     options->video_buffer, true);
-                sc_frame_source_add_sink(src, &s->video_buffer.frame_sink);
-                src = &s->video_buffer.frame_source;
+                sc_video_regulator_init(&s->video_regulator,
+                                        options->video_buffer, true);
+                sc_frame_source_add_sink(src, &s->video_regulator.frame_sink);
+                src = &s->video_regulator.frame_source;
             }
 
             sc_frame_source_add_sink(src, &s->screen.frame_sink);
@@ -817,9 +817,10 @@ aoa_complete:
 
         struct sc_frame_source *src = &s->video_decoder.frame_source;
         if (options->v4l2_buffer) {
-            sc_delay_buffer_init(&s->v4l2_buffer, options->v4l2_buffer, true);
-            sc_frame_source_add_sink(src, &s->v4l2_buffer.frame_sink);
-            src = &s->v4l2_buffer.frame_source;
+            sc_video_regulator_init(&s->v4l2_regulator, options->v4l2_buffer,
+                                    true);
+            sc_frame_source_add_sink(src, &s->v4l2_regulator.frame_sink);
+            src = &s->v4l2_regulator.frame_source;
         }
 
         sc_frame_source_add_sink(src, &s->v4l2_sink.frame_sink);
