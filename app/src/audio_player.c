@@ -95,7 +95,7 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     // honored)
     uint64_t aout_buffer_samples = MAX(1024, aout_samples);
     ap->aout_buffer_size = aout_buffer_samples * sample_size;
-    ap->aout_buffer = malloc(ap->aout_buffer_size);
+    ap->aout_buffer = calloc(aout_buffer_samples, sample_size);
     if (!ap->aout_buffer) {
         sc_audio_regulator_destroy(&ap->audioreg);
         return false;
