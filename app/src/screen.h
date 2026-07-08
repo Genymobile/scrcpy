@@ -205,4 +205,8 @@ struct sc_point
 sc_screen_convert_window_to_frame_coords(struct sc_screen *screen,
                                         int32_t x, int32_t y);
 
+// copy a screenshot of the display to the system clipboard
+void
+sc_screen_copy_to_clipboard(struct sc_screen *screen);
+
 #endif

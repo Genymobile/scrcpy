@@ -1,6 +1,7 @@
 #include "screen.h"
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 #include <SDL3/SDL.h>
 
@@ -1297,4 +1298,109 @@ sc_screen_convert_window_to_frame_coords(struct sc_screen *screen,
     }
 
     return result;
+}
+
+struct sc_screenshot_clipboard {
+    void *data;
+    size_t size;
+};
+
+static const void *
+sc_clipboard_data_callback(void *userdata, const char *mime_type, size_t *size) {
+    struct sc_screenshot_clipboard *sc = userdata;
+    if (strcmp(mime_type, "image/bmp") == 0) {
+        *size = sc->size;
+        return sc->data;
+    }
+    *size = 0;
+    return NULL;
+}
+
+static void
+sc_clipboard_cleanup_callback(void *userdata) {
+    struct sc_screenshot_clipboard *sc = userdata;
+    if (sc) {
+        free(sc->data);
+        free(sc);
+    }
+}
+
+void
+sc_screen_copy_to_clipboard(struct sc_screen *screen) {
+    float scale = SDL_GetWindowPixelDensity(screen->window);
+    if (scale == 0) {
+        scale = 1.0f;
+    }
+
+    SDL_Rect rect = {
+        .x = (int)(screen->rect.x * scale),
+        .y = (int)(screen->rect.y * scale),
+        .w = (int)(screen->rect.w * scale),
+        .h = (int)(screen->rect.h * scale),
+    };
+
+    SDL_Surface *surface = SDL_RenderReadPixels(screen->renderer, &rect);
+    if (!surface) {
+        LOGE("Could not read pixels from renderer: %s", SDL_GetError());
+        return;
+    }
+
+    SDL_IOStream *io = SDL_IOFromDynamicMem();
+    if (!io) {
+        LOGE("Could not create dynamic memory stream: %s", SDL_GetError());
+        SDL_DestroySurface(surface);
+        return;
+    }
+
+    if (!SDL_SaveBMP_IO(surface, io, false)) {
+        LOGE("Could not save BMP to memory: %s", SDL_GetError());
+        SDL_CloseIO(io);
+        SDL_DestroySurface(surface);
+        return;
+    }
+
+    SDL_DestroySurface(surface);
+
+    Sint64 size = SDL_GetIOSize(io);
+    if (size <= 0) {
+        LOGE("Invalid BMP size: %" PRId64, (int64_t)size);
+        SDL_CloseIO(io);
+        return;
+    }
+
+    SDL_PropertiesID props = SDL_GetIOProperties(io);
+    void *buffer = SDL_GetPointerProperty(props, SDL_PROP_IOSTREAM_DYNAMIC_MEMORY_POINTER, NULL);
+    if (!buffer) {
+        LOGE("Could not get dynamic buffer pointer");
+        SDL_CloseIO(io);
+        return;
+    }
+
+    struct sc_screenshot_clipboard *sc = malloc(sizeof(*sc));
+    if (!sc) {
+        LOGE("Could not allocate memory for clipboard wrapper");
+        SDL_CloseIO(io);
+        return;
+    }
+
+    sc->data = malloc(size);
+    if (!sc->data) {
+        LOGE("Could not allocate memory for clipboard buffer");
+        free(sc);
+        SDL_CloseIO(io);
+        return;
+    }
+
+    memcpy(sc->data, buffer, size);
+    sc->size = size;
+    SDL_CloseIO(io);
+
+    const char *mime_types[] = { "image/bmp" };
+    if (!SDL_SetClipboardData(sc_clipboard_data_callback, sc_clipboard_cleanup_callback, sc, mime_types, 1)) {
+        LOGE("Could not set clipboard data: %s", SDL_GetError());
+        free(sc->data);
+        free(sc);
+    } else {
+        LOGI("Screenshot copied to clipboard!");
+    }
 }
