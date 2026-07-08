@@ -76,6 +76,7 @@ struct sc_server_params {
     bool keep_active;
     bool flex_display;
     uint8_t list;
+    const char *app_only;
 };
 
 struct sc_server {

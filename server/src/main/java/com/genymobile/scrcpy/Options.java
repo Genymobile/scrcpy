@@ -79,12 +79,18 @@ public class Options {
     private boolean listCameras;
     private boolean listCameraSizes;
     private boolean listApps;
+    private String appOnly;
 
-    // Options not used by the scrcpy client, but useful to use scrcpy-server directly
+    // Options not used by the scrcpy client, but useful to use scrcpy-server
+    // directly
     private boolean sendDeviceMeta = true; // send device name and size
     private boolean sendFrameMeta = true; // send PTS so that the client may record properly
     private boolean sendDummyByte = true; // write a byte on start to detect connection issues
     private boolean sendStreamMeta = true; // write the stream metadata (codec and session)
+
+    public String getAppOnly() {
+        return appOnly;
+    }
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -323,7 +329,8 @@ public class Options {
         String clientVersion = args[0];
         if (!clientVersion.equals(BuildConfig.VERSION_NAME)) {
             throw new IllegalArgumentException(
-                    "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
+                    "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "("
+                            + clientVersion + ")");
         }
 
         Options options = new Options();
@@ -390,7 +397,8 @@ public class Options {
                 case "min_size_alignment":
                     int align = Integer.parseInt(value);
                     if (align < 1 || align > 16 || (align & (align - 1)) != 0) {
-                        throw new IllegalArgumentException("min_size_alignment (" + align + ") must be 1, 2, 4, 8 or 16");
+                        throw new IllegalArgumentException(
+                                "min_size_alignment (" + align + ") must be 1, 2, 4, 8 or 16");
                     }
                     options.minSizeAlignment = align;
                     break;
@@ -528,6 +536,9 @@ public class Options {
                 case "flex_display":
                     options.flexDisplay = Boolean.parseBoolean(value);
                     break;
+                case "app_only":
+                    options.appOnly = value;
+                    break;
                 case "capture_orientation":
                     Pair<Orientation.Lock, Orientation> pair = parseCaptureOrientation(value);
                     options.captureOrientationLock = pair.first;
@@ -633,10 +644,10 @@ public class Options {
 
     private static NewDisplay parseNewDisplay(String newDisplay) {
         // Possible inputs:
-        //  - "" (empty string)
-        //  - "<width>x<height>/<dpi>"
-        //  - "<width>x<height>"
-        //  - "/<dpi>"
+        // - "" (empty string)
+        // - "<width>x<height>/<dpi>"
+        // - "<width>x<height>"
+        // - "/<dpi>"
         if (newDisplay.isEmpty()) {
             return new NewDisplay();
         }

@@ -23,6 +23,7 @@ enum {
     OPT_WINDOW_TITLE = 1000,
     OPT_PUSH_TARGET,
     OPT_ALWAYS_ON_TOP,
+    OPT_APP_ONLY,
     OPT_CROP,
     OPT_RECORD_FORMAT,
     OPT_PREFER_TEXT,
@@ -149,6 +150,12 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_ALWAYS_ON_TOP,
         .longopt = "always-on-top",
         .text = "Make scrcpy window always on top (above other windows).",
+    },
+    {
+        .longopt_id = OPT_APP_ONLY,
+        .longopt = "app-only",
+        .argdesc = "package",
+        .text = "Mirror only a specific Android application package.",
     },
     {
         .longopt_id = OPT_ANGLE,
@@ -2592,6 +2599,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_ALWAYS_ON_TOP:
                 opts->always_on_top = true;
                 break;
+            case OPT_APP_ONLY:
+                opts->app_only = optarg;
+                break;
             case 'v':
                 args->version = true;
                 break;
@@ -3179,6 +3189,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->video_source == SC_VIDEO_SOURCE_CAMERA) {
+        if (opts->app_only) {
+            LOGE("--app-only is only available with --video-source=display");
+            return false;
+        }
+
         if (opts->display_id) {
             LOGE("--display-id is only available with --video-source=display");
             return false;
@@ -3429,6 +3444,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     if (otg) {
         // OTG mode is compatible with only very few options.
         // Only report obvious errors.
+        if (opts->app_only) {
+            LOGE("OTG mode: --app-only is not supported");
+            return false;
+        }
         if (opts->record_filename) {
             LOGE("OTG mode: cannot record");
             return false;

@@ -405,6 +405,7 @@ scrcpy(struct scrcpy_options *options) {
         .keep_active = options->keep_active,
         .flex_display = options->flex_display,
         .list = options->list,
+        .app_only = options->app_only,
     };
 
     static const struct sc_server_callbacks cbs = {

@@ -448,6 +448,10 @@ execute_server(struct sc_server *server,
     if (params->list & SC_OPTION_LIST_APPS) {
         ADD_PARAM("list_apps=true");
     }
+    if (params->app_only) {
+        VALIDATE_STRING(params->app_only);
+        ADD_PARAM("app_only=%s", params->app_only);
+    }
 
 #undef ADD_PARAM
 
