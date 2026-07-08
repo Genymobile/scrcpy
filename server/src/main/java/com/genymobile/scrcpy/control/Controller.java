@@ -93,7 +93,16 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private final boolean powerOn;
     private final boolean keepActive;
 
-    private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
+    private static KeyCharacterMap loadKeyCharacterMap() {
+        try {
+            return KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
+        } catch (Throwable e) {
+            Ln.e("Could not load key character map", e);
+            return null;
+        }
+    }
+
+    private final KeyCharacterMap charMap = loadKeyCharacterMap();
 
     private final AtomicBoolean isSettingClipboard = new AtomicBoolean();
 
@@ -444,6 +453,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     private boolean injectChar(char c) {
+        if (charMap == null) {
+            return false;
+        }
         String decomposed = KeyComposition.decompose(c);
         char[] chars = decomposed != null ? decomposed.toCharArray() : new char[]{c};
         KeyEvent[] events = charMap.getEvents(chars);
