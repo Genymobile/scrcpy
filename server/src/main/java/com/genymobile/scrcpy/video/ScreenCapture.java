@@ -48,6 +48,7 @@ public class ScreenCapture extends SurfaceCapture {
 
     private AffineMatrix transform;
     private OpenGLRunner glRunner;
+    private final String appOnly;
 
     public ScreenCapture(VirtualDisplayListener vdListener, Options options) {
         this.vdListener = vdListener;
@@ -59,6 +60,7 @@ public class ScreenCapture extends SurfaceCapture {
         assert captureOrientationLock != null;
         assert captureOrientation != null;
         this.angle = options.getAngle();
+        this.appOnly = options.getAppOnly();
     }
 
     @Override
@@ -101,6 +103,9 @@ public class ScreenCapture extends SurfaceCapture {
         filter.addAngle(angle);
 
         transform = filter.getInverseTransform();
+        if (transform == null && appOnly != null) {
+            transform = com.genymobile.scrcpy.util.AffineMatrix.IDENTITY;
+        }
         videoSize = filter.getOutputSize().constrain(videoConstraints);
     }
 
@@ -122,6 +127,7 @@ public class ScreenCapture extends SurfaceCapture {
             assert glRunner == null;
             OpenGLFilter glFilter = new AffineOpenGLFilter(transform);
             glRunner = new OpenGLRunner(glFilter);
+            glRunner.setAppOnly(appOnly);
             surface = glRunner.start(inputSize, videoSize, surface);
         } else {
             // If there is no filter, the display must be rendered at target video size directly

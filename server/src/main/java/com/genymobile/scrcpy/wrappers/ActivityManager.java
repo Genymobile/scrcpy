@@ -9,12 +9,14 @@ import android.annotation.TargetApi;
 import android.content.IContentProvider;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.IInterface;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.List;
 
 @SuppressLint("PrivateApi,DiscouragedPrivateApi")
 public final class ActivityManager {
@@ -161,5 +163,52 @@ public final class ActivityManager {
         } catch (Throwable e) {
             Ln.e("Could not invoke method", e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public String getTopPackage() {
+        try {
+            List<android.app.ActivityManager.RunningTaskInfo> tasks = null;
+            IInterface target;
+            if (Build.VERSION.SDK_INT >= 29) {
+                target = ServiceManager.getService("activity_task", "android.app.IActivityTaskManager");
+            } else {
+                target = manager;
+            }
+
+            Method getTasksMethod = null;
+            for (Method method : target.getClass().getMethods()) {
+                if (method.getName().equals("getTasks")) {
+                    getTasksMethod = method;
+                    break;
+                }
+            }
+
+            if (getTasksMethod != null) {
+                Class<?>[] paramTypes = getTasksMethod.getParameterTypes();
+                Object[] args = new Object[paramTypes.length];
+                for (int i = 0; i < paramTypes.length; i++) {
+                    Class<?> type = paramTypes[i];
+                    if (type == int.class) {
+                        args[i] = (i == 0) ? 1 : 0;
+                    } else if (type == boolean.class) {
+                        args[i] = false;
+                    } else {
+                        args[i] = null;
+                    }
+                }
+                tasks = (List<android.app.ActivityManager.RunningTaskInfo>) getTasksMethod.invoke(target, args);
+            }
+
+            if (tasks != null && !tasks.isEmpty()) {
+                android.app.ActivityManager.RunningTaskInfo task = tasks.get(0);
+                if (task != null && task.topActivity != null) {
+                    return task.topActivity.getPackageName();
+                }
+            }
+        } catch (Throwable e) {
+            Ln.e("Could not get top package name", e);
+        }
+        return null;
     }
 }

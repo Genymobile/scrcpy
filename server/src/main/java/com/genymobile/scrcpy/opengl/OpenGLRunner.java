@@ -36,6 +36,13 @@ public final class OpenGLRunner {
     private int textureId;
 
     private boolean stopped;
+    private String appOnly;
+    private boolean appActive = true;
+    private Size outputSize;
+
+    public void setAppOnly(String appOnly) {
+        this.appOnly = appOnly;
+    }
 
     public OpenGLRunner(OpenGLFilter filter, float[] overrideTransformMatrix) {
         this.filter = filter;
@@ -90,6 +97,7 @@ public final class OpenGLRunner {
     }
 
     private void run(Size inputSize, Size outputSize, Surface outputSurface) throws OpenGLException {
+        this.outputSize = outputSize;
         eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
         if (eglDisplay == EGL14.EGL_NO_DISPLAY) {
             throw new OpenGLException("Unable to get EGL14 display");
@@ -175,6 +183,10 @@ public final class OpenGLRunner {
 
             render(outputSize);
         }, handler);
+
+        if (appOnly != null) {
+            handler.post(checkAppRunnable);
+        }
     }
 
     private void render(Size outputSize) {
@@ -182,6 +194,14 @@ public final class OpenGLRunner {
         GLUtils.checkGlError();
 
         surfaceTexture.updateTexImage();
+
+        if (appOnly != null && !appActive) {
+            GLES20.glClearColor(0f, 0f, 0f, 1f);
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+            EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, surfaceTexture.getTimestamp());
+            EGL14.eglSwapBuffers(eglDisplay, eglSurface);
+            return;
+        }
 
         float[] matrix;
         if (overrideTransformMatrix != null) {
@@ -228,5 +248,42 @@ public final class OpenGLRunner {
             // Behave as if this method call was synchronous
             Thread.currentThread().interrupt();
         }
+    }
+
+    private final Runnable checkAppRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (stopped) {
+                return;
+            }
+            checkActiveApp();
+            handler.postDelayed(this, 200);
+        }
+    };
+
+    private void checkActiveApp() {
+        String topPackage = com.genymobile.scrcpy.wrappers.ServiceManager.getActivityManager().getTopPackage();
+        if (topPackage != null) {
+            boolean active = topPackage.equals(appOnly);
+            if (active != appActive) {
+                appActive = active;
+                com.genymobile.scrcpy.util.Ln.i("App active state changed: " + active + " (top package: " + topPackage + ")");
+                if (!active) {
+                    renderBlack(this.outputSize);
+                }
+            }
+        }
+    }
+
+    private void renderBlack(Size outputSize) {
+        if (eglDisplay == EGL14.EGL_NO_DISPLAY || eglSurface == EGL14.EGL_NO_SURFACE) {
+            return;
+        }
+        GLES20.glViewport(0, 0, outputSize.getWidth(), outputSize.getHeight());
+        GLUtils.checkGlError();
+        GLES20.glClearColor(0f, 0f, 0f, 1f);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+        EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, System.nanoTime());
+        EGL14.eglSwapBuffers(eglDisplay, eglSurface);
     }
 }
