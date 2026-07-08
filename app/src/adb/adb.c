@@ -419,7 +419,7 @@ sc_adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
     return process_check_success_intr(intr, pid, "adb disconnect", flags);
 }
 
-static bool
+bool
 sc_adb_list_devices(struct sc_intr *intr, unsigned flags,
                     struct sc_vec_adb_devices *out_vec) {
     const char *const argv[] = SC_ADB_COMMAND("devices", "-l");
@@ -757,4 +757,103 @@ sc_adb_get_device_sdk_version(struct sc_intr *intr, const char *serial) {
     }
 
     return value;
+}
+
+static char *
+get_emulator_executable(void) {
+    char *emulator = sc_get_env("EMULATOR");
+    if (emulator) {
+        return strdup(emulator);
+    }
+
+    char *sdk_root = sc_get_env("ANDROID_SDK_ROOT");
+    if (!sdk_root) {
+        sdk_root = sc_get_env("ANDROID_HOME");
+    }
+
+    if (sdk_root) {
+#ifdef _WIN32
+        const char *suffix = "\\emulator\\emulator.exe";
+#else
+        const char *suffix = "/emulator/emulator";
+#endif
+        size_t len = strlen(sdk_root) + strlen(suffix) + 1;
+        char *path = malloc(len);
+        if (path) {
+            sprintf(path, "%s%s", sdk_root, suffix);
+            if (sc_file_is_regular(path)) {
+                return path;
+            }
+            free(path);
+        }
+    }
+
+    return strdup("emulator");
+}
+
+bool
+sc_adb_list_avds(struct sc_intr *intr, unsigned flags, struct sc_vec_str *out_vec) {
+    char *emulator_bin = get_emulator_executable();
+    if (!emulator_bin) {
+        return false;
+    }
+    const char *const argv[] = { emulator_bin, "-list-avds", NULL };
+
+    sc_pipe pout;
+    sc_pid pid = sc_adb_execute_p(argv, flags, &pout);
+    free(emulator_bin);
+    if (pid == SC_PROCESS_NONE) {
+        return true;
+    }
+
+#define AVD_BUFSIZE 16384
+    char *buf = malloc(AVD_BUFSIZE);
+    if (!buf) {
+        LOG_OOM();
+        sc_pipe_close(pout);
+        sc_process_close(pid);
+        return false;
+    }
+
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, AVD_BUFSIZE - 1);
+    sc_pipe_close(pout);
+    sc_process_close(pid);
+
+    if (r <= 0) {
+        free(buf);
+        return true;
+    }
+
+    buf[r] = '\0';
+
+    size_t idx_line = 0;
+    while (buf[idx_line] != '\0') {
+        char *line = &buf[idx_line];
+        size_t len = strcspn(line, "\n");
+
+        if (buf[idx_line + len] != '\0') {
+            buf[idx_line + len] = '\0';
+            idx_line += len + 1;
+        } else {
+            idx_line += len;
+        }
+
+        size_t line_len = sc_str_remove_trailing_cr(line, len);
+        line[line_len] = '\0';
+
+        if (line_len > 0) {
+            char *avd_name = strdup(line);
+            if (avd_name) {
+                if (!sc_vector_push(out_vec, avd_name)) {
+                    LOG_OOM();
+                    free(avd_name);
+                    free(buf);
+                    return false;
+                }
+            }
+        }
+    }
+
+    free(buf);
+    return true;
 }
