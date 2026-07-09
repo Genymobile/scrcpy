@@ -208,17 +208,25 @@ out:
 
 bool
 sc_plugins_resolve_addon(const char *spec, char *buf, size_t size) {
-    // A filesystem path (contains '/' or names an existing file) is used as-is.
-    if (strchr(spec, '/') || access(spec, F_OK) == 0) {
+    // A path (contains '/', e.g. "./x.sh" or "/abs/x.sh") is always used as-is.
+    if (strchr(spec, '/')) {
         return false;
     }
+    // A bare name resolves to the installed plugin's entrypoint, addressed by an
+    // ABSOLUTE path so the current directory can never shadow it (e.g. running
+    // from ~/.scrcpy-auto/plugins where a same-named sub-directory exists). Only
+    // resolve when that entrypoint actually exists; otherwise leave `spec` as-is
+    // so a real command/path of the same name still works.
     const char *home = getenv("HOME");
     if (!home || !home[0]) {
         return false;
     }
     int n = snprintf(buf, size, "%s/.scrcpy-auto/plugins/%s/entrypoint.sh",
                      home, spec);
-    return n > 0 && (size_t) n < size;
+    if (n <= 0 || (size_t) n >= size) {
+        return false;
+    }
+    return access(buf, F_OK) == 0;
 }
 
 #else // _WIN32
