@@ -123,6 +123,17 @@ sc_plugins_cli(int argc, char *argv[]) {
         return 1;
     }
 
+    // The invoking shell's working directory may no longer exist (e.g. a
+    // deleted build/keg directory after `brew reinstall`); `git` then aborts
+    // with "cannot read current working directory". All plugin paths are
+    // absolute, so move somewhere guaranteed to exist before spawning anything.
+    {
+        const char *home = getenv("HOME");
+        if (home && home[0]) {
+            (void) chdir(home);
+        }
+    }
+
     const char *const mkdir_cmd[] = {"mkdir", "-p", plugins, NULL};
     if (!run_command(mkdir_cmd)) {
         fprintf(stderr, "plugins: cannot create %s\n", plugins);
