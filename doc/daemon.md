@@ -408,7 +408,7 @@ allowing pipelining (v1 clients send sequentially, the field future-proofs).
 | `op` | Params | Success response extras |
 |---|---|---|
 | `ping` | — | — |
-| `status` | — | `state`, `device` object, `uptime_ms`, `last_frame_age_ms` |
+| `status` | — | `protocol`, `app`, `version`, `state`, `serial`, `device_name`, `uptime_ms`, `last_frame_age_ms`, `plugins` (same advertised schema array as the hello), `report` (`enabled`, and when enabled `dir` / `recording` / `video` = the `recording.mp4` path), `config` (the referenced capture params: `port`, `control`, `video`, and when video is on `codec` / `bit_rate` / `max_size` / `max_fps` / `encoder`) |
 | `screencap` | `format` (`"png"`, only value in v1), `max_age_ms` (optional, §9.4) | `width`, `height`, `payload_len` + PNG bytes as payload |
 | `control` | `cmds`: array of strings — each string one `--control` argument, same mini-language and same parallel/`&&` semantics as the CLI (`sc_control_exec_run`, `app/src/control_exec.c`) | — (returns after execution completes, like the CLI does) |
 | `inject_touch` | `action` (`down`/`up`/`move`), `x`, `y` (video-pixel space), optional `pointer_id`, `buttons` | — (non-blocking; enqueues one touch event) |

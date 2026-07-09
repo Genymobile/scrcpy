@@ -818,6 +818,65 @@ release_session(struct sc_daemon *d) {
     sc_mutex_unlock(&d->mutex);
 }
 
+static const char *
+video_codec_name(enum sc_codec codec) {
+    switch (codec) {
+        case SC_CODEC_H265: return "h265";
+        case SC_CODEC_AV1:  return "av1";
+        default:            return "h264";
+    }
+}
+
+// Append ",\"report\":{...}" (the --auto-test-report location and recording
+// state) and ",\"config\":{...}" (the referenced capture parameters), so
+// --daemon-status is a one-stop readout of how the daemon was launched.
+static bool
+append_status_extras(struct sc_daemon *d, struct sc_strbuf *buf) {
+    const struct scrcpy_options *o = d->opts;
+
+    // report: directory + recording.mp4 path + whether recording right now
+    // (append_str, not append_staticstr: the ternary is a const char*, not a
+    // literal array — sizeof() would give the pointer size)
+    bool w = sc_strbuf_append_staticstr(buf, ",\"report\":{\"enabled\":")
+          && sc_strbuf_append_str(buf,
+                 o->auto_test_report ? "true" : "false");
+    if (w && o->auto_test_report) {
+        w = sc_strbuf_append_staticstr(buf, ",\"dir\":")
+         && sc_json_append_escaped(buf, o->auto_test_report)
+         && sc_strbuf_append_staticstr(buf, ",\"recording\":")
+         && sc_strbuf_append_str(buf,
+                d->report_recording ? "true" : "false");
+        if (w && d->report_initialized && d->report.video_path) {
+            w = sc_strbuf_append_staticstr(buf, ",\"video\":")
+             && sc_json_append_escaped(buf, d->report.video_path);
+        }
+    }
+    w = w && sc_strbuf_append_char(buf, '}');
+
+    // config: the capture parameters the daemon was started with
+    char cfg[96];
+    snprintf(cfg, sizeof(cfg),
+             ",\"config\":{\"port\":%u,\"control\":%s,\"video\":%s",
+             o->daemon_port, o->control ? "true" : "false",
+             o->video ? "true" : "false");
+    w = w && sc_strbuf_append_str(buf, cfg);
+    if (w && o->video) {
+        char v[128];
+        snprintf(v, sizeof(v),
+                 ",\"codec\":\"%s\",\"bit_rate\":%u,\"max_size\":%u",
+                 video_codec_name(o->video_codec), o->video_bit_rate,
+                 o->max_size);
+        w = sc_strbuf_append_str(buf, v)
+         && sc_strbuf_append_staticstr(buf, ",\"max_fps\":")
+         && (o->max_fps ? sc_json_append_escaped(buf, o->max_fps)
+                        : sc_strbuf_append_staticstr(buf, "null"))
+         && sc_strbuf_append_staticstr(buf, ",\"encoder\":")
+         && (o->video_encoder ? sc_json_append_escaped(buf, o->video_encoder)
+                              : sc_strbuf_append_staticstr(buf, "null"));
+    }
+    return w && sc_strbuf_append_char(buf, '}');
+}
+
 static void
 handle_status(struct sc_daemon *d, sc_socket socket, int64_t id) {
     struct sc_strbuf buf;
@@ -825,7 +884,9 @@ handle_status(struct sc_daemon *d, sc_socket socket, int64_t id) {
         return;
     }
 
-    if (!append_status_fields(d, &buf)) {
+    if (!append_status_fields(d, &buf)
+            || !append_plugins(d, &buf)
+            || !append_status_extras(d, &buf)) {
         free(buf.s);
         return;
     }
