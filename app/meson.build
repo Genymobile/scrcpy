@@ -34,6 +34,7 @@ src = [
     'src/daemon/addon.c',
     'src/daemon/broadcaster.c',
     'src/daemon/client.c',
+    'src/daemon/clip_buffer.c',
     'src/daemon/daemon.c',
     'src/daemon/frame_keeper.c',
     'src/daemon/protocol.c',

@@ -77,6 +77,9 @@ app/src/daemon/client.{c,h}     thin client mode
 app/src/daemon/protocol.{c,h}   IPC framing + minimal JSON (uses jsmn)
 app/src/daemon/frame_keeper.{c,h} latest-frame sink for screenshots
 app/src/daemon/broadcaster.{c,h}  encoded-video push sink (web streaming)
+app/src/daemon/clip_buffer.{c,h}  encoded-stream spool sink; "clip" op extracts
+                                  a [start,end] segment as a standalone MP4
+                                  while recording continues
 app/src/daemon/report.{c,h}       test-report recorder + event logger
 app/src/daemon/addon.{c,h}        plugin add-ons (doc/addons.md); the Unified
                                   Plugin Protocol (metadata, adaptive path/upload
@@ -110,7 +113,7 @@ app/data/bash-completion/scrcpy-auto, app/data/zsh-completion/_scrcpy-auto
 | `app/src/events.h` | `SC_EVENT_SCREENCAP_COMPLETED`, `SC_EVENT_SCREENCAP_ERROR` |
 | `app/src/scrcpy.c` | includes `control_exec.h`/`screencap.h`; screencap init/wiring/cleanup (search `screencap`); the `--control` execution block before `event_loop()` (calls `sc_control_exec_run(..., 1)`) |
 | `app/src/main.c` | daemon/client routing between `sc_log_configure()` and `sc_main_thread_init()` |
-| `app/src/trait/packet_source.h` | `SC_PACKET_SOURCE_MAX_SINKS` 2 → **3** (decoder + recorder + screencap) |
+| `app/src/trait/packet_source.h` | `SC_PACKET_SOURCE_MAX_SINKS` 2 → **4** (decoder + broadcaster + clip buffer + recorder) |
 | `app/src/icon.h` | renamed icon filenames |
 | `app/src/sdl_hints.c` | SDL app name `scrcpy-auto` |
 | `app/scrcpy-windows.rc` | InternalName/OriginalFilename/ProductName |
@@ -148,7 +151,7 @@ never resolve by taking only the upstream hunk.
    `grep -n 'scrcpy-auto-server\|share/scrcpy-auto' app/src/server.c`
    must show all three.
 7. **`app/src/trait/packet_source.h`** — if upstream changes
-   `SC_PACKET_SOURCE_MAX_SINKS`, the fork value must remain ≥ 3.
+   `SC_PACKET_SOURCE_MAX_SINKS`, the fork value must remain ≥ 4.
 
 ## 5. Semantic coupling: upstream changes that break the fork WITHOUT conflicts
 
@@ -199,7 +202,7 @@ grep -o '\.\w*' app/src/daemon/daemon.c | sort -u > /tmp/b
    - `grep -n "executable('scrcpy-auto'" app/meson.build`
    - `grep -n 'scrcpy-auto-server' app/src/server.c server/meson.build`
    - `grep -c 'OPT_SCREENCAP\|OPT_CONTROL_CMD\|OPT_DAEMON_PORT\|OPT_CLIENT_PORT' app/src/cli.c` (expect ≥ 8)
-   - `grep -n 'SC_PACKET_SOURCE_MAX_SINKS 3' app/src/trait/packet_source.h`
+   - `grep -n 'SC_PACKET_SOURCE_MAX_SINKS 4' app/src/trait/packet_source.h`
 5. **Functional smoke test** (needs a device):
    - `scrcpy-auto -s X --no-window --screencap /tmp/s.png`
    - `scrcpy-auto -s X --control "click 100 100"`

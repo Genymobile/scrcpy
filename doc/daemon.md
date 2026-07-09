@@ -214,6 +214,9 @@ Three roles:
 | `--daemon-reconnect POLICY` | daemon | `auto[:MAX]` \| `none` | Device-loss policy; default `auto` (unbounded retries, §10). |
 | `--daemon-stop` | client | — | Ask the daemon to shut down gracefully. |
 | `--daemon-status` | client | — | Print daemon/session state as JSON to stdout. |
+| `--clip-start SECONDS` | client | ≥ 0, decimals ok | Start of a recording segment to extract (`clip` op); with `--clip-end` and `--output`. |
+| `--clip-end SECONDS` | client | > start | End of the segment; must already be recorded, else the command fails (`E_RANGE`). |
+| `--output FILE.mp4` | client | path | Where the extracted segment is written (by the client). |
 
 Implementation: new `OPT_*` enum entries and `sc_option` rows in
 `app/src/cli.c`, new fields in `struct scrcpy_options` (`app/src/options.h`):
@@ -415,6 +418,7 @@ allowing pipelining (v1 clients send sequentially, the field future-proofs).
 | `note` | `note`: a `"title: description"` annotation | — (logged to the test report as a `note` event with `title`/`text`; standalone, not tied to any control command) |
 | `plugin` | `name`, `args`, optional `arg_names`/`arg_values` (parallel string arrays of the declared extra arguments) | runs the loaded add-on registered for `name` with `args` as `$1`, each extra argument exported as `SC_ARG_<NAME>`, and a `SC_RESULT_FILE` temp path (doc/addons.md); blocks until the script exits; auto-logs a `plugin` report event; returns `result` (the JSON the script wrote to `SC_RESULT_FILE`, if any) |
 | `upload` | `name` (a basename), `payload_len` + that many raw payload bytes after the JSON frame | stores the payload in a per-connection temp file (removed on disconnect) and returns its daemon-side `path`; used to ship a `path`/`pathlist` argument's bytes when the client (or web server) is remote |
+| `clip` | `start_ms`, `end_ms` (ms since the first video packet, `0 <= start < end`) | `start_ms`, `end_ms` (ACTUAL clip bounds: the start snaps back to the keyframe at or before the requested start), `payload_len` + a standalone MP4 as payload. The daemon spools every encoded packet of the current stream session (`app/src/daemon/clip_buffer.c`, a demuxer sink independent of the recorder) and muxes the selected range in memory with timestamps rebased to 0; the CLIENT writes the file, so remote clients work and the daemon needs no write access. An `end_ms` beyond the last recorded packet is an `E_RANGE` error. |
 | `subscribe_video` | — | turns the connection into a one-way encoded-video push stream (see §8.7); no `ok` reply — the first `video_meta` event is the ack |
 | `shutdown` | — | — (daemon exits after responding) |
 

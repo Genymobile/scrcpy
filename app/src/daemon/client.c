@@ -169,6 +169,114 @@ end:
     return ok;
 }
 
+// Extract [clip_start_ms, clip_end_ms] of the daemon's recording into
+// opts->clip_output (doc/daemon.md §9.5). The daemon returns the muxed MP4 as
+// the response payload and the file is written locally, so this also works
+// with a remote daemon. Under --json, prints the result (or error) object.
+static bool
+do_clip(sc_socket socket, const struct scrcpy_options *opts, int64_t id,
+        bool *json_printed) {
+    struct sc_strbuf buf;
+    if (!sc_strbuf_init(&buf, 128)) {
+        return false;
+    }
+    char head[128];
+    snprintf(head, sizeof(head),
+             "{\"id\":%" PRId64 ",\"op\":\"clip\",\"start_ms\":%" PRId64
+             ",\"end_ms\":%" PRId64,
+             id, opts->clip_start_ms, opts->clip_end_ms);
+    bool w = sc_strbuf_append_str(&buf, head)
+          && append_action(&buf, opts)
+          && sc_strbuf_append_char(&buf, '}');
+    if (!w) {
+        free(buf.s);
+        return false;
+    }
+    bool sent = sc_daemon_write_frame(socket, buf.s, buf.len, NULL, 0);
+    free(buf.s);
+    if (!sent) {
+        LOGE("Client: could not send clip request");
+        return false;
+    }
+
+    struct sc_json json;
+    char *doc;
+    if (!client_read(socket, &json, &doc)) {
+        return false;
+    }
+
+    bool ok = response_ok(&json, doc);
+    int64_t payload_len = 0;
+    int64_t start_ms = 0;
+    int64_t end_ms = 0;
+    if (ok && (!sc_json_get_int64(&json, "payload_len", &payload_len)
+                   || payload_len <= 0)) {
+        LOGE("Client: missing clip payload");
+        ok = false;
+    }
+    if (ok) {
+        sc_json_get_int64(&json, "start_ms", &start_ms);
+        sc_json_get_int64(&json, "end_ms", &end_ms);
+    } else if (opts->json) {
+        char *err = sc_json_get_raw(&json, "error");
+        printf("{\"error\":%s}\n", err ? err : "{\"code\":\"E_CLIP\","
+               "\"message\":\"clip extraction failed\"}");
+        free(err);
+        *json_printed = true;
+    }
+    free(doc);
+    if (!ok) {
+        return false;
+    }
+
+    uint8_t *mp4;
+    if (!sc_daemon_read_payload(socket, payload_len, &mp4)) {
+        LOGE("Client: could not read clip payload");
+        return false;
+    }
+
+    ok = false;
+    FILE *fp = fopen(opts->clip_output, "wb");
+    if (!fp) {
+        LOGE("Client: could not open output file: %s", opts->clip_output);
+        goto end;
+    }
+    size_t written = fwrite(mp4, 1, payload_len, fp);
+    fclose(fp);
+    if (written != (size_t) payload_len) {
+        LOGE("Client: failed to write %s", opts->clip_output);
+        goto end;
+    }
+
+    if (opts->json) {
+        struct sc_strbuf out;
+        if (sc_strbuf_init(&out, 128)) {
+            char tail[96];
+            snprintf(tail, sizeof(tail),
+                     ",\"start_ms\":%" PRId64 ",\"end_ms\":%" PRId64
+                     ",\"bytes\":%" PRId64 "}",
+                     start_ms, end_ms, payload_len);
+            if (sc_strbuf_append_staticstr(&out, "{\"file\":")
+                    && sc_json_append_escaped(&out, opts->clip_output)
+                    && sc_strbuf_append_str(&out, tail)) {
+                printf("%s\n", out.s);
+                *json_printed = true;
+            }
+            free(out.s);
+        }
+    } else {
+        LOGI("Clip saved to %s (%" PRId64 ".%03" PRId64 "s - %" PRId64
+             ".%03" PRId64 "s, %" PRId64 " bytes)",
+             opts->clip_output, start_ms / 1000, start_ms % 1000,
+             end_ms / 1000, end_ms % 1000, payload_len);
+    }
+    ok = true;
+
+end:
+    free(mp4);
+    return ok;
+}
+
 static bool
 do_note(sc_socket socket, const struct scrcpy_options *opts, int64_t id) {
     struct sc_strbuf buf;
@@ -857,8 +965,8 @@ sc_client_run(const struct scrcpy_options *opts) {
                              &plugin_spec_count);
     free(hello_doc);
 
-    // Execute requested operations in order: note, control, screencap,
-    // status, shutdown (doc/daemon.md §8.6)
+    // Execute requested operations in order: note, plugins, control,
+    // screencap, clip, status, shutdown (doc/daemon.md §8.6)
     int64_t id = 1;
     ret = SCRCPY_EXIT_SUCCESS;
 
@@ -892,6 +1000,13 @@ sc_client_run(const struct scrcpy_options *opts) {
 
     if (opts->screencap_filename) {
         if (!do_screencap(socket, opts, id++)) {
+            ret = SCRCPY_EXIT_FAILURE;
+            goto end;
+        }
+    }
+
+    if (opts->clip_output) {
+        if (!do_clip(socket, opts, id++, &json_printed)) {
             ret = SCRCPY_EXIT_FAILURE;
             goto end;
         }

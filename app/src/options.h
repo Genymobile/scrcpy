@@ -349,6 +349,11 @@ struct scrcpy_options {
     bool vd_destroy_content;
     bool vd_system_decorations;
     const char *screencap_filename;
+    // Clip extraction (client): save [clip_start_ms, clip_end_ms] of the
+    // daemon's recording to clip_output (doc/daemon.md §9.5)
+    const char *clip_output;
+    int64_t clip_start_ms; // -1 if unset
+    int64_t clip_end_ms;   // -1 if unset
     const char *control_cmds[SC_MAX_CONTROL_CMDS];
     unsigned control_cmd_count;
     bool camera_torch;

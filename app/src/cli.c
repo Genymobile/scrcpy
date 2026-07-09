@@ -115,6 +115,9 @@ enum {
     OPT_ACTION,
     OPT_NOTE,
     OPT_ADD_ON,
+    OPT_CLIP_START,
+    OPT_CLIP_END,
+    OPT_OUTPUT,
     OPT_CAMERA_TORCH,
     OPT_CAMERA_ZOOM,
     OPT_MIN_SIZE_ALIGNMENT,
@@ -956,6 +959,32 @@ static const struct sc_option options[] = {
         .text = "Take a screenshot and save it to file.\n"
                 "The screenshot is captured from the video stream, "
                 "the same way as --record.",
+    },
+    {
+        .longopt_id = OPT_CLIP_START,
+        .longopt = "clip-start",
+        .argdesc = "seconds",
+        .text = "Start of the video segment to extract from the daemon's "
+                "recording, in seconds since the recording started (decimals "
+                "allowed, e.g. 8.5).\n"
+                "Requires --clip-end and --output (see --output).",
+    },
+    {
+        .longopt_id = OPT_CLIP_END,
+        .longopt = "clip-end",
+        .argdesc = "seconds",
+        .text = "End of the video segment to extract (see --clip-start).\n"
+                "If this timestamp has not been recorded yet, the command "
+                "fails with an error.",
+    },
+    {
+        .longopt_id = OPT_OUTPUT,
+        .longopt = "output",
+        .argdesc = "file.mp4",
+        .text = "Save the [--clip-start, --clip-end] segment of the daemon's "
+                "recording to this MP4 file, while recording continues.\n"
+                "The clip starts at the closest keyframe at or before "
+                "--clip-start; the actual bounds are reported.",
     },
     {
         .shortopt = 's',
@@ -1805,6 +1834,21 @@ parse_bit_rate(const char *s, uint32_t *bit_rate) {
     }
 
     *bit_rate = (uint32_t) value;
+    return true;
+}
+
+// Parse a --clip-start/--clip-end timestamp in seconds (decimals allowed,
+// e.g. "8.5") into milliseconds
+static bool
+parse_clip_time(const char *s, int64_t *out_ms) {
+    char *end;
+    double value = strtod(s, &end);
+    if (end == s || *end != '\0' || !(value >= 0)
+            || value > 366 * 24 * 3600.) {
+        LOGE("Invalid clip time: %s (expected seconds, e.g. \"8.5\")", s);
+        return false;
+    }
+    *out_ms = (int64_t) (value * 1000. + 0.5);
     return true;
 }
 
@@ -3120,6 +3164,19 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_SCREENCAP:
                 opts->screencap_filename = optarg;
                 break;
+            case OPT_CLIP_START:
+                if (!parse_clip_time(optarg, &opts->clip_start_ms)) {
+                    return false;
+                }
+                break;
+            case OPT_CLIP_END:
+                if (!parse_clip_time(optarg, &opts->clip_end_ms)) {
+                    return false;
+                }
+                break;
+            case OPT_OUTPUT:
+                opts->clip_output = optarg;
+                break;
             case OPT_CONTROL_CMD:
                 if (!optarg || !strcmp(optarg, "-h")
                             || !strcmp(optarg, "--help")
@@ -3258,6 +3315,25 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 
+    // Clip extraction (doc/daemon.md §9.5)
+    if (opts->clip_output || opts->clip_start_ms >= 0
+            || opts->clip_end_ms >= 0) {
+        if (!opts->client_port) {
+            LOGE("--clip-start/--clip-end/--output require --client-port");
+            return false;
+        }
+        if (!opts->clip_output || opts->clip_start_ms < 0
+                || opts->clip_end_ms < 0) {
+            LOGE("clip extraction requires all of --clip-start, --clip-end "
+                 "and --output");
+            return false;
+        }
+        if (opts->clip_end_ms <= opts->clip_start_ms) {
+            LOGE("--clip-end must be greater than --clip-start");
+            return false;
+        }
+    }
+
     if (opts->daemon_port) {
         if (opts->window) {
             LOGE("--daemon-port requires --no-window");
@@ -3317,10 +3393,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
         if (!opts->control_cmd_count && !opts->screencap_filename
                 && !opts->daemon_status && !opts->daemon_stop && !opts->note
-                && !opts->plugin_count) {
+                && !opts->plugin_count && !opts->clip_output) {
             LOGE("--client-port requires at least one operation (--control, "
-                 "--screencap, --note, a plugin --<command>, --daemon-status, "
-                 "--daemon-stop)");
+                 "--screencap, --clip-start/--clip-end/--output, --note, "
+                 "a plugin --<command>, --daemon-status, --daemon-stop)");
             return false;
         }
         // The client never opens a window nor a device session

@@ -23,6 +23,7 @@
 #include "coords.h"
 #include "daemon/addon.h"
 #include "daemon/broadcaster.h"
+#include "daemon/clip_buffer.h"
 #include "daemon/frame_keeper.h"
 #include "daemon/protocol.h"
 #include "daemon/registry.h"
@@ -113,6 +114,7 @@ struct sc_daemon {
     struct sc_daemon_session session;
     struct sc_frame_keeper keeper;
     struct sc_broadcaster broadcaster; // encoded-video push to web clients
+    struct sc_clip_buffer clips; // encoded-stream spool for clip extraction
 
     // Test-report platform (DESIGN-test-report.md)
     struct sc_report report;
@@ -393,7 +395,11 @@ sc_daemon_session_start(struct sc_daemon *d) {
         sc_packet_source_add_sink(&s->demuxer.packet_source,
                                   &d->broadcaster.packet_sink);
 
-        // Test report: record the encoded stream (third packet sink)
+        // Spool the encoded stream for clip extraction (third packet sink)
+        sc_packet_source_add_sink(&s->demuxer.packet_source,
+                                  &d->clips.packet_sink);
+
+        // Test report: record the encoded stream (fourth packet sink)
         if (d->report_active) {
             if (!d->report_initialized) {
                 if (!sc_report_init(&d->report, options->auto_test_report,
@@ -944,6 +950,50 @@ handle_screencap(struct sc_daemon *d, sc_socket socket, int64_t id,
              width, height, (int64_t) SC_TICK_TO_MS(age), png_size);
     send_ok(socket, id, extra, png, png_size);
     free(png);
+}
+
+// Extract [start_ms, end_ms] of the current recording as a standalone MP4
+// (doc/daemon.md §9.5). The clip bytes are returned as the response payload;
+// the CLIENT writes the output file, so this also works remotely and needs no
+// daemon-side write access. The start snaps back to the nearest keyframe; a
+// not-yet-recorded end is an E_RANGE error (contract of --clip-start/end).
+static void
+handle_clip(struct sc_daemon *d, sc_socket socket, int64_t id,
+            struct sc_json *json) {
+    if (!d->opts->video) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "video is disabled (--no-video)");
+        return;
+    }
+    int64_t start_ms, end_ms;
+    if (!sc_json_get_int64(json, "start_ms", &start_ms)
+            || !sc_json_get_int64(json, "end_ms", &end_ms)
+            || start_ms < 0 || end_ms <= start_ms) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "expected start_ms/end_ms with 0 <= start < end");
+        return;
+    }
+
+    uint8_t *mp4;
+    size_t mp4_size;
+    int64_t actual_start_ms, actual_end_ms;
+    char err[192];
+    int r = sc_clip_buffer_extract(&d->clips, start_ms, end_ms, &mp4,
+                                   &mp4_size, &actual_start_ms,
+                                   &actual_end_ms, err, sizeof(err));
+    if (r) {
+        send_error(socket, id,
+                   r == SC_CLIP_ERANGE ? "E_RANGE" : "E_INTERNAL", err);
+        return;
+    }
+
+    char extra[128];
+    snprintf(extra, sizeof(extra),
+             "\"start_ms\":%" PRId64 ",\"end_ms\":%" PRId64
+             ",\"payload_len\":%zu",
+             actual_start_ms, actual_end_ms, mp4_size);
+    send_ok(socket, id, extra, mp4, mp4_size);
+    av_free(mp4);
 }
 
 static void
@@ -1660,6 +1710,8 @@ handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
         handle_status(d, socket, id);
     } else if (!strcmp(op, "screencap")) {
         handle_screencap(d, socket, id, &json);
+    } else if (!strcmp(op, "clip")) {
+        handle_clip(d, socket, id, &json);
     } else if (!strcmp(op, "control")) {
         handle_control(d, socket, id, &json, conn_index);
     } else if (!strcmp(op, "inject_touch")) {
@@ -1931,6 +1983,7 @@ sc_daemon_run(struct scrcpy_options *opts) {
     bool clip_ok = false;
     bool keeper_ok = false;
     bool broadcaster_ok = false;
+    bool clips_ok = false;
     bool listening = false;
     bool registry_written = false;
 
@@ -1954,6 +2007,10 @@ sc_daemon_run(struct scrcpy_options *opts) {
         goto end;
     }
     broadcaster_ok = true;
+    if (!sc_clip_buffer_init(&d->clips)) {
+        goto end;
+    }
+    clips_ok = true;
 
     // Bind first: this is the "already running?" check (doc/daemon.md §6.1)
     d->listen_socket = net_socket();
@@ -2109,6 +2166,9 @@ end:
     }
     if (registry_written) {
         sc_registry_remove(opts->daemon_port);
+    }
+    if (clips_ok) {
+        sc_clip_buffer_destroy(&d->clips);
     }
     if (broadcaster_ok) {
         sc_broadcaster_destroy(&d->broadcaster);

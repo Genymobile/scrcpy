@@ -21,10 +21,10 @@ Never resolve a conflict by taking only the upstream side in a file that
    `app/src/options.{h,c}`: `--screencap`, `--control`, `--daemon-port`,
    `--client-port`, `--daemon-host`, `--json`, `--daemon-stop`,
    `--daemon-status`, `--daemon-reconnect`, `--auto-test-report`, `--action`,
-   `--note`, `--add-on`, plus the unknown-`--name=value` plugin-call pre-scan in
-   `scrcpy_parse_args`.
+   `--note`, `--add-on`, `--clip-start`, `--clip-end`, `--output`, plus the
+   unknown-`--name=value` plugin-call pre-scan in `scrcpy_parse_args`.
 3. Fork events in `app/src/events.h` (`SC_EVENT_SCREENCAP_*`).
-4. `SC_PACKET_SOURCE_MAX_SINKS` ≥ 3 in `app/src/trait/packet_source.h`.
+4. `SC_PACKET_SOURCE_MAX_SINKS` ≥ 4 in `app/src/trait/packet_source.h`.
 5. `libswscale` dependency and the fork source files in `app/meson.build`.
 6. Fork-owned modules (`app/src/daemon/`, `app/src/control_exec.*`,
    `app/src/screencap.*`) compile against upstream-internal APIs — a merge
