@@ -45,6 +45,12 @@ class ScrcpyAuto < Formula
            *std_meson_args
     system "meson", "compile", "-C", "build"
     system "meson", "install", "-C", "build"
+
+    # Freedesktop icons do nothing on macOS and are a frequent `brew link`
+    # conflict source (a prior manual `sudo ninja install` leaves the icons
+    # directory root-owned, which Homebrew cannot overwrite). Drop them; the
+    # man page and shell completions are kept.
+    (share/"icons").rmtree if (share/"icons").exist?
   end
 
   def caveats
