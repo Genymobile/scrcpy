@@ -6,6 +6,10 @@ script; it is meant for logic that does not belong in the core (AI workflows,
 Python integrations, custom automation), which can then reuse scrcpy-auto for
 screenshots and input.
 
+> **Installing add-ons by name.** Add-ons can be installed from a git
+> repository and loaded by name (`--add-on=<name>`) instead of a path —
+> see [plugins.md](plugins.md).
+
 ## Loading (daemon side)
 
 Load one or more entrypoints when starting the daemon:

@@ -1,5 +1,6 @@
 src = [
     'src/main.c',
+    'src/plugins.c',
     'src/adb/adb.c',
     'src/adb/adb_device.c',
     'src/adb/adb_parser.c',

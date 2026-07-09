@@ -1,9 +1,11 @@
 #include "addon.h"
 
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 
+#include "plugins.h"
 #include "util/log.h"
 
 // Trim leading/trailing spaces and tabs in place; returns a pointer into `s`.
@@ -221,8 +223,17 @@ sc_addons_load(struct sc_addons *addons, const char *const *paths,
                unsigned count) {
     addons->count = 0;
     for (unsigned i = 0; i < count && addons->count < SC_MAX_ADDONS; ++i) {
+        // A bare plugin name resolves to its entrypoint under
+        // ~/.scrcpy-auto/plugins/<name>/ (doc/plugins.md); a path is
+        // used as-is.
+        char resolved[PATH_MAX];
+        const char *ep = paths[i];
+        if (sc_plugins_resolve_addon(paths[i], resolved, sizeof(resolved))) {
+            ep = resolved;
+        }
+
         struct sc_addon addon;
-        if (!query_schema(paths[i], &addon)) {
+        if (!query_schema(ep, &addon)) {
             continue;
         }
 
@@ -235,12 +246,12 @@ sc_addons_load(struct sc_addons *addons, const char *const *paths,
         }
         if (dup) {
             LOGW("Add-on: command \"%s\" already registered, ignoring %s",
-                 addon.name, paths[i]);
+                 addon.name, ep);
             free_addon(&addon);
             continue;
         }
 
-        char *path = strdup(paths[i]);
+        char *path = strdup(ep);
         if (!path) {
             LOG_OOM();
             free_addon(&addon);
@@ -248,7 +259,7 @@ sc_addons_load(struct sc_addons *addons, const char *const *paths,
         }
         addon.path = path;
         addons->list[addons->count++] = addon;
-        LOGI("Add-on loaded: --%s -> %s (%u arg%s)", addon.name, paths[i],
+        LOGI("Add-on loaded: --%s -> %s (%u arg%s)", addon.name, ep,
              addon.arg_count, addon.arg_count == 1 ? "" : "s");
     }
 }

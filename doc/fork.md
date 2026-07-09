@@ -72,6 +72,10 @@ them silently** — see §5.
 ```
 app/src/control_exec.{c,h}      --control executors (moved out of scrcpy.c)
 app/src/screencap.{c,h}         --screencap sink + sc_frame_to_png()
+app/src/plugins.{c,h}           plugin install/upgrade + --add-on name
+                                resolution (doc/plugins.md); also
+                                dispatched in main.c and resolved in
+                                daemon/addon.c
 app/src/daemon/daemon.{c,h}     daemon: listener, dispatch, session supervisor
 app/src/daemon/client.{c,h}     thin client mode
 app/src/daemon/protocol.{c,h}   IPC framing + minimal JSON (uses jsmn)

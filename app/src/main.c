@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #ifdef HAVE_V4L2
 # include <libavdevice/avdevice.h>
 #endif
@@ -12,6 +13,7 @@
 #include "daemon/daemon.h"
 #include "events.h"
 #include "options.h"
+#include "plugins.h"
 #include "scrcpy.h"
 #ifdef HAVE_USB
 # include "usb/scrcpy_otg.h"
@@ -132,6 +134,11 @@ end:
 int
 main(int argc, char *argv[]) {
 #ifndef _WIN32
+    if (argc >= 2 && (!strcmp(argv[1], "plugins-install")
+                      || !strcmp(argv[1], "plugins-upgrade"))) {
+        return sc_plugins_cli(argc, argv);
+    }
+
     return main_scrcpy(argc, argv);
 #else
     (void) argc;
