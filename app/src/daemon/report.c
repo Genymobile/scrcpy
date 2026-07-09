@@ -18,13 +18,48 @@
 #include "util/strbuf.h"
 
 static bool
-make_dir(const char *path) {
+make_dir_one(const char *path) {
 #ifdef _WIN32
     int r = _mkdir(path);
 #else
     int r = mkdir(path, 0755);
 #endif
     return r == 0 || errno == EEXIST;
+}
+
+// Create `path` and any missing parent directories (like `mkdir -p`), so a
+// nested --auto-test-report target such as "./v/test1" works when "./v" does
+// not exist yet. Leading and repeated slashes are preserved.
+static bool
+make_dir(const char *path) {
+    char *copy = strdup(path);
+    if (!copy) {
+        LOG_OOM();
+        return false;
+    }
+    bool ok = true;
+    // Create each intermediate component, then the leaf. Skip the first
+    // character so a leading '/' (absolute path) or '.' stays with the first
+    // component, and an empty path never reads past the buffer.
+    for (char *p = copy; *p; ++p) {
+        if (p == copy || (*p != '/'
+#ifdef _WIN32
+                && *p != '\\'
+#endif
+        )) {
+            continue;
+        }
+        char sep = *p;
+        *p = '\0';
+        if (*copy && !make_dir_one(copy)) { // skip empty (e.g. leading "//")
+            ok = false;
+            break;
+        }
+        *p = sep;
+    }
+    ok = ok && make_dir_one(copy);
+    free(copy);
+    return ok;
 }
 
 static char *
