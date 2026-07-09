@@ -234,6 +234,15 @@ struct sc_port_range {
 
 #define SC_WINDOW_POSITION_UNDEFINED (-0x8000)
 
+#define SC_MAX_CONTROL_CMDS 100
+#define SC_MAX_ADDONS 32
+#define SC_MAX_PLUGIN_CALLS 32
+// Extra named arguments a single add-on may declare beyond its primary value
+#define SC_MAX_ADDON_ARGS 8
+// Declared environment variables and metadata entries a single add-on may have
+#define SC_MAX_ADDON_ENVS 8
+#define SC_MAX_ADDON_META 8
+
 struct scrcpy_options {
     const char *serial;
     const char *crop;
@@ -339,9 +348,37 @@ struct scrcpy_options {
     const char *start_app;
     bool vd_destroy_content;
     bool vd_system_decorations;
+    const char *screencap_filename;
+    // Clip extraction (client): save [clip_start_ms, clip_end_ms] of the
+    // daemon's recording to clip_output (doc/daemon.md §9.5)
+    const char *clip_output;
+    int64_t clip_start_ms; // -1 if unset
+    int64_t clip_end_ms;   // -1 if unset
+    const char *control_cmds[SC_MAX_CONTROL_CMDS];
+    unsigned control_cmd_count;
     bool camera_torch;
     bool keep_active;
     bool flex_display;
+    // Persistent daemon mode (doc/daemon.md)
+    uint16_t daemon_port; // 0 if disabled
+    uint16_t client_port; // 0 if disabled
+    const char *daemon_host; // client: daemon host (NULL => 127.0.0.1)
+    bool json; // client: emit machine-readable JSON instead of human logs
+    bool daemon_stop;
+    bool daemon_status;
+    bool daemon_reconnect_none;
+    unsigned daemon_reconnect_max; // 0 means unlimited
+    // Test-report platform (DESIGN-test-report.md)
+    const char *auto_test_report; // daemon: report directory, NULL if disabled
+    const char *action; // client: human-readable description of the operation
+    const char *note; // client: standalone "title: description" annotation
+    // Plugin system (doc/addons.md)
+    const char *add_ons[SC_MAX_ADDONS]; // daemon: add-on entrypoint scripts
+    unsigned add_on_count;
+    // client: unknown --name=value options captured as plugin calls
+    const char *plugin_names[SC_MAX_PLUGIN_CALLS];
+    const char *plugin_args[SC_MAX_PLUGIN_CALLS];
+    unsigned plugin_count;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

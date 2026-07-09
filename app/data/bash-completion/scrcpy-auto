@@ -1,4 +1,4 @@
-_scrcpy() {
+_scrcpy_auto() {
     local cur prev words cword
     local opts="
         --always-on-top
@@ -22,8 +22,14 @@ _scrcpy() {
         --camera-torch
         --camera-zoom=
         --capture-orientation=
+        --client-port=
+        --control=
         --crop=
         -d --select-usb
+        --daemon-port=
+        --daemon-reconnect=
+        --daemon-status
+        --daemon-stop
         --disable-screensaver
         --display-id=
         --display-ime-policy=
@@ -87,6 +93,7 @@ _scrcpy() {
         --require-audio
         -s --serial=
         -S --turn-screen-off
+        --screencap=
         --screen-off-timeout=
         --shortcut-mod=
         --start-app=
@@ -243,4 +250,4 @@ _scrcpy() {
     [[ $COMPREPLY == *= ]] && compopt -o nospace
 }
 
-complete -F _scrcpy scrcpy
+complete -F _scrcpy_auto scrcpy-auto

@@ -6,11 +6,11 @@ if prebuilt_server == ''
                   # gradle is responsible for tracking source changes
                   build_by_default: true,
                   build_always_stale: true,
-                  output: 'scrcpy-server',
+                  output: 'scrcpy-auto-server',
                   command: [find_program('./scripts/build-wrapper.sh'), meson.current_source_dir(), '@OUTPUT@', get_option('buildtype')],
                   console: true,
                   install: true,
-                  install_dir: 'share/scrcpy')
+                  install_dir: 'share/scrcpy-auto')
 else
     if not prebuilt_server.startswith('/')
         # prebuilt server path is relative to the root scrcpy directory
@@ -18,14 +18,14 @@ else
     endif
     custom_target('scrcpy-server-prebuilt',
                   input: prebuilt_server,
-                  output: 'scrcpy-server',
+                  output: 'scrcpy-auto-server',
                   command: ['cp', '@INPUT@', '@OUTPUT@'],
                   install: true,
-                  install_dir: 'share/scrcpy')
+                  install_dir: 'share/scrcpy-auto')
 endif
 
 if meson.version().version_compare('>= 0.58.0')
        devenv = environment()
-       devenv.set('SCRCPY_SERVER_PATH', meson.current_build_dir() / 'scrcpy-server')
+       devenv.set('SCRCPY_SERVER_PATH', meson.current_build_dir() / 'scrcpy-auto-server')
        meson.add_devenv(devenv)
 endif

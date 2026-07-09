@@ -1,0 +1,2422 @@
+#include "daemon.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <inttypes.h>
+#include <signal.h>
+#ifndef _WIN32
+# include <sys/wait.h>
+# include <time.h>
+#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+
+#ifdef _WIN32
+# include <windows.h>
+#else
+# include <unistd.h>
+#endif
+
+#include <libavutil/frame.h>
+
+#include "control_exec.h"
+#include "control_msg.h"
+#include "controller.h"
+#include "coords.h"
+#include "daemon/addon.h"
+#include "daemon/broadcaster.h"
+#include "daemon/clip_buffer.h"
+#include "daemon/frame_keeper.h"
+#include "daemon/protocol.h"
+#include "daemon/registry.h"
+#include "daemon/report.h"
+#include "util/file.h"
+#include "util/process.h"
+#include "decoder.h"
+#include "demuxer.h"
+#include "screencap.h"
+#include "server.h"
+#include "util/log.h"
+#include "util/net.h"
+#include "util/rand.h"
+#include "util/strbuf.h"
+#include "util/thread.h"
+#include "util/tick.h"
+
+#define SC_DAEMON_MAX_CLIENTS 16
+#define SC_MAX_SERVICES 8               // adopted long-running service add-ons
+#define SC_SERVICE_READY_TIMEOUT_MS 15000 // wait for a service to report ready
+#define SC_SERVICE_POLL_MS 25           // service readiness poll interval
+#define SC_SERVICE_TERM_GRACE_MS 2000   // SIGTERM grace before SIGKILL
+// Files a single client connection may upload before they are cleaned up
+#define SC_DAEMON_MAX_UPLOADS 64
+// Cap on a plugin result file the daemon will read back (256 KiB)
+#define SC_DAEMON_MAX_RESULT_SIZE (256 * 1024)
+#define SC_DAEMON_SCREENCAP_DEADLINE SC_TICK_FROM_MS(2000)
+// Poll interval for stop-signal checks in supervisor waits
+#define SC_DAEMON_WAIT_TICK SC_TICK_FROM_MS(500)
+#define SC_DAEMON_BACKOFF_MIN_MS 1000
+#define SC_DAEMON_BACKOFF_MAX_MS 30000
+
+enum sc_daemon_state {
+    SC_DAEMON_STATE_CONNECTING,
+    SC_DAEMON_STATE_READY,
+    SC_DAEMON_STATE_RECONNECTING,
+    SC_DAEMON_STATE_STOPPING,
+};
+
+static const char *
+sc_daemon_state_str(enum sc_daemon_state state) {
+    switch (state) {
+        case SC_DAEMON_STATE_CONNECTING: return "connecting";
+        case SC_DAEMON_STATE_READY: return "ready";
+        case SC_DAEMON_STATE_RECONNECTING: return "reconnecting";
+        case SC_DAEMON_STATE_STOPPING: return "stopping";
+        default: return "unknown";
+    }
+}
+
+struct sc_daemon_session {
+    struct sc_server server;
+    struct sc_demuxer demuxer;
+    struct sc_decoder decoder;
+    struct sc_controller controller;
+
+    bool server_started;
+    bool demuxer_started;
+    bool controller_initialized;
+    bool controller_started;
+
+    // Guarded by daemon mutex
+    bool connected;
+    bool conn_failed;
+    bool dead; // device lost after having been connected
+};
+
+struct sc_daemon;
+
+struct sc_daemon_conn {
+    struct sc_daemon *daemon;
+    sc_socket socket;
+    sc_thread thread;
+    bool in_use;   // guarded by daemon mutex
+    bool finished; // guarded by daemon mutex
+    sc_pid plugin_pid; // running add-on child, or SC_PROCESS_NONE (mutex)
+    char *uploads[SC_DAEMON_MAX_UPLOADS]; // temp files to unlink on close (mutex)
+    unsigned upload_count; // guarded by daemon mutex
+};
+
+struct sc_daemon {
+    struct scrcpy_options *opts;
+    sc_socket listen_socket;
+
+    sc_mutex mutex;
+    sc_cond cond; // signaled on state changes, stop, session events
+
+    enum sc_daemon_state state;
+    bool stop;
+    unsigned in_flight; // requests using the session
+
+    struct sc_daemon_session session;
+    struct sc_frame_keeper keeper;
+    struct sc_broadcaster broadcaster; // encoded-video push to web clients
+    struct sc_clip_buffer clips; // encoded-stream spool for clip extraction
+
+    // Test-report platform (DESIGN-test-report.md)
+    struct sc_report report;
+    bool report_active;      // --auto-test-report was given
+    bool report_initialized; // report dir/log created (once)
+    bool report_recording;   // recorder running this session
+
+    struct sc_addons addons; // loaded plugins (doc/addons.md)
+
+    // Adopted long-running "service" add-ons (doc/addons.md): started on demand,
+    // kept running past their response, terminated on daemon shutdown. Guarded
+    // by `mutex`.
+    struct sc_service_proc {
+        char *name;
+        sc_pid pid;
+    } services[SC_MAX_SERVICES];
+    unsigned service_count;
+
+    sc_mutex clipboard_mutex; // serialize clipboard-based text injection
+
+    char *serial;                // guarded by mutex, may be NULL
+    char device_name[SC_DEVICE_NAME_FIELD_LENGTH]; // guarded by mutex
+
+    sc_tick start_tick;
+
+    sc_thread accept_thread;
+    bool accept_thread_started;
+    struct sc_daemon_conn conns[SC_DAEMON_MAX_CLIENTS];
+};
+
+static volatile sig_atomic_t g_stop_signal;
+
+static void
+sc_daemon_signal_handler(int sig) {
+    (void) sig;
+    g_stop_signal = 1;
+}
+
+static uint32_t
+generate_scid(void) {
+    struct sc_rand rand;
+    sc_rand_init(&rand);
+    // Only use 31 bits to avoid issues with signed values on the Java-side
+    return sc_rand_u32(&rand) & 0x7FFFFFFF;
+}
+
+// Must be called with daemon->mutex locked
+static void
+sc_daemon_set_state_locked(struct sc_daemon *d, enum sc_daemon_state state) {
+    d->state = state;
+    sc_cond_broadcast(&d->cond);
+}
+
+static void
+sc_daemon_update_registry(struct sc_daemon *d) {
+    sc_mutex_lock(&d->mutex);
+    const char *serial = d->serial;
+    const char *state = sc_daemon_state_str(d->state);
+    // Copy under lock, write outside
+    char serial_copy[256];
+    snprintf(serial_copy, sizeof(serial_copy), "%s", serial ? serial : "");
+    char name_copy[SC_DEVICE_NAME_FIELD_LENGTH];
+    snprintf(name_copy, sizeof(name_copy), "%s", d->device_name);
+    sc_mutex_unlock(&d->mutex);
+
+    sc_registry_write(d->opts->daemon_port, serial_copy, name_copy, state);
+}
+
+// ---- server/session callbacks ----
+
+static void
+sc_daemon_on_server_connection_failed(struct sc_server *server,
+                                      void *userdata) {
+    (void) server;
+    struct sc_daemon *d = userdata;
+    sc_mutex_lock(&d->mutex);
+    d->session.conn_failed = true;
+    sc_cond_broadcast(&d->cond);
+    sc_mutex_unlock(&d->mutex);
+}
+
+static void
+sc_daemon_on_server_connected(struct sc_server *server, void *userdata) {
+    (void) server;
+    struct sc_daemon *d = userdata;
+    sc_mutex_lock(&d->mutex);
+    d->session.connected = true;
+    sc_cond_broadcast(&d->cond);
+    sc_mutex_unlock(&d->mutex);
+}
+
+static void
+sc_daemon_on_server_disconnected(struct sc_server *server, void *userdata) {
+    (void) server;
+    struct sc_daemon *d = userdata;
+    sc_mutex_lock(&d->mutex);
+    d->session.dead = true;
+    sc_cond_broadcast(&d->cond);
+    sc_mutex_unlock(&d->mutex);
+}
+
+static void
+sc_daemon_on_demuxer_ended(struct sc_demuxer *demuxer,
+                           enum sc_demuxer_status status, void *userdata) {
+    (void) demuxer;
+    (void) status;
+    struct sc_daemon *d = userdata;
+    sc_mutex_lock(&d->mutex);
+    d->session.dead = true;
+    sc_cond_broadcast(&d->cond);
+    sc_mutex_unlock(&d->mutex);
+}
+
+static void
+sc_daemon_on_controller_ended(struct sc_controller *controller, bool error,
+                              void *userdata) {
+    (void) controller;
+    (void) error;
+    struct sc_daemon *d = userdata;
+    sc_mutex_lock(&d->mutex);
+    d->session.dead = true;
+    sc_cond_broadcast(&d->cond);
+    sc_mutex_unlock(&d->mutex);
+}
+
+// ---- session lifecycle (called from the supervisor thread only) ----
+
+static void
+sc_daemon_session_stop(struct sc_daemon *d) {
+    struct sc_daemon_session *s = &d->session;
+
+    if (s->controller_started) {
+        sc_controller_stop(&s->controller);
+    }
+    if (s->server_started) {
+        // Shut down the sockets and kill the device-side process
+        sc_server_stop(&s->server);
+    }
+    if (s->demuxer_started) {
+        sc_demuxer_join(&s->demuxer);
+    }
+    if (s->controller_started) {
+        sc_controller_join(&s->controller);
+    }
+    if (s->controller_initialized) {
+        sc_controller_destroy(&s->controller);
+    }
+    if (s->server_started) {
+        sc_server_join(&s->server);
+        sc_server_destroy(&s->server);
+    }
+
+    s->server_started = false;
+    s->demuxer_started = false;
+    s->controller_initialized = false;
+    s->controller_started = false;
+
+    // Finalize the recording (reads the keeper video-time, so before reset)
+    if (d->report_recording) {
+        sc_report_stop_recording(&d->report);
+        d->report_recording = false;
+    }
+
+    // Never serve a frame from a previous session
+    sc_frame_keeper_reset(&d->keeper);
+
+    sc_mutex_lock(&d->mutex);
+    s->connected = false;
+    s->conn_failed = false;
+    s->dead = false;
+    sc_mutex_unlock(&d->mutex);
+}
+
+static bool
+sc_daemon_session_start(struct sc_daemon *d) {
+    struct sc_daemon_session *s = &d->session;
+    const struct scrcpy_options *options = d->opts;
+
+    assert(!s->server_started);
+
+    struct sc_server_params params = {
+        .scid = generate_scid(),
+        .req_serial = options->serial,
+        .select_usb = options->select_usb,
+        .select_tcpip = options->select_tcpip,
+        .log_level = options->log_level,
+        .video_codec = options->video_codec,
+        .audio_codec = options->audio_codec,
+        .video_source = options->video_source,
+        .audio_source = options->audio_source,
+        .camera_facing = options->camera_facing,
+        .crop = options->crop,
+        .port_range = options->port_range,
+        .tunnel_host = options->tunnel_host,
+        .tunnel_port = options->tunnel_port,
+        .min_size_alignment = options->min_size_alignment,
+        .max_size = options->max_size,
+        .video_bit_rate = options->video_bit_rate,
+        .audio_bit_rate = options->audio_bit_rate,
+        .max_fps = options->max_fps,
+        .angle = options->angle,
+        .screen_off_timeout = options->screen_off_timeout,
+        .capture_orientation = options->capture_orientation,
+        .capture_orientation_lock = options->capture_orientation_lock,
+        .control = options->control,
+        .display_id = options->display_id,
+        .new_display = options->new_display,
+        .display_ime_policy = options->display_ime_policy,
+        .video = options->video,
+        .audio = false, // no audio in daemon mode (doc/daemon.md §6.1)
+        .audio_dup = false,
+        .show_touches = options->show_touches,
+        .stay_awake = options->stay_awake,
+        .video_codec_options = options->video_codec_options,
+        .audio_codec_options = options->audio_codec_options,
+        .video_encoder = options->video_encoder,
+        .audio_encoder = options->audio_encoder,
+        .camera_id = options->camera_id,
+        .camera_size = options->camera_size,
+        .camera_ar = options->camera_ar,
+        .camera_fps = options->camera_fps,
+        .force_adb_forward = options->force_adb_forward,
+        .power_off_on_close = options->power_off_on_close,
+        .clipboard_autosync = false, // no computer clipboard in daemon mode
+        .downsize_on_error = options->downsize_on_error,
+        .tcpip = options->tcpip,
+        .tcpip_dst = options->tcpip_dst,
+        .cleanup = options->cleanup,
+        .power_on = options->power_on,
+        .kill_adb_on_close = false, // adb is shared with future reconnects
+        .camera_high_speed = options->camera_high_speed,
+        .camera_torch = options->camera_torch,
+        .camera_zoom = options->camera_zoom,
+        .vd_destroy_content = options->vd_destroy_content,
+        .vd_system_decorations = options->vd_system_decorations,
+        .keep_active = options->keep_active,
+        .flex_display = false,
+        .list = 0,
+    };
+
+    static const struct sc_server_callbacks cbs = {
+        .on_connection_failed = sc_daemon_on_server_connection_failed,
+        .on_connected = sc_daemon_on_server_connected,
+        .on_disconnected = sc_daemon_on_server_disconnected,
+    };
+
+    if (!sc_server_init(&s->server, &params, &cbs, d)) {
+        return false;
+    }
+
+    if (!sc_server_start(&s->server)) {
+        sc_server_destroy(&s->server);
+        return false;
+    }
+    s->server_started = true;
+
+    // Wait for connection result (or stop request)
+    sc_mutex_lock(&d->mutex);
+    while (!s->connected && !s->conn_failed && !d->stop) {
+        if (g_stop_signal) {
+            d->stop = true;
+            break;
+        }
+        sc_cond_timedwait(&d->cond, &d->mutex,
+                          sc_tick_now() + SC_DAEMON_WAIT_TICK);
+    }
+    bool connected = s->connected && !d->stop;
+    sc_mutex_unlock(&d->mutex);
+
+    if (!connected) {
+        sc_daemon_session_stop(d);
+        return false;
+    }
+
+    if (options->video) {
+        static const struct sc_demuxer_callbacks demuxer_cbs = {
+            .on_ended = sc_daemon_on_demuxer_ended,
+        };
+        sc_demuxer_init(&s->demuxer, "video", s->server.video_socket,
+                        &demuxer_cbs, d);
+        sc_decoder_init(&s->decoder, "video");
+        sc_packet_source_add_sink(&s->demuxer.packet_source,
+                                  &s->decoder.packet_sink);
+        sc_frame_source_add_sink(&s->decoder.frame_source,
+                                 &d->keeper.frame_sink);
+        // Forward the encoded stream to web subscribers (second packet sink)
+        sc_packet_source_add_sink(&s->demuxer.packet_source,
+                                  &d->broadcaster.packet_sink);
+
+        // Spool the encoded stream for clip extraction (third packet sink)
+        sc_packet_source_add_sink(&s->demuxer.packet_source,
+                                  &d->clips.packet_sink);
+
+        // Test report: record the encoded stream (fourth packet sink)
+        if (d->report_active) {
+            if (!d->report_initialized) {
+                if (!sc_report_init(&d->report, options->auto_test_report,
+                                    &d->keeper, s->server.serial,
+                                    s->server.info.device_name)) {
+                    sc_daemon_session_stop(d);
+                    return false;
+                }
+                d->report_initialized = true;
+            }
+            if (!sc_report_start_recording(&d->report, true,
+                                           SC_ORIENTATION_0)) {
+                LOGE("Test report: could not start recording");
+                sc_daemon_session_stop(d);
+                return false;
+            }
+            d->report_recording = true;
+            sc_packet_source_add_sink(&s->demuxer.packet_source,
+                                      sc_report_video_sink(&d->report));
+        }
+
+        if (!sc_demuxer_start(&s->demuxer)) {
+            sc_daemon_session_stop(d);
+            return false;
+        }
+        s->demuxer_started = true;
+    }
+
+    if (options->control) {
+        static const struct sc_controller_callbacks controller_cbs = {
+            .on_ended = sc_daemon_on_controller_ended,
+        };
+        if (!sc_controller_init(&s->controller, s->server.control_socket,
+                                &controller_cbs, d)) {
+            sc_daemon_session_stop(d);
+            return false;
+        }
+        s->controller_initialized = true;
+        sc_controller_configure(&s->controller, NULL, NULL);
+        if (!sc_controller_start(&s->controller)) {
+            sc_daemon_session_stop(d);
+            return false;
+        }
+        s->controller_started = true;
+    }
+
+    // Record device identity for hello/status/registry
+    sc_mutex_lock(&d->mutex);
+    free(d->serial);
+    d->serial = s->server.serial ? strdup(s->server.serial) : NULL;
+    snprintf(d->device_name, sizeof(d->device_name), "%s",
+             s->server.info.device_name);
+    sc_mutex_unlock(&d->mutex);
+
+    return true;
+}
+
+// ---- request handling (called from connection threads) ----
+
+static bool
+send_frame(sc_socket socket, struct sc_strbuf *buf, const uint8_t *payload,
+           size_t payload_len) {
+    bool ok = sc_daemon_write_frame(socket, buf->s, buf->len, payload,
+                                    payload_len);
+    free(buf->s);
+    return ok;
+}
+
+static bool
+send_error(sc_socket socket, int64_t id, const char *code, const char *msg) {
+    struct sc_strbuf buf;
+    if (!sc_strbuf_init(&buf, 128)) {
+        return false;
+    }
+
+    // Large enough for the template + a 20-char int64 + any error code
+    char head[128];
+    snprintf(head, sizeof(head), "{\"id\":%" PRId64 ",\"ok\":false,"
+                                 "\"error\":{\"code\":\"%s\",\"message\":",
+             id, code);
+
+    bool w = sc_strbuf_append_str(&buf, head)
+          && sc_json_append_escaped(&buf, msg)
+          && sc_strbuf_append_staticstr(&buf, "}}");
+    if (!w) {
+        free(buf.s);
+        return false;
+    }
+
+    return send_frame(socket, &buf, NULL, 0);
+}
+
+// Base temp directory ($TMPDIR or /tmp).
+static const char *
+temp_dir(void) {
+    const char *t = getenv("TMPDIR");
+    return (t && *t) ? t : "/tmp";
+}
+
+// Create a unique temp file "<tmp>/scrcpy-auto-<tag>-XXXXXX"; on success writes
+// its malloc'd path to *out_path and returns an open fd (caller closes), else -1.
+static int
+make_temp_file(const char *tag, char **out_path) {
+    char tmpl[512];
+    snprintf(tmpl, sizeof(tmpl), "%s/scrcpy-auto-%s-XXXXXX", temp_dir(), tag);
+    int fd = mkstemp(tmpl);
+    if (fd < 0) {
+        return -1;
+    }
+    *out_path = strdup(tmpl);
+    if (!*out_path) {
+        close(fd);
+        unlink(tmpl);
+        return -1;
+    }
+    return fd;
+}
+
+static bool
+write_all_fd(int fd, const uint8_t *data, size_t len) {
+    size_t off = 0;
+    while (off < len) {
+        ssize_t w = write(fd, data + off, len - off);
+        if (w < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            return false;
+        }
+        off += (size_t) w;
+    }
+    return true;
+}
+
+// Read a plugin result file (<= cap) and return its contents as a malloc'd
+// string only if it is valid JSON; otherwise NULL (warns on invalid).
+static char *
+read_result_file(const char *path) {
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        return NULL;
+    }
+    char *buf = malloc(SC_DAEMON_MAX_RESULT_SIZE + 1);
+    if (!buf) {
+        fclose(f);
+        return NULL;
+    }
+    size_t n = fread(buf, 1, SC_DAEMON_MAX_RESULT_SIZE, f);
+    fclose(f);
+    buf[n] = '\0';
+    if (n == 0) {
+        free(buf);
+        return NULL;
+    }
+    struct sc_json probe;
+    if (!sc_json_parse(&probe, buf, n)) {
+        LOGW("Add-on result file is not valid JSON; ignoring");
+        free(buf);
+        return NULL;
+    }
+    return buf;
+}
+
+// Copy a file (best-effort). Returns true on success.
+static bool
+copy_file(const char *src, const char *dst) {
+    FILE *in = fopen(src, "rb");
+    if (!in) {
+        return false;
+    }
+    FILE *out = fopen(dst, "wb");
+    if (!out) {
+        fclose(in);
+        return false;
+    }
+    char buf[65536];
+    size_t n;
+    bool ok = true;
+    while ((n = fread(buf, 1, sizeof(buf), in)) > 0) {
+        if (fwrite(buf, 1, n, out) != n) {
+            ok = false;
+            break;
+        }
+    }
+    fclose(in);
+    if (fclose(out) != 0) {
+        ok = false;
+    }
+    if (!ok) {
+        unlink(dst);
+    }
+    return ok;
+}
+
+// Copy a plugin's path/pathlist argument files into <report>/assets/ (so the
+// report bundle is self-contained and can render reference images), appending
+// their relative paths to `eb` as ,"assets":[...]. Best-effort.
+static void
+copy_plugin_assets(struct sc_daemon *d, const struct sc_addon *addon,
+                   char *const *arg_names, char *const *arg_values,
+                   unsigned count, struct sc_strbuf *eb) {
+    static unsigned counter = 0; // unique filenames (guarded by daemon mutex)
+    if (!d->opts->auto_test_report || !addon) {
+        return;
+    }
+    char dir[600];
+    snprintf(dir, sizeof(dir), "%s/assets", d->opts->auto_test_report);
+    mkdir(dir, 0755); // ignore EEXIST
+
+    bool started = false;
+    for (unsigned i = 0; i < count; ++i) {
+        bool is_path = false;
+        for (unsigned j = 0; j < addon->arg_count; ++j) {
+            if (!strcmp(addon->args[j].name, arg_names[i])
+                    && addon->args[j].is_path) {
+                is_path = true;
+                break;
+            }
+        }
+        if (!is_path) {
+            continue;
+        }
+        char *dup = strdup(arg_values[i]);
+        if (!dup) {
+            continue;
+        }
+        char *saveptr = NULL;
+        for (char *p = strtok_r(dup, "\n", &saveptr); p;
+             p = strtok_r(NULL, "\n", &saveptr)) {
+            const char *bn = strrchr(p, '/');
+            bn = bn ? bn + 1 : p;
+            sc_mutex_lock(&d->mutex);
+            unsigned idx = counter++;
+            sc_mutex_unlock(&d->mutex);
+            char dst[1024];
+            char rel[512];
+            snprintf(dst, sizeof(dst), "%s/%u-%s", dir, idx, bn);
+            snprintf(rel, sizeof(rel), "assets/%u-%s", idx, bn);
+            if (copy_file(p, dst)) {
+                bool w = started ? sc_strbuf_append_char(eb, ',')
+                                 : sc_strbuf_append_staticstr(eb, ",\"assets\":[");
+                started = true;
+                if (w) {
+                    sc_json_append_escaped(eb, rel);
+                }
+            }
+        }
+        free(dup);
+    }
+    if (started) {
+        sc_strbuf_append_char(eb, ']');
+    }
+}
+
+// Send {"id":<id>,"ok":true[,<extra>]} (+ optional payload); `extra` must be
+// valid inner JSON without braces, or NULL
+static bool
+send_ok(sc_socket socket, int64_t id, const char *extra,
+        const uint8_t *payload, size_t payload_len) {
+    struct sc_strbuf buf;
+    if (!sc_strbuf_init(&buf, 128)) {
+        return false;
+    }
+
+    char head[48];
+    snprintf(head, sizeof(head), "{\"id\":%" PRId64 ",\"ok\":true", id);
+
+    bool w = sc_strbuf_append_str(&buf, head);
+    if (w && extra) {
+        w = sc_strbuf_append_char(&buf, ',')
+         && sc_strbuf_append_str(&buf, extra);
+    }
+    w = w && sc_strbuf_append_char(&buf, '}');
+    if (!w) {
+        free(buf.s);
+        return false;
+    }
+
+    return send_frame(socket, &buf, payload, payload_len);
+}
+
+// Append common identity/state fields (without braces) to `buf`.
+// Takes and releases the daemon mutex.
+static bool
+append_status_fields(struct sc_daemon *d, struct sc_strbuf *buf) {
+    sc_mutex_lock(&d->mutex);
+    enum sc_daemon_state state = d->state;
+    char serial[256];
+    snprintf(serial, sizeof(serial), "%s", d->serial ? d->serial : "");
+    char device_name[SC_DEVICE_NAME_FIELD_LENGTH];
+    snprintf(device_name, sizeof(device_name), "%s", d->device_name);
+    sc_mutex_unlock(&d->mutex);
+
+    char head[128];
+    snprintf(head, sizeof(head), "\"protocol\":%d,\"app\":\"scrcpy-auto\","
+                                 "\"version\":\"%s\",\"state\":\"%s\",",
+             SC_DAEMON_PROTOCOL_VERSION, SCRCPY_VERSION,
+             sc_daemon_state_str(state));
+
+    return sc_strbuf_append_str(buf, head)
+        && sc_strbuf_append_staticstr(buf, "\"serial\":")
+        && sc_json_append_escaped(buf, serial)
+        && sc_strbuf_append_staticstr(buf, ",\"device_name\":")
+        && sc_json_append_escaped(buf, device_name);
+}
+
+// Append the type keyword for an argument (Unified Plugin Protocol §4).
+static const char *
+arg_type_str(const struct sc_addon_arg *arg) {
+    if (arg->is_path) {
+        return arg->is_list ? "pathlist" : "path";
+    }
+    return arg->is_list ? "list" : "string";
+}
+
+// Append ",\"plugins\":[...]" advertising each add-on's metadata. Each element
+// is a keyed string "<name>[|<key>=<value>]..." (arg=/result=/meta=), a flat
+// array of strings so it reads with sc_json_get_string_array. The C client
+// consumes only "arg=" tokens; the web UI reads the rest (doc/addons.md §5).
+static bool
+append_plugins(struct sc_daemon *d, struct sc_strbuf *buf) {
+    if (!sc_strbuf_append_staticstr(buf, ",\"plugins\":[")) {
+        return false;
+    }
+    for (unsigned i = 0; i < d->addons.count; ++i) {
+        const struct sc_addon *a = &d->addons.list[i];
+        struct sc_strbuf spec;
+        if (!sc_strbuf_init(&spec, 64)) {
+            return false;
+        }
+        bool w = sc_strbuf_append_str(&spec, a->name);
+        if (w && a->result_field) {
+            w = sc_strbuf_append_staticstr(&spec, "|result=")
+             && sc_strbuf_append_str(&spec, a->result_field);
+        }
+        for (unsigned j = 0; w && j < a->arg_count; ++j) {
+            const struct sc_addon_arg *arg = &a->args[j];
+            w = sc_strbuf_append_staticstr(&spec, "|arg=")
+             && sc_strbuf_append_str(&spec, arg->name)
+             && sc_strbuf_append_char(&spec, ':')
+             && sc_strbuf_append_str(&spec, arg_type_str(arg))
+             && sc_strbuf_append_char(&spec, ':')
+             && sc_strbuf_append_str(&spec,
+                                     arg->required ? "required" : "optional");
+        }
+        for (unsigned j = 0; w && j < a->meta_count; ++j) {
+            w = sc_strbuf_append_staticstr(&spec, "|meta=")
+             && sc_strbuf_append_str(&spec, a->metas[j].key)
+             && sc_strbuf_append_char(&spec, ':')
+             && sc_strbuf_append_str(&spec, a->metas[j].value);
+        }
+        w = w && (i == 0 || sc_strbuf_append_char(buf, ','))
+          && sc_json_append_escaped(buf, spec.s);
+        free(spec.s);
+        if (!w) {
+            return false;
+        }
+    }
+    return sc_strbuf_append_char(buf, ']');
+}
+
+static bool
+send_hello(struct sc_daemon *d, sc_socket socket) {
+    struct sc_strbuf buf;
+    if (!sc_strbuf_init(&buf, 256)) {
+        return false;
+    }
+
+    char pid[48];
+    snprintf(pid, sizeof(pid), ",\"pid\":%lu}",
+             (unsigned long)
+#ifdef _WIN32
+             GetCurrentProcessId()
+#else
+             getpid()
+#endif
+    );
+
+    bool w = sc_strbuf_append_staticstr(&buf, "{\"event\":\"hello\",")
+          && append_status_fields(d, &buf)
+          && append_plugins(d, &buf)
+          && sc_strbuf_append_str(&buf, pid);
+    if (!w) {
+        free(buf.s);
+        return false;
+    }
+
+    return send_frame(socket, &buf, NULL, 0);
+}
+
+// Acquire the session for a request. On success, in_flight was incremented
+// and the session is READY. Returns false after sending E_NOT_READY.
+static bool
+acquire_session(struct sc_daemon *d, sc_socket socket, int64_t id) {
+    sc_mutex_lock(&d->mutex);
+    if (d->state != SC_DAEMON_STATE_READY || d->stop) {
+        enum sc_daemon_state state = d->state;
+        sc_mutex_unlock(&d->mutex);
+        char msg[64];
+        snprintf(msg, sizeof(msg), "session not ready (state: %s)",
+                 sc_daemon_state_str(state));
+        send_error(socket, id, "E_NOT_READY", msg);
+        return false;
+    }
+    ++d->in_flight;
+    sc_mutex_unlock(&d->mutex);
+    return true;
+}
+
+static void
+release_session(struct sc_daemon *d) {
+    sc_mutex_lock(&d->mutex);
+    assert(d->in_flight);
+    --d->in_flight;
+    sc_cond_broadcast(&d->cond);
+    sc_mutex_unlock(&d->mutex);
+}
+
+static const char *
+video_codec_name(enum sc_codec codec) {
+    switch (codec) {
+        case SC_CODEC_H265: return "h265";
+        case SC_CODEC_AV1:  return "av1";
+        default:            return "h264";
+    }
+}
+
+// Append ",\"report\":{...}" (the --auto-test-report location and recording
+// state) and ",\"config\":{...}" (the referenced capture parameters), so
+// --daemon-status is a one-stop readout of how the daemon was launched.
+static bool
+append_status_extras(struct sc_daemon *d, struct sc_strbuf *buf) {
+    const struct scrcpy_options *o = d->opts;
+
+    // report: directory + recording.mp4 path + whether recording right now
+    // (append_str, not append_staticstr: the ternary is a const char*, not a
+    // literal array — sizeof() would give the pointer size)
+    bool w = sc_strbuf_append_staticstr(buf, ",\"report\":{\"enabled\":")
+          && sc_strbuf_append_str(buf,
+                 o->auto_test_report ? "true" : "false");
+    if (w && o->auto_test_report) {
+        w = sc_strbuf_append_staticstr(buf, ",\"dir\":")
+         && sc_json_append_escaped(buf, o->auto_test_report)
+         && sc_strbuf_append_staticstr(buf, ",\"recording\":")
+         && sc_strbuf_append_str(buf,
+                d->report_recording ? "true" : "false");
+        if (w && d->report_initialized && d->report.video_path) {
+            w = sc_strbuf_append_staticstr(buf, ",\"video\":")
+             && sc_json_append_escaped(buf, d->report.video_path);
+        }
+    }
+    w = w && sc_strbuf_append_char(buf, '}');
+
+    // config: the capture parameters the daemon was started with
+    char cfg[96];
+    snprintf(cfg, sizeof(cfg),
+             ",\"config\":{\"port\":%u,\"control\":%s,\"video\":%s",
+             o->daemon_port, o->control ? "true" : "false",
+             o->video ? "true" : "false");
+    w = w && sc_strbuf_append_str(buf, cfg);
+    if (w && o->video) {
+        char v[128];
+        snprintf(v, sizeof(v),
+                 ",\"codec\":\"%s\",\"bit_rate\":%u,\"max_size\":%u",
+                 video_codec_name(o->video_codec), o->video_bit_rate,
+                 o->max_size);
+        w = sc_strbuf_append_str(buf, v)
+         && sc_strbuf_append_staticstr(buf, ",\"max_fps\":")
+         && (o->max_fps ? sc_json_append_escaped(buf, o->max_fps)
+                        : sc_strbuf_append_staticstr(buf, "null"))
+         && sc_strbuf_append_staticstr(buf, ",\"encoder\":")
+         && (o->video_encoder ? sc_json_append_escaped(buf, o->video_encoder)
+                              : sc_strbuf_append_staticstr(buf, "null"));
+    }
+    return w && sc_strbuf_append_char(buf, '}');
+}
+
+static void
+handle_status(struct sc_daemon *d, sc_socket socket, int64_t id) {
+    struct sc_strbuf buf;
+    if (!sc_strbuf_init(&buf, 256)) {
+        return;
+    }
+
+    if (!append_status_fields(d, &buf)
+            || !append_plugins(d, &buf)
+            || !append_status_extras(d, &buf)) {
+        free(buf.s);
+        return;
+    }
+
+    sc_tick now = sc_tick_now();
+    sc_tick last_frame = sc_frame_keeper_last_tick(&d->keeper);
+    int64_t frame_age_ms = last_frame ? SC_TICK_TO_MS(now - last_frame) : -1;
+
+    char tail[96];
+    snprintf(tail, sizeof(tail),
+             ",\"uptime_ms\":%" PRId64 ",\"last_frame_age_ms\":%" PRId64,
+             (int64_t) SC_TICK_TO_MS(now - d->start_tick), frame_age_ms);
+    if (!sc_strbuf_append_str(&buf, tail)) {
+        free(buf.s);
+        return;
+    }
+
+    send_ok(socket, id, buf.s, NULL, 0);
+    free(buf.s);
+}
+
+// Log an operation to the test report if active (defined below)
+static void
+report_log(struct sc_daemon *d, const char *op, const char *action,
+           const char *extra);
+
+static void
+handle_screencap(struct sc_daemon *d, sc_socket socket, int64_t id,
+                 const struct sc_json *json) {
+    if (!d->opts->video) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "video is disabled (--no-video)");
+        return;
+    }
+
+    char *format = NULL;
+    if (sc_json_get_string(json, "format", &format)) {
+        bool ok = !strcmp(format, "png");
+        free(format);
+        if (!ok) {
+            send_error(socket, id, "E_BAD_REQUEST", "unsupported format");
+            return;
+        }
+    }
+
+    if (!acquire_session(d, socket, id)) {
+        return;
+    }
+
+    sc_tick now = sc_tick_now();
+    sc_tick min_tick = 0;
+    sc_tick deadline = now + SC_DAEMON_SCREENCAP_DEADLINE;
+
+    int64_t max_age_ms;
+    if (sc_json_get_int64(json, "max_age_ms", &max_age_ms)
+            && max_age_ms >= 0) {
+        // Clamp to avoid int64 overflow in SC_TICK_FROM_MS and negative
+        // min_tick (which would bypass the wait-for-first-frame loop)
+        int64_t max_age_capped = MIN(max_age_ms, (int64_t) 1 << 40); // ~35y ms
+        min_tick = now - SC_TICK_FROM_MS(max_age_capped);
+        if (min_tick < 0) {
+            min_tick = 0;
+        }
+        if (sc_frame_keeper_last_tick(&d->keeper) < min_tick
+                && d->session.controller_started) {
+            // Ask the device encoder for a fresh keyframe
+            struct sc_control_msg msg = {
+                .type = SC_CONTROL_MSG_TYPE_RESET_VIDEO,
+            };
+            if (!sc_controller_push_msg(&d->session.controller, &msg)) {
+                LOGW("Could not request video reset");
+            }
+        }
+    }
+
+    AVFrame *frame = av_frame_alloc();
+    if (!frame) {
+        LOG_OOM();
+        release_session(d);
+        send_error(socket, id, "E_INTERNAL", "out of memory");
+        return;
+    }
+
+    sc_tick age;
+    bool ok = sc_frame_keeper_get_since(&d->keeper, frame, min_tick, deadline,
+                                        &age);
+    if (!ok) {
+        av_frame_free(&frame);
+        release_session(d);
+        send_error(socket, id, "E_TIMEOUT", "no frame available");
+        return;
+    }
+
+    uint8_t *png;
+    size_t png_size;
+    ok = sc_frame_to_png(frame, &png, &png_size);
+    int width = frame->width;
+    int height = frame->height;
+    av_frame_free(&frame);
+    release_session(d);
+
+    if (!ok) {
+        send_error(socket, id, "E_INTERNAL", "PNG encoding failed");
+        return;
+    }
+
+    // Test report: log the screenshot (timestamp + dimensions, no image copy)
+    if (d->report_active) {
+        char *action = NULL;
+        sc_json_get_string(json, "action", &action);
+        char rextra[64];
+        snprintf(rextra, sizeof(rextra),
+                 "\"video_size\":{\"w\":%d,\"h\":%d}", width, height);
+        report_log(d, "screencap", action, rextra);
+        free(action);
+    }
+
+    char extra[128];
+    snprintf(extra, sizeof(extra),
+             "\"width\":%d,\"height\":%d,\"frame_age_ms\":%" PRId64
+             ",\"payload_len\":%zu",
+             width, height, (int64_t) SC_TICK_TO_MS(age), png_size);
+    send_ok(socket, id, extra, png, png_size);
+    free(png);
+}
+
+// Extract [start_ms, end_ms] of the current recording as a standalone MP4
+// (doc/daemon.md §9.5). The clip bytes are returned as the response payload;
+// the CLIENT writes the output file, so this also works remotely and needs no
+// daemon-side write access. The start snaps back to the nearest keyframe; a
+// not-yet-recorded end is an E_RANGE error (contract of --clip-start/end).
+static void
+handle_clip(struct sc_daemon *d, sc_socket socket, int64_t id,
+            struct sc_json *json) {
+    if (!d->opts->video) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "video is disabled (--no-video)");
+        return;
+    }
+    int64_t start_ms, end_ms;
+    if (!sc_json_get_int64(json, "start_ms", &start_ms)
+            || !sc_json_get_int64(json, "end_ms", &end_ms)
+            || start_ms < 0 || end_ms <= start_ms) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "expected start_ms/end_ms with 0 <= start < end");
+        return;
+    }
+
+    uint8_t *mp4;
+    size_t mp4_size;
+    int64_t actual_start_ms, actual_end_ms;
+    char err[192];
+    int r = sc_clip_buffer_extract(&d->clips, start_ms, end_ms, &mp4,
+                                   &mp4_size, &actual_start_ms,
+                                   &actual_end_ms, err, sizeof(err));
+    if (r) {
+        send_error(socket, id,
+                   r == SC_CLIP_ERANGE ? "E_RANGE" : "E_INTERNAL", err);
+        return;
+    }
+
+    char extra[128];
+    snprintf(extra, sizeof(extra),
+             "\"start_ms\":%" PRId64 ",\"end_ms\":%" PRId64
+             ",\"payload_len\":%zu",
+             actual_start_ms, actual_end_ms, mp4_size);
+    send_ok(socket, id, extra, mp4, mp4_size);
+    av_free(mp4);
+}
+
+static void
+handle_control(struct sc_daemon *d, sc_socket socket, int64_t id,
+               const struct sc_json *json, unsigned conn_index) {
+    if (!d->opts->control) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "control is disabled (--no-control)");
+        return;
+    }
+
+    char *cmds[SC_MAX_CONTROL_CMDS];
+    unsigned count;
+    if (!sc_json_get_string_array(json, "cmds", cmds, SC_MAX_CONTROL_CMDS,
+                                  &count) || !count) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "missing or invalid \"cmds\" array");
+        return;
+    }
+
+    // Reject malformed commands up front with an explicit client-visible
+    // error (execution failures would only give a generic message)
+    if (!sc_control_exec_check((const char *const *) cmds, count)) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "invalid control command syntax; expected: "
+                   "\"click <x> <y> [duration_ms]\", "
+                   "\"swipe <x1> <y1> <x2> <y2> [duration_ms]\", "
+                   "\"input <text>\", \"sleep <ms>\", steps joined by \"&&\"");
+        goto free_cmds;
+    }
+
+    if (!acquire_session(d, socket, id)) {
+        goto free_cmds;
+    }
+
+    // With video captured, the device-side PositionMapper IGNORES touch
+    // events whose screen_size does not match the video size, so send the
+    // actual video size and interpret coordinates in video (screenshot)
+    // space; without video, the device uses raw coordinates
+    struct sc_size screen_size = {UINT16_MAX, UINT16_MAX};
+    if (d->opts->video
+            && !sc_frame_keeper_wait_size(&d->keeper,
+                                          sc_tick_now()
+                                              + SC_DAEMON_SCREENCAP_DEADLINE,
+                                          &screen_size)) {
+        release_session(d);
+        send_error(socket, id, "E_NOT_READY", "no video frame received yet");
+        goto free_cmds;
+    }
+
+    // Each connection thread executes one request at a time, so deriving the
+    // range from the connection slot guarantees concurrent requests use
+    // disjoint pointer ids (doc/daemon.md §9.5): at most
+    // 1 + 16*100 + 99 = 1700, far below the reserved values
+    // (SC_POINTER_ID_MOUSE, ...) at the top of the uint64 range
+    uint64_t pointer_base = 1 + (uint64_t) conn_index * SC_MAX_CONTROL_CMDS;
+
+    // Serialize clipboard-based text injection between concurrent requests
+    bool needs_clipboard = false;
+    for (unsigned i = 0; i < count; ++i) {
+        if (strstr(cmds[i], "input ")) {
+            needs_clipboard = true;
+            break;
+        }
+    }
+
+    // Test report: log the gesture at its start (t_ms = when it began); the
+    // raw cmds + video size let the web renderer reconstruct the finger paths
+    if (d->report_active) {
+        char *action = NULL;
+        sc_json_get_string(json, "action", &action);
+        struct sc_strbuf eb;
+        if (sc_strbuf_init(&eb, 128)) {
+            char sz[64];
+            snprintf(sz, sizeof(sz),
+                     "\"video_size\":{\"w\":%u,\"h\":%u},\"cmds\":[",
+                     screen_size.width, screen_size.height);
+            bool w = sc_strbuf_append_str(&eb, sz);
+            for (unsigned i = 0; w && i < count; ++i) {
+                if (i) {
+                    w = sc_strbuf_append_char(&eb, ',');
+                }
+                w = w && sc_json_append_escaped(&eb, cmds[i]);
+            }
+            w = w && sc_strbuf_append_char(&eb, ']');
+            if (w) {
+                report_log(d, "control", action, eb.s);
+            }
+            free(eb.s);
+        }
+        free(action);
+    }
+
+    if (needs_clipboard) {
+        sc_mutex_lock(&d->clipboard_mutex);
+    }
+
+    bool ok = sc_control_exec_run(&d->session.controller, screen_size,
+                                  (const char *const *) cmds, count,
+                                  pointer_base);
+
+    if (needs_clipboard) {
+        sc_mutex_unlock(&d->clipboard_mutex);
+    }
+
+    release_session(d);
+
+    if (ok) {
+        send_ok(socket, id, NULL, NULL, 0);
+    } else {
+        send_error(socket, id, "E_INTERNAL", "control commands failed");
+    }
+
+free_cmds:
+    for (unsigned i = 0; i < count; ++i) {
+        free(cmds[i]);
+    }
+}
+
+// ---- realtime input injection (single, non-blocking events) ----
+
+static int64_t
+json_int_or(const struct sc_json *json, const char *key, int64_t def) {
+    int64_t v;
+    return sc_json_get_int64(json, key, &v) ? v : def;
+}
+
+// Log an operation to the test report if active. `action` and `extra` may be
+// NULL. Takes ownership of nothing.
+static void
+report_log(struct sc_daemon *d, const char *op, const char *action,
+           const char *extra) {
+    if (d->report_active && d->report_initialized) {
+        sc_report_log_event(&d->report, op, action, extra);
+    }
+}
+
+// Parse an "action" string into a motion action; returns false if invalid
+static bool
+parse_motion_action(const struct sc_json *json,
+                    enum android_motionevent_action *out) {
+    char *s;
+    if (!sc_json_get_string(json, "action", &s)) {
+        return false;
+    }
+    bool ok = true;
+    if (!strcmp(s, "down")) {
+        *out = AMOTION_EVENT_ACTION_DOWN;
+    } else if (!strcmp(s, "up")) {
+        *out = AMOTION_EVENT_ACTION_UP;
+    } else if (!strcmp(s, "move")) {
+        *out = AMOTION_EVENT_ACTION_MOVE;
+    } else {
+        ok = false;
+    }
+    free(s);
+    return ok;
+}
+
+// Ready + control gate common to the inject_* ops; on success in_flight was
+// incremented (release_session() must be called)
+static bool
+inject_acquire(struct sc_daemon *d, sc_socket socket, int64_t id) {
+    if (!d->opts->control) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "control is disabled (--no-control)");
+        return false;
+    }
+    return acquire_session(d, socket, id);
+}
+
+static void
+reply_push(struct sc_daemon *d, sc_socket socket, int64_t id, bool pushed) {
+    release_session(d);
+    if (pushed) {
+        send_ok(socket, id, NULL, NULL, 0);
+    } else {
+        send_error(socket, id, "E_INTERNAL", "could not enqueue event");
+    }
+}
+
+static void
+handle_inject_touch(struct sc_daemon *d, sc_socket socket, int64_t id,
+                    const struct sc_json *json) {
+    enum android_motionevent_action action;
+    int64_t x, y;
+    if (!parse_motion_action(json, &action)
+            || !sc_json_get_int64(json, "x", &x)
+            || !sc_json_get_int64(json, "y", &y)) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "expected action(down|up|move), x, y");
+        return;
+    }
+
+    if (!inject_acquire(d, socket, id)) {
+        return;
+    }
+
+    struct sc_size size = {UINT16_MAX, UINT16_MAX};
+    if (d->opts->video
+            && !sc_frame_keeper_wait_size(&d->keeper,
+                                          sc_tick_now()
+                                              + SC_DAEMON_SCREENCAP_DEADLINE,
+                                          &size)) {
+        release_session(d);
+        send_error(socket, id, "E_NOT_READY", "no video frame received yet");
+        return;
+    }
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+    msg.inject_touch_event.action = action;
+    msg.inject_touch_event.action_button = 0;
+    msg.inject_touch_event.buttons =
+        (enum android_motionevent_buttons) json_int_or(json, "buttons", 0);
+    msg.inject_touch_event.pointer_id =
+        (uint64_t) json_int_or(json, "pointer_id", 0);
+    msg.inject_touch_event.position.screen_size = size;
+    msg.inject_touch_event.position.point.x = (int32_t) x;
+    msg.inject_touch_event.position.point.y = (int32_t) y;
+    msg.inject_touch_event.pressure =
+        action == AMOTION_EVENT_ACTION_UP ? 0.0f : 1.0f;
+
+    reply_push(d, socket, id,
+               sc_controller_push_msg(&d->session.controller, &msg));
+}
+
+static void
+handle_inject_key(struct sc_daemon *d, sc_socket socket, int64_t id,
+                  const struct sc_json *json) {
+    char *action_str;
+    int64_t keycode;
+    if (!sc_json_get_string(json, "action", &action_str)
+            || !sc_json_get_int64(json, "keycode", &keycode)) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "expected action(down|up), keycode");
+        return;
+    }
+    enum android_keyevent_action action;
+    bool valid = true;
+    if (!strcmp(action_str, "down")) {
+        action = AKEY_EVENT_ACTION_DOWN;
+    } else if (!strcmp(action_str, "up")) {
+        action = AKEY_EVENT_ACTION_UP;
+    } else {
+        valid = false;
+    }
+    free(action_str);
+    if (!valid) {
+        send_error(socket, id, "E_BAD_REQUEST", "action must be down or up");
+        return;
+    }
+
+    if (!inject_acquire(d, socket, id)) {
+        return;
+    }
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_KEYCODE;
+    msg.inject_keycode.action = action;
+    msg.inject_keycode.keycode = (enum android_keycode) keycode;
+    msg.inject_keycode.repeat = (uint32_t) json_int_or(json, "repeat", 0);
+    msg.inject_keycode.metastate =
+        (enum android_metastate) json_int_or(json, "metastate", 0);
+
+    reply_push(d, socket, id,
+               sc_controller_push_msg(&d->session.controller, &msg));
+}
+
+static void
+handle_inject_text(struct sc_daemon *d, sc_socket socket, int64_t id,
+                   const struct sc_json *json) {
+    char *text;
+    if (!sc_json_get_string(json, "text", &text)) {
+        send_error(socket, id, "E_BAD_REQUEST", "expected text");
+        return;
+    }
+
+    if (!inject_acquire(d, socket, id)) {
+        free(text);
+        return;
+    }
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_TEXT;
+    msg.inject_text.text = text; // ownership moves to the controller on success
+
+    bool pushed = sc_controller_push_msg(&d->session.controller, &msg);
+    if (!pushed) {
+        free(text);
+    }
+    reply_push(d, socket, id, pushed);
+}
+
+static void
+handle_inject_scroll(struct sc_daemon *d, sc_socket socket, int64_t id,
+                     const struct sc_json *json) {
+    int64_t x, y;
+    if (!sc_json_get_int64(json, "x", &x)
+            || !sc_json_get_int64(json, "y", &y)) {
+        send_error(socket, id, "E_BAD_REQUEST", "expected x, y, hscroll, "
+                   "vscroll");
+        return;
+    }
+
+    if (!inject_acquire(d, socket, id)) {
+        return;
+    }
+
+    struct sc_size size = {UINT16_MAX, UINT16_MAX};
+    if (d->opts->video
+            && !sc_frame_keeper_wait_size(&d->keeper,
+                                          sc_tick_now()
+                                              + SC_DAEMON_SCREENCAP_DEADLINE,
+                                          &size)) {
+        release_session(d);
+        send_error(socket, id, "E_NOT_READY", "no video frame received yet");
+        return;
+    }
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
+    msg.inject_scroll_event.position.screen_size = size;
+    msg.inject_scroll_event.position.point.x = (int32_t) x;
+    msg.inject_scroll_event.position.point.y = (int32_t) y;
+    msg.inject_scroll_event.hscroll = (float) json_int_or(json, "hscroll", 0);
+    msg.inject_scroll_event.vscroll = (float) json_int_or(json, "vscroll", 0);
+    msg.inject_scroll_event.buttons = 0;
+
+    reply_push(d, socket, id,
+               sc_controller_push_msg(&d->session.controller, &msg));
+}
+
+// Standalone test-report annotation ("title: description"), not tied to any
+// control command. Logged as a note event; always acked.
+static void
+handle_note(struct sc_daemon *d, sc_socket socket, int64_t id,
+            const struct sc_json *json) {
+    char *note;
+    if (!sc_json_get_string(json, "note", &note)) {
+        send_error(socket, id, "E_BAD_REQUEST", "expected \"note\"");
+        return;
+    }
+
+    if (d->report_active) {
+        struct sc_strbuf eb;
+        if (sc_strbuf_init(&eb, 128)) {
+            const char *colon = strchr(note, ':');
+            bool w;
+            if (colon) {
+                size_t tlen = colon - note;
+                while (tlen > 0 && note[tlen - 1] == ' ') {
+                    tlen--; // trim trailing spaces of the title
+                }
+                char *title = strndup(note, tlen);
+                const char *text = colon + 1;
+                while (*text == ' ') {
+                    text++; // trim leading spaces of the description
+                }
+                w = sc_strbuf_append_staticstr(&eb, "\"title\":")
+                 && sc_json_append_escaped(&eb, title ? title : "")
+                 && sc_strbuf_append_staticstr(&eb, ",\"text\":")
+                 && sc_json_append_escaped(&eb, text);
+                free(title);
+            } else {
+                w = sc_strbuf_append_staticstr(&eb, "\"title\":\"note\",\"text\":")
+                 && sc_json_append_escaped(&eb, note);
+            }
+            if (w) {
+                report_log(d, "note", NULL, eb.s);
+            }
+            free(eb.s);
+        }
+    }
+
+    free(note);
+    send_ok(socket, id, NULL, NULL, 0);
+}
+
+// Build a malloc'd "SC_ARG_<NAME>=<value>" env entry, upper-casing NAME and
+// replacing any non-alphanumeric character with '_' (so `env` always gets a
+// valid identifier). Returns NULL on OOM.
+static char *
+make_arg_env(const char *arg_name, const char *value) {
+    struct sc_strbuf b;
+    if (!sc_strbuf_init(&b, 32)) {
+        return NULL;
+    }
+    bool w = sc_strbuf_append_staticstr(&b, "SC_ARG_");
+    for (const char *p = arg_name; w && *p; ++p) {
+        char c = *p;
+        if (c >= 'a' && c <= 'z') {
+            c = (char) (c - 'a' + 'A');
+        } else if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))) {
+            c = '_';
+        }
+        w = sc_strbuf_append_char(&b, c);
+    }
+    w = w && sc_strbuf_append_char(&b, '=')
+          && sc_strbuf_append_str(&b, value ? value : "");
+    if (!w) {
+        free(b.s);
+        return NULL;
+    }
+    return b.s;
+}
+
+// ---- long-running "service" add-ons (doc/addons.md) ----
+
+static void
+service_sleep_ms(unsigned ms) {
+#ifdef _WIN32
+    Sleep(ms);
+#else
+    struct timespec ts = { ms / 1000, (long) (ms % 1000) * 1000000L };
+    nanosleep(&ts, NULL);
+#endif
+}
+
+// Non-blocking wait: if the child has exited, reap it, store its exit code in
+// *out_code and return true; otherwise (still running, or error) return false.
+static bool
+service_reap_if_exited(sc_pid pid, sc_exit_code *out_code) {
+#ifdef _WIN32
+    DWORD code;
+    if (GetExitCodeProcess(pid, &code) && code != STILL_ACTIVE) {
+        *out_code = (sc_exit_code) code;
+        CloseHandle(pid);
+        return true;
+    }
+    return false;
+#else
+    siginfo_t info;
+    info.si_pid = 0;
+    if (waitid(P_PID, pid, &info, WEXITED | WNOHANG) == -1 || info.si_pid == 0) {
+        return false; // error, or no state change (still running)
+    }
+    *out_code = (info.si_code == CLD_EXITED) ? info.si_status
+                                             : SC_EXIT_CODE_NONE;
+    return true;
+#endif
+}
+
+// Terminate an adopted service: SIGTERM, a short grace period, then SIGKILL;
+// reap in all cases.
+static void
+terminate_service(sc_pid pid) {
+#ifndef _WIN32
+    kill(pid, SIGTERM);
+    for (unsigned waited = 0; waited < SC_SERVICE_TERM_GRACE_MS;
+         waited += SC_SERVICE_POLL_MS) {
+        sc_exit_code code;
+        if (service_reap_if_exited(pid, &code)) {
+            return;
+        }
+        service_sleep_ms(SC_SERVICE_POLL_MS);
+    }
+#endif
+    sc_process_terminate(pid); // SIGKILL / TerminateProcess
+    sc_process_wait(pid, true); // reap
+}
+
+// For a service add-on: wait until it writes its result file (signals ready) or
+// exits, whichever first. If it is still alive afterwards, ADOPT it (track for
+// shutdown termination) and return 0; otherwise return its exit code. Clears
+// the connection's plugin_pid tracking either way.
+static sc_exit_code
+wait_and_maybe_adopt_service(struct sc_daemon *d, const struct sc_addon *addon,
+                             sc_pid pid, const char *result_path,
+                             unsigned conn_index) {
+    sc_exit_code code = 0;
+    bool exited = false;
+    for (unsigned waited = 0; waited < SC_SERVICE_READY_TIMEOUT_MS;
+         waited += SC_SERVICE_POLL_MS) {
+        if (service_reap_if_exited(pid, &code)) {
+            exited = true;
+            break;
+        }
+        struct stat st;
+        if (result_path && stat(result_path, &st) == 0 && st.st_size > 0) {
+            break; // reported ready; a final liveness check happens below
+        }
+        service_sleep_ms(SC_SERVICE_POLL_MS);
+    }
+    if (!exited) {
+        // It wrote a result (or timed out) — it may have exited meanwhile.
+        exited = service_reap_if_exited(pid, &code);
+    }
+
+    sc_mutex_lock(&d->mutex);
+    d->conns[conn_index].plugin_pid = SC_PROCESS_NONE;
+    bool adopted = false;
+    if (!exited) {
+        if (d->service_count < SC_MAX_SERVICES) {
+            char *name = strdup(addon->name);
+            if (name) {
+                d->services[d->service_count].name = name;
+                d->services[d->service_count].pid = pid;
+                d->service_count++;
+                adopted = true;
+            }
+        } else {
+            LOGW("Too many service add-ons (max %d); terminating \"%s\"",
+                 SC_MAX_SERVICES, addon->name);
+        }
+    }
+    sc_mutex_unlock(&d->mutex);
+
+    if (!exited && !adopted) {
+        terminate_service(pid); // overflow / OOM: don't leak the process
+        return SC_EXIT_CODE_NONE;
+    }
+    if (adopted) {
+        LOGI("Service add-on \"%s\" started and adopted (pid %ld)",
+             addon->name, (long) pid);
+        return 0;
+    }
+    return code; // one-shot: it exited on its own
+}
+
+// Run a loaded add-on (doc/addons.md). The op runs the entrypoint script with
+// the command value as $1 and runtime info in the environment (including every
+// declared argument as SC_ARG_<NAME>). A normal add-on blocks until it exits;
+// a `service=true` add-on that stays alive after reporting ready is adopted and
+// terminated at daemon shutdown. The script's own screenshot/note/click steps
+// come back as separate requests on other connections, logged in real time.
+static void
+handle_plugin(struct sc_daemon *d, sc_socket socket, int64_t id,
+              const struct sc_json *json, unsigned conn_index) {
+    char *name;
+    if (!sc_json_get_string(json, "name", &name)) {
+        send_error(socket, id, "E_BAD_REQUEST", "expected plugin \"name\"");
+        return;
+    }
+    char *args = NULL;
+    sc_json_get_string(json, "args", &args); // optional
+    char *result_path = NULL; // SC_RESULT_FILE temp path (cleaned at end)
+
+    // Optional named arguments (parallel string arrays), each exported to the
+    // script as SC_ARG_<NAME>; the primary value stays available as $1.
+    char *arg_names[SC_MAX_ADDON_ARGS];
+    char *arg_values[SC_MAX_ADDON_ARGS];
+    unsigned name_count = 0, value_count = 0;
+    bool has_names = sc_json_get_string_array(json, "arg_names", arg_names,
+                                              SC_MAX_ADDON_ARGS, &name_count);
+    bool has_values = sc_json_get_string_array(json, "arg_values", arg_values,
+                                               SC_MAX_ADDON_ARGS, &value_count);
+    if (has_names != has_values || name_count != value_count) {
+        send_error(socket, id, "E_BAD_REQUEST",
+                   "arg_names/arg_values must be matching string arrays");
+        goto end;
+    }
+
+    const struct sc_addon *addon = sc_addons_get(&d->addons, name);
+    if (!addon) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "no add-on provides --%s", name);
+        send_error(socket, id, "E_BAD_REQUEST", msg);
+        goto end;
+    }
+    const char *path = addon->path;
+
+    const char *missing = sc_addon_missing_env(addon);
+    if (missing) {
+        char msg[192];
+        snprintf(msg, sizeof(msg),
+                 "add-on --%s requires environment variable %s", name, missing);
+        send_error(socket, id, "E_PLUGIN", msg);
+        goto end;
+    }
+
+    // Auto-log the plugin start event so it always appears on the timeline
+    if (d->report_active) {
+        struct sc_strbuf eb;
+        if (sc_strbuf_init(&eb, 128)) {
+            bool w = sc_strbuf_append_staticstr(&eb, "\"name\":")
+                  && sc_json_append_escaped(&eb, name)
+                  && sc_strbuf_append_staticstr(&eb, ",\"args\":")
+                  && sc_json_append_escaped(&eb, args ? args : "");
+            if (w) {
+                // Preserve any reference-image (path) args in the report bundle
+                copy_plugin_assets(d, addon, arg_names, arg_values, name_count,
+                                   &eb);
+                report_log(d, "plugin", NULL, eb.s);
+            }
+            free(eb.s);
+        }
+    }
+
+    // Runtime info for the script
+    char serial[256];
+    sc_mutex_lock(&d->mutex);
+    snprintf(serial, sizeof(serial), "%s", d->serial ? d->serial : "");
+    sc_mutex_unlock(&d->mutex);
+
+    struct sc_size size = {0, 0};
+    if (d->opts->video) {
+        sc_frame_keeper_wait_size(&d->keeper,
+                                  sc_tick_now() + SC_TICK_FROM_MS(200), &size);
+    }
+    char *exe = sc_file_get_executable_path();
+
+    const struct scrcpy_options *o = d->opts;
+    char e_port[32], e_host[40], e_serial[300], e_report[600];
+    char e_name[160], e_w[32], e_h[32], e_exe[1200];
+    char e_codec[24], e_brate[32], e_mfps[40], e_msize[32], e_enc[300],
+         e_ctrl[16];
+    snprintf(e_port, sizeof(e_port), "SC_DAEMON_PORT=%u", o->daemon_port);
+    snprintf(e_host, sizeof(e_host), "SC_DAEMON_HOST=127.0.0.1");
+    snprintf(e_serial, sizeof(e_serial), "SC_DEVICE_SERIAL=%s", serial);
+    snprintf(e_report, sizeof(e_report), "SC_REPORT_DIR=%s",
+             o->auto_test_report ? o->auto_test_report : "");
+    snprintf(e_name, sizeof(e_name), "SC_ADDON_NAME=%s", name);
+    snprintf(e_w, sizeof(e_w), "SC_VIDEO_WIDTH=%u", size.width);
+    snprintf(e_h, sizeof(e_h), "SC_VIDEO_HEIGHT=%u", size.height);
+    snprintf(e_exe, sizeof(e_exe), "SCRCPY_AUTO=%s", exe ? exe : "scrcpy-auto");
+    // Capture parameters (the daemon's launch config), so plugins read them
+    // from the environment instead of shelling back into the client. Empty
+    // string / 0 mirrors "unset / server default", as with SC_REPORT_DIR.
+    snprintf(e_codec, sizeof(e_codec), "SC_VIDEO_CODEC=%s",
+             o->video ? video_codec_name(o->video_codec) : "");
+    snprintf(e_brate, sizeof(e_brate), "SC_VIDEO_BIT_RATE=%u",
+             o->video_bit_rate);
+    snprintf(e_mfps, sizeof(e_mfps), "SC_VIDEO_MAX_FPS=%s",
+             o->max_fps ? o->max_fps : "");
+    snprintf(e_msize, sizeof(e_msize), "SC_VIDEO_MAX_SIZE=%u", o->max_size);
+    snprintf(e_enc, sizeof(e_enc), "SC_VIDEO_ENCODER=%s",
+             o->video_encoder ? o->video_encoder : "");
+    snprintf(e_ctrl, sizeof(e_ctrl), "SC_CONTROL=%d", o->control ? 1 : 0);
+
+    // Result channel: the script writes its {result,reason,thinking,...} JSON to
+    // SC_RESULT_FILE and the daemon reads it back into the response.
+    int rfd = make_temp_file("result", &result_path);
+    if (rfd >= 0) {
+        close(rfd); // reserve the path; the script (over)writes it
+    }
+    char e_result[600];
+    snprintf(e_result, sizeof(e_result), "SC_RESULT_FILE=%s",
+             result_path ? result_path : "");
+
+    // Base env + result file + the primary as SC_ARG_<COMMAND> + one per arg
+    const char *env[15 + 1 + SC_MAX_ADDON_ARGS] = {
+        e_port, e_host, e_serial, e_report, e_name, e_w, e_h, e_exe, e_result,
+        e_codec, e_brate, e_mfps, e_msize, e_enc, e_ctrl};
+    unsigned env_count = 15;
+    char *arg_env[1 + SC_MAX_ADDON_ARGS];
+    unsigned arg_env_count = 0;
+
+    char *primary_env = make_arg_env(name, args ? args : "");
+    if (primary_env) {
+        arg_env[arg_env_count++] = primary_env;
+        env[env_count++] = primary_env;
+    }
+    for (unsigned i = 0; i < name_count; ++i) {
+        char *e = make_arg_env(arg_names[i], arg_values[i]);
+        if (e) {
+            arg_env[arg_env_count++] = e;
+            env[env_count++] = e;
+        }
+    }
+
+    sc_pid pid;
+    bool started = sc_addon_run(path, args, env, env_count, &pid);
+    free(exe);
+    // The env strings were copied into the child at exec time; safe to free now
+    for (unsigned i = 0; i < arg_env_count; ++i) {
+        free(arg_env[i]);
+    }
+    if (!started) {
+        send_error(socket, id, "E_INTERNAL", "could not start add-on");
+        goto end;
+    }
+
+    // Register the pid so a shutdown mid-run terminates the child
+    sc_mutex_lock(&d->mutex);
+    d->conns[conn_index].plugin_pid = pid;
+    sc_mutex_unlock(&d->mutex);
+
+    sc_exit_code code;
+    if (addon->service) {
+        // Long-running: wait until it reports ready or exits, then adopt it if
+        // still alive (kept running past this response, killed at shutdown).
+        code = wait_and_maybe_adopt_service(d, addon, pid, result_path,
+                                            conn_index);
+    } else {
+        code = sc_process_wait(pid, true);
+        sc_mutex_lock(&d->mutex);
+        d->conns[conn_index].plugin_pid = SC_PROCESS_NONE;
+        sc_mutex_unlock(&d->mutex);
+    }
+
+    // Read back the structured result the script wrote (if any, valid JSON)
+    char *result_json = NULL;
+    if (result_path) {
+        result_json = read_result_file(result_path);
+        unlink(result_path);
+        free(result_path);
+        result_path = NULL;
+    }
+
+    // Record the plugin's structured result on the report timeline (at the end
+    // of the operation) so the report can show the full result JSON.
+    if (result_json && d->report_active) {
+        struct sc_strbuf rb;
+        if (sc_strbuf_init(&rb, 256)) {
+            if (sc_strbuf_append_staticstr(&rb, "\"name\":")
+                    && sc_json_append_escaped(&rb, name)
+                    && sc_strbuf_append_staticstr(&rb, ",\"result\":")
+                    && sc_strbuf_append_str(&rb, result_json)) {
+                report_log(d, "result", NULL, rb.s);
+            }
+            free(rb.s);
+        }
+    }
+
+    if (code == 0) {
+        bool sent = false;
+        if (result_json) {
+            struct sc_strbuf eb;
+            if (sc_strbuf_init(&eb, 256)) {
+                if (sc_strbuf_append_staticstr(&eb, "\"result\":")
+                        && sc_strbuf_append_str(&eb, result_json)) {
+                    send_ok(socket, id, eb.s, NULL, 0);
+                    sent = true;
+                }
+                free(eb.s);
+            }
+        }
+        if (!sent) {
+            send_ok(socket, id, NULL, NULL, 0);
+        }
+    } else {
+        char msg[64];
+        snprintf(msg, sizeof(msg), "add-on exited with code %d", (int) code);
+        send_error(socket, id, "E_INTERNAL", msg);
+    }
+    free(result_json);
+
+end:
+    if (result_path) {
+        unlink(result_path);
+        free(result_path);
+    }
+    for (unsigned i = 0; i < name_count; ++i) {
+        free(arg_names[i]);
+    }
+    for (unsigned i = 0; i < value_count; ++i) {
+        free(arg_values[i]);
+    }
+    free(name);
+    free(args);
+}
+
+// Receive a file uploaded by a remote client (doc/addons.md §7): the request
+// carries "payload_len" and that many raw bytes follow the JSON frame. The
+// bytes are stored in a per-connection temp file (removed on disconnect) and
+// its daemon-side path is returned, to be passed as a path/pathlist plugin arg.
+static void
+handle_upload(struct sc_daemon *d, sc_socket socket, int64_t id,
+              const struct sc_json *json, unsigned conn_index) {
+    int64_t payload_len = 0;
+    sc_json_get_int64(json, "payload_len", &payload_len);
+    if (payload_len < 0 || (uint64_t) payload_len > SC_DAEMON_MAX_FRAME_SIZE) {
+        send_error(socket, id, "E_BAD_REQUEST", "invalid upload payload_len");
+        return;
+    }
+
+    uint8_t *data = NULL;
+    if (payload_len > 0
+            && !sc_daemon_read_payload(socket, (size_t) payload_len, &data)) {
+        // The stream is now desynchronized; closing follows on the next read
+        send_error(socket, id, "E_BAD_REQUEST", "could not read upload payload");
+        return;
+    }
+
+    char *path = NULL;
+    int fd = make_temp_file("upload", &path);
+    if (fd < 0) {
+        free(data);
+        send_error(socket, id, "E_INTERNAL", "could not create upload file");
+        return;
+    }
+    bool ok = payload_len == 0 || write_all_fd(fd, data, (size_t) payload_len);
+    close(fd);
+    free(data);
+    if (!ok) {
+        unlink(path);
+        free(path);
+        send_error(socket, id, "E_INTERNAL", "could not write upload file");
+        return;
+    }
+
+    // Track for cleanup when the connection closes
+    sc_mutex_lock(&d->mutex);
+    struct sc_daemon_conn *conn = &d->conns[conn_index];
+    bool tracked = conn->upload_count < SC_DAEMON_MAX_UPLOADS;
+    if (tracked) {
+        conn->uploads[conn->upload_count++] = path;
+    }
+    sc_mutex_unlock(&d->mutex);
+    if (!tracked) {
+        unlink(path);
+        free(path);
+        send_error(socket, id, "E_BAD_REQUEST", "too many uploads");
+        return;
+    }
+
+    struct sc_strbuf eb;
+    if (!sc_strbuf_init(&eb, 128)) {
+        send_error(socket, id, "E_INTERNAL", "out of memory");
+        return; // path stays tracked and will be cleaned on disconnect
+    }
+    if (sc_strbuf_append_staticstr(&eb, "\"path\":")
+            && sc_json_append_escaped(&eb, path)) {
+        send_ok(socket, id, eb.s, NULL, 0);
+    } else {
+        send_error(socket, id, "E_INTERNAL", "out of memory");
+    }
+    free(eb.s);
+}
+
+enum sc_conn_action {
+    SC_CONN_CONTINUE,      // keep reading requests
+    SC_CONN_CLOSE,         // close the connection
+    SC_CONN_SUBSCRIBE_VIDEO, // hand the connection to the video broadcaster
+};
+
+// Handle one request
+static enum sc_conn_action
+handle_request(struct sc_daemon *d, sc_socket socket, const char *json_str,
+               size_t json_len, unsigned conn_index) {
+    struct sc_json json;
+    if (!sc_json_parse(&json, json_str, json_len)) {
+        send_error(socket, 0, "E_BAD_REQUEST", "invalid JSON");
+        return SC_CONN_CONTINUE;
+    }
+
+    int64_t id = 0;
+    sc_json_get_int64(&json, "id", &id);
+
+    char *op;
+    if (!sc_json_get_string(&json, "op", &op)) {
+        send_error(socket, id, "E_BAD_REQUEST", "missing \"op\"");
+        return SC_CONN_CONTINUE;
+    }
+
+    enum sc_conn_action action = SC_CONN_CONTINUE;
+
+    if (!strcmp(op, "ping")) {
+        send_ok(socket, id, NULL, NULL, 0);
+    } else if (!strcmp(op, "status")) {
+        handle_status(d, socket, id);
+    } else if (!strcmp(op, "screencap")) {
+        handle_screencap(d, socket, id, &json);
+    } else if (!strcmp(op, "clip")) {
+        handle_clip(d, socket, id, &json);
+    } else if (!strcmp(op, "control")) {
+        handle_control(d, socket, id, &json, conn_index);
+    } else if (!strcmp(op, "inject_touch")) {
+        handle_inject_touch(d, socket, id, &json);
+    } else if (!strcmp(op, "inject_key")) {
+        handle_inject_key(d, socket, id, &json);
+    } else if (!strcmp(op, "inject_text")) {
+        handle_inject_text(d, socket, id, &json);
+    } else if (!strcmp(op, "inject_scroll")) {
+        handle_inject_scroll(d, socket, id, &json);
+    } else if (!strcmp(op, "note")) {
+        handle_note(d, socket, id, &json);
+    } else if (!strcmp(op, "plugin")) {
+        handle_plugin(d, socket, id, &json, conn_index);
+    } else if (!strcmp(op, "upload")) {
+        handle_upload(d, socket, id, &json, conn_index);
+    } else if (!strcmp(op, "subscribe_video")) {
+        if (!d->opts->video) {
+            send_error(socket, id, "E_BAD_REQUEST",
+                       "video is disabled (--no-video)");
+        } else {
+            // Ready check only; the broadcaster sends video_meta as the ack
+            sc_mutex_lock(&d->mutex);
+            bool ready = d->state == SC_DAEMON_STATE_READY && !d->stop;
+            sc_mutex_unlock(&d->mutex);
+            if (ready) {
+                // Force a fresh keyframe so a mid-stream subscriber can start
+                // decoding immediately instead of waiting for the device's
+                // next periodic I-frame
+                if (d->opts->control) {
+                    struct sc_control_msg msg = {
+                        .type = SC_CONTROL_MSG_TYPE_RESET_VIDEO,
+                    };
+                    sc_controller_push_msg(&d->session.controller, &msg);
+                }
+                action = SC_CONN_SUBSCRIBE_VIDEO;
+            } else {
+                send_error(socket, id, "E_NOT_READY", "session not ready");
+            }
+        }
+    } else if (!strcmp(op, "shutdown")) {
+        send_ok(socket, id, NULL, NULL, 0);
+        LOGI("Daemon: shutdown requested by client");
+        sc_mutex_lock(&d->mutex);
+        d->stop = true;
+        sc_cond_broadcast(&d->cond);
+        sc_mutex_unlock(&d->mutex);
+        action = SC_CONN_CLOSE;
+    } else {
+        send_error(socket, id, "E_BAD_REQUEST", "unknown op");
+    }
+
+    free(op);
+    return action;
+}
+
+// ---- IPC threads ----
+
+// Defined in the supervisor section below
+static bool
+sc_daemon_interruptible_sleep(struct sc_daemon *d, sc_tick duration);
+
+static int
+run_connection(void *data) {
+    struct sc_daemon_conn *conn = data;
+    struct sc_daemon *d = conn->daemon;
+    sc_socket socket = conn->socket;
+    unsigned conn_index = (unsigned) (conn - d->conns);
+
+    if (send_hello(d, socket)) {
+        for (;;) {
+            char *json;
+            size_t len;
+            if (!sc_daemon_read_json(socket, &json, &len)) {
+                break;
+            }
+            enum sc_conn_action action =
+                handle_request(d, socket, json, len, conn_index);
+            free(json);
+            if (action == SC_CONN_CLOSE) {
+                break;
+            }
+            if (action == SC_CONN_SUBSCRIBE_VIDEO) {
+                // Hand this connection to the video broadcaster: the daemon
+                // now pushes encoded frames on it. Block until the client
+                // closes (recv returns <= 0) or the socket is interrupted
+                // (broadcaster write failure, or daemon shutdown).
+                if (!sc_broadcaster_subscribe(&d->broadcaster, socket)) {
+                    break;
+                }
+                uint8_t discard[256];
+                while (net_recv(socket, discard, sizeof(discard)) > 0) {
+                    // The bridge does not send on the video channel; drain
+                    // anything unexpected until the socket closes
+                }
+                sc_broadcaster_unsubscribe(&d->broadcaster, socket);
+                break;
+            }
+        }
+    }
+
+    net_close(socket);
+
+    sc_mutex_lock(&d->mutex);
+    // Remove any files this connection uploaded (doc/addons.md §7)
+    for (unsigned i = 0; i < conn->upload_count; ++i) {
+        unlink(conn->uploads[i]);
+        free(conn->uploads[i]);
+        conn->uploads[i] = NULL;
+    }
+    conn->upload_count = 0;
+    conn->finished = true;
+    sc_mutex_unlock(&d->mutex);
+
+    return 0;
+}
+
+// Must be called with daemon->mutex locked
+static struct sc_daemon_conn *
+find_conn_slot_locked(struct sc_daemon *d) {
+    for (unsigned i = 0; i < SC_DAEMON_MAX_CLIENTS; ++i) {
+        struct sc_daemon_conn *conn = &d->conns[i];
+        if (conn->in_use && conn->finished) {
+            sc_thread_join(&conn->thread, NULL);
+            conn->in_use = false;
+        }
+        if (!conn->in_use) {
+            return conn;
+        }
+    }
+    return NULL;
+}
+
+static int
+run_accept(void *data) {
+    struct sc_daemon *d = data;
+
+    for (;;) {
+        sc_socket client = net_accept(d->listen_socket);
+        if (client == SC_SOCKET_NONE) {
+            // Either interrupted for stopping, or a transient accept error
+            // (connection aborted in the backlog, fd exhaustion, ...):
+            // net_accept() does not distinguish them, so check the stop flag
+            // and keep accepting otherwise
+            if (sc_daemon_interruptible_sleep(d, SC_TICK_FROM_MS(100))) {
+                break;
+            }
+            LOGW("Daemon: accept failed, retrying");
+            continue;
+        }
+
+        net_set_tcp_nodelay(client, true);
+
+        sc_mutex_lock(&d->mutex);
+        if (d->stop) {
+            sc_mutex_unlock(&d->mutex);
+            net_close(client);
+            break;
+        }
+
+        struct sc_daemon_conn *conn = find_conn_slot_locked(d);
+        if (!conn) {
+            sc_mutex_unlock(&d->mutex);
+            LOGW("Daemon: too many concurrent clients, rejecting");
+            send_error(client, 0, "E_BUSY", "too many concurrent clients");
+            net_close(client);
+            continue;
+        }
+
+        conn->daemon = d;
+        conn->socket = client;
+        conn->in_use = true;
+        conn->finished = false;
+        conn->upload_count = 0;
+        if (!sc_thread_create(&conn->thread, run_connection, "scrcpy-ipc",
+                              conn)) {
+            conn->in_use = false;
+            sc_mutex_unlock(&d->mutex);
+            LOGE("Daemon: could not create connection thread");
+            net_close(client);
+            continue;
+        }
+        sc_mutex_unlock(&d->mutex);
+    }
+
+    return 0;
+}
+
+// ---- supervisor ----
+
+// Sleep up to `duration`, waking early on stop; returns true if stopped
+static bool
+sc_daemon_interruptible_sleep(struct sc_daemon *d, sc_tick duration) {
+    sc_tick deadline = sc_tick_now() + duration;
+    sc_mutex_lock(&d->mutex);
+    while (!d->stop && sc_tick_now() < deadline) {
+        if (g_stop_signal) {
+            d->stop = true;
+            break;
+        }
+        sc_tick tick_deadline = sc_tick_now() + SC_DAEMON_WAIT_TICK;
+        if (tick_deadline > deadline) {
+            tick_deadline = deadline;
+        }
+        sc_cond_timedwait(&d->cond, &d->mutex, tick_deadline);
+    }
+    bool stopped = d->stop;
+    sc_mutex_unlock(&d->mutex);
+    return stopped;
+}
+
+// Wait while READY, until the session dies or stop is requested
+static void
+sc_daemon_wait_session_end(struct sc_daemon *d) {
+    sc_mutex_lock(&d->mutex);
+    while (!d->stop && !d->session.dead) {
+        if (g_stop_signal) {
+            d->stop = true;
+            break;
+        }
+        sc_cond_timedwait(&d->cond, &d->mutex,
+                          sc_tick_now() + SC_DAEMON_WAIT_TICK);
+    }
+    sc_mutex_unlock(&d->mutex);
+}
+
+// Block new requests and wait for in-flight requests to complete
+static void
+sc_daemon_drain_requests(struct sc_daemon *d, enum sc_daemon_state state) {
+    sc_mutex_lock(&d->mutex);
+    sc_daemon_set_state_locked(d, state);
+    while (d->in_flight) {
+        if (g_stop_signal) {
+            // Cannot abort in-flight requests, but record the stop request
+            // so that the supervisor exits once they complete
+            d->stop = true;
+        }
+        sc_cond_timedwait(&d->cond, &d->mutex,
+                          sc_tick_now() + SC_DAEMON_WAIT_TICK);
+    }
+    sc_mutex_unlock(&d->mutex);
+}
+
+enum scrcpy_exit_code
+sc_daemon_run(struct scrcpy_options *opts) {
+    enum scrcpy_exit_code ret = SCRCPY_EXIT_FAILURE;
+
+    struct sc_daemon *d = calloc(1, sizeof(*d));
+    if (!d) {
+        LOG_OOM();
+        return SCRCPY_EXIT_FAILURE;
+    }
+
+    d->opts = opts;
+    d->state = SC_DAEMON_STATE_CONNECTING;
+    d->start_tick = sc_tick_now();
+    d->report_active = opts->auto_test_report != NULL;
+    d->report_initialized = false;
+    d->report_recording = false;
+
+    for (unsigned i = 0; i < SC_DAEMON_MAX_CLIENTS; ++i) {
+        d->conns[i].plugin_pid = SC_PROCESS_NONE;
+        d->conns[i].upload_count = 0;
+    }
+    sc_addons_load(&d->addons, opts->add_ons, opts->add_on_count);
+
+    bool mutex_ok = false;
+    bool cond_ok = false;
+    bool clip_ok = false;
+    bool keeper_ok = false;
+    bool broadcaster_ok = false;
+    bool clips_ok = false;
+    bool listening = false;
+    bool registry_written = false;
+
+    if (!sc_mutex_init(&d->mutex)) {
+        goto end;
+    }
+    mutex_ok = true;
+    if (!sc_cond_init(&d->cond)) {
+        goto end;
+    }
+    cond_ok = true;
+    if (!sc_mutex_init(&d->clipboard_mutex)) {
+        goto end;
+    }
+    clip_ok = true;
+    if (!sc_frame_keeper_init(&d->keeper)) {
+        goto end;
+    }
+    keeper_ok = true;
+    if (!sc_broadcaster_init(&d->broadcaster)) {
+        goto end;
+    }
+    broadcaster_ok = true;
+    if (!sc_clip_buffer_init(&d->clips)) {
+        goto end;
+    }
+    clips_ok = true;
+
+    // Bind first: this is the "already running?" check (doc/daemon.md §6.1)
+    d->listen_socket = net_socket();
+    if (d->listen_socket == SC_SOCKET_NONE) {
+        goto end;
+    }
+    if (!net_listen(d->listen_socket, IPV4_LOCALHOST, opts->daemon_port, 4)) {
+        LOGE("Daemon: could not listen on 127.0.0.1:%" PRIu16
+             " (already in use?)", opts->daemon_port);
+        net_close(d->listen_socket);
+        goto end;
+    }
+    listening = true;
+
+    signal(SIGINT, sc_daemon_signal_handler);
+    signal(SIGTERM, sc_daemon_signal_handler);
+
+    registry_written = sc_registry_write(opts->daemon_port, opts->serial, "",
+                                         "starting");
+
+    if (!sc_thread_create(&d->accept_thread, run_accept, "scrcpy-accept", d)) {
+        LOGE("Daemon: could not create accept thread");
+        goto end;
+    }
+    d->accept_thread_started = true;
+
+    LOGI("Daemon: listening on 127.0.0.1:%" PRIu16, opts->daemon_port);
+
+    unsigned failures = 0;
+    unsigned backoff_ms = SC_DAEMON_BACKOFF_MIN_MS;
+
+    for (;;) {
+        sc_mutex_lock(&d->mutex);
+        bool stop = d->stop || g_stop_signal;
+        d->stop = stop;
+        if (!stop) {
+            sc_daemon_set_state_locked(d, failures
+                                              ? SC_DAEMON_STATE_RECONNECTING
+                                              : SC_DAEMON_STATE_CONNECTING);
+        }
+        sc_mutex_unlock(&d->mutex);
+        if (stop) {
+            ret = SCRCPY_EXIT_SUCCESS;
+            break;
+        }
+        sc_daemon_update_registry(d);
+
+        if (!sc_daemon_session_start(d)) {
+            sc_mutex_lock(&d->mutex);
+            bool stopped = d->stop || g_stop_signal;
+            sc_mutex_unlock(&d->mutex);
+            if (stopped) {
+                ret = SCRCPY_EXIT_SUCCESS;
+                break;
+            }
+
+            ++failures;
+            if (opts->daemon_reconnect_max
+                    && failures > opts->daemon_reconnect_max) {
+                LOGE("Daemon: could not connect to the device after %u "
+                     "attempts, giving up", failures);
+                break;
+            }
+            LOGW("Daemon: connection failed, retrying in %u ms", backoff_ms);
+            if (sc_daemon_interruptible_sleep(d,
+                                              SC_TICK_FROM_MS(backoff_ms))) {
+                ret = SCRCPY_EXIT_SUCCESS;
+                break;
+            }
+            backoff_ms = MIN(backoff_ms * 2, SC_DAEMON_BACKOFF_MAX_MS);
+            continue;
+        }
+
+        failures = 0;
+        backoff_ms = SC_DAEMON_BACKOFF_MIN_MS;
+
+        sc_mutex_lock(&d->mutex);
+        sc_daemon_set_state_locked(d, SC_DAEMON_STATE_READY);
+        sc_mutex_unlock(&d->mutex);
+        sc_daemon_update_registry(d);
+        LOGI("Daemon: device session ready");
+
+        sc_daemon_wait_session_end(d);
+
+        sc_mutex_lock(&d->mutex);
+        bool stopping = d->stop;
+        sc_mutex_unlock(&d->mutex);
+
+        sc_daemon_drain_requests(d, stopping ? SC_DAEMON_STATE_STOPPING
+                                             : SC_DAEMON_STATE_RECONNECTING);
+        sc_daemon_session_stop(d);
+
+        if (stopping) {
+            ret = SCRCPY_EXIT_SUCCESS;
+            break;
+        }
+
+        LOGW("Daemon: device disconnected");
+        if (d->report_active) {
+            // A test report captures a single session: end the test on the
+            // first disconnect (decision: --auto-test-report ends immediately)
+            LOGI("Daemon: test report ended (device disconnected)");
+            ret = SCRCPY_EXIT_SUCCESS;
+            break;
+        }
+        if (opts->daemon_reconnect_none) {
+            LOGI("Daemon: reconnection disabled, exiting");
+            ret = SCRCPY_EXIT_FAILURE;
+            break;
+        }
+        ++failures; // report "reconnecting" state on next iteration
+    }
+
+    // Shutdown
+    sc_mutex_lock(&d->mutex);
+    d->stop = true;
+    sc_daemon_set_state_locked(d, SC_DAEMON_STATE_STOPPING);
+    sc_mutex_unlock(&d->mutex);
+
+end:
+    if (listening) {
+        net_interrupt(d->listen_socket);
+    }
+    if (d->accept_thread_started) {
+        sc_thread_join(&d->accept_thread, NULL);
+    }
+
+    // Interrupt and join client connections
+    if (mutex_ok) {
+        sc_mutex_lock(&d->mutex);
+        for (unsigned i = 0; i < SC_DAEMON_MAX_CLIENTS; ++i) {
+            struct sc_daemon_conn *conn = &d->conns[i];
+            if (conn->in_use && !conn->finished) {
+                net_interrupt(conn->socket);
+            }
+            // Terminate a running add-on so its blocking wait returns
+            if (conn->plugin_pid != SC_PROCESS_NONE) {
+                sc_process_terminate(conn->plugin_pid);
+            }
+        }
+        sc_mutex_unlock(&d->mutex);
+        for (unsigned i = 0; i < SC_DAEMON_MAX_CLIENTS; ++i) {
+            struct sc_daemon_conn *conn = &d->conns[i];
+            if (conn->in_use) {
+                sc_thread_join(&conn->thread, NULL);
+                conn->in_use = false;
+            }
+        }
+    }
+
+    // Terminate adopted long-running service add-ons (doc/addons.md)
+    for (unsigned i = 0; i < d->service_count; ++i) {
+        if (d->services[i].pid != SC_PROCESS_NONE) {
+            LOGI("Stopping service add-on \"%s\"", d->services[i].name);
+            terminate_service(d->services[i].pid);
+        }
+        free(d->services[i].name);
+    }
+    d->service_count = 0;
+
+    if (listening) {
+        net_close(d->listen_socket);
+    }
+    if (registry_written) {
+        sc_registry_remove(opts->daemon_port);
+    }
+    if (clips_ok) {
+        sc_clip_buffer_destroy(&d->clips);
+    }
+    if (broadcaster_ok) {
+        sc_broadcaster_destroy(&d->broadcaster);
+    }
+    sc_addons_destroy(&d->addons);
+    if (d->report_initialized) {
+        sc_report_destroy(&d->report);
+    }
+    if (keeper_ok) {
+        sc_frame_keeper_destroy(&d->keeper);
+    }
+    if (clip_ok) {
+        sc_mutex_destroy(&d->clipboard_mutex);
+    }
+    if (cond_ok) {
+        sc_cond_destroy(&d->cond);
+    }
+    if (mutex_ok) {
+        sc_mutex_destroy(&d->mutex);
+    }
+    free(d->serial);
+    free(d);
+
+    return ret;
+}

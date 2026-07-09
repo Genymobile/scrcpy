@@ -8,3 +8,19 @@ build/
 /x/
 local.properties
 /scrcpy-server
+
+# --- AI plugins & example/demo assets: LOCAL ONLY, never committed ---
+# Only the plugin *framework* (the --add-on / plugin-protocol code) belongs in
+# git. Concrete plugin implementations and every example/demo asset they carry
+# (prompts, API keys, endpoint examples, sample paths, sample configs, test
+# plugin code) must stay local. Keep such files outside the repo (e.g. under a
+# temp dir); these patterns are a safety net if any land inside the tree.
+exec_prompt*
+assert_prompt*
+ai_common.py
+*_prompt.py
+*-entrypoint.sh
+/plugins/
+/addons/
+DESIGN-ai-plugins.md
+*.plugin.local.*

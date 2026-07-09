@@ -102,6 +102,22 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
+    OPT_SCREENCAP,
+    OPT_CONTROL_CMD,
+    OPT_DAEMON_PORT,
+    OPT_CLIENT_PORT,
+    OPT_DAEMON_HOST,
+    OPT_JSON,
+    OPT_DAEMON_STOP,
+    OPT_DAEMON_STATUS,
+    OPT_DAEMON_RECONNECT,
+    OPT_AUTO_TEST_REPORT,
+    OPT_ACTION,
+    OPT_NOTE,
+    OPT_ADD_ON,
+    OPT_CLIP_START,
+    OPT_CLIP_END,
+    OPT_OUTPUT,
     OPT_CAMERA_TORCH,
     OPT_CAMERA_ZOOM,
     OPT_MIN_SIZE_ALIGNMENT,
@@ -583,6 +599,114 @@ static const struct sc_option options[] = {
         .text = "Disable device control (mirror the device in read-only).",
     },
     {
+        .longopt_id = OPT_CONTROL_CMD,
+        .longopt = "control",
+        .argdesc = "command",
+        .text = "Send a control command to the device and exit.\n"
+                "Use --control help for detailed usage.\n"
+                "Can be specified multiple times for multi-finger gestures.\n"
+                "Available commands: click, swipe, input, sleep.",
+    },
+    {
+        .longopt_id = OPT_CLIENT_PORT,
+        .longopt = "client-port",
+        .argdesc = "port",
+        .text = "Run as a thin client of a scrcpy-auto daemon listening on "
+                "127.0.0.1:port (see --daemon-port).\n"
+                "Operations (--control, --screencap, --daemon-status, "
+                "--daemon-stop) are executed by the daemon, without starting "
+                "a new device session.",
+    },
+    {
+        .longopt_id = OPT_DAEMON_PORT,
+        .longopt = "daemon-port",
+        .argdesc = "port",
+        .text = "Run as a persistent daemon listening on 127.0.0.1:port.\n"
+                "The device session is kept alive and served to thin clients "
+                "(see --client-port). Requires --no-window.",
+    },
+    {
+        .longopt_id = OPT_DAEMON_HOST,
+        .longopt = "daemon-host",
+        .argdesc = "host",
+        .text = "Host the thin client connects to (default 127.0.0.1).\n"
+                "A loopback host is treated as local: reference-image paths are "
+                "read directly by the daemon. A remote host makes the client "
+                "upload image bytes so the daemon never needs the client's "
+                "filesystem (doc/addons.md).",
+    },
+    {
+        .longopt_id = OPT_JSON,
+        .longopt = "json",
+        .text = "Emit machine-readable JSON on stdout instead of human logs "
+                "(client mode).\n"
+                "For a plugin call, prints the plugin's result object; on "
+                "failure prints a JSON error object and exits non-zero.",
+    },
+    {
+        .longopt_id = OPT_DAEMON_RECONNECT,
+        .longopt = "daemon-reconnect",
+        .argdesc = "auto[:max]|none",
+        .text = "Set the daemon reconnection policy when the device is "
+                "disconnected.\n"
+                "\"auto\" retries forever with backoff (default), "
+                "\"auto:MAX\" gives up after MAX consecutive failures, "
+                "\"none\" exits on disconnection.",
+    },
+    {
+        .longopt_id = OPT_DAEMON_STATUS,
+        .longopt = "daemon-status",
+        .text = "Print the daemon state as JSON on stdout (requires "
+                "--client-port).",
+    },
+    {
+        .longopt_id = OPT_DAEMON_STOP,
+        .longopt = "daemon-stop",
+        .text = "Ask the daemon to shut down gracefully (requires "
+                "--client-port).",
+    },
+    {
+        .longopt_id = OPT_AUTO_TEST_REPORT,
+        .longopt = "auto-test-report",
+        .argdesc = "dir",
+        .text = "Record a test report into the given directory (daemon mode).\n"
+                "Starts recording the screen to <dir>/recording.mp4 "
+                "immediately and logs every client operation (with its "
+                "timestamp and optional --action) to <dir>/events.jsonl, for "
+                "rendering as an interactive report in scrcpy-auto-web.",
+    },
+    {
+        .longopt_id = OPT_ACTION,
+        .longopt = "action",
+        .argdesc = "text",
+        .text = "Human-readable description of a client operation, recorded in "
+                "the test report (used with --client-port and "
+                "--control/--screencap).",
+    },
+    {
+        .longopt_id = OPT_ADD_ON,
+        .longopt = "add-on",
+        .argdesc = "path",
+        .text = "Load a plugin entrypoint script (daemon mode), giving it a "
+                "custom --<command> option (doc/addons.md).\n"
+                "The script is queried once for its command name, then run "
+                "when a client passes that option. Can be given multiple "
+                "times. Plugins let external tools (e.g. AI workflows) add "
+                "commands without changing scrcpy-auto.",
+    },
+    {
+        .longopt_id = OPT_NOTE,
+        .longopt = "note",
+        .argdesc = "title: description",
+        .text = "Record a standalone annotation in the test report, "
+                "independent of any control command (used with "
+                "--client-port).\n"
+                "The value is a \"title: description\" pair, e.g. "
+                "--note=\"assert: Login button clicked\" or "
+                "--note=\"thinking: expected button not found\". Useful to "
+                "mark test-case boundaries, assertions and reasoning.",
+    },
+    {
         .shortopt = 'N',
         .longopt = "no-playback",
         .text = "Disable video and audio playback on the computer (equivalent "
@@ -827,6 +951,40 @@ static const struct sc_option options[] = {
         .text = "By default, scrcpy mirrors only the video when audio capture "
                 "fails on the device. This option makes scrcpy fail if audio "
                 "is enabled but does not work."
+    },
+    {
+        .longopt_id = OPT_SCREENCAP,
+        .longopt = "screencap",
+        .argdesc = "file.png",
+        .text = "Take a screenshot and save it to file.\n"
+                "The screenshot is captured from the video stream, "
+                "the same way as --record.",
+    },
+    {
+        .longopt_id = OPT_CLIP_START,
+        .longopt = "clip-start",
+        .argdesc = "seconds",
+        .text = "Start of the video segment to extract from the daemon's "
+                "recording, in seconds since the recording started (decimals "
+                "allowed, e.g. 8.5).\n"
+                "Requires --clip-end and --output (see --output).",
+    },
+    {
+        .longopt_id = OPT_CLIP_END,
+        .longopt = "clip-end",
+        .argdesc = "seconds",
+        .text = "End of the video segment to extract (see --clip-start).\n"
+                "If this timestamp has not been recorded yet, the command "
+                "fails with an error.",
+    },
+    {
+        .longopt_id = OPT_OUTPUT,
+        .longopt = "output",
+        .argdesc = "file.mp4",
+        .text = "Save the [--clip-start, --clip-end] segment of the daemon's "
+                "recording to this MP4 file, while recording continues.\n"
+                "The clip starts at the closest keyframe at or before "
+                "--clip-start; the actual bounds are reported.",
     },
     {
         .shortopt = 's',
@@ -1505,6 +1663,75 @@ print_exit_status(const struct sc_exit_status *status, unsigned cols) {
     free(text);
 }
 
+static void
+print_control_usage(void) {
+    fprintf(stderr,
+        "Usage: scrcpy --control=\"<command>\" [--control=\"<command>\" ...]\n"
+        "\n"
+        "Send control commands to the device and exit.\n"
+        "\n"
+        "Commands:\n"
+        "\n"
+        "  click <x> <y> [duration_ms]\n"
+        "      Tap at the given coordinates (hold implemented as a\n"
+        "      zero-distance swipe, so the touch stays alive).\n"
+        "      Default duration: 200ms. Use longer duration for long-press.\n"
+        "\n"
+        "      Examples:\n"
+        "          scrcpy --control=\"click 540 1200\"\n"
+        "          scrcpy --control=\"click 540 1200 2000\"   # long-press 2s\n"
+        "\n"
+        "  swipe <x1> <y1> <x2> <y2> [duration_ms]\n"
+        "      Swipe from (x1,y1) to (x2,y2).\n"
+        "      Default duration: 300ms.\n"
+        "\n"
+        "      Examples:\n"
+        "          scrcpy --control=\"swipe 540 1500 540 500\"\n"
+        "          scrcpy --control=\"swipe 540 1500 540 500 1000\"   # slow\n"
+        "\n"
+        "  input '<text>'\n"
+        "      Input text. Supports full Unicode (Chinese, emoji, etc).\n"
+        "\n"
+        "      Examples:\n"
+        "          scrcpy --control=\"input 'hello world'\"\n"
+        "          scrcpy --control=\"input '你好世界🎉'\"\n"
+        "\n"
+        "  sleep <ms>\n"
+        "      Wait for the specified duration. Only used with &&.\n"
+        "\n"
+        "Chaining with &&:\n"
+        "    Use && to chain commands sequentially within one --control.\n"
+        "\n"
+        "      # Swipe up twice with 100ms gap\n"
+        "      scrcpy --control=\"swipe 540 1500 540 500 300 && \\\n"
+        "                        sleep 100 && \\\n"
+        "                        swipe 540 1500 540 500 300\"\n"
+        "\n"
+        "      # Type text then click search\n"
+        "      scrcpy --control=\"input '你好' && click 900 200\"\n"
+        "\n"
+        "      # Scroll down 5 times quickly\n"
+        "      scrcpy --control=\"swipe 540 1500 540 500 200 && \\\n"
+        "                        swipe 540 1500 540 500 200 && \\\n"
+        "                        swipe 540 1500 540 500 200 && \\\n"
+        "                        swipe 540 1500 540 500 200 && \\\n"
+        "                        swipe 540 1500 540 500 200\"\n"
+        "\n"
+        "Multi-finger gestures:\n"
+        "    Multiple --control flags (without &&) run in parallel.\n"
+        "    Each flag represents one finger.\n"
+        "\n"
+        "      # Two-finger pinch\n"
+        "      scrcpy --control=\"swipe 200 800 400 500\" \\\n"
+        "             --control=\"swipe 800 800 600 500\"\n"
+        "\n"
+        "      # Three-finger swipe up\n"
+        "      scrcpy --control=\"swipe 200 1200 200 400 500\" \\\n"
+        "             --control=\"swipe 540 1200 540 400 500\" \\\n"
+        "             --control=\"swipe 880 1200 880 400 500\"\n"
+    );
+}
+
 void
 scrcpy_print_usage(const char *arg0) {
 #define SC_TERM_COLS_DEFAULT 80
@@ -1607,6 +1834,21 @@ parse_bit_rate(const char *s, uint32_t *bit_rate) {
     }
 
     *bit_rate = (uint32_t) value;
+    return true;
+}
+
+// Parse a --clip-start/--clip-end timestamp in seconds (decimals allowed,
+// e.g. "8.5") into milliseconds
+static bool
+parse_clip_time(const char *s, int64_t *out_ms) {
+    char *end;
+    double value = strtod(s, &end);
+    if (end == s || *end != '\0' || !(value >= 0)
+            || value > 366 * 24 * 3600.) {
+        LOGE("Invalid clip time: %s (expected seconds, e.g. \"8.5\")", s);
+        return false;
+    }
+    *out_ms = (int64_t) (value * 1000. + 0.5);
     return true;
 }
 
@@ -1979,6 +2221,33 @@ parse_record_format(const char *optarg, enum sc_record_format *format) {
 static bool
 parse_ip(const char *optarg, uint32_t *ipv4) {
     return net_parse_ipv4(optarg, ipv4);
+}
+
+static bool
+parse_daemon_reconnect(const char *optarg, struct scrcpy_options *opts) {
+    if (!strcmp(optarg, "none")) {
+        opts->daemon_reconnect_none = true;
+        opts->daemon_reconnect_max = 0;
+        return true;
+    }
+    if (!strcmp(optarg, "auto")) {
+        opts->daemon_reconnect_none = false;
+        opts->daemon_reconnect_max = 0;
+        return true;
+    }
+    if (!strncmp(optarg, "auto:", 5)) {
+        long value;
+        if (!parse_integer_arg(optarg + 5, &value, false, 1, 0x7FFFFFFF,
+                               "daemon-reconnect max")) {
+            return false;
+        }
+        opts->daemon_reconnect_none = false;
+        opts->daemon_reconnect_max = (unsigned) value;
+        return true;
+    }
+    LOGE("Unsupported --daemon-reconnect value: %s "
+         "(expected auto, auto:MAX or none)", optarg);
+    return false;
 }
 
 static bool
@@ -2892,6 +3161,81 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_SCREENCAP:
+                opts->screencap_filename = optarg;
+                break;
+            case OPT_CLIP_START:
+                if (!parse_clip_time(optarg, &opts->clip_start_ms)) {
+                    return false;
+                }
+                break;
+            case OPT_CLIP_END:
+                if (!parse_clip_time(optarg, &opts->clip_end_ms)) {
+                    return false;
+                }
+                break;
+            case OPT_OUTPUT:
+                opts->clip_output = optarg;
+                break;
+            case OPT_CONTROL_CMD:
+                if (!optarg || !strcmp(optarg, "-h")
+                            || !strcmp(optarg, "--help")
+                            || !strcmp(optarg, "help")) {
+                    print_control_usage();
+                    return false;
+                }
+                if (opts->control_cmd_count >= SC_MAX_CONTROL_CMDS) {
+                    LOGE("Too many --control commands (max %d)",
+                         SC_MAX_CONTROL_CMDS);
+                    return false;
+                }
+                opts->control_cmds[opts->control_cmd_count++] = optarg;
+                break;
+            case OPT_DAEMON_PORT:
+                if (!parse_port(optarg, &opts->daemon_port)
+                        || !opts->daemon_port) {
+                    return false;
+                }
+                break;
+            case OPT_CLIENT_PORT:
+                if (!parse_port(optarg, &opts->client_port)
+                        || !opts->client_port) {
+                    return false;
+                }
+                break;
+            case OPT_DAEMON_HOST:
+                opts->daemon_host = optarg;
+                break;
+            case OPT_JSON:
+                opts->json = true;
+                break;
+            case OPT_DAEMON_STOP:
+                opts->daemon_stop = true;
+                break;
+            case OPT_DAEMON_STATUS:
+                opts->daemon_status = true;
+                break;
+            case OPT_DAEMON_RECONNECT:
+                if (!parse_daemon_reconnect(optarg, opts)) {
+                    return false;
+                }
+                break;
+            case OPT_AUTO_TEST_REPORT:
+                opts->auto_test_report = optarg;
+                break;
+            case OPT_ACTION:
+                opts->action = optarg;
+                break;
+            case OPT_NOTE:
+                opts->note = optarg;
+                break;
+            case OPT_ADD_ON:
+                if (opts->add_on_count >= SC_MAX_ADDONS) {
+                    LOGE("Too many --add-on plugins (max %d)", SC_MAX_ADDONS);
+                    return false;
+                }
+                opts->add_ons[opts->add_on_count++] = optarg;
+                break;
             case OPT_MIN_SIZE_ALIGNMENT:
                 if (!parse_min_size_alignment(optarg,
                                               &opts->min_size_alignment)) {
@@ -2954,6 +3298,138 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     v4l2 = !!opts->v4l2_device;
 #endif
 
+    // Persistent daemon mode validation (doc/daemon.md §5.2)
+    if (opts->daemon_port && opts->client_port) {
+        LOGE("--daemon-port and --client-port are mutually exclusive");
+        return false;
+    }
+
+    // Plugin system (doc/addons.md)
+    if (opts->add_on_count && !opts->daemon_port) {
+        LOGE("--add-on requires --daemon-port");
+        return false;
+    }
+    if (opts->plugin_count && !opts->client_port) {
+        LOGE("plugin options (--%s=...) require --client-port",
+             opts->plugin_names[0]);
+        return false;
+    }
+
+    // Clip extraction (doc/daemon.md §9.5)
+    if (opts->clip_output || opts->clip_start_ms >= 0
+            || opts->clip_end_ms >= 0) {
+        if (!opts->client_port) {
+            LOGE("--clip-start/--clip-end/--output require --client-port");
+            return false;
+        }
+        if (!opts->clip_output || opts->clip_start_ms < 0
+                || opts->clip_end_ms < 0) {
+            LOGE("clip extraction requires all of --clip-start, --clip-end "
+                 "and --output");
+            return false;
+        }
+        if (opts->clip_end_ms <= opts->clip_start_ms) {
+            LOGE("--clip-end must be greater than --clip-start");
+            return false;
+        }
+    }
+
+    if (opts->daemon_port) {
+        if (opts->window) {
+            LOGE("--daemon-port requires --no-window");
+            return false;
+        }
+        if (opts->control_cmd_count || opts->screencap_filename) {
+            LOGE("--control and --screencap cannot be passed to the daemon; "
+                 "use them with --client-port instead");
+            return false;
+        }
+        if (opts->record_filename || otg || v4l2 || opts->list
+                || opts->start_app) {
+            LOGE("--daemon-port is incompatible with --record, --otg, "
+                 "--v4l2-sink, --list-* and --start-app");
+            return false;
+        }
+        if (opts->daemon_stop || opts->daemon_status) {
+            LOGE("--daemon-stop and --daemon-status require --client-port");
+            return false;
+        }
+        if (opts->auto_test_report && !opts->video) {
+            LOGE("--auto-test-report requires video capture (not --no-video)");
+            return false;
+        }
+        // The daemon captures video for screenshots (no playback) and needs
+        // control for input injection
+        opts->video_playback = false;
+        opts->audio_playback = false;
+        opts->audio = false;
+        if (opts->video && !opts->control) {
+            LOGI("Daemon: control disabled, serving screenshots only");
+        }
+    } else {
+        if (opts->daemon_reconnect_none || opts->daemon_reconnect_max) {
+            LOGE("--daemon-reconnect requires --daemon-port");
+            return false;
+        }
+        if (opts->auto_test_report) {
+            LOGE("--auto-test-report requires --daemon-port");
+            return false;
+        }
+    }
+
+    if (opts->client_port) {
+        if (opts->serial || opts->select_usb || opts->select_tcpip
+                || opts->tcpip) {
+            LOGE("Device selection options (-s, -d, -e, --tcpip) are "
+                 "incompatible with --client-port (the daemon owns the "
+                 "device)");
+            return false;
+        }
+        if (opts->record_filename || otg || v4l2 || opts->list
+                || opts->start_app) {
+            LOGE("--client-port only supports --control, --screencap, "
+                 "--daemon-status and --daemon-stop");
+            return false;
+        }
+        if (!opts->control_cmd_count && !opts->screencap_filename
+                && !opts->daemon_status && !opts->daemon_stop && !opts->note
+                && !opts->plugin_count && !opts->clip_output) {
+            LOGE("--client-port requires at least one operation (--control, "
+                 "--screencap, --clip-start/--clip-end/--output, --note, "
+                 "a plugin --<command>, --daemon-status, --daemon-stop)");
+            return false;
+        }
+        // The client never opens a window nor a device session
+        opts->window = false;
+        opts->video_playback = false;
+        opts->audio_playback = false;
+        return true; // skip the remaining session-oriented adjustments
+    }
+
+    if (opts->daemon_stop || opts->daemon_status) {
+        LOGE("--daemon-stop and --daemon-status require --client-port");
+        return false;
+    }
+
+    if (!opts->daemon_port && opts->control_cmd_count) {
+        if (opts->screencap_filename) {
+            // One-shot control mode exits right after the commands, and
+            // touch coordinates require video to be disabled (the device
+            // ignores events not matching the video size); use a daemon
+            // (--daemon-port/--client-port) to combine both operations
+            LOGE("--control and --screencap cannot be combined in one-shot "
+                 "mode (use a daemon with --client-port)");
+            return false;
+        }
+        // Control command mode: send commands and exit
+        opts->video_playback = false;
+        opts->audio_playback = false;
+        opts->audio = false;
+        opts->video = false;
+        opts->window = false;
+        opts->control = true;
+    }
+
     if (!opts->window) {
         // Without window, there cannot be any video playback
         opts->video_playback = false;
@@ -2972,8 +3448,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->video && !opts->video_playback && !opts->record_filename
-            && !v4l2) {
-        LOGI("No video playback, no recording, no V4L2 sink: video disabled");
+            && !opts->screencap_filename && !v4l2 && !opts->daemon_port) {
+        // In daemon mode, video is consumed by the frame keeper
+        LOGI("No video playback, no recording, no screencap, no V4L2 sink: "
+             "video disabled");
         opts->video = false;
     }
 
@@ -3367,6 +3845,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
+    if (opts->screencap_filename) {
+        if (!opts->video) {
+            LOGE("Video disabled, nothing to screencap");
+            return false;
+        }
+    }
+
     if (opts->audio_codec == SC_CODEC_FLAC && opts->audio_bit_rate) {
         LOGW("--audio-bit-rate is ignored for FLAC audio codec");
     }
@@ -3431,6 +3916,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         // Only report obvious errors.
         if (opts->record_filename) {
             LOGE("OTG mode: cannot record");
+            return false;
+        }
+        if (opts->screencap_filename) {
+            LOGE("OTG mode: cannot screencap");
             return false;
         }
         if (opts->turn_screen_off) {
@@ -3523,6 +4012,51 @@ scrcpy_launched_by_double_click(void) {
 }
 #endif
 
+// Is `name` (length `len`) a built-in long option?
+static bool
+sc_is_known_longopt(const char *name, size_t len) {
+    for (size_t i = 0; i < ARRAY_LEN(options); ++i) {
+        const char *lo = options[i].longopt;
+        if (lo && strlen(lo) == len && !memcmp(lo, name, len)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Extract unknown "--name=value" options as plugin calls (doc/addons.md) and
+// build a filtered argv (without them) for getopt. `out` must hold `argc`
+// pointers. The plugin option token is split in place at '='.
+static void
+sc_extract_plugin_calls(int argc, char *argv[], struct scrcpy_options *opts,
+                        char *out[], int *out_argc) {
+    int n = 0;
+    out[n++] = argv[0];
+    for (int i = 1; i < argc; ++i) {
+        char *tok = argv[i];
+        if (tok[0] == '-' && tok[1] == '-' && tok[2]) {
+            char *eq = strchr(tok + 2, '=');
+            if (eq) {
+                size_t namelen = eq - (tok + 2);
+                if (namelen > 0 && !sc_is_known_longopt(tok + 2, namelen)) {
+                    if (opts->plugin_count < SC_MAX_PLUGIN_CALLS) {
+                        *eq = '\0'; // split "--name\0value"
+                        opts->plugin_names[opts->plugin_count] = tok + 2;
+                        opts->plugin_args[opts->plugin_count] = eq + 1;
+                        opts->plugin_count++;
+                    } else {
+                        LOGW("Too many plugin options (max %d)",
+                             SC_MAX_PLUGIN_CALLS);
+                    }
+                    continue; // not a built-in option: hide from getopt
+                }
+            }
+        }
+        out[n++] = tok;
+    }
+    *out_argc = n;
+}
+
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     struct sc_getopt_adapter adapter;
@@ -3531,8 +4065,14 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         return false;
     }
 
-    bool ret = parse_args_with_getopt(args, argc, argv, adapter.optstring,
-                                      adapter.longopts);
+    // Pull unknown --name=value options out as plugin calls before getopt,
+    // which would otherwise reject them.
+    char *filtered[argc];
+    int filtered_argc;
+    sc_extract_plugin_calls(argc, argv, &args->opts, filtered, &filtered_argc);
+
+    bool ret = parse_args_with_getopt(args, filtered_argc, filtered,
+                                      adapter.optstring, adapter.longopts);
 
     sc_getopt_adapter_destroy(&adapter);
 

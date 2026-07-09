@@ -15,6 +15,7 @@
 #endif
 
 #include "audio_player.h"
+#include "control_exec.h"
 #include "controller.h"
 #include "decoder.h"
 #include "delay_buffer.h"
@@ -24,6 +25,7 @@
 #include "keyboard_sdk.h"
 #include "mouse_sdk.h"
 #include "recorder.h"
+#include "screencap.h"
 #include "screen.h"
 #include "sdl_hints.h"
 #include "server.h"
@@ -55,6 +57,7 @@ struct scrcpy {
     struct sc_decoder video_decoder;
     struct sc_decoder audio_decoder;
     struct sc_recorder recorder;
+    struct sc_screencap screencap;
     struct sc_delay_buffer video_buffer;
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
@@ -131,6 +134,12 @@ event_loop(struct scrcpy *s, bool has_screen) {
             case SC_EVENT_RECORDER_ERROR:
                 LOGE("Recorder error");
                 return SCRCPY_EXIT_FAILURE;
+            case SC_EVENT_SCREENCAP_COMPLETED:
+                LOGD("Screencap completed");
+                return SCRCPY_EXIT_SUCCESS;
+            case SC_EVENT_SCREENCAP_ERROR:
+                LOGE("Screencap error");
+                return SCRCPY_EXIT_FAILURE;
             case SC_EVENT_AOA_OPEN_ERROR:
                 LOGE("AOA open error");
                 return SCRCPY_EXIT_FAILURE;
@@ -185,6 +194,19 @@ sc_recorder_on_ended(struct sc_recorder *recorder, bool success,
 
     if (!success) {
         sc_push_event(SC_EVENT_RECORDER_ERROR);
+    }
+}
+
+static void
+sc_screencap_on_ended(struct sc_screencap *screencap, bool success,
+                      void *userdata) {
+    (void) screencap;
+    (void) userdata;
+
+    if (success) {
+        sc_push_event(SC_EVENT_SCREENCAP_COMPLETED);
+    } else {
+        sc_push_event(SC_EVENT_SCREENCAP_ERROR);
     }
 }
 
@@ -325,6 +347,8 @@ scrcpy(struct scrcpy_options *options) {
     bool file_pusher_initialized = false;
     bool recorder_initialized = false;
     bool recorder_started = false;
+    bool screencap_initialized = false;
+    bool screencap_started = false;
 #ifdef HAVE_V4L2
     bool v4l2_sink_initialized = false;
 #endif
@@ -561,6 +585,25 @@ scrcpy(struct scrcpy_options *options) {
             sc_packet_source_add_sink(&s->audio_demuxer.packet_source,
                                       &s->recorder.audio_packet_sink);
         }
+    }
+
+    if (options->screencap_filename) {
+        static const struct sc_screencap_callbacks screencap_cbs = {
+            .on_ended = sc_screencap_on_ended,
+        };
+        if (!sc_screencap_init(&s->screencap, options->screencap_filename,
+                               &screencap_cbs, NULL)) {
+            goto end;
+        }
+        screencap_initialized = true;
+
+        if (!sc_screencap_start(&s->screencap)) {
+            goto end;
+        }
+        screencap_started = true;
+
+        sc_packet_source_add_sink(&s->video_demuxer.packet_source,
+                                  &s->screencap.video_packet_sink);
     }
 
     struct sc_controller *controller = NULL;
@@ -880,6 +923,22 @@ aoa_complete:
         }
     }
 
+    if (options->control && options->control_cmd_count) {
+        assert(controller);
+
+        // One-shot control mode disables video, so the device uses raw
+        // coordinates and ignores screen_size (see control_exec.h)
+        struct sc_size raw = {UINT16_MAX, UINT16_MAX};
+        bool ok = sc_control_exec_run(controller, raw, options->control_cmds,
+                                      options->control_cmd_count, 1);
+
+        // Wait for messages to be sent
+        SDL_Delay(100);
+
+        ret = ok ? SCRCPY_EXIT_SUCCESS : SCRCPY_EXIT_FAILURE;
+        goto end;
+    }
+
     ret = event_loop(s, options->window);
 
     // Reject all new runnables, and execute the pending ones now
@@ -909,6 +968,9 @@ end:
     }
     if (recorder_initialized) {
         sc_recorder_stop(&s->recorder);
+    }
+    if (screencap_initialized) {
+        sc_screencap_stop(&s->screencap);
     }
     if (screen_initialized) {
         sc_screen_interrupt(&s->screen);
@@ -996,6 +1058,13 @@ end:
     }
     if (recorder_initialized) {
         sc_recorder_destroy(&s->recorder);
+    }
+
+    if (screencap_started) {
+        sc_screencap_join(&s->screencap);
+    }
+    if (screencap_initialized) {
+        sc_screencap_destroy(&s->screencap);
     }
 
     if (file_pusher_initialized) {

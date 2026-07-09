@@ -7,7 +7,9 @@
 
 #include "trait/packet_sink.h"
 
-#define SC_PACKET_SOURCE_MAX_SINKS 2
+// Fork: the daemon attaches up to 4 sinks to the video demuxer
+// (decoder, web broadcaster, clip buffer, report recorder)
+#define SC_PACKET_SOURCE_MAX_SINKS 4
 
 /**
  * Packet source trait

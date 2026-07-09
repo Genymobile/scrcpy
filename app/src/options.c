@@ -121,6 +121,22 @@ const struct scrcpy_options scrcpy_options_default = {
     .camera_torch = false,
     .keep_active = false,
     .flex_display = false,
+    .daemon_port = 0,
+    .client_port = 0,
+    .daemon_host = NULL,
+    .json = false,
+    .clip_output = NULL,
+    .clip_start_ms = -1,
+    .clip_end_ms = -1,
+    .daemon_stop = false,
+    .daemon_status = false,
+    .daemon_reconnect_none = false,
+    .daemon_reconnect_max = 0,
+    .auto_test_report = NULL,
+    .action = NULL,
+    .note = NULL,
+    .add_on_count = 0,
+    .plugin_count = 0,
 };
 
 enum sc_orientation
