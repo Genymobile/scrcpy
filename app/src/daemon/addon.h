@@ -21,9 +21,17 @@
  * The register output is line based (Unified Plugin Protocol, doc/addons.md):
  *   name=<command>                    (or a bare command name, for back-compat)
  *   result=<field>                    (optional: result field name)
+ *   service=true                      (optional: long-running service, below)
  *   arg=<name>:<string|list|path|pathlist>:<required|optional>   (extra args)
  *   env=<NAME>:<required|optional>[:<description>]   (declared env var)
  *   meta=<key>:<value>                (free-form metadata)
+ *
+ * A `service=true` add-on may keep running after it writes its result: the
+ * daemon waits until the result file is ready (or the process exits), returns
+ * that result to the client, and if the process is still alive it is ADOPTED
+ * — tracked by the daemon and terminated when the daemon shuts down. The same
+ * add-on can also do one-shot work (write result, exit) in the same run mode;
+ * whichever it does, the daemon reacts to whether the process stayed alive.
  * The command's own value is an implicit required string arg; only additional
  * arguments need an `arg=` line. A `path`/`pathlist` arg holds file paths the
  * daemon must be able to read (the client sends them as-is when local, or
@@ -51,6 +59,7 @@ struct sc_addon {
     char *name; // command name reported by the script
     char *path; // entrypoint script path
     char *result_field; // result field name (result=), NULL if not declared
+    bool service; // long-running: launched detached, tracked, killed on exit
     struct sc_addon_arg args[SC_MAX_ADDON_ARGS]; // extra declared arguments
     unsigned arg_count;
     struct sc_addon_env envs[SC_MAX_ADDON_ENVS]; // declared env vars

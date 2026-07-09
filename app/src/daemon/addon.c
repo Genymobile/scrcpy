@@ -161,6 +161,8 @@ query_schema(const char *path, struct sc_addon *out) {
                 LOG_OOM();
                 goto error;
             }
+        } else if (!strncmp(line, "service=", 8)) {
+            out->service = !strcmp(trim(line + 8), "true");
         } else if (!strncmp(line, "arg=", 4)) {
             if (out->arg_count >= SC_MAX_ADDON_ARGS) {
                 LOGW("Add-on \"%s\": too many args (max %d)", path,

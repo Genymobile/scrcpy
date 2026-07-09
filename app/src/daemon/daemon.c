@@ -4,6 +4,10 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <signal.h>
+#ifndef _WIN32
+# include <sys/wait.h>
+# include <time.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,6 +46,10 @@
 #include "util/tick.h"
 
 #define SC_DAEMON_MAX_CLIENTS 16
+#define SC_MAX_SERVICES 8               // adopted long-running service add-ons
+#define SC_SERVICE_READY_TIMEOUT_MS 15000 // wait for a service to report ready
+#define SC_SERVICE_POLL_MS 25           // service readiness poll interval
+#define SC_SERVICE_TERM_GRACE_MS 2000   // SIGTERM grace before SIGKILL
 // Files a single client connection may upload before they are cleaned up
 #define SC_DAEMON_MAX_UPLOADS 64
 // Cap on a plugin result file the daemon will read back (256 KiB)
@@ -123,6 +131,15 @@ struct sc_daemon {
     bool report_recording;   // recorder running this session
 
     struct sc_addons addons; // loaded plugins (doc/addons.md)
+
+    // Adopted long-running "service" add-ons (doc/addons.md): started on demand,
+    // kept running past their response, terminated on daemon shutdown. Guarded
+    // by `mutex`.
+    struct sc_service_proc {
+        char *name;
+        sc_pid pid;
+    } services[SC_MAX_SERVICES];
+    unsigned service_count;
 
     sc_mutex clipboard_mutex; // serialize clipboard-based text injection
 
@@ -1462,11 +1479,125 @@ make_arg_env(const char *arg_name, const char *value) {
     return b.s;
 }
 
+// ---- long-running "service" add-ons (doc/addons.md) ----
+
+static void
+service_sleep_ms(unsigned ms) {
+#ifdef _WIN32
+    Sleep(ms);
+#else
+    struct timespec ts = { ms / 1000, (long) (ms % 1000) * 1000000L };
+    nanosleep(&ts, NULL);
+#endif
+}
+
+// Non-blocking wait: if the child has exited, reap it, store its exit code in
+// *out_code and return true; otherwise (still running, or error) return false.
+static bool
+service_reap_if_exited(sc_pid pid, sc_exit_code *out_code) {
+#ifdef _WIN32
+    DWORD code;
+    if (GetExitCodeProcess(pid, &code) && code != STILL_ACTIVE) {
+        *out_code = (sc_exit_code) code;
+        CloseHandle(pid);
+        return true;
+    }
+    return false;
+#else
+    siginfo_t info;
+    info.si_pid = 0;
+    if (waitid(P_PID, pid, &info, WEXITED | WNOHANG) == -1 || info.si_pid == 0) {
+        return false; // error, or no state change (still running)
+    }
+    *out_code = (info.si_code == CLD_EXITED) ? info.si_status
+                                             : SC_EXIT_CODE_NONE;
+    return true;
+#endif
+}
+
+// Terminate an adopted service: SIGTERM, a short grace period, then SIGKILL;
+// reap in all cases.
+static void
+terminate_service(sc_pid pid) {
+#ifndef _WIN32
+    kill(pid, SIGTERM);
+    for (unsigned waited = 0; waited < SC_SERVICE_TERM_GRACE_MS;
+         waited += SC_SERVICE_POLL_MS) {
+        sc_exit_code code;
+        if (service_reap_if_exited(pid, &code)) {
+            return;
+        }
+        service_sleep_ms(SC_SERVICE_POLL_MS);
+    }
+#endif
+    sc_process_terminate(pid); // SIGKILL / TerminateProcess
+    sc_process_wait(pid, true); // reap
+}
+
+// For a service add-on: wait until it writes its result file (signals ready) or
+// exits, whichever first. If it is still alive afterwards, ADOPT it (track for
+// shutdown termination) and return 0; otherwise return its exit code. Clears
+// the connection's plugin_pid tracking either way.
+static sc_exit_code
+wait_and_maybe_adopt_service(struct sc_daemon *d, const struct sc_addon *addon,
+                             sc_pid pid, const char *result_path,
+                             unsigned conn_index) {
+    sc_exit_code code = 0;
+    bool exited = false;
+    for (unsigned waited = 0; waited < SC_SERVICE_READY_TIMEOUT_MS;
+         waited += SC_SERVICE_POLL_MS) {
+        if (service_reap_if_exited(pid, &code)) {
+            exited = true;
+            break;
+        }
+        struct stat st;
+        if (result_path && stat(result_path, &st) == 0 && st.st_size > 0) {
+            break; // reported ready; a final liveness check happens below
+        }
+        service_sleep_ms(SC_SERVICE_POLL_MS);
+    }
+    if (!exited) {
+        // It wrote a result (or timed out) — it may have exited meanwhile.
+        exited = service_reap_if_exited(pid, &code);
+    }
+
+    sc_mutex_lock(&d->mutex);
+    d->conns[conn_index].plugin_pid = SC_PROCESS_NONE;
+    bool adopted = false;
+    if (!exited) {
+        if (d->service_count < SC_MAX_SERVICES) {
+            char *name = strdup(addon->name);
+            if (name) {
+                d->services[d->service_count].name = name;
+                d->services[d->service_count].pid = pid;
+                d->service_count++;
+                adopted = true;
+            }
+        } else {
+            LOGW("Too many service add-ons (max %d); terminating \"%s\"",
+                 SC_MAX_SERVICES, addon->name);
+        }
+    }
+    sc_mutex_unlock(&d->mutex);
+
+    if (!exited && !adopted) {
+        terminate_service(pid); // overflow / OOM: don't leak the process
+        return SC_EXIT_CODE_NONE;
+    }
+    if (adopted) {
+        LOGI("Service add-on \"%s\" started and adopted (pid %ld)",
+             addon->name, (long) pid);
+        return 0;
+    }
+    return code; // one-shot: it exited on its own
+}
+
 // Run a loaded add-on (doc/addons.md). The op runs the entrypoint script with
 // the command value as $1 and runtime info in the environment (including every
-// declared argument as SC_ARG_<NAME>), and blocks until it exits. The script's
-// own screenshot/note/click steps come back as separate requests on other
-// connections, logged in real time.
+// declared argument as SC_ARG_<NAME>). A normal add-on blocks until it exits;
+// a `service=true` add-on that stays alive after reporting ready is adopted and
+// terminated at daemon shutdown. The script's own screenshot/note/click steps
+// come back as separate requests on other connections, logged in real time.
 static void
 handle_plugin(struct sc_daemon *d, sc_socket socket, int64_t id,
               const struct sc_json *json, unsigned conn_index) {
@@ -1614,16 +1745,23 @@ handle_plugin(struct sc_daemon *d, sc_socket socket, int64_t id,
         goto end;
     }
 
-    // Register the pid so daemon shutdown can terminate a hung plugin
+    // Register the pid so a shutdown mid-run terminates the child
     sc_mutex_lock(&d->mutex);
     d->conns[conn_index].plugin_pid = pid;
     sc_mutex_unlock(&d->mutex);
 
-    sc_exit_code code = sc_process_wait(pid, true);
-
-    sc_mutex_lock(&d->mutex);
-    d->conns[conn_index].plugin_pid = SC_PROCESS_NONE;
-    sc_mutex_unlock(&d->mutex);
+    sc_exit_code code;
+    if (addon->service) {
+        // Long-running: wait until it reports ready or exits, then adopt it if
+        // still alive (kept running past this response, killed at shutdown).
+        code = wait_and_maybe_adopt_service(d, addon, pid, result_path,
+                                            conn_index);
+    } else {
+        code = sc_process_wait(pid, true);
+        sc_mutex_lock(&d->mutex);
+        d->conns[conn_index].plugin_pid = SC_PROCESS_NONE;
+        sc_mutex_unlock(&d->mutex);
+    }
 
     // Read back the structured result the script wrote (if any, valid JSON)
     char *result_json = NULL;
@@ -2238,6 +2376,16 @@ end:
             }
         }
     }
+
+    // Terminate adopted long-running service add-ons (doc/addons.md)
+    for (unsigned i = 0; i < d->service_count; ++i) {
+        if (d->services[i].pid != SC_PROCESS_NONE) {
+            LOGI("Stopping service add-on \"%s\"", d->services[i].name);
+            terminate_service(d->services[i].pid);
+        }
+        free(d->services[i].name);
+    }
+    d->service_count = 0;
 
     if (listening) {
         net_close(d->listen_socket);

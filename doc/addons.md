@@ -181,6 +181,48 @@ Requirements: the entrypoint must be executable (`chmod +x`). Add-ons are a
 Unix/macOS feature (the daemon launches them via `env`); Windows is not
 supported in v1.
 
+## Long-running "service" add-ons
+
+A normal add-on is one-shot: the daemon runs the script and blocks until it
+exits. A **service** add-on may instead **keep running in the background** —
+useful for a live report renderer, a web UI, a metrics exporter, etc. The
+daemon launches it, tracks its PID, and **terminates it automatically when the
+daemon shuts down** (SIGTERM, then SIGKILL after a short grace period).
+
+Declare it in `register` output:
+
+```
+name=stream-report-render
+service=true
+arg=port:string:optional
+arg=export:string:optional
+```
+
+Protocol (all handled by the daemon, no client changes needed):
+
+1. A client invokes the command as usual
+   (`--stream-report-render=true --stream-report-render.port=8001`).
+2. In `run` mode the script starts its background work (e.g. binds a port),
+   then **writes its result to `$SC_RESULT_FILE` to signal "ready"** and keeps
+   running (does *not* exit).
+3. The daemon waits until the result file is written (or the process exits),
+   returns that result to the client, and — if the process is **still alive** —
+   **adopts** it: the process is now owned by the daemon and lives until the
+   daemon stops.
+
+The same service script can also do **one-shot** work in the same `run` mode
+(for example `--stream-report-render.export=./out`): just do the work, write
+the result, and **exit**. The daemon sees it exit and treats it as an ordinary
+one-shot call — nothing is adopted. So the distinction is behavioural (did the
+process stay alive?), not a separate mode.
+
+Single-instance is naturally enforced by whatever resource the service holds:
+if a second invocation cannot bind the same port, it should write a result like
+`{"result":"already-serving"}` and exit 0 (so the daemon does not adopt a
+duplicate).
+
+Up to `SC_MAX_SERVICES` (8) services may be adopted at once.
+
 ## Report integration and timestamps
 
 When `--auto-test-report` is active, the daemon logs a `plugin` start event

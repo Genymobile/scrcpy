@@ -86,7 +86,8 @@ app/src/daemon/clip_buffer.{c,h}  encoded-stream spool sink; "clip" op extracts
                                   while recording continues
 app/src/daemon/report.{c,h}       test-report recorder + event logger
 app/src/daemon/addon.{c,h}        plugin add-ons (doc/addons.md); the Unified
-                                  Plugin Protocol (metadata, adaptive path/upload
+                                  Plugin Protocol (metadata incl. service=true
+                                  long-running add-ons, adaptive path/upload
                                   transport, SC_RESULT_FILE result) spans addon.c
                                   (register parse) + daemon.c (hello advertise,
                                   SC_ARG_*/SC_RESULT_FILE env, upload op, result
