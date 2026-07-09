@@ -147,6 +147,12 @@ In `run` mode the script receives these environment variables:
 | `SC_DEVICE_SERIAL` | the connected device serial |
 | `SC_REPORT_DIR` | the `--auto-test-report` directory (empty if none) |
 | `SC_VIDEO_WIDTH`, `SC_VIDEO_HEIGHT` | current video size (0 if no frame yet) |
+| `SC_VIDEO_CODEC` | video codec: `h264` / `h265` / `av1` (empty if `--no-video`) |
+| `SC_VIDEO_BIT_RATE` | `--video-bit-rate` in bps (0 = server default) |
+| `SC_VIDEO_MAX_FPS` | `--max-fps` (empty if unset) |
+| `SC_VIDEO_MAX_SIZE` | `--max-size` in px (0 = unlimited) |
+| `SC_VIDEO_ENCODER` | `--video-encoder` name (empty if unset) |
+| `SC_CONTROL` | `1` if input injection is enabled, else `0` |
 | `SC_ADDON_NAME` | the command name being run |
 | `SCRCPY_AUTO` | path to the scrcpy-auto binary (for callbacks) |
 | `SC_ARG_<NAME>` | each declared argument's value (name upper-cased, `-`→`_`); the primary is also `SC_ARG_<COMMAND>` |

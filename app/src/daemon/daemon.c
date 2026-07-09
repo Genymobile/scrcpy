@@ -1543,17 +1543,33 @@ handle_plugin(struct sc_daemon *d, sc_socket socket, int64_t id,
     }
     char *exe = sc_file_get_executable_path();
 
+    const struct scrcpy_options *o = d->opts;
     char e_port[32], e_host[40], e_serial[300], e_report[600];
     char e_name[160], e_w[32], e_h[32], e_exe[1200];
-    snprintf(e_port, sizeof(e_port), "SC_DAEMON_PORT=%u", d->opts->daemon_port);
+    char e_codec[24], e_brate[32], e_mfps[40], e_msize[32], e_enc[300],
+         e_ctrl[16];
+    snprintf(e_port, sizeof(e_port), "SC_DAEMON_PORT=%u", o->daemon_port);
     snprintf(e_host, sizeof(e_host), "SC_DAEMON_HOST=127.0.0.1");
     snprintf(e_serial, sizeof(e_serial), "SC_DEVICE_SERIAL=%s", serial);
     snprintf(e_report, sizeof(e_report), "SC_REPORT_DIR=%s",
-             d->opts->auto_test_report ? d->opts->auto_test_report : "");
+             o->auto_test_report ? o->auto_test_report : "");
     snprintf(e_name, sizeof(e_name), "SC_ADDON_NAME=%s", name);
     snprintf(e_w, sizeof(e_w), "SC_VIDEO_WIDTH=%u", size.width);
     snprintf(e_h, sizeof(e_h), "SC_VIDEO_HEIGHT=%u", size.height);
     snprintf(e_exe, sizeof(e_exe), "SCRCPY_AUTO=%s", exe ? exe : "scrcpy-auto");
+    // Capture parameters (the daemon's launch config), so plugins read them
+    // from the environment instead of shelling back into the client. Empty
+    // string / 0 mirrors "unset / server default", as with SC_REPORT_DIR.
+    snprintf(e_codec, sizeof(e_codec), "SC_VIDEO_CODEC=%s",
+             o->video ? video_codec_name(o->video_codec) : "");
+    snprintf(e_brate, sizeof(e_brate), "SC_VIDEO_BIT_RATE=%u",
+             o->video_bit_rate);
+    snprintf(e_mfps, sizeof(e_mfps), "SC_VIDEO_MAX_FPS=%s",
+             o->max_fps ? o->max_fps : "");
+    snprintf(e_msize, sizeof(e_msize), "SC_VIDEO_MAX_SIZE=%u", o->max_size);
+    snprintf(e_enc, sizeof(e_enc), "SC_VIDEO_ENCODER=%s",
+             o->video_encoder ? o->video_encoder : "");
+    snprintf(e_ctrl, sizeof(e_ctrl), "SC_CONTROL=%d", o->control ? 1 : 0);
 
     // Result channel: the script writes its {result,reason,thinking,...} JSON to
     // SC_RESULT_FILE and the daemon reads it back into the response.
@@ -1566,9 +1582,10 @@ handle_plugin(struct sc_daemon *d, sc_socket socket, int64_t id,
              result_path ? result_path : "");
 
     // Base env + result file + the primary as SC_ARG_<COMMAND> + one per arg
-    const char *env[9 + 1 + SC_MAX_ADDON_ARGS] = {
-        e_port, e_host, e_serial, e_report, e_name, e_w, e_h, e_exe, e_result};
-    unsigned env_count = 9;
+    const char *env[15 + 1 + SC_MAX_ADDON_ARGS] = {
+        e_port, e_host, e_serial, e_report, e_name, e_w, e_h, e_exe, e_result,
+        e_codec, e_brate, e_mfps, e_msize, e_enc, e_ctrl};
+    unsigned env_count = 15;
     char *arg_env[1 + SC_MAX_ADDON_ARGS];
     unsigned arg_env_count = 0;
 
