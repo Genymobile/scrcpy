@@ -57,7 +57,8 @@ main_scrcpy(int argc, char *argv[]) {
     // Banner on stdout, except under --json (stdout must stay pure JSON there)
     if (!args.opts.json) {
         printf("scrcpy " SCRCPY_VERSION
-               " <https://github.com/Genymobile/scrcpy>\n");
+               " <https://github.com/fish-dapangyu-dev/scrcpy>\n"
+               "  (fork of <https://github.com/Genymobile/scrcpy>)\n");
     }
 
     if (args.help) {
