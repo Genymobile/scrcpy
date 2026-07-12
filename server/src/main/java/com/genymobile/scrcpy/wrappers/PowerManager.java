@@ -38,7 +38,9 @@ public final class PowerManager {
     }
 
     public boolean isScreenOn(int displayId) {
-
+        if (manager == null) {
+            return true;
+        }
         try {
             Method method = getIsScreenOnMethod();
             if (Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14) {
@@ -65,6 +67,9 @@ public final class PowerManager {
     }
 
     public void userActivity(int displayId) {
+        if (manager == null) {
+            return;
+        }
         try {
             Method method = getUserActivityMethod();
             long time = SystemClock.uptimeMillis();

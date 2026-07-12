@@ -429,6 +429,19 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     bool shift = event->mod & SDL_KMOD_SHIFT;
     bool repeat = event->repeat;
 
+#ifdef __APPLE__
+    bool cmd_or_ctrl = mod & SDL_KMOD_GUI;
+#else
+    bool cmd_or_ctrl = mod & SDL_KMOD_CTRL;
+#endif
+
+    if (cmd_or_ctrl && !shift && sdl_keycode == SDLK_C && !disconnected) {
+        if (down && !repeat) {
+            sc_screen_copy_to_clipboard(im->screen);
+        }
+        return;
+    }
+
     // Either the modifier includes a shortcut modifier, or the key
     // press/release is a modifier key.
     // The second condition is necessary to ignore the release of the modifier
