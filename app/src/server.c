@@ -53,8 +53,33 @@ get_server_path(void) {
     return server_path;
 }
 
+static char *
+get_nopor_path(void) {
+    char *server_path = get_server_path();
+    if (!server_path) {
+        return NULL;
+    }
+    char *last_slash = strrchr(server_path, '/');
+    if (!last_slash) {
+        free(server_path);
+        return strdup("libnopor.so");
+    }
+    size_t dir_len = last_slash - server_path + 1;
+    char *nopor_path = malloc(dir_len + strlen("libnopor.so") + 1);
+    if (!nopor_path) {
+        free(server_path);
+        LOG_OOM();
+        return NULL;
+    }
+    memcpy(nopor_path, server_path, dir_len);
+    strcpy(nopor_path + dir_len, "libnopor.so");
+    free(server_path);
+    return nopor_path;
+}
+
 static bool
-push_server(struct sc_intr *intr, const char *serial) {
+push_server(struct sc_server *server, const char *serial) {
+    struct sc_intr *intr = &server->intr;
     char *server_path = get_server_path();
     if (!server_path) {
         return false;
@@ -66,7 +91,28 @@ push_server(struct sc_intr *intr, const char *serial) {
     }
     bool ok = sc_adb_push(intr, serial, server_path, SC_DEVICE_SERVER_PATH, 0);
     free(server_path);
-    return ok;
+    if (!ok) {
+        return false;
+    }
+
+    if (server->params.root_server) {
+        char *nopor_path = get_nopor_path();
+        if (!nopor_path) {
+            return false;
+        }
+        if (!sc_file_is_regular(nopor_path)) {
+            LOGE("'%s' does not exist or is not a regular file\n", nopor_path);
+            free(nopor_path);
+            return false;
+        }
+        bool ok_nopor = sc_adb_push(intr, serial, nopor_path, "/data/local/tmp/libnopor.so", 0);
+        free(nopor_path);
+        if (!ok_nopor) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 static const char *
@@ -201,22 +247,69 @@ validate_string(const char *s) {
     return true;
 }
 
+static char *
+escape_and_join(const char *const argv[], unsigned argc) {
+    size_t size = 0;
+    for (unsigned i = 0; i < argc; ++i) {
+        if (i > 0) {
+            size += 1; // space separator
+        }
+        size += 1; // opening single quote
+        const char *arg = argv[i];
+        for (const char *p = arg; *p; ++p) {
+            if (*p == '\'') {
+                size += 4; // '\''
+            } else {
+                size += 1;
+            }
+        }
+        size += 1; // closing single quote
+    }
+    size += 1; // null terminator
+
+    char *buf = malloc(size);
+    if (!buf) {
+        LOG_OOM();
+        return NULL;
+    }
+
+    char *dst = buf;
+    for (unsigned i = 0; i < argc; ++i) {
+        if (i > 0) {
+            *dst++ = ' ';
+        }
+        *dst++ = '\'';
+        const char *arg = argv[i];
+        for (const char *p = arg; *p; ++p) {
+            if (*p == '\'') {
+                memcpy(dst, "'\\''", 4);
+                dst += 4;
+            } else {
+                *dst++ = *p;
+            }
+        }
+        *dst++ = '\'';
+    }
+    *dst = '\0';
+    return buf;
+}
+
 static sc_pid
 execute_server(struct sc_server *server,
                const struct sc_server_params *params) {
     sc_pid pid = SC_PROCESS_NONE;
+    char *escaped_cmd = NULL;
 
     const char *serial = server->serial;
     assert(serial);
 
-    const char *cmd[128];
-    unsigned count = 0;
-    cmd[count++] = sc_adb_get_executable();
-    cmd[count++] = "-s";
-    cmd[count++] = serial;
-    cmd[count++] = "shell";
-    cmd[count++] = "CLASSPATH=" SC_DEVICE_SERVER_PATH;
-    cmd[count++] = "app_process";
+    const char *inner_cmd[128];
+    unsigned inner_count = 0;
+    if (params->root_server) {
+        inner_cmd[inner_count++] = "LD_PRELOAD=/data/local/tmp/libnopor.so";
+    }
+    inner_cmd[inner_count++] = "CLASSPATH=" SC_DEVICE_SERVER_PATH;
+    inner_cmd[inner_count++] = "app_process";
 
 #ifdef SERVER_DEBUGGER
     uint16_t sdk_version = sc_adb_get_device_sdk_version(&server->intr, serial);
@@ -241,20 +334,20 @@ execute_server(struct sc_server *server,
         // <https://github.com/Genymobile/scrcpy/pull/5466>
         dbg = "-XjdwpProvider:adbconnection";
     }
-    cmd[count++] = dbg;
+    inner_cmd[inner_count++] = dbg;
 #endif
 
-    cmd[count++] = "/"; // unused
-    cmd[count++] = "com.genymobile.scrcpy.Server";
-    cmd[count++] = SCRCPY_VERSION;
+    inner_cmd[inner_count++] = "/"; // unused
+    inner_cmd[inner_count++] = "com.genymobile.scrcpy.Server";
+    inner_cmd[inner_count++] = SCRCPY_VERSION;
 
-    unsigned dyn_idx = count; // from there, the strings are allocated
+    unsigned dyn_idx = inner_count; // from there, the strings are allocated
 #define ADD_PARAM(fmt, ...) do { \
         char *p; \
         if (asprintf(&p, fmt, ## __VA_ARGS__) == -1) { \
             goto end; \
         } \
-        cmd[count++] = p; \
+        inner_cmd[inner_count++] = p; \
     } while(0)
 #define VALIDATE_STRING(s) do { \
         if (!validate_string(s)) { \
@@ -451,29 +544,43 @@ execute_server(struct sc_server *server,
 
 #undef ADD_PARAM
 
+    if (params->root_server) {
+        escaped_cmd = escape_and_join(inner_cmd, inner_count);
+        if (!escaped_cmd) {
+            goto end;
+        }
+    }
+
+    const char *cmd[128];
+    unsigned count = 0;
+    cmd[count++] = sc_adb_get_executable();
+    cmd[count++] = "-s";
+    cmd[count++] = serial;
+    cmd[count++] = "shell";
+
+    if (params->root_server) {
+        cmd[count++] = "su";
+        cmd[count++] = "-c";
+        cmd[count++] = escaped_cmd;
+    } else {
+        for (unsigned i = 0; i < inner_count; ++i) {
+            cmd[count++] = inner_cmd[i];
+        }
+    }
     cmd[count++] = NULL;
 
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger listening%s...",
          sdk_version < 30 ? " on port " SERVER_DEBUGGER_PORT : "");
-    // For Android < 11, from the computer:
-    //     - run `adb forward tcp:5005 tcp:5005`
-    // For Android >= 11:
-    //     - execute `adb jdwp` to get the jdwp port
-    //     - run `adb forward tcp:5005 jdwp:XXXX` (replace XXXX)
-    //
-    // Then, from Android Studio: Run > Debug > Edit configurations...
-    // On the left, click on '+', "Remote", with:
-    //     Host: localhost
-    //     Port: 5005
-    // Then click on "Debug"
 #endif
-    // Inherit both stdout and stderr (all server logs are printed to stdout)
     pid = sc_adb_execute(cmd, 0);
 
 end:
-    for (unsigned i = dyn_idx; i < count; ++i) {
-        free((char *) cmd[i]);
+    if (escaped_cmd) {
+        free(escaped_cmd);
+    }
+    for (unsigned i = dyn_idx; i < inner_count; ++i) {
+        free((char *) inner_cmd[i]);
     }
 
     return pid;
@@ -1044,7 +1151,7 @@ run_server(void *data) {
     assert(serial);
     LOGD("Device serial: %s", serial);
 
-    ok = push_server(&server->intr, serial);
+    ok = push_server(server, serial);
     if (!ok) {
         goto error_connection_failed;
     }

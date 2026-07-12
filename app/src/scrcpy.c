@@ -404,6 +404,7 @@ scrcpy(struct scrcpy_options *options) {
         .vd_system_decorations = options->vd_system_decorations,
         .keep_active = options->keep_active,
         .flex_display = options->flex_display,
+        .root_server = options->root_server,
         .list = options->list,
     };
 
