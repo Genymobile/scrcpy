@@ -8,6 +8,7 @@ _scrcpy() {
         --audio-codec=
         --audio-codec-options=
         --audio-dup
+        --audio-playback-capture-voice
         --audio-encoder=
         --audio-source=
         --audio-output-buffer=

@@ -20,12 +20,14 @@ import java.nio.ByteBuffer;
 public final class AudioPlaybackCapture implements AudioCapture {
 
     private final boolean keepPlayingOnDevice;
+    private final boolean captureVoiceCommunication;
 
     private AudioRecord recorder;
     private AudioRecordReader reader;
 
-    public AudioPlaybackCapture(boolean keepPlayingOnDevice) {
+    public AudioPlaybackCapture(boolean keepPlayingOnDevice, boolean captureVoiceCommunication) {
         this.keepPlayingOnDevice = keepPlayingOnDevice;
+        this.captureVoiceCommunication = captureVoiceCommunication;
     }
 
     @SuppressLint("PrivateApi")
@@ -43,19 +45,28 @@ public final class AudioPlaybackCapture implements AudioCapture {
             Method setTargetMixRoleMethod = audioMixingRuleBuilderClass.getMethod("setTargetMixRole", int.class);
             setTargetMixRoleMethod.invoke(audioMixingRuleBuilder, mixRolePlayersConstant);
 
-            AudioAttributes attributes = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build();
+            AudioAttributes mediaAttributes =
+                    new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build();
 
-            // audioMixingRuleBuilder.addMixRule(AudioMixingRule.RULE_MATCH_ATTRIBUTE_USAGE, attributes);
+            // audioMixingRuleBuilder.addMixRule(AudioMixingRule.RULE_MATCH_ATTRIBUTE_USAGE, mediaAttributes);
             int ruleMatchAttributeUsageConstant = audioMixingRuleClass.getField("RULE_MATCH_ATTRIBUTE_USAGE").getInt(null);
             Method addMixRuleMethod = audioMixingRuleBuilderClass.getMethod("addMixRule", int.class, Object.class);
-            addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, attributes);
+            addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, mediaAttributes);
+
+            if (captureVoiceCommunication) {
+                AudioAttributes voiceCommunicationAttributes =
+                        new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION).build();
+                addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant,
+                        voiceCommunicationAttributes);
+
+                // audioMixingRuleBuilder.voiceCommunicationCaptureAllowed(true);
+                Method voiceCommunicationCaptureAllowedMethod =
+                        audioMixingRuleBuilderClass.getMethod("voiceCommunicationCaptureAllowed", boolean.class);
+                voiceCommunicationCaptureAllowedMethod.invoke(audioMixingRuleBuilder, true);
+            }
 
             // AudioMixingRule audioMixingRule = builder.build();
             Object audioMixingRule = audioMixingRuleBuilderClass.getMethod("build").invoke(audioMixingRuleBuilder);
-
-            // audioMixingRuleBuilder.voiceCommunicationCaptureAllowed(true);
-            Method voiceCommunicationCaptureAllowedMethod = audioMixingRuleBuilderClass.getMethod("voiceCommunicationCaptureAllowed", boolean.class);
-            voiceCommunicationCaptureAllowedMethod.invoke(audioMixingRuleBuilder, true);
 
             Class<?> audioMixClass = Class.forName("android.media.audiopolicy.AudioMix");
             Class<?> audioMixBuilderClass = Class.forName("android.media.audiopolicy.AudioMix$Builder");
@@ -95,6 +106,10 @@ public final class AudioPlaybackCapture implements AudioCapture {
             registerAudioPolicyStaticMethod.setAccessible(true);
             int result = (int) registerAudioPolicyStaticMethod.invoke(null, audioPolicy);
             if (result != 0) {
+                if (captureVoiceCommunication) {
+                    Ln.e("Could not register audio policy for voice communication playback capture. "
+                            + "It requires CAPTURE_VOICE_COMMUNICATION_OUTPUT permission and device support.");
+                }
                 throw new RuntimeException("registerAudioPolicy() returned " + result);
             }
 

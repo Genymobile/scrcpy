@@ -92,6 +92,7 @@ enum {
     OPT_MOUSE_BIND,
     OPT_NO_MOUSE_HOVER,
     OPT_AUDIO_DUP,
+    OPT_AUDIO_PLAYBACK_CAPTURE_VOICE,
     OPT_GAMEPAD,
     OPT_NEW_DISPLAY,
     OPT_LIST_APPS,
@@ -201,6 +202,13 @@ static const struct sc_option options[] = {
         .text = "Duplicate audio (capture and keep playing on the device).\n"
                 "This feature is only available with --audio-source=playback."
 
+    },
+    {
+        .longopt_id = OPT_AUDIO_PLAYBACK_CAPTURE_VOICE,
+        .longopt = "audio-playback-capture-voice",
+        .text = "Also capture voice communication playback audio.\n"
+                "This feature is only available with --audio-source=playback "
+                "and requires device support and permission.",
     },
     {
         .longopt_id = OPT_AUDIO_ENCODER,
@@ -2879,6 +2887,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_AUDIO_DUP:
                 opts->audio_dup = true;
                 break;
+            case OPT_AUDIO_PLAYBACK_CAPTURE_VOICE:
+                opts->audio_playback_capture_voice = true;
+                break;
             case 'G':
                 opts->gamepad_input_mode = SC_GAMEPAD_INPUT_MODE_UHID_OR_AOA;
                 break;
@@ -3303,6 +3314,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGI("Audio duplication enabled: audio source switched to "
                      "\"playback\"");
                 opts->audio_source = SC_AUDIO_SOURCE_PLAYBACK;
+            } else if (opts->audio_playback_capture_voice) {
+                LOGI("Voice communication playback capture enabled: audio "
+                     "source switched to \"playback\"");
+                opts->audio_source = SC_AUDIO_SOURCE_PLAYBACK;
             } else {
                 opts->audio_source = SC_AUDIO_SOURCE_OUTPUT;
             }
@@ -3320,6 +3335,20 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
         if (opts->audio_source != SC_AUDIO_SOURCE_PLAYBACK) {
             LOGE("--audio-dup is specific to --audio-source=playback");
+            return false;
+        }
+    }
+
+    if (opts->audio_playback_capture_voice) {
+        if (!opts->audio) {
+            LOGE("--audio-playback-capture-voice not supported if audio is "
+                 "disabled");
+            return false;
+        }
+
+        if (opts->audio_source != SC_AUDIO_SOURCE_PLAYBACK) {
+            LOGE("--audio-playback-capture-voice is specific to "
+                 "--audio-source=playback");
             return false;
         }
     }
