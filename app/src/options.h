@@ -342,6 +342,7 @@ struct scrcpy_options {
     bool camera_torch;
     bool keep_active;
     bool flex_display;
+    bool root_server;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

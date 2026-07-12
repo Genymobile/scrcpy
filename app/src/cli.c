@@ -73,6 +73,7 @@ enum {
     OPT_VIDEO_SOURCE,
     OPT_AUDIO_SOURCE,
     OPT_KILL_ADB_ON_CLOSE,
+    OPT_NO_ROOT_SERVER,
     OPT_TIME_LIMIT,
     OPT_PAUSE_ON_EXIT,
     OPT_LIST_CAMERAS,
@@ -465,6 +466,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_KILL_ADB_ON_CLOSE,
         .longopt = "kill-adb-on-close",
         .text = "Kill adb when scrcpy terminates.",
+    },
+    {
+        .longopt_id = OPT_NO_ROOT_SERVER,
+        .longopt = "no-root-server",
+        .text = "Do not run scrcpy-server with root privileges (disable `su -c`).",
     },
     {
         .longopt_id = OPT_LEGACY_PASTE,
@@ -2812,6 +2818,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_KILL_ADB_ON_CLOSE:
                 opts->kill_adb_on_close = true;
+                break;
+            case OPT_NO_ROOT_SERVER:
+                opts->root_server = false;
                 break;
             case OPT_TIME_LIMIT:
                 if (!parse_time_limit(optarg, &opts->time_limit)) {
