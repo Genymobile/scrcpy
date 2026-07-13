@@ -1139,6 +1139,14 @@ static const struct sc_shortcut shortcuts[] = {
         .text = "Click on VOLUME_DOWN",
     },
     {
+        .shortcuts = { "MOD+PageUp" },
+        .text = "Scroll up",
+    },
+    {
+        .shortcuts = { "MOD+PageDown" },
+        .text = "Scroll down",
+    },
+    {
         .shortcuts = { "MOD+p" },
         .text = "Click on POWER (turn screen on/off)",
     },

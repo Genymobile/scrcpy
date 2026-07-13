@@ -9,6 +9,7 @@
 #include "android/keycodes.h"
 #include "events.h"
 #include "input_events.h"
+#include "keyboard_shortcuts.h"
 #include "screen.h"
 #include "shortcut_mod.h"
 #include "util/log.h"
@@ -411,6 +412,10 @@ inverse_point(struct sc_point point, struct sc_size size,
 }
 
 static void
+sc_input_manager_process_keyboard_scroll(struct sc_input_manager *im,
+                                         float hscroll, float vscroll);
+
+static void
 sc_input_manager_process_key(struct sc_input_manager *im,
                              const SDL_KeyboardEvent *event) {
     // some key events do not interact with the device, so process the event
@@ -596,6 +601,22 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                     if (im->kp && !shift && !paused) {
                         // forward repeated events
                         action_volume_up(im, action);
+                    }
+                    return;
+                case SDLK_PAGEUP:
+                case SDLK_PAGEDOWN:
+                    if (down && !paused) {
+                        float hscroll;
+                        float vscroll;
+                        bool ok = sc_keyboard_shortcut_to_scroll(sdl_keycode,
+                                                                 shift,
+                                                                 &hscroll,
+                                                                 &vscroll);
+                        if (ok) {
+                            sc_input_manager_process_keyboard_scroll(im,
+                                                                     hscroll,
+                                                                     vscroll);
+                        }
                     }
                     return;
                 case SDLK_C:
@@ -1030,6 +1051,28 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
         .position = sc_input_manager_get_position(im, mouse_x, mouse_y),
         .hscroll = event->x,
         .vscroll = event->y,
+        .buttons_state = im->mouse_buttons_state,
+    };
+
+    im->mp->ops->process_mouse_scroll(im->mp, &evt);
+}
+
+static void
+sc_input_manager_process_keyboard_scroll(struct sc_input_manager *im,
+                                         float hscroll, float vscroll) {
+    if (!im->mp || !im->mp->ops->process_mouse_scroll) {
+        return;
+    }
+
+    float mouse_x;
+    float mouse_y;
+    uint32_t buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
+    (void) buttons; // Actual buttons are tracked manually to ignore shortcuts
+
+    struct sc_mouse_scroll_event evt = {
+        .position = sc_input_manager_get_position(im, mouse_x, mouse_y),
+        .hscroll = hscroll,
+        .vscroll = vscroll,
         .buttons_state = im->mouse_buttons_state,
     };
 
