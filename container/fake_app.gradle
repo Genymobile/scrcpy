@@ -1,0 +1,21 @@
+// Fake app/build.gradle to pre-download gradle dependencies
+apply plugin: 'com.android.application'
+apply plugin: 'checkstyle'
+
+android {
+    buildToolsVersion = "36.0.0"
+    namespace = "com.genymobile.scrcpy"
+    compileSdk 36
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 36
+    }
+}
+
+checkstyle {
+    toolVersion = '10.12.5'
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}
