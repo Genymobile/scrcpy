@@ -234,6 +234,30 @@ struct sc_port_range {
     uint16_t last;
 };
 
+struct sc_shortcut_key_bindings {
+    int32_t home;
+    int32_t back;
+    int32_t app_switch;
+    int32_t menu;
+    int32_t power;
+    int32_t screen_power;
+    int32_t pause;
+    int32_t volume_down;
+    int32_t volume_up;
+    int32_t rotate_left;
+    int32_t rotate_right;
+    int32_t copy;
+    int32_t cut;
+    int32_t paste;
+    int32_t fullscreen;
+    int32_t resize_to_fit;
+    int32_t pixel_perfect;
+    int32_t fps_counter;
+    int32_t panels;
+    int32_t rotate_device;
+    int32_t open_keyboard_settings;
+};
+
 #define SC_WINDOW_POSITION_UNDEFINED (-0x8000)
 
 struct scrcpy_options {
@@ -267,6 +291,7 @@ struct scrcpy_options {
     uint32_t tunnel_host;
     uint16_t tunnel_port;
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
+    struct sc_shortcut_key_bindings shortcut_keys;
     uint8_t min_size_alignment;
     uint16_t max_size;
     uint32_t video_bit_rate;

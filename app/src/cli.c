@@ -2,11 +2,13 @@
 
 #include <assert.h>
 #include <getopt.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <SDL3/SDL_keyboard.h>
 
 #include "options.h"
 #include "util/log.h"
@@ -39,6 +41,7 @@ enum {
     OPT_FORCE_ADB_FORWARD,
     OPT_DISABLE_SCREENSAVER,
     OPT_SHORTCUT_MOD,
+    OPT_SHORTCUT_KEY,
     OPT_NO_KEY_REPEAT,
     OPT_LEGACY_PASTE,
     OPT_VIDEO_ENCODER,
@@ -873,6 +876,25 @@ static const struct sc_option options[] = {
                 "For example, to use either LCtrl or LSuper for scrcpy "
                 "shortcuts, pass \"lctrl,lsuper\".\n"
                 "Default is \"lalt,lsuper\" (left-Alt or left-Super).",
+    },
+    {
+        .longopt_id = OPT_SHORTCUT_KEY,
+        .longopt = "shortcut-key",
+        .argdesc = "action=key",
+        .text = "Override one keyboard shortcut key while preserving the "
+                "associated MOD/Shift/repeated-key behavior.\n"
+                "The option may be passed several times.\n"
+                "Supported actions are \"home\", \"back\", \"app-switch\", "
+                "\"menu\", \"power\", \"screen-power\", \"pause\", "
+                "\"volume-down\", \"volume-up\", \"rotate-left\", "
+                "\"rotate-right\", \"copy\", \"cut\", \"paste\", "
+                "\"fullscreen\", \"resize-to-fit\", \"pixel-perfect\", "
+                "\"fps-counter\", \"panels\", \"rotate-device\" and "
+                "\"open-keyboard-settings\".\n"
+                "Examples:\n"
+                "    --shortcut-key=home=j\n"
+                "    --shortcut-key=panels=comma\n"
+                "    --shortcut-key=rotate-left=a",
     },
     {
         .longopt_id = OPT_START_APP,
@@ -1948,6 +1970,190 @@ sc_parse_shortcut_mods(const char *s, uint8_t *mods) {
 }
 #endif
 
+struct sc_shortcut_key_option {
+    const char *action;
+    size_t action_len;
+    size_t offset;
+};
+
+static const struct sc_shortcut_key_option shortcut_key_options[] = {
+    { "home", 4, offsetof(struct sc_shortcut_key_bindings, home) },
+    { "back", 4, offsetof(struct sc_shortcut_key_bindings, back) },
+    { "app-switch", 10,
+      offsetof(struct sc_shortcut_key_bindings, app_switch) },
+    { "menu", 4, offsetof(struct sc_shortcut_key_bindings, menu) },
+    { "power", 5, offsetof(struct sc_shortcut_key_bindings, power) },
+    { "screen-power", 12,
+      offsetof(struct sc_shortcut_key_bindings, screen_power) },
+    { "pause", 5, offsetof(struct sc_shortcut_key_bindings, pause) },
+    { "volume-down", 11,
+      offsetof(struct sc_shortcut_key_bindings, volume_down) },
+    { "volume-up", 9, offsetof(struct sc_shortcut_key_bindings, volume_up) },
+    { "rotate-left", 11,
+      offsetof(struct sc_shortcut_key_bindings, rotate_left) },
+    { "rotate-right", 12,
+      offsetof(struct sc_shortcut_key_bindings, rotate_right) },
+    { "copy", 4, offsetof(struct sc_shortcut_key_bindings, copy) },
+    { "cut", 3, offsetof(struct sc_shortcut_key_bindings, cut) },
+    { "paste", 5, offsetof(struct sc_shortcut_key_bindings, paste) },
+    { "fullscreen", 10,
+      offsetof(struct sc_shortcut_key_bindings, fullscreen) },
+    { "resize-to-fit", 13,
+      offsetof(struct sc_shortcut_key_bindings, resize_to_fit) },
+    { "pixel-perfect", 13,
+      offsetof(struct sc_shortcut_key_bindings, pixel_perfect) },
+    { "fps-counter", 11,
+      offsetof(struct sc_shortcut_key_bindings, fps_counter) },
+    { "panels", 6, offsetof(struct sc_shortcut_key_bindings, panels) },
+    { "rotate-device", 13,
+      offsetof(struct sc_shortcut_key_bindings, rotate_device) },
+    { "open-keyboard-settings", 22,
+      offsetof(struct sc_shortcut_key_bindings, open_keyboard_settings) },
+};
+
+static int32_t *
+shortcut_key_option_target(struct sc_shortcut_key_bindings *bindings,
+                           const char *action, size_t action_len) {
+    for (size_t i = 0; i < ARRAY_LEN(shortcut_key_options); ++i) {
+        const struct sc_shortcut_key_option *opt = &shortcut_key_options[i];
+        if (opt->action_len == action_len
+                && !memcmp(opt->action, action, action_len)) {
+            return (int32_t *) ((char *) bindings + opt->offset);
+        }
+    }
+
+    return NULL;
+}
+
+static bool
+parse_shortcut_key_name(const char *name, SDL_Keycode *keycode) {
+#define STREQ(literal, s) (!strcmp(literal, s))
+    if (STREQ("comma", name)) {
+        *keycode = SDLK_COMMA;
+        return true;
+    }
+    if (STREQ("backspace", name)) {
+        *keycode = SDLK_BACKSPACE;
+        return true;
+    }
+    if (STREQ("left", name)) {
+        *keycode = SDLK_LEFT;
+        return true;
+    }
+    if (STREQ("right", name)) {
+        *keycode = SDLK_RIGHT;
+        return true;
+    }
+    if (STREQ("up", name)) {
+        *keycode = SDLK_UP;
+        return true;
+    }
+    if (STREQ("down", name)) {
+        *keycode = SDLK_DOWN;
+        return true;
+    }
+#undef STREQ
+
+    SDL_Keycode parsed = SDL_GetKeyFromName(name);
+    if (parsed == SDLK_UNKNOWN) {
+        return false;
+    }
+
+    *keycode = parsed;
+    return true;
+}
+
+static bool
+parse_shortcut_key(const char *s, struct sc_shortcut_key_bindings *bindings) {
+    const char *equal = strchr(s, '=');
+    if (!equal || equal == s || !equal[1]) {
+        LOGE("Could not parse shortcut key: %s (expected action=key)", s);
+        return false;
+    }
+
+    size_t action_len = (size_t) (equal - s);
+    int32_t *target =
+        shortcut_key_option_target(bindings, s, action_len);
+    if (!target) {
+        LOGE("Unknown shortcut action: %.*s", (int) action_len, s);
+        return false;
+    }
+
+    SDL_Keycode keycode;
+    if (!parse_shortcut_key_name(equal + 1, &keycode)) {
+        LOGE("Unknown shortcut key: %s", equal + 1);
+        return false;
+    }
+
+    *target = (int32_t) keycode;
+    return true;
+}
+
+static bool
+validate_shortcut_keys(const struct sc_shortcut_key_bindings *bindings) {
+    static const struct {
+        const char *name;
+        size_t offset;
+    } items[] = {
+        { "home", offsetof(struct sc_shortcut_key_bindings, home) },
+        { "back", offsetof(struct sc_shortcut_key_bindings, back) },
+        { "app-switch", offsetof(struct sc_shortcut_key_bindings, app_switch) },
+        { "menu", offsetof(struct sc_shortcut_key_bindings, menu) },
+        { "power", offsetof(struct sc_shortcut_key_bindings, power) },
+        { "screen-power",
+          offsetof(struct sc_shortcut_key_bindings, screen_power) },
+        { "pause", offsetof(struct sc_shortcut_key_bindings, pause) },
+        { "volume-down",
+          offsetof(struct sc_shortcut_key_bindings, volume_down) },
+        { "volume-up", offsetof(struct sc_shortcut_key_bindings, volume_up) },
+        { "rotate-left",
+          offsetof(struct sc_shortcut_key_bindings, rotate_left) },
+        { "rotate-right",
+          offsetof(struct sc_shortcut_key_bindings, rotate_right) },
+        { "copy", offsetof(struct sc_shortcut_key_bindings, copy) },
+        { "cut", offsetof(struct sc_shortcut_key_bindings, cut) },
+        { "paste", offsetof(struct sc_shortcut_key_bindings, paste) },
+        { "fullscreen", offsetof(struct sc_shortcut_key_bindings, fullscreen) },
+        { "resize-to-fit",
+          offsetof(struct sc_shortcut_key_bindings, resize_to_fit) },
+        { "pixel-perfect",
+          offsetof(struct sc_shortcut_key_bindings, pixel_perfect) },
+        { "fps-counter",
+          offsetof(struct sc_shortcut_key_bindings, fps_counter) },
+        { "panels", offsetof(struct sc_shortcut_key_bindings, panels) },
+        { "rotate-device",
+          offsetof(struct sc_shortcut_key_bindings, rotate_device) },
+        { "open-keyboard-settings",
+          offsetof(struct sc_shortcut_key_bindings, open_keyboard_settings) },
+    };
+
+    for (size_t i = 0; i < ARRAY_LEN(items); ++i) {
+        int32_t keycode = *(const int32_t *) ((const char *) bindings
+                                             + items[i].offset);
+        if (keycode == SDLK_BACKSPACE && strcmp(items[i].name, "back")) {
+            LOGE("Shortcut key conflict: \"%s\" cannot use \"Backspace\" "
+                 "because it is reserved for BACK", items[i].name);
+            return false;
+        }
+    }
+
+    for (size_t i = 0; i < ARRAY_LEN(items); ++i) {
+        int32_t lhs = *(const int32_t *) ((const char *) bindings
+                                         + items[i].offset);
+        for (size_t j = i + 1; j < ARRAY_LEN(items); ++j) {
+            int32_t rhs = *(const int32_t *) ((const char *) bindings
+                                             + items[j].offset);
+            if (lhs == rhs) {
+                LOGE("Shortcut key conflict: \"%s\" and \"%s\" both use \"%s\"",
+                     items[i].name, items[j].name, SDL_GetKeyName(lhs));
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 static enum sc_record_format
 get_record_format(const char *name) {
     if (!strcmp(name, "mp4")) {
@@ -2719,6 +2925,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_SHORTCUT_KEY:
+                if (!parse_shortcut_key(optarg, &opts->shortcut_keys)) {
+                    return false;
+                }
+                break;
             case OPT_LEGACY_PASTE:
                 opts->legacy_paste = true;
                 break;
@@ -2954,6 +3165,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     int index = optind;
     if (index < argc) {
         LOGE("Unexpected additional argument: %s", argv[index]);
+        return false;
+    }
+
+    if (!validate_shortcut_keys(&opts->shortcut_keys)) {
         return false;
     }
 
