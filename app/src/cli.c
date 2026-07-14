@@ -611,11 +611,13 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_CLIENT_PORT,
         .longopt = "client-port",
         .argdesc = "port",
-        .text = "Run as a thin client of a scrcpy-auto daemon listening on "
-                "127.0.0.1:port (see --daemon-port).\n"
-                "Operations (--control, --screencap, --daemon-status, "
-                "--daemon-stop) are executed by the daemon, without starting "
-                "a new device session.",
+        .text = "Run as a client of a scrcpy-auto daemon listening on "
+                "127.0.0.1:port (see --daemon-port), instead of starting a new "
+                "device session.\n"
+                "With no operation, opens the normal scrcpy window and mirrors "
+                "the daemon's video stream (mirror mode). With an operation "
+                "(--control, --screencap, --daemon-status, --daemon-stop, ...) "
+                "runs it as a thin client and exits.",
     },
     {
         .longopt_id = OPT_DAEMON_PORT,
@@ -3394,12 +3396,16 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         if (!opts->control_cmd_count && !opts->screencap_filename
                 && !opts->daemon_status && !opts->daemon_stop && !opts->note
                 && !opts->plugin_count && !opts->clip_output) {
-            LOGE("--client-port requires at least one operation (--control, "
-                 "--screencap, --clip-start/--clip-end/--output, --note, "
-                 "a plugin --<command>, --daemon-status, --daemon-stop)");
-            return false;
+            // No thin-client operation: mirror mode — open the normal scrcpy
+            // window and render the daemon's video stream (doc/daemon.md §8.8).
+            // window/video_playback/control keep their (default-on) values;
+            // audio needs the device session, so it is disabled.
+            opts->mirror = true;
+            opts->audio = false;
+            opts->audio_playback = false;
+            return true; // skip the remaining session-oriented adjustments
         }
-        // The client never opens a window nor a device session
+        // A thin-client operation was requested: no window nor device session
         opts->window = false;
         opts->video_playback = false;
         opts->audio_playback = false;

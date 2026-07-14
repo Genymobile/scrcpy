@@ -60,6 +60,11 @@ net_listen(sc_socket server_socket, uint32_t addr, uint16_t port, int backlog);
 sc_socket
 net_accept(sc_socket server_socket);
 
+// Local (bound) TCP port of a socket, or 0 on error. Used to discover the
+// ephemeral port after net_listen(..., port=0) (fork: daemon mirror mode).
+uint16_t
+net_local_port(sc_socket socket);
+
 // the _all versions wait/retry until len bytes have been written/read
 ssize_t
 net_recv(sc_socket socket, void *buf, size_t len);

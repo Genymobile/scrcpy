@@ -203,6 +203,18 @@ net_accept(sc_socket server_socket) {
     return wrap(raw_sock);
 }
 
+uint16_t
+net_local_port(sc_socket socket) {
+    sc_raw_socket raw_sock = unwrap(socket);
+    SOCKADDR_IN sin;
+    socklen_t len = sizeof(sin);
+    if (getsockname(raw_sock, (SOCKADDR *) &sin, &len) == SOCKET_ERROR) {
+        net_perror("getsockname");
+        return 0;
+    }
+    return ntohs(sin.sin_port);
+}
+
 ssize_t
 net_recv(sc_socket socket, void *buf, size_t len) {
     sc_raw_socket raw_sock = unwrap(socket);

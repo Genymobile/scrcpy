@@ -498,6 +498,35 @@ in the caller's cwd, not the daemon's).
   (mirrors "act, then observe", and matches one-shot mode where `--control`
   runs before exit).
 
+### 8.8 Mirror mode (`--client-port` with no operation)
+
+`scrcpy-auto --client-port PORT` with **no** thin-client operation opens the
+normal scrcpy window and renders the daemon's live video — the daemon is just
+the video source, so `-s`/device selection is not needed. It behaves like a
+plain scrcpy session (rendering, mouse/keyboard/scroll input, window
+shortcuts); only audio and device-session-only features (clipboard autosync,
+screen-off, etc.) are unavailable. `--no-control` makes it view-only.
+
+Implementation (`app/src/daemon/mirror.c`): two daemon connections, like
+`scrcpy-auto-web`.
+
+- **Video connection** issues `subscribe_video` (§8.7). A thread translates the
+  pushed `video_meta` / `video` events into the internal demuxer wire format
+  (the 12-byte session/packet headers of §9-era streams) and feeds them through
+  a loopback socket to the **stock** `sc_demuxer` → `sc_decoder` → `sc_screen`
+  pipeline — no rendering code is duplicated. Live PTS is a local monotonic
+  clock (the daemon does not forward device PTS).
+- **Control connection** carries input: the stock `sc_controller` serializes
+  the SDL-derived control messages to another loopback socket, and a thread
+  parses them back into `inject_touch` / `inject_key` / `inject_text` /
+  `inject_scroll` requests. Messages without a daemon equivalent are dropped.
+  If the daemon rejects input (e.g. the iOS bridge, which is view-only), it is
+  logged once and rendering continues.
+
+This makes any protocol-v3 source playable in the real client, including the
+scrcpy-auto-ios bridge (`--client-port <bridge-port>` → live iPhone mirror,
+input rejected as expected).
+
 ---
 
 ## 9. Daemon internals

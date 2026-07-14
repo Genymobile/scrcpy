@@ -38,6 +38,7 @@ src = [
     'src/daemon/clip_buffer.c',
     'src/daemon/daemon.c',
     'src/daemon/frame_keeper.c',
+    'src/daemon/mirror.c',
     'src/daemon/protocol.c',
     'src/daemon/registry.c',
     'src/daemon/report.c',

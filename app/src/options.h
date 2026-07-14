@@ -362,6 +362,9 @@ struct scrcpy_options {
     // Persistent daemon mode (doc/daemon.md)
     uint16_t daemon_port; // 0 if disabled
     uint16_t client_port; // 0 if disabled
+    // Mirror mode: --client-port with no operation opens the normal scrcpy
+    // window rendering the daemon's video stream (doc/daemon.md §8.8)
+    bool mirror;
     const char *daemon_host; // client: daemon host (NULL => 127.0.0.1)
     bool json; // client: emit machine-readable JSON instead of human logs
     bool daemon_stop;

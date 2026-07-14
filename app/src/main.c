@@ -11,6 +11,7 @@
 #include "cli.h"
 #include "daemon/client.h"
 #include "daemon/daemon.h"
+#include "daemon/mirror.h"
 #include "events.h"
 #include "options.h"
 #include "plugins.h"
@@ -93,8 +94,21 @@ main_scrcpy(int argc, char *argv[]) {
     sc_log_configure();
 
     if (args.opts.client_port) {
-        // Thin client of a running daemon: no SDL, no adb, no device session
-        ret = sc_client_run(&args.opts);
+        if (args.opts.mirror) {
+            // Mirror mode: open the normal scrcpy window rendering the
+            // daemon's video stream (doc/daemon.md §8.8). Needs the main-thread
+            // runnable pump, like a normal session.
+            if (!sc_main_thread_init()) {
+                ret = SCRCPY_EXIT_FAILURE;
+                goto net_cleanup;
+            }
+            ret = sc_mirror_run(&args.opts);
+            sc_main_thread_destroy();
+        } else {
+            // Thin client of a running daemon: no SDL, no adb, no device
+            // session
+            ret = sc_client_run(&args.opts);
+        }
         goto net_cleanup;
     }
 

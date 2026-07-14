@@ -94,6 +94,13 @@ app/src/daemon/addon.{c,h}        plugin add-ons (doc/addons.md); the Unified
                                   read-back) + client.c (discover/group, --json,
                                   --daemon-host locality + upload) — keep in sync
 app/src/daemon/registry.{c,h}   on-disk daemon registry
+app/src/daemon/mirror.{c,h}     daemon mirror mode: `--client-port` with no op
+                                opens the normal SDL window rendering the
+                                daemon's subscribe_video stream (translates
+                                daemon frames → the demuxer wire format so the
+                                STOCK demuxer/decoder/screen are reused) and
+                                forwards SDL input as inject_* requests on a
+                                second connection (doc/daemon.md §8.8)
 app/src/third_party/jsmn.h      vendored JSON tokenizer (MIT)
 doc/daemon.md                   daemon design + implementation notes
 doc/fork.md                     this file
@@ -112,12 +119,13 @@ app/data/bash-completion/scrcpy-auto, app/data/zsh-completion/_scrcpy-auto
 | `app/meson.build` | `executable('scrcpy-auto', ...)`; `libswscale` dependency; `src/control_exec.c`, `src/daemon/*.c`, `src/screencap.c` in `src`; renamed manpage/icons/completions/desktop `install_*` entries |
 | `server/meson.build` | outputs `scrcpy-auto-server`, `install_dir: 'share/scrcpy-auto'`, devenv path |
 | `app/src/server.c` | the three name defines (§2.1); everything else is upstream |
-| `app/src/cli.c` | `OPT_SCREENCAP`, `OPT_CONTROL_CMD`, `OPT_DAEMON_PORT`, `OPT_CLIENT_PORT`, `OPT_DAEMON_STOP`, `OPT_DAEMON_STATUS`, `OPT_DAEMON_RECONNECT` (enum + option table + switch cases); `print_control_usage()`; `parse_daemon_reconnect()`; daemon/client validation block near the end of `parse_args_with_getopt()` (client mode **returns early**); `!opts->daemon_port` exemption in the "video disabled" auto-off check |
-| `app/src/options.h` | fields: `screencap_filename`, `control_cmds[SC_MAX_CONTROL_CMDS]`, `control_cmd_count`, `daemon_port`, `client_port`, `daemon_stop`, `daemon_status`, `daemon_reconnect_none`, `daemon_reconnect_max`; `#define SC_MAX_CONTROL_CMDS 100` |
+| `app/src/cli.c` | `OPT_SCREENCAP`, `OPT_CONTROL_CMD`, `OPT_DAEMON_PORT`, `OPT_CLIENT_PORT`, `OPT_DAEMON_STOP`, `OPT_DAEMON_STATUS`, `OPT_DAEMON_RECONNECT` (enum + option table + switch cases); `print_control_usage()`; `parse_daemon_reconnect()`; daemon/client validation block near the end of `parse_args_with_getopt()` (client mode **returns early**; a `--client-port` with **no operation** sets `opts->mirror` = mirror mode instead of erroring); `!opts->daemon_port` exemption in the "video disabled" auto-off check |
+| `app/src/options.h` | fields: `screencap_filename`, `control_cmds[SC_MAX_CONTROL_CMDS]`, `control_cmd_count`, `daemon_port`, `client_port`, `mirror`, `daemon_stop`, `daemon_status`, `daemon_reconnect_none`, `daemon_reconnect_max`; `#define SC_MAX_CONTROL_CMDS 100` |
 | `app/src/options.c` | defaults for the fields above |
 | `app/src/events.h` | `SC_EVENT_SCREENCAP_COMPLETED`, `SC_EVENT_SCREENCAP_ERROR` |
 | `app/src/scrcpy.c` | includes `control_exec.h`/`screencap.h`; screencap init/wiring/cleanup (search `screencap`); the `--control` execution block before `event_loop()` (calls `sc_control_exec_run(..., 1)`) |
-| `app/src/main.c` | daemon/client routing between `sc_log_configure()` and `sc_main_thread_init()` |
+| `app/src/main.c` | daemon/client routing between `sc_log_configure()` and `sc_main_thread_init()`; the client branch dispatches `opts->mirror` → `sc_mirror_run()` (wrapped in `sc_main_thread_init/destroy`) vs `sc_client_run()` |
+| `app/src/util/net.{c,h}` | additive `net_local_port()` (getsockname helper) — used by mirror mode to find the ephemeral port of its loopback socket pairs |
 | `app/src/trait/packet_source.h` | `SC_PACKET_SOURCE_MAX_SINKS` 2 → **4** (decoder + broadcaster + clip buffer + recorder) |
 | `app/src/icon.h` | renamed icon filenames |
 | `app/src/sdl_hints.c` | SDL app name `scrcpy-auto` |
@@ -171,6 +179,7 @@ check these:
 | `daemon/daemon.c` | `struct sc_server_params` — **duplicated** from `scrcpy.c`'s initializer; new upstream fields must be mirrored (or the daemon silently ignores the new option) | two audio fields were missed once |
 | `daemon/daemon.c` | `sc_server_*`, `sc_demuxer_*`, `sc_decoder_init`, `sc_controller_*` signatures and callback contracts | — |
 | `control_exec.c`, `daemon/daemon.c` | `struct sc_control_msg` layout (`inject_touch_event`, `set_clipboard`), `SC_CONTROL_MSG_TYPE_RESET_VIDEO` | — |
+| `daemon/mirror.c` | the **serialized** control-message wire layout (`sc_control_msg_serialize` in `control_msg.c`): the control adapter parses the controller's bytes back into daemon `inject_*` requests, so per-type field offsets/sizes and the `enum sc_control_msg_type` order are hard-coded. A silent upstream layout change would misparse input. Re-verify the `switch` in `run_ctrl_adapter()` against `control_msg.c` on every merge (a wrong length desyncs the stream → "unknown control message type" and input disables itself, rather than crashing) | — |
 | `daemon/protocol.c`, `daemon/client.c` | `net_*` API (`util/net.h`) | — |
 | `screencap.c`, `frame_keeper.c` | FFmpeg API level used by upstream | FFmpeg 8 migration was absorbed in the 4.0 merge |
 
