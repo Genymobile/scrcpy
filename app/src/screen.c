@@ -1222,6 +1222,31 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
         case SDL_EVENT_WINDOW_EXPOSED:
             sc_screen_render(screen, true);
             return;
+        case SDL_EVENT_RENDER_TARGETS_RESET:
+            // The drawable contents were discarded, but textures are still
+            // valid. Present the retained frame again.
+            if (screen->window_shown) {
+                sc_screen_render(screen, true);
+            }
+            return;
+        case SDL_EVENT_RENDER_DEVICE_RESET:
+            // SDL requires textures to be recreated after a device reset.
+            // The most recently decoded AVFrame is retained specifically long
+            // enough to restore the renderer without restarting the stream.
+            if (screen->video && screen->window_shown
+                    && screen->frame->width && screen->frame->height) {
+                sc_texture_reset(&screen->tex);
+                if (sc_texture_set_from_frame(&screen->tex, screen->frame)) {
+                    sc_screen_render(screen, true);
+                } else {
+                    LOGE("Could not restore texture after renderer reset");
+                }
+            }
+            return;
+        case SDL_EVENT_RENDER_DEVICE_LOST:
+            // A subsequent SDL_EVENT_RENDER_DEVICE_RESET signals recovery.
+            LOGW("Renderer device lost, waiting for reset");
+            return;
 // If defined, then the actions are already performed by the event watcher
 #ifndef CONTINUOUS_RESIZING_WORKAROUND
         case SDL_EVENT_WINDOW_RESIZED:

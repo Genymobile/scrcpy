@@ -44,6 +44,12 @@ scrcpy_embedded_session_pump(struct scrcpy_embedded_session *session);
 enum scrcpy_embedded_status
 scrcpy_embedded_session_get_status(struct scrcpy_embedded_session *session);
 
+// Redraw the last decoded frame. This is used by native hosts after Cocoa may
+// have discarded the backing surface while the Android display was static.
+// Must be called from the main thread.
+bool
+scrcpy_embedded_session_refresh(struct scrcpy_embedded_session *session);
+
 bool
 scrcpy_embedded_session_mouse_motion(struct scrcpy_embedded_session *session,
                                      float x, float y, float xrel, float yrel,

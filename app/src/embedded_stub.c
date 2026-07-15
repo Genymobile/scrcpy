@@ -40,6 +40,12 @@ scrcpy_embedded_session_get_status(struct scrcpy_embedded_session *session) {
 }
 
 bool
+scrcpy_embedded_session_refresh(struct scrcpy_embedded_session *session) {
+    (void) session;
+    return false;
+}
+
+bool
 scrcpy_embedded_session_mouse_motion(struct scrcpy_embedded_session *session,
                                      float x, float y, float xrel, float yrel,
                                      uint32_t buttons) {

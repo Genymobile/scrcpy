@@ -574,6 +574,7 @@ struct EmbeddedScrcpyView: NSViewRepresentable {
         private var renderView: ScrcpyRenderView?
         private var session: OpaquePointer?
         private var renderSuspendedForSheet = false
+        private var lastRefreshTime: TimeInterval = 0
 
         init(state: Binding<EmbeddedSessionState>) {
             stateBinding = state
@@ -727,8 +728,12 @@ struct EmbeddedScrcpyView: NSViewRepresentable {
             surfaceMask.path = CGPath(rect: localClip, transform: nil)
             surfaceMask.fillColor = NSColor.black.cgColor
             renderView.layer?.mask = surfaceMask
-            if !renderWindow.isVisible {
+            let becameVisible = !renderWindow.isVisible
+            if becameVisible {
                 renderWindow.orderFront(nil)
+            }
+            if becameVisible {
+                refreshRenderSurface()
             }
         }
 
@@ -755,6 +760,7 @@ struct EmbeddedScrcpyView: NSViewRepresentable {
             activeSerial = nil
             attemptedSerial = nil
             renderSuspendedForSheet = false
+            lastRefreshTime = 0
             renderView?.session = nil
             renderView?.visibleInteractionRect = .zero
             if let renderWindow {
@@ -792,9 +798,27 @@ struct EmbeddedScrcpyView: NSViewRepresentable {
             let newState = Self.map(rawStatus)
             stateBinding.wrappedValue = newState
 
+            // A host-provided Metal view may lose its drawable after being
+            // occluded, after display sleep, or while the app is inactive.
+            // Android does not emit frames for an unchanged screen, so replay
+            // the retained texture occasionally to make the view self-heal.
+            let now = ProcessInfo.processInfo.systemUptime
+            if newState == .running, now - lastRefreshTime >= 2 {
+                refreshRenderSurface(now: now)
+            }
+
             if newState == .idle || newState == .failed || newState == .disconnected {
                 activeSerial = nil
                 startRequestedSessionIfPossible()
+            }
+        }
+
+        private func refreshRenderSurface(now: TimeInterval? = nil) {
+            guard !renderSuspendedForSheet,
+                  renderWindow?.isVisible == true,
+                  let session else { return }
+            if scrcpy_embedded_session_refresh(session) {
+                lastRefreshTime = now ?? ProcessInfo.processInfo.systemUptime
             }
         }
 

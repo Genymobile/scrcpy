@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b0a">
+  <meta name="description" content="Scrcpy Desk 是面向 macOS 的原生多 Android 设备控制台，在一个面板中连接、预览并实时操作多台设备。">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Scrcpy Desk — macOS 多 Android 设备控制台">
+  <meta property="og:description" content="连接、预览、操作，一块面板掌控每一台 Android 设备。">
+  <title>Scrcpy Desk — macOS 多 Android 设备控制台</title>
+  <link rel="icon" type="image/png" href="./assets/favicon.png">
+  <link rel="apple-touch-icon" href="./assets/app-icon.png">
+  <link rel="manifest" href="./site.webmanifest">
+  <script>document.documentElement.classList.add('js')</script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <div class="page-ambient" aria-hidden="true"></div>
+
+  <header class="site-header" data-header>
+    <nav class="nav-shell" aria-label="主导航">
+      <a class="brand" href="#top" aria-label="Scrcpy Desk 首页">
+        <img src="./assets/app-icon.png" alt="" width="40" height="40">
+        <span>Scrcpy Desk</span>
+      </a>
+
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" data-nav-toggle>
+        <span></span><span></span>
+        <span class="sr-only">展开导航</span>
+      </button>
+
+      <div class="nav-links" id="nav-links" data-nav-links>
+        <a href="#features">核心能力</a>
+        <a href="#workflow">使用方式</a>
+        <a href="#requirements">系统要求</a>
+        <a class="button button-small button-ghost" href="https://github.com/Joker311223/scrcpy" target="_blank" rel="noreferrer">
+          GitHub <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero section" id="top">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="container hero-copy">
+        <div class="eyebrow reveal">
+          <span class="status-dot"></span>
+          macOS 原生多设备控制台
+          <span class="eyebrow-version">v0.4</span>
+        </div>
+        <h1 class="reveal reveal-delay-1">一块面板，控制每一台<br><span>Android 设备。</span></h1>
+        <p class="hero-lead reveal reveal-delay-2">
+          把 scrcpy 的实时画面与完整交互直接放进桌面控制台。连接设备、并排预览、鼠标键盘操作和页面跳链，从此不必在一排独立窗口之间切换。
+        </p>
+        <div class="hero-actions reveal reveal-delay-3">
+          <a class="button button-primary" href="https://github.com/Joker311223/scrcpy" target="_blank" rel="noreferrer">
+            在 GitHub 获取 <span aria-hidden="true">↗</span>
+          </a>
+          <a class="button button-secondary" href="#features">了解核心能力</a>
+        </div>
+        <div class="hero-facts reveal reveal-delay-3" aria-label="产品特性摘要">
+          <span><i aria-hidden="true">✓</i> macOS 13+</span>
+          <span><i aria-hidden="true">✓</i> USB 与 Wi‑Fi ADB</span>
+          <span><i aria-hidden="true">✓</i> 无需 Android 端安装</span>
+        </div>
+      </div>
+
+      <div class="container product-stage reveal reveal-delay-3">
+        <div class="stage-glow" aria-hidden="true"></div>
+        <div class="product-window">
+          <div class="window-bar" aria-hidden="true">
+            <span class="traffic traffic-red"></span>
+            <span class="traffic traffic-yellow"></span>
+            <span class="traffic traffic-green"></span>
+            <span class="window-title">Scrcpy Desk</span>
+            <span class="window-state"><i></i> 13 台设备在线</span>
+          </div>
+          <a class="screenshot-link" href="./assets/product-dashboard.png" target="_blank" aria-label="查看 Scrcpy Desk 完整产品截图">
+            <img src="./assets/product-dashboard.png" alt="Scrcpy Desk 同时展示并控制多台 Android 设备的界面截图" width="2477" height="1895">
+          </a>
+        </div>
+        <div class="floating-chip chip-left" aria-hidden="true">
+          <span class="chip-icon">03</span>
+          <span><strong>多会话并行</strong><small>每台设备独立运行</small></span>
+        </div>
+        <div class="floating-chip chip-right" aria-hidden="true">
+          <span class="pulse-icon"></span>
+          <span><strong>实时可操作</strong><small>鼠标 · 键盘 · 剪贴板</small></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="signal-strip" aria-label="产品优势">
+      <div class="container signal-grid">
+        <div><strong>一屏多机</strong><span>横向滚动，无数量上限</span></div>
+        <div><strong>原生内嵌</strong><span>不唤起独立 scrcpy 窗口</span></div>
+        <div><strong>完整交互</strong><span>点击画面即可直接操作</span></div>
+        <div><strong>设备级配置</strong><span>备注、展示与跳链分别保存</span></div>
+      </div>
+    </section>
+
+    <section class="section features-section" id="features">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <p class="kicker">不是窗口管理器</p>
+            <h2>这就是你的 Android<br>设备工作台。</h2>
+          </div>
+          <p>围绕多设备真实工作流设计，每个连接、每次操作、每条跳链都留在同一块原生面板里。</p>
+        </div>
+
+        <div class="bento-grid">
+          <article class="feature-card feature-card-large reveal">
+            <div class="feature-topline"><span>01</span><span>LIVE SESSIONS</span></div>
+            <div>
+              <h3>多台设备，同时在线，同时操作</h3>
+              <p>每台设备拥有独立 scrcpy 会话。画面不压缩、不拉伸，横向滚动查看更多，并且每一台都保持实时交互。</p>
+            </div>
+            <div class="session-visual" aria-hidden="true">
+              <div class="mini-device mini-device-a"><span></span><i></i></div>
+              <div class="mini-device mini-device-b"><span></span><i></i></div>
+              <div class="mini-device mini-device-c"><span></span><i></i></div>
+              <div class="session-line"></div>
+            </div>
+          </article>
+
+          <article class="feature-card reveal reveal-delay-1">
+            <div class="feature-icon">ADB</div>
+            <div>
+              <h3>设备连接，一处完成</h3>
+              <p>自动发现 USB / Wi‑Fi 设备，支持 ADB Connect 与 Android 11+ 无线配对。</p>
+            </div>
+            <div class="tag-row"><span>USB</span><span>Wi‑Fi</span><span>Pair</span></div>
+          </article>
+
+          <article class="feature-card reveal reveal-delay-2">
+            <div class="feature-icon feature-icon-green">↗</div>
+            <div>
+              <h3>配置跳链，一键加载</h3>
+              <p>为每台设备保存页面地址，通过 Android VIEW Intent 直接打开业务页面。</p>
+            </div>
+            <code class="link-code">android.intent.action.VIEW</code>
+          </article>
+
+          <article class="feature-card feature-card-wide reveal">
+            <div class="feature-copy">
+              <div class="feature-icon">⌘</div>
+              <h3>完整 scrcpy 交互，全部留在面板里</h3>
+              <p>鼠标点击、拖动、滚轮、键盘输入、输入法与剪贴板均转发到对应设备。没有额外窗口，也不需要改变原来的操作习惯。</p>
+            </div>
+            <div class="input-cloud" aria-hidden="true">
+              <span class="key key-command">⌘</span>
+              <span class="key">A</span>
+              <span class="key key-wide">Space</span>
+              <span class="mouse-orbit"><i></i></span>
+            </div>
+          </article>
+
+          <article class="feature-card reveal reveal-delay-1">
+            <div class="feature-icon">Aa</div>
+            <div>
+              <h3>设备备注，过目不忘</h3>
+              <p>按序列号持久保存备注名，让测试机、环境机和业务机一眼可辨。</p>
+            </div>
+            <div class="remark-pill"><span></span> 详情页测试机</div>
+          </article>
+
+          <article class="feature-card reveal reveal-delay-2">
+            <div class="feature-icon feature-icon-green">⌁</div>
+            <div>
+              <h3>原生体验，低干扰</h3>
+              <p>SwiftUI、AppKit 与 scrcpy C 客户端同进程协作，画面直接嵌入 macOS 窗口。</p>
+            </div>
+            <div class="native-meter"><span style="--meter: 94%"></span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section workflow-section" id="workflow">
+      <div class="container workflow-layout">
+        <div class="workflow-sticky reveal">
+          <p class="kicker">三步进入工作状态</p>
+          <h2>连接以后，<br>剩下的都很直接。</h2>
+          <p>从设备发现到多机操作，不需要学习新的窗口规则，也不用为每台设备维护单独命令。</p>
+          <a class="text-link" href="https://github.com/Joker311223/scrcpy/tree/feature/yjc/desktop/macos/ScrcpyDesk" target="_blank" rel="noreferrer">查看构建与连接说明 <span>↗</span></a>
+        </div>
+
+        <ol class="workflow-list">
+          <li class="workflow-item reveal">
+            <span class="step-number">01</span>
+            <div><h3>连接设备</h3><p>插入 USB，或使用 IP 与端口完成 ADB Connect / Pair。已配置的设备也可在启动时自动预连接。</p></div>
+          </li>
+          <li class="workflow-item reveal reveal-delay-1">
+            <span class="step-number">02</span>
+            <div><h3>加入展示</h3><p>在左侧选择需要关注的设备。设备卡片会以固定比例进入右侧横向控制台。</p></div>
+          </li>
+          <li class="workflow-item reveal reveal-delay-2">
+            <span class="step-number">03</span>
+            <div><h3>直接操作</h3><p>点击任意画面使用鼠标与键盘，或通过卡片按钮加载已配置的业务跳链。</p></div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section requirements-section" id="requirements">
+      <div class="container requirements-card reveal">
+        <div class="requirements-copy">
+          <p class="kicker">READY FOR YOUR DESK</p>
+          <h2>把多设备工作流，<br>收进一个 macOS 应用。</h2>
+          <p>适合 Android 开发、测试、运营与需要同时观察多台远程设备的团队。</p>
+          <div class="requirements-actions">
+            <a class="button button-primary" href="https://github.com/Joker311223/scrcpy" target="_blank" rel="noreferrer">打开 GitHub <span>↗</span></a>
+            <a class="button button-secondary" href="https://github.com/Joker311223/scrcpy/blob/feature/yjc/desktop/macos/ScrcpyDesk/README.md" target="_blank" rel="noreferrer">阅读使用说明</a>
+          </div>
+        </div>
+
+        <div class="requirements-panel">
+          <div class="requirement-row"><span>系统</span><strong>macOS 13 或更高版本</strong></div>
+          <div class="requirement-row"><span>设备</span><strong>已开启 Android 调试</strong></div>
+          <div class="requirement-row"><span>连接</span><strong>USB / ADB over Wi‑Fi</strong></div>
+          <div class="requirement-row"><span>基础</span><strong>Powered by scrcpy</strong></div>
+          <div class="terminal-card" aria-label="终端示例">
+            <div><i></i><i></i><i></i></div>
+            <pre><span>$</span> adb connect 192.0.2.21:8080
+connected to 192.0.2.21:8080
+<span>$</span> open "Scrcpy Desk.app"
+<b>●  device ready</b></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section faq-section">
+      <div class="container faq-layout">
+        <div><p class="kicker">常见问题</p><h2>开始之前</h2></div>
+        <div class="faq-list">
+          <details>
+            <summary>会唤起独立的 scrcpy 窗口吗？<span>＋</span></summary>
+            <p>不会。每台设备的 scrcpy 渲染与交互能力都直接嵌入 Scrcpy Desk 的设备卡片中。</p>
+          </details>
+          <details>
+            <summary>可以同时操作多少台设备？<span>＋</span></summary>
+            <p>界面不限制为固定数量。已加入展示的设备会横向排列，可通过常驻滚动条查看和操作。</p>
+          </details>
+          <details>
+            <summary>Android 设备需要安装额外应用吗？<span>＋</span></summary>
+            <p>不需要。Scrcpy Desk 沿用 scrcpy 的工作方式，通过 ADB 建立会话，不会在设备上长期安装应用。</p>
+          </details>
+          <details>
+            <summary>跳链支持自定义 Scheme 吗？<span>＋</span></summary>
+            <p>支持。HTTP(S) 地址和应用自定义 Scheme 都会作为 VIEW Intent 的 Data 参数发送到指定设备。</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-main">
+      <a class="brand" href="#top">
+        <img src="./assets/app-icon.png" alt="" width="40" height="40">
+        <span>Scrcpy Desk</span>
+      </a>
+      <p>一块面板，控制每一台 Android 设备。</p>
+      <div class="footer-links">
+        <a href="https://github.com/Joker311223/scrcpy" target="_blank" rel="noreferrer">GitHub</a>
+        <a href="https://github.com/Genymobile/scrcpy" target="_blank" rel="noreferrer">scrcpy</a>
+        <a href="#requirements">系统要求</a>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <span>© <span data-year></span> Scrcpy Desk</span>
+      <span>基于开源项目 scrcpy 构建</span>
+    </div>
+  </footer>
+
+  <script src="./script.js"></script>
+</body>
+</html>

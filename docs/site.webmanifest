@@ -1,0 +1,16 @@
+{
+  "name": "Scrcpy Desk",
+  "short_name": "Scrcpy Desk",
+  "description": "macOS 原生多 Android 设备控制台",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#090b0a",
+  "theme_color": "#090b0a",
+  "icons": [
+    {
+      "src": "./assets/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

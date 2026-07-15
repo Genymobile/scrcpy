@@ -421,11 +421,42 @@ complete_session(struct scrcpy_embedded_session *session,
 
 static void
 handle_queued_event(SDL_Event *event) {
+    bool window_event = event->type >= SDL_EVENT_WINDOW_FIRST
+                     && event->type <= SDL_EVENT_WINDOW_LAST;
+    bool render_event = event->type >= SDL_EVENT_RENDER_TARGETS_RESET
+                     && event->type <= SDL_EVENT_RENDER_DEVICE_LOST;
+    if (window_event || render_event) {
+        // SDL uses one process-wide queue. Find the embedded screen owning
+        // this native window instead of dropping its window/render lifecycle
+        // events. These events are essential on macOS because the window
+        // server may discard a Metal drawable while the mirrored Android
+        // screen is static, leaving the host view black until its last frame
+        // is drawn again.
+        uint32_t window_id = window_event ? event->window.windowID
+                                          : event->render.windowID;
+        pthread_mutex_lock(&global_mutex);
+        struct scrcpy_embedded_session *it = sessions;
+        while (it) {
+            pthread_mutex_lock(&it->mutex);
+            struct sc_screen *screen = it->active_screen;
+            bool matches = screen
+                        && SDL_GetWindowID(screen->window) == window_id;
+            pthread_mutex_unlock(&it->mutex);
+            if (matches) {
+                sc_screen_handle_event(screen, event);
+                break;
+            }
+            it = it->next;
+        }
+        pthread_mutex_unlock(&global_mutex);
+        return;
+    }
+
     if (event->type < SC_EVENT_NEW_FRAME
             || event->type > SC_EVENT_DISCONNECTED_TIMEOUT) {
         // Native Cocoa input is forwarded directly by the SwiftUI host. Do
-        // not interpret unrelated SDL window/application events as tagged
-        // embedded events (their user.data2 bytes are not a session pointer).
+        // not interpret unrelated SDL events as tagged embedded events (their
+        // user.data2 bytes are not a session pointer).
         return;
     }
     struct scrcpy_embedded_session *session = event->user.data2;
@@ -464,6 +495,28 @@ handle_queued_event(SDL_Event *event) {
             }
             break;
     }
+}
+
+bool
+scrcpy_embedded_session_refresh(struct scrcpy_embedded_session *session) {
+    assert(SDL_IsMainThread());
+    if (!session) {
+        return false;
+    }
+
+    struct sc_screen *screen = get_active_screen(session);
+    if (!screen || !screen->window_shown) {
+        return false;
+    }
+
+    SDL_Event event = {
+        .window = {
+            .type = SDL_EVENT_WINDOW_EXPOSED,
+            .windowID = SDL_GetWindowID(screen->window),
+        },
+    };
+    sc_screen_handle_event(screen, &event);
+    return true;
 }
 
 enum scrcpy_embedded_status
