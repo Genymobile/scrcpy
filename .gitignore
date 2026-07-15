@@ -1,4 +1,6 @@
 build/
+/.build/
+/.swiftpm/
 /dist/
 /build-*/
 /build_*/

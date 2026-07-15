@@ -79,6 +79,7 @@ conf = configuration_data()
 if host_machine.system() == 'windows'
     windows = import('windows')
     src += [
+        'src/embedded_stub.c',
         'src/util/command.c',
         'src/sys/win/file.c',
         'src/sys/win/process.c',
@@ -94,7 +95,10 @@ else
         'src/sys/unix/process.c',
     ]
     if host_machine.system() == 'darwin'
+        src += [ 'src/embedded.c' ]
         feature_test_macros += '-D_DARWIN_C_SOURCE'
+    else
+        src += [ 'src/embedded_stub.c' ]
     endif
 endif
 

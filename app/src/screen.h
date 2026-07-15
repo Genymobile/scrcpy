@@ -37,6 +37,8 @@ struct sc_screen {
 
     bool video;
     bool camera;
+    bool embedded;
+    bool event_watcher_added;
     bool window_aspect_ratio_lock;
     bool flex_display;
 
@@ -112,6 +114,7 @@ struct sc_screen {
 struct sc_screen_params {
     bool video;
     bool camera;
+    bool embedded;
     bool flex_display;
 
     struct sc_controller *controller;

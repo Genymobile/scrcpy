@@ -3,6 +3,7 @@
 #include <assert.h>
 
 #include "util/log.h"
+#include "util/sdl.h"
 #include "util/thread.h"
 
 static sc_mutex mutex;
@@ -67,5 +68,7 @@ sc_main_thread_stop(void) {
     sc_mutex_unlock(&mutex);
 
     // Run all remaining runnables on the main thread
-    SDL_PumpEvents();
+    if (!sc_sdl_is_embedded()) {
+        SDL_PumpEvents();
+    }
 }

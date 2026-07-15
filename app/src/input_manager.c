@@ -1020,14 +1020,9 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
         return;
     }
 
-    // mouse_x and mouse_y are expressed in pixels relative to the window
-    float mouse_x;
-    float mouse_y;
-    uint32_t buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
-    (void) buttons; // Actual buttons are tracked manually to ignore shortcuts
-
     struct sc_mouse_scroll_event evt = {
-        .position = sc_input_manager_get_position(im, mouse_x, mouse_y),
+        .position = sc_input_manager_get_position(im, event->mouse_x,
+                                                       event->mouse_y),
         .hscroll = event->x,
         .vscroll = event->y,
         .buttons_state = im->mouse_buttons_state,

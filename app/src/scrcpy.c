@@ -18,6 +18,7 @@
 #include "controller.h"
 #include "decoder.h"
 #include "demuxer.h"
+#include "embedded.h"
 #include "events.h"
 #include "file_pusher.h"
 #include "keyboard_sdk.h"
@@ -115,6 +116,10 @@ sdl_configure_ctrl_c_windows(void) {
 
 static enum scrcpy_exit_code
 event_loop(struct scrcpy *s, bool has_screen) {
+    if (sc_embedded_is_enabled()) {
+        return sc_embedded_event_loop(&s->screen, has_screen);
+    }
+
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
@@ -155,6 +160,10 @@ event_loop(struct scrcpy *s, bool has_screen) {
 // Return true on success, false on error
 static bool
 await_for_server(bool *connected) {
+    if (sc_embedded_is_enabled()) {
+        return sc_embedded_await_for_server(connected);
+    }
+
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
@@ -327,12 +336,14 @@ scrcpy(struct scrcpy_options *options) {
     struct scrcpy *s = &scrcpy;
 
     // Minimal SDL initialization
-    if (!SDL_Init(SDL_INIT_EVENTS)) {
+    if (!sc_embedded_is_enabled() && !SDL_Init(SDL_INIT_EVENTS)) {
         LOGE("Could not initialize SDL: %s", SDL_GetError());
         return SCRCPY_EXIT_FAILURE;
     }
 
-    atexit(SDL_Quit);
+    if (!sc_embedded_is_enabled()) {
+        atexit(SDL_Quit);
+    }
 
     enum scrcpy_exit_code ret = SCRCPY_EXIT_FAILURE;
 
@@ -463,7 +474,7 @@ scrcpy(struct scrcpy_options *options) {
         // --no-video-playback is passed so that clipboard synchronization
         // still works.
         // <https://github.com/Genymobile/scrcpy/issues/4418>
-        if (!SDL_Init(SDL_INIT_VIDEO)) {
+        if (!sc_embedded_is_enabled() && !SDL_Init(SDL_INIT_VIDEO)) {
             // If it fails, it is an error only if video playback is enabled
             if (options->video_playback) {
                 LOGE("Could not initialize SDL video: %s", SDL_GetError());
@@ -475,14 +486,14 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     if (options->audio_playback) {
-        if (!SDL_Init(SDL_INIT_AUDIO)) {
+        if (!sc_embedded_is_enabled() && !SDL_Init(SDL_INIT_AUDIO)) {
             LOGE("Could not initialize SDL audio: %s", SDL_GetError());
             goto end;
         }
     }
 
     if (options->gamepad_input_mode != SC_GAMEPAD_INPUT_MODE_DISABLED) {
-        if (!SDL_Init(SDL_INIT_GAMEPAD)) {
+        if (!sc_embedded_is_enabled() && !SDL_Init(SDL_INIT_GAMEPAD)) {
             LOGE("Could not initialize SDL gamepad: %s", SDL_GetError());
             goto end;
         }
@@ -758,6 +769,7 @@ aoa_complete:
         struct sc_screen_params screen_params = {
             .video = options->video_playback,
             .camera = options->video_source == SC_VIDEO_SOURCE_CAMERA,
+            .embedded = sc_embedded_is_enabled(),
             .flex_display = options->flex_display,
             .controller = controller,
             .fp = fp,
@@ -784,10 +796,17 @@ aoa_complete:
             .start_fps_counter = options->start_fps_counter,
         };
 
-        if (!sc_screen_init(&s->screen, &screen_params)) {
+        bool screen_ok = sc_embedded_is_enabled()
+                       ? sc_embedded_screen_init(&s->screen, &screen_params)
+                       : sc_screen_init(&s->screen, &screen_params);
+        if (!screen_ok) {
             goto end;
         }
         screen_initialized = true;
+
+        if (sc_embedded_is_enabled()) {
+            sc_embedded_set_screen(&s->screen);
+        }
 
         if (options->video_playback) {
             struct sc_frame_source *src = &s->video_decoder.frame_source;
@@ -943,7 +962,7 @@ end:
     }
 
     if (screen_initialized) {
-        if (disconnected) {
+        if (disconnected && !sc_embedded_is_enabled()) {
             sc_screen_handle_disconnection(&s->screen);
         }
         LOGD("Quit...");
@@ -1004,7 +1023,12 @@ end:
     // destruction
     if (screen_initialized) {
         sc_screen_join(&s->screen);
-        sc_screen_destroy(&s->screen);
+        if (sc_embedded_is_enabled()) {
+            sc_embedded_set_screen(NULL);
+            sc_embedded_screen_destroy(&s->screen);
+        } else {
+            sc_screen_destroy(&s->screen);
+        }
     }
 
     if (controller_started) {
