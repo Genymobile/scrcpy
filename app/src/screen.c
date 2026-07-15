@@ -4,6 +4,7 @@
 #include <string.h>
 #include <SDL3/SDL.h>
 
+#include "embedded.h"
 #include "events.h"
 #include "icon.h"
 #include "options.h"
@@ -422,7 +423,10 @@ sc_screen_frame_sink_open(struct sc_frame_sink *sink,
     size->width = session->video.width;
     size->height = session->video.height;
 
-    bool ok = sc_push_event_with_data(SC_EVENT_OPEN_WINDOW, size);
+    bool ok = screen->embedded
+            ? sc_embedded_post_event(screen->embedded_session,
+                                     SC_EVENT_OPEN_WINDOW, size)
+            : sc_push_event_with_data(SC_EVENT_OPEN_WINDOW, size);
     if (!ok) {
         free(size);
         return false;
@@ -468,7 +472,10 @@ sc_screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
         // this new frame instead
     } else {
         // Post the event on the UI thread
-        bool ok = sc_push_event(SC_EVENT_NEW_FRAME);
+        bool ok = screen->embedded
+                ? sc_embedded_post_event(screen->embedded_session,
+                                         SC_EVENT_NEW_FRAME, NULL)
+                : sc_push_event(SC_EVENT_NEW_FRAME);
         if (!ok) {
             return false;
         }
@@ -501,6 +508,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->video = params->video;
     screen->camera = params->camera;
     screen->embedded = params->embedded;
+    screen->embedded_session = params->embedded_session;
     screen->event_watcher_added = false;
     screen->window_aspect_ratio_lock = params->window_aspect_ratio_lock;
     screen->render_fit = params->render_fit;
@@ -580,7 +588,9 @@ sc_screen_init(struct sc_screen *screen,
 
     // The window will be positioned and sized on first video frame
     screen->window =
-        sc_sdl_create_window(title, x, y, width, height, window_flags);
+        sc_sdl_create_window(title, x, y, width, height, window_flags,
+                             params->embedded_nswindow,
+                             params->embedded_nsview);
     if (!screen->window) {
         LOGE("Could not create window: %s", SDL_GetError());
         goto error_destroy_fps_counter;
@@ -846,8 +856,10 @@ sc_screen_destroy(struct sc_screen *screen) {
     sc_mutex_destroy(&screen->mutex);
 
     SDL_Event event;
-    bool has_event =
-        sc_dequeue_event(SC_EVENT_DISCONNECTED_ICON_LOADED, &event);
+    bool has_event = screen->embedded
+        ? sc_dequeue_event_for_tag(SC_EVENT_DISCONNECTED_ICON_LOADED,
+                                   screen->embedded_session, &event)
+        : sc_dequeue_event(SC_EVENT_DISCONNECTED_ICON_LOADED, &event);
     if (has_event) {
         assert(event.type == SC_EVENT_DISCONNECTED_ICON_LOADED);
         // The event was posted, but not handled, the icon must be freed
@@ -855,7 +867,10 @@ sc_screen_destroy(struct sc_screen *screen) {
         sc_icon_destroy(dangling_icon);
     }
 
-    has_event = sc_dequeue_event(SC_EVENT_OPEN_WINDOW, &event);
+    has_event = screen->embedded
+        ? sc_dequeue_event_for_tag(SC_EVENT_OPEN_WINDOW,
+                                   screen->embedded_session, &event)
+        : sc_dequeue_event(SC_EVENT_OPEN_WINDOW, &event);
     if (has_event) {
         assert(event.type == SC_EVENT_OPEN_WINDOW);
         // The event was posted, but not handled, the size must be freed
@@ -1153,9 +1168,12 @@ static void
 sc_disconnect_on_icon_loaded(struct sc_disconnect *d, SDL_Surface *icon,
                              void *userdata) {
     (void) d;
-    (void) userdata;
+    struct sc_screen *screen = userdata;
 
-    bool ok = sc_push_event_with_data(SC_EVENT_DISCONNECTED_ICON_LOADED, icon);
+    bool ok = screen->embedded
+            ? sc_embedded_post_event(screen->embedded_session,
+                                     SC_EVENT_DISCONNECTED_ICON_LOADED, icon)
+            : sc_push_event_with_data(SC_EVENT_DISCONNECTED_ICON_LOADED, icon);
     if (!ok) {
         sc_icon_destroy(icon);
     }
@@ -1164,9 +1182,12 @@ sc_disconnect_on_icon_loaded(struct sc_disconnect *d, SDL_Surface *icon,
 static void
 sc_disconnect_on_timeout(struct sc_disconnect *d, void *userdata) {
     (void) d;
-    (void) userdata;
+    struct sc_screen *screen = userdata;
 
-    bool ok = sc_push_event(SC_EVENT_DISCONNECTED_TIMEOUT);
+    bool ok = screen->embedded
+            ? sc_embedded_post_event(screen->embedded_session,
+                                     SC_EVENT_DISCONNECTED_TIMEOUT, NULL)
+            : sc_push_event(SC_EVENT_DISCONNECTED_TIMEOUT);
     (void) ok; // ignore failure
 }
 
@@ -1245,7 +1266,8 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                 .on_timeout = sc_disconnect_on_timeout,
             };
             bool ok =
-                sc_disconnect_start(&screen->disconnect, deadline, &cbs, NULL);
+                sc_disconnect_start(&screen->disconnect, deadline, &cbs,
+                                    screen);
             if (ok) {
                 screen->disconnect_started = true;
             }

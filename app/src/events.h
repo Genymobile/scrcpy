@@ -31,6 +31,9 @@ sc_push_event_impl(uint32_t type, void *ptr, const char *name);
 
 bool sc_dequeue_event(uint32_t type, SDL_Event *event);
 
+bool
+sc_dequeue_event_for_tag(uint32_t type, void *tag, SDL_Event *event);
+
 typedef SDL_MainThreadCallback sc_runnable_fn;
 
 bool

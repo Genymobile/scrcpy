@@ -8,6 +8,8 @@
     <string>Scrcpy Desk</string>
     <key>CFBundleExecutable</key>
     <string>ScrcpyDesk</string>
+    <key>CFBundleIconFile</key>
+    <string>ScrcpyDeskAppIcon.icns</string>
     <key>CFBundleIdentifier</key>
     <string>com.scrcpy.desk</string>
     <key>CFBundleInfoDictionaryVersion</key>
@@ -17,9 +19,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.2.0</string>
+    <string>0.4.0</string>
     <key>CFBundleVersion</key>
-    <string>2</string>
+    <string>8</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>NSHighResolutionCapable</key>

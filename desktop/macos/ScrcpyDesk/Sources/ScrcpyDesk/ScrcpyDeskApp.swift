@@ -1,7 +1,20 @@
+import AppKit
 import SwiftUI
 
 @main
 struct ScrcpyDeskApp: App {
+    init() {
+        // Set the Dock/app-switcher icon explicitly. Finder still reads the
+        // ICNS declared in Info.plist, while this avoids stale LaunchServices
+        // icon caches for an already-running development build.
+        if let url = Bundle.main.url(
+            forResource: "ScrcpyDeskAppIcon",
+            withExtension: "png"
+        ), let image = NSImage(contentsOf: url) {
+            NSApplication.shared.applicationIconImage = image
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

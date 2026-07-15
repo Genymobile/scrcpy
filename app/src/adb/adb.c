@@ -1,6 +1,7 @@
 #include "adb.h"
 
 #include <assert.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,12 +28,37 @@
 #define SC_ADB_COMMAND(...) { sc_adb_get_executable(), __VA_ARGS__, NULL }
 
 static char *adb_executable;
+static unsigned adb_refcount;
+static atomic_flag adb_lifecycle_lock = ATOMIC_FLAG_INIT;
+
+static void
+sc_adb_lifecycle_lock(void) {
+    while (atomic_flag_test_and_set_explicit(&adb_lifecycle_lock,
+                                              memory_order_acquire)) {
+        // The critical section only allocates/frees one short string, so a
+        // tiny spin lock avoids adding another platform-specific mutex.
+    }
+}
+
+static void
+sc_adb_lifecycle_unlock(void) {
+    atomic_flag_clear_explicit(&adb_lifecycle_lock, memory_order_release);
+}
 
 bool
 sc_adb_init(void) {
+    sc_adb_lifecycle_lock();
+    if (adb_refcount) {
+        ++adb_refcount;
+        sc_adb_lifecycle_unlock();
+        return true;
+    }
+
     adb_executable = sc_get_env("ADB");
     if (adb_executable) {
         LOGD("Using adb: %s", adb_executable);
+        adb_refcount = 1;
+        sc_adb_lifecycle_unlock();
         return true;
     }
 
@@ -40,6 +66,7 @@ sc_adb_init(void) {
     adb_executable = strdup("adb");
     if (!adb_executable) {
         LOG_OOM();
+        sc_adb_lifecycle_unlock();
         return false;
     }
 #else
@@ -49,18 +76,27 @@ sc_adb_init(void) {
     adb_executable = sc_file_get_local_path("adb");
     if (!adb_executable) {
         // Error already logged
+        sc_adb_lifecycle_unlock();
         return false;
     }
 
     LOGD("Using adb (portable): %s", adb_executable);
 #endif
 
+    adb_refcount = 1;
+    sc_adb_lifecycle_unlock();
     return true;
 }
 
 void
 sc_adb_destroy(void) {
-    free(adb_executable);
+    sc_adb_lifecycle_lock();
+    assert(adb_refcount);
+    if (!--adb_refcount) {
+        free(adb_executable);
+        adb_executable = NULL;
+    }
+    sc_adb_lifecycle_unlock();
 }
 
 const char *

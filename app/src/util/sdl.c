@@ -5,23 +5,22 @@
 
 #include "util/log.h"
 
-static void *embedded_nswindow;
-static void *embedded_nsview;
+static bool embedded_mode;
 
 void
-sc_sdl_set_embedded_host(void *nswindow, void *nsview) {
-    embedded_nswindow = nswindow;
-    embedded_nsview = nsview;
+sc_sdl_set_embedded_mode(bool enabled) {
+    embedded_mode = enabled;
 }
 
 bool
 sc_sdl_is_embedded(void) {
-    return embedded_nswindow && embedded_nsview;
+    return embedded_mode;
 }
 
 SDL_Window *
 sc_sdl_create_window(const char *title, int64_t x, int64_t y, int64_t width,
-                     int64_t height, int64_t flags) {
+                     int64_t height, int64_t flags,
+                     void *embedded_nswindow, void *embedded_nsview) {
     SDL_Window *window = NULL;
 
     SDL_PropertiesID props = SDL_CreateProperties();
@@ -38,7 +37,7 @@ sc_sdl_create_window(const char *title, int64_t x, int64_t y, int64_t width,
                                 width);
     ok &= SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER,
                                 height);
-    if (sc_sdl_is_embedded()) {
+    if (embedded_nswindow && embedded_nsview) {
 #ifdef __APPLE__
         // SDL3 supports rendering directly into a host-provided NSView. Do not
         // propagate HIDDEN or RESIZABLE: those flags belong to the containing

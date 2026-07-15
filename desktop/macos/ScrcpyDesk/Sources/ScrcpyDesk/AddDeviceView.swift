@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct AddDeviceView: View {
-    @Environment(\.dismiss) private var dismiss
     @ObservedObject var store: DeviceStore
+    let close: () -> Void
 
     @State private var host = ""
     @State private var connectPort = "5555"
@@ -22,7 +22,7 @@ struct AddDeviceView: View {
                 }
                 Spacer()
                 Button {
-                    dismiss()
+                    close()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.title2)
@@ -72,7 +72,7 @@ struct AddDeviceView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("取消") { dismiss() }
+                Button("取消", action: close)
                     .keyboardShortcut(.cancelAction)
                 Button("连接") { connect() }
                     .buttonStyle(.borderedProminent)
@@ -108,7 +108,7 @@ struct AddDeviceView: View {
         Task {
             let connected = await store.connect(host: host, port: connectPort)
             isWorking = false
-            if connected { dismiss() }
+            if connected { close() }
         }
     }
 }

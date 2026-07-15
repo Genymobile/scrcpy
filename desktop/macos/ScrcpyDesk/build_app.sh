@@ -31,9 +31,14 @@ fi
 swift build "${SWIFT_ARGS[@]}"
 BIN_DIR="$(swift build "${SWIFT_ARGS[@]}" --show-bin-path)"
 
+# Always assemble a clean bundle so stale resources from a previous version
+# (especially cached icon filenames) cannot remain in Contents/Resources.
+rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
 cp "$BIN_DIR/ScrcpyDesk" "$APP_DIR/Contents/MacOS/ScrcpyDesk"
 cp "$SCRIPT_DIR/Support/Info.plist" "$APP_DIR/Contents/Info.plist"
+cp "$SCRIPT_DIR/Assets/AppIcon.icns" "$APP_DIR/Contents/Resources/ScrcpyDeskAppIcon.icns"
+cp "$SCRIPT_DIR/Assets/AppIcon.png" "$APP_DIR/Contents/Resources/ScrcpyDeskAppIcon.png"
 cp "$SERVER_APK" "$APP_DIR/Contents/Resources/scrcpy-server"
 cp "$ROOT_DIR/app/data/scrcpy.png" "$APP_DIR/Contents/Resources/scrcpy.png"
 cp "$ROOT_DIR/app/data/disconnected.png" "$APP_DIR/Contents/Resources/disconnected.png"

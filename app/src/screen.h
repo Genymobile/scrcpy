@@ -41,6 +41,7 @@ struct sc_screen {
     bool event_watcher_added;
     bool window_aspect_ratio_lock;
     bool flex_display;
+    void *embedded_session;
 
     struct sc_controller *controller;
 
@@ -116,6 +117,9 @@ struct sc_screen_params {
     bool camera;
     bool embedded;
     bool flex_display;
+    void *embedded_session;
+    void *embedded_nswindow;
+    void *embedded_nsview;
 
     struct sc_controller *controller;
     struct sc_file_pusher *fp;

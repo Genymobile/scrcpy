@@ -3,8 +3,12 @@ import Foundation
 @MainActor
 final class DeviceStore: ObservableObject {
     @Published private(set) var devices: [AndroidDevice] = []
-    @Published var selectedSerial: String?
+    @Published private(set) var displayedSerials: [String] = []
+    @Published private(set) var deviceRemarks: [String: String] = [:]
+    @Published private(set) var deviceDeepLinks: [String: String] = [:]
+    @Published private(set) var launchingLinkSerials: Set<String> = []
     @Published private(set) var isRefreshing = false
+    @Published private(set) var isPreconnecting = false
     @Published var notice: String?
     @Published var errorMessage: String?
 
@@ -12,14 +16,122 @@ final class DeviceStore: ObservableObject {
     let serverPath: URL?
 
     private var refreshTask: Task<Void, Never>?
+    private var hasStarted = false
+    private let displayedSerialsKey = "displayedDeviceSerials"
+    private let deviceRemarksKey = "deviceRemarks"
+    private let deviceDeepLinksKey = "deviceDeepLinks"
+
+    private static let preconnectTargets = [
+        "33.231.115.146:8080",
+        "33.230.92.157:8080",
+        "33.230.95.176:8080",
+        "33.229.81.169:8080",
+        "33.230.86.150:8080",
+        "33.229.87.112:8080",
+        "33.229.94.19:8080",
+        "33.229.83.21:8080",
+        "33.230.88.25:8080",
+        "33.229.83.200:8080",
+        "33.229.94.76:8080",
+        "33.229.84.161:8080",
+        "33.229.94.89:8080",
+    ]
 
     init() {
         adbPath = ToolLocator.find("adb")
         serverPath = ToolLocator.findScrcpyServer()
+        displayedSerials = UserDefaults.standard.stringArray(
+            forKey: displayedSerialsKey
+        ) ?? []
+        deviceRemarks = UserDefaults.standard.dictionary(
+            forKey: deviceRemarksKey
+        ) as? [String: String] ?? [:]
+        deviceDeepLinks = UserDefaults.standard.dictionary(
+            forKey: deviceDeepLinksKey
+        ) as? [String: String] ?? [:]
     }
 
-    var selectedDevice: AndroidDevice? {
-        devices.first { $0.serial == selectedSerial }
+    var displayedDevices: [AndroidDevice] {
+        displayedSerials.compactMap { serial in
+            devices.first { $0.serial == serial }
+        }
+    }
+
+    func isDisplayed(_ device: AndroidDevice) -> Bool {
+        displayedSerials.contains(device.serial)
+    }
+
+    func toggleDisplayed(_ device: AndroidDevice) {
+        if let index = displayedSerials.firstIndex(of: device.serial) {
+            displayedSerials.remove(at: index)
+        } else {
+            displayedSerials.append(device.serial)
+        }
+        UserDefaults.standard.set(displayedSerials, forKey: displayedSerialsKey)
+    }
+
+    func removeFromDisplay(serial: String) {
+        displayedSerials.removeAll { $0 == serial }
+        UserDefaults.standard.set(displayedSerials, forKey: displayedSerialsKey)
+    }
+
+    func displayName(for device: AndroidDevice) -> String {
+        deviceRemarks[device.serial] ?? device.name
+    }
+
+    func remark(for device: AndroidDevice) -> String {
+        deviceRemarks[device.serial] ?? ""
+    }
+
+    func setRemark(_ remark: String, for device: AndroidDevice) {
+        let value = remark.trimmingCharacters(in: .whitespacesAndNewlines)
+        if value.isEmpty {
+            deviceRemarks.removeValue(forKey: device.serial)
+        } else {
+            deviceRemarks[device.serial] = value
+        }
+        UserDefaults.standard.set(deviceRemarks, forKey: deviceRemarksKey)
+    }
+
+    func deepLink(for device: AndroidDevice) -> String {
+        deviceDeepLinks[device.serial] ?? ""
+    }
+
+    func setDeepLink(_ url: String, for device: AndroidDevice) {
+        let value = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        if value.isEmpty {
+            deviceDeepLinks.removeValue(forKey: device.serial)
+        } else {
+            deviceDeepLinks[device.serial] = value
+        }
+        UserDefaults.standard.set(deviceDeepLinks, forKey: deviceDeepLinksKey)
+    }
+
+    func isLaunchingLink(on device: AndroidDevice) -> Bool {
+        launchingLinkSerials.contains(device.serial)
+    }
+
+    func openConfiguredLink(on device: AndroidDevice) async {
+        guard let adbPath else {
+            errorMessage = environmentMessage
+            return
+        }
+        let url = deepLink(for: device)
+        guard !url.isEmpty, !launchingLinkSerials.contains(device.serial) else {
+            return
+        }
+
+        launchingLinkSerials.insert(device.serial)
+        defer { launchingLinkSerials.remove(device.serial) }
+        do {
+            try await ADBService(executable: adbPath).openURL(
+                serial: device.serial,
+                url: url
+            )
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     var environmentMessage: String? {
@@ -28,13 +140,32 @@ final class DeviceStore: ObservableObject {
     }
 
     func start() async {
-        guard refreshTask == nil else { return }
+        guard !hasStarted else { return }
+        hasStarted = true
+        await preconnectConfiguredDevices()
         await refresh()
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
                 guard !Task.isCancelled else { break }
                 await self?.refresh()
+            }
+        }
+    }
+
+    private func preconnectConfiguredDevices() async {
+        guard let adbPath else { return }
+        isPreconnecting = true
+        defer { isPreconnecting = false }
+
+        let service = ADBService(executable: adbPath)
+        // Start the ADB daemon once before issuing concurrent connect calls.
+        _ = try? await service.devices()
+        await withTaskGroup(of: Void.self) { group in
+            for target in Self.preconnectTargets {
+                group.addTask {
+                    _ = try? await service.connect(host: target, port: "")
+                }
             }
         }
     }
@@ -49,11 +180,6 @@ final class DeviceStore: ObservableObject {
             devices = updated
             errorMessage = nil
 
-            if let selectedSerial, !updated.contains(where: { $0.serial == selectedSerial }) {
-                self.selectedSerial = nil
-            } else if selectedSerial == nil, updated.count == 1 {
-                selectedSerial = updated[0].serial
-            }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -69,10 +195,6 @@ final class DeviceStore: ObservableObject {
             notice = try await ADBService(executable: adbPath).connect(host: host, port: port)
             errorMessage = nil
             await refresh()
-            let target = port.isEmpty ? host : "\(host):\(port)"
-            if devices.contains(where: { $0.serial == target }) {
-                selectedSerial = target
-            }
             return true
         } catch {
             errorMessage = error.localizedDescription
@@ -96,11 +218,11 @@ final class DeviceStore: ObservableObject {
         }
     }
 
-    func disconnectSelected() async {
-        guard let adbPath, let device = selectedDevice, device.connection == .network else { return }
+    func disconnect(_ device: AndroidDevice) async {
+        guard let adbPath, device.connection == .network else { return }
         do {
             try await ADBService(executable: adbPath).disconnect(serial: device.serial)
-            selectedSerial = nil
+            removeFromDisplay(serial: device.serial)
             await refresh()
         } catch {
             errorMessage = error.localizedDescription

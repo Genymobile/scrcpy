@@ -40,6 +40,28 @@ struct ADBService {
         _ = try await checkedRun(["disconnect", serial])
     }
 
+    func openURL(serial: String, url: String) async throws {
+        let output = try await checkedRun([
+            "-s", serial,
+            "shell", "am", "start",
+            "-a", "android.intent.action.VIEW",
+            "-d", url,
+        ])
+        let message = [output.text, output.errorText]
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
+        let lowercased = message.lowercased()
+        if lowercased.contains("error:") ||
+            lowercased.contains("error type") ||
+            lowercased.contains("exception") {
+            throw CommandError.failed(
+                command: "adb -s \(serial) shell am start",
+                code: output.exitCode,
+                message: message.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
+        }
+    }
+
     private func checkedRun(_ arguments: [String]) async throws -> CommandOutput {
         let output = try await CommandRunner.run(
             executable: executable,
