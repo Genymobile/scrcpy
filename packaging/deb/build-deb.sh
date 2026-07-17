@@ -16,6 +16,7 @@
 #   --no-adb          do not bundle adb
 #   --version VER     override the .deb version string
 #   --test            after building, run the offline install test
+#   --run-tests       run the unit tests (meson test) during the build
 #   -h, --help        show this help
 set -euo pipefail
 
@@ -28,6 +29,7 @@ SERVER_MODE=prebuilt
 BUNDLE_ADB=1
 DEB_VERSION=""
 DO_TEST=0
+RUN_TESTS=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -41,6 +43,7 @@ while [[ $# -gt 0 ]]; do
         --no-adb)  BUNDLE_ADB=0; shift ;;
         --version) DEB_VERSION="$2"; shift 2 ;;
         --test)    DO_TEST=1; shift ;;
+        --run-tests) RUN_TESTS=1; shift ;;
         -h|--help) sed -n '2,30p' "$0"; exit 0 ;;
         *) echo "Unknown option: $1" >&2; exit 1 ;;
     esac
@@ -70,6 +73,7 @@ docker run --rm \
     -e SERVER_MODE="$SERVER_MODE_IN" \
     -e BUNDLE_ADB="$BUNDLE_ADB" \
     -e DEB_VERSION="$DEB_VERSION" \
+    -e RUN_TESTS="$RUN_TESTS" \
     -e SRC=/src -e OUT=/out -e BUILD=/build \
     -v "$REPO":/src:ro \
     -v "$OUTDIR":/out \

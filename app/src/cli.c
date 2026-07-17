@@ -2736,6 +2736,31 @@ parse_render_fit(const char *optarg, enum sc_render_fit *mode) {
     return false;
 }
 
+// Resolve a leading "~" or "~/" in a path option to $HOME. A shell does not
+// expand a tilde after '=' (e.g. --output=~/dir), so path-valued options must
+// resolve it themselves. The returned string is intentionally never freed: like
+// the other option strings (which point into argv), it lives for the whole
+// process. Falls back to the original pointer if $HOME is unset or on OOM.
+static const char *
+expand_path_opt(const char *path) {
+    if (path[0] != '~' || (path[1] != '/' && path[1] != '\0')) {
+        return path;
+    }
+    const char *home = getenv("HOME");
+    if (!home || !*home) {
+        return path;
+    }
+    size_t home_len = strlen(home);
+    size_t rest_len = strlen(path + 1);
+    char *out = malloc(home_len + rest_len + 1);
+    if (!out) {
+        return path;
+    }
+    memcpy(out, home, home_len);
+    memcpy(out + home_len, path + 1, rest_len + 1); // include the final '\0'
+    return out;
+}
+
 static bool
 parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                        const char *optstring, const struct option *longopts) {
@@ -2849,7 +2874,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case 'r':
-                opts->record_filename = optarg;
+                opts->record_filename = expand_path_opt(optarg);
                 break;
             case 's':
                 opts->serial = optarg;
@@ -3164,7 +3189,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case OPT_SCREENCAP:
-                opts->screencap_filename = optarg;
+                opts->screencap_filename = expand_path_opt(optarg);
                 break;
             case OPT_CLIP_START:
                 if (!parse_clip_time(optarg, &opts->clip_start_ms)) {
@@ -3177,7 +3202,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case OPT_OUTPUT:
-                opts->clip_output = optarg;
+                opts->clip_output = expand_path_opt(optarg);
                 break;
             case OPT_CONTROL_CMD:
                 if (!optarg || !strcmp(optarg, "-h")
@@ -3223,7 +3248,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case OPT_AUTO_TEST_REPORT:
-                opts->auto_test_report = optarg;
+                opts->auto_test_report = expand_path_opt(optarg);
                 break;
             case OPT_ACTION:
                 opts->action = optarg;

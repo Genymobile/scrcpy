@@ -1,6 +1,7 @@
 #include "common.h"
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "cli.h"
@@ -149,6 +150,40 @@ static void test_parse_shortcut_mods(void) {
     assert(!ok);
 }
 
+static void test_tilde_expansion(void) {
+    // A shell does not expand a tilde that follows '=' (e.g. --record=~/x) nor
+    // one passed as a literal argument, so path options must resolve a leading
+    // "~/" to $HOME themselves.
+    setenv("HOME", "/home/tester", 1);
+
+    // "~/..." resolves to "$HOME/..."
+    {
+        struct scrcpy_cli_args args = {
+            .opts = scrcpy_options_default,
+            .help = false,
+            .version = false,
+        };
+        char *argv[] = {"scrcpy", "--record", "~/videos/rec.mp4"};
+        bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+        assert(ok);
+        assert(!strcmp(args.opts.record_filename,
+                       "/home/tester/videos/rec.mp4"));
+    }
+
+    // A tilde that is not at the start of the path is left untouched.
+    {
+        struct scrcpy_cli_args args = {
+            .opts = scrcpy_options_default,
+            .help = false,
+            .version = false,
+        };
+        char *argv[] = {"scrcpy", "--record", "/tmp/a~b.mp4"};
+        bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+        assert(ok);
+        assert(!strcmp(args.opts.record_filename, "/tmp/a~b.mp4"));
+    }
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -158,5 +193,6 @@ int main(int argc, char *argv[]) {
     test_options();
     test_options2();
     test_parse_shortcut_mods();
+    test_tilde_expansion();
     return 0;
 }

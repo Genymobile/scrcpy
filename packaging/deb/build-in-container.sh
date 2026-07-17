@@ -120,6 +120,23 @@ meson setup build-deb \
     -Dusb=true
 ninja -C build-deb
 
+if [[ "${RUN_TESTS:-0}" == 1 ]]; then
+    ########################################
+    log "Running unit tests (debug build — asserts enabled)"
+    ########################################
+    # Tests are only defined for buildtype=debug (assertions are compiled out in
+    # release), so configure a separate debug tree just to build and run them.
+    rm -rf build-test
+    meson setup build-test \
+        -Dc_args="-I$DEPS/include" \
+        -Dc_link_args="-L$DEPS/lib" \
+        --buildtype=debug \
+        -Dcompile_server=false \
+        -Dstatic=true \
+        -Dv4l2=false
+    meson test -C build-test --print-errorlogs
+fi
+
 ########################################
 log "Staging install tree (meson install to DESTDIR)"
 ########################################
