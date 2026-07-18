@@ -13,6 +13,7 @@ sc_texture_init(struct sc_texture *tex, SDL_Renderer *renderer, bool mipmaps) {
     LOGI("Renderer: %s", renderer_name ? renderer_name : "(unknown)");
 
     tex->mipmaps = false;
+    tex->pix_fmt = AV_PIX_FMT_NONE;
 
     // starts with "opengl"
     bool use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
@@ -77,13 +78,52 @@ sc_texture_to_sdl_color_space(enum AVColorSpace color_space,
     }
 }
 
+static SDL_PixelFormat
+sc_texture_to_sdl_format(int pix_fmt) {
+    switch (pix_fmt) {
+        case AV_PIX_FMT_VIDEOTOOLBOX:
+            // VideoToolbox decodes to a bi-planar YUV 4:2:0 CVPixelBuffer,
+            // equivalent to NV12 layout. The pixel format value is passed to
+            // SDL_CreateTextureWithProperties for Metal PIXELBUFFER wrapping;
+            // the Metal backend uses it to interpret the buffer planes.
+            return SDL_PIXELFORMAT_NV12;
+        case AV_PIX_FMT_YUV420P:
+            return SDL_PIXELFORMAT_YV12;
+        default:
+            // Reaching here means a new pixel format was added without
+            // updating this function. In debug builds the upstream assert
+            // in sc_screen_frame_sink_open catches this earlier.
+            LOGE("Unsupported pixel format: %d", pix_fmt);
+            assert(!"Unsupported pixel format");
+            return SDL_PIXELFORMAT_YV12;
+    }
+}
+
+static SDL_TextureAccess
+sc_texture_to_sdl_access(int pix_fmt) {
+    switch (pix_fmt) {
+        case AV_PIX_FMT_YUV420P:
+            return SDL_TEXTUREACCESS_STREAMING;
+        case AV_PIX_FMT_VIDEOTOOLBOX:
+            return SDL_TEXTUREACCESS_STATIC;
+        default:
+            LOGE("Unsupported pixel format: %d", pix_fmt);
+            assert(!"Unsupported pixel format");
+            return SDL_TEXTUREACCESS_STREAMING;
+    }
+}
+
 static SDL_Texture *
 sc_texture_create_frame_texture(struct sc_texture *tex,
                                 struct sc_size size,
                                 enum AVColorSpace color_space,
-                                enum AVColorRange color_range) {
+                                enum AVColorRange color_range,
+                                int pix_fmt,
+                                void *pixelbuffer) {
     LOGV("Creating new texture: size=%" PRIu16 "x%" PRIu16 " color_space=%d "
-         "color_range=%d", size.width, size.height, color_space, color_range);
+         "color_range=%d pix_fmt=%d pixelbuffer=%p",
+         size.width, size.height, color_space, color_range, pix_fmt,
+         pixelbuffer);
 
     SDL_PropertiesID props = SDL_CreateProperties();
     if (!props) {
@@ -93,11 +133,14 @@ sc_texture_create_frame_texture(struct sc_texture *tex,
     enum SDL_Colorspace sdl_color_space =
         sc_texture_to_sdl_color_space(color_space, color_range);
 
+    SDL_PixelFormat sdl_format = sc_texture_to_sdl_format(pix_fmt);
+    SDL_TextureAccess sdl_access = sc_texture_to_sdl_access(pix_fmt);
+
     bool ok =
         SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER,
-                              SDL_PIXELFORMAT_YV12);
+                              sdl_format);
     ok &= SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER,
-                                SDL_TEXTUREACCESS_STREAMING);
+                                sdl_access);
     ok &= SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER,
                                 size.width);
     ok &= SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER,
@@ -105,6 +148,17 @@ sc_texture_create_frame_texture(struct sc_texture *tex,
     ok &= SDL_SetNumberProperty(props,
                                 SDL_PROP_TEXTURE_CREATE_COLORSPACE_NUMBER,
                                 sdl_color_space);
+
+    // Attach CVPixelBuffer for zero-copy Metal texture wrapping.
+    // The Metal framework retains the CVPixelBuffer when creating the
+    // texture, so the buffer stays valid until SDL_DestroyTexture.
+    // The AVFrame (via av_frame_ref in frame_buffer) also holds a
+    // reference during the current frame's render cycle.
+    if (pixelbuffer) {
+        ok &= SDL_SetPointerProperty(props,
+                                     SDL_PROP_TEXTURE_CREATE_METAL_PIXELBUFFER_POINTER,
+                                     pixelbuffer);
+    }
 
     if (!ok) {
         LOGE("Could not set texture properties");
@@ -120,7 +174,9 @@ sc_texture_create_frame_texture(struct sc_texture *tex,
         return NULL;
     }
 
-    if (tex->mipmaps) {
+    // Mipmaps are only supported for OpenGL streaming textures, not for
+    // wrapped pixel buffer textures.
+    if (tex->mipmaps && !pixelbuffer) {
         struct sc_opengl *gl = &tex->gl;
 
         SDL_PropertiesID props = SDL_GetTextureProperties(texture);
@@ -164,10 +220,54 @@ sc_texture_set_from_frame(struct sc_texture *tex, const AVFrame *frame) {
     struct sc_size size = {frame->width, frame->height};
     assert(size.width && size.height);
 
+    // VideoToolbox zero-copy path: extract the CVPixelBufferRef from the
+    // hardware frame and wrap it as a Metal texture. A new texture is
+    // created every frame since each frame carries a different pixel buffer.
+    //
+    // A LOGI is emitted only on size change; logging on every frame would
+    // be verbose since more than 99% of frames reuse the same size.
+    if (frame->format == AV_PIX_FMT_VIDEOTOOLBOX) {
+        assert(frame->data[3]);
+
+        bool size_changed = tex->texture_size.width != size.width
+            || tex->texture_size.height != size.height;
+
+        // Always destroy the old texture — the CVPixelBuffer it wraps is
+        // no longer valid.
+        if (tex->texture) {
+            SDL_DestroyTexture(tex->texture);
+            tex->texture = NULL;
+        }
+
+        tex->texture = sc_texture_create_frame_texture(tex, size,
+                                                       frame->colorspace,
+                                                       frame->color_range,
+                                                       frame->format,
+                                                       (void *) frame->data[3]);
+        if (!tex->texture) {
+            tex->texture_size = (struct sc_size) {0, 0};
+            tex->texture_type = SC_TEXTURE_TYPE_FRAME;
+            tex->pix_fmt = AV_PIX_FMT_NONE;
+            return false;
+        }
+
+        tex->texture_size = size;
+        tex->texture_type = SC_TEXTURE_TYPE_FRAME;
+        tex->pix_fmt = frame->format;
+
+        if (size_changed) {
+            LOGI("Texture: %" PRIu16 "x%" PRIu16 " pix_fmt=%d", size.width,
+                 size.height, frame->format);
+        }
+        return true;
+    }
+
+    // Software/copy path: update a streaming texture from CPU pixel data.
     if (!tex->texture
             || tex->texture_type != SC_TEXTURE_TYPE_FRAME
             || tex->texture_size.width != size.width
-            || tex->texture_size.height != size.height) {
+            || tex->texture_size.height != size.height
+            || tex->pix_fmt != frame->format) {
         // Incompatible texture, recreate it
         enum AVColorSpace color_space = frame->colorspace;
         enum AVColorRange color_range = frame->color_range;
@@ -177,13 +277,19 @@ sc_texture_set_from_frame(struct sc_texture *tex, const AVFrame *frame) {
         }
 
         tex->texture = sc_texture_create_frame_texture(tex, size, color_space,
-                                                       color_range);
+                                                       color_range,
+                                                       frame->format,
+                                                       NULL);
         if (!tex->texture) {
+            tex->texture_size = (struct sc_size) {0, 0};
+            tex->texture_type = SC_TEXTURE_TYPE_FRAME;
+            tex->pix_fmt = AV_PIX_FMT_NONE;
             return false;
         }
 
         tex->texture_size = size;
         tex->texture_type = SC_TEXTURE_TYPE_FRAME;
+        tex->pix_fmt = frame->format;
 
         LOGI("Texture: %" PRIu16 "x%" PRIu16, size.width, size.height);
     }
@@ -218,9 +324,13 @@ sc_texture_set_from_surface(struct sc_texture *tex, SDL_Surface *surface) {
         SDL_DestroyTexture(tex->texture);
     }
 
+    tex->pix_fmt = AV_PIX_FMT_NONE;
     tex->texture = SDL_CreateTextureFromSurface(tex->renderer, surface);
     if (!tex->texture) {
         LOGE("Could not create texture: %s", SDL_GetError());
+        // Reset state to avoid inconsistency
+        tex->texture_size = (struct sc_size) {0, 0};
+        tex->texture_type = SC_TEXTURE_TYPE_ICON;
         return false;
     }
 
@@ -237,4 +347,5 @@ sc_texture_reset(struct sc_texture *tex) {
         SDL_DestroyTexture(tex->texture);
         tex->texture = NULL;
     }
+    tex->pix_fmt = AV_PIX_FMT_NONE;
 }
