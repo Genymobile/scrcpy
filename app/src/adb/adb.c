@@ -696,6 +696,68 @@ sc_adb_select_device(struct sc_intr *intr,
     return true;
 }
 
+char **
+sc_adb_list_ready_serials(size_t *out_count) {
+    *out_count = 0;
+
+    struct sc_intr intr;
+    if (!sc_intr_init(&intr)) {
+        return NULL;
+    }
+
+    // Start the adb server first so its startup output is printed to the
+    // console (the output of "adb devices" itself is parsed, not printed)
+    if (!sc_adb_start_server(&intr, 0)) {
+        LOGE("Could not start adb server");
+        sc_intr_destroy(&intr);
+        return NULL;
+    }
+
+    struct sc_vec_adb_devices vec = SC_VECTOR_INITIALIZER;
+    bool ok = sc_adb_list_devices(&intr, 0, &vec);
+    sc_intr_destroy(&intr);
+    if (!ok) {
+        LOGE("Could not list ADB devices");
+        return NULL;
+    }
+
+    // At most vec.size serials, plus a NULL terminator
+    char **serials = malloc((vec.size + 1) * sizeof(*serials));
+    if (!serials) {
+        LOG_OOM();
+        sc_adb_devices_destroy(&vec);
+        return NULL;
+    }
+
+    size_t count = 0;
+    for (size_t i = 0; i < vec.size; ++i) {
+        struct sc_adb_device *device = &vec.data[i];
+        // Only mirror devices that are ready ("device"); skip "offline",
+        // "unauthorized", "no permissions", etc.
+        if (!device->state || strcmp(device->state, "device")) {
+            continue;
+        }
+
+        char *serial = strdup(device->serial);
+        if (!serial) {
+            LOG_OOM();
+            for (size_t j = 0; j < count; ++j) {
+                free(serials[j]);
+            }
+            free(serials);
+            sc_adb_devices_destroy(&vec);
+            return NULL;
+        }
+        serials[count++] = serial;
+    }
+    serials[count] = NULL;
+
+    sc_adb_devices_destroy(&vec);
+
+    *out_count = count;
+    return serials;
+}
+
 char *
 sc_adb_getprop(struct sc_intr *intr, const char *serial, const char *prop,
                unsigned flags) {
