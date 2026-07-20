@@ -89,6 +89,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .window_aspect_ratio_lock = true,
     .window_borderless = false,
     .mipmaps = true,
+    .hwaccel = false,
     .stay_awake = false,
     .force_adb_forward = false,
     .disable_screensaver = false,

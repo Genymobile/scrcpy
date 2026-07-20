@@ -20,6 +20,7 @@ src = [
     'src/file_pusher.c',
     'src/fps_counter.c',
     'src/frame_buffer.c',
+    'src/hwaccel.c',
     'src/input_manager.c',
     'src/keyboard_sdk.c',
     'src/mouse_capture.c',
