@@ -1917,7 +1917,7 @@ parse_shortcut_mods(const char *s, uint8_t *shortcut_mods) {
     // A list of shortcut modifiers, for example "lctrl,rctrl,rsuper"
 
     for (;;) {
-        char *comma = strchr(s, ',');
+        const char *comma = strchr(s, ',');
         assert(!comma || comma > s);
         size_t limit = comma ? (size_t) (comma - s) : strlen(s);
 
