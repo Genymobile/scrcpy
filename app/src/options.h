@@ -342,6 +342,9 @@ struct scrcpy_options {
     bool vd_destroy_content;
     bool vd_system_decorations;
     bool camera_torch;
+    uint32_t camera_iso;
+    uint64_t camera_exposure;
+    bool camera_awb_lock;
     bool keep_active;
     bool flex_display;
     bool ignore_video_encoder_constraints;

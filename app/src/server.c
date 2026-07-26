@@ -371,6 +371,15 @@ execute_server(struct sc_server *server,
         VALIDATE_STRING(params->camera_zoom);
         ADD_PARAM("camera_zoom=%s", params->camera_zoom);
     }
+    if (params->camera_iso > 0) {
+        ADD_PARAM("camera_iso=%" PRIu32, params->camera_iso);
+    }
+    if (params->camera_exposure > 0) {
+        ADD_PARAM("camera_exposure=%" PRIu64, params->camera_exposure);
+    }
+    if (params->camera_awb_lock) {
+        ADD_PARAM("camera_awb_lock=true");
+    }
     if (params->show_touches) {
         ADD_PARAM("show_touches=true");
     }
