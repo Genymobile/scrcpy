@@ -49,6 +49,7 @@ enum sc_codec {
     SC_CODEC_AAC,
     SC_CODEC_FLAC,
     SC_CODEC_RAW,
+    SC_CODEC_MJPEG,
 };
 
 enum sc_video_source {
