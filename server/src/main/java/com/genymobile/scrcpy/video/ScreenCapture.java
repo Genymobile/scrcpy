@@ -134,8 +134,9 @@ public class ScreenCapture extends SurfaceCapture {
                     .createVirtualDisplay("scrcpy", inputSize.getWidth(), inputSize.getHeight(), displayId, surface);
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
-            if (Build.BRAND.equalsIgnoreCase("oculus") && Build.MODEL.toLowerCase(Locale.ROOT).startsWith("quest")) {
+            if (Build.BRAND.equalsIgnoreCase("oculus") && Build.MODEL.startsWith("quest") && !Build.MODEL.equalsIgnoreCase("quest")) {
                 // Workaround for buggy createVirtualDisplay on Quest
+                // Extra workaround to fix the original Quest
                 try {
                     virtualDisplay = (VirtualDisplay) VirtualDisplay.class.getDeclaredConstructors()[0].newInstance(null, null, null, surface);
                 } catch (ReflectiveOperationException e) {
