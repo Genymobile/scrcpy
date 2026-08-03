@@ -27,4 +27,15 @@ sc_adb_parse_devices(char *str, struct sc_vec_adb_devices *out_vec);
 char *
 sc_adb_parse_device_ip(char *str);
 
+/**
+ * Parse versionName from `dumpsys package` output.
+ *
+ * Return an allocated string, or NULL if no versionName is present.
+ */
+char *
+sc_adb_parse_package_version(const char *str);
+
+bool
+sc_adb_install_error_is_signature_mismatch(const char *str);
+
 #endif

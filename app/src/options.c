@@ -102,6 +102,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .select_tcpip = false,
     .select_usb = false,
     .cleanup = true,
+    .ime = false,
     .start_fps_counter = false,
     .power_on = true,
     .video = true,

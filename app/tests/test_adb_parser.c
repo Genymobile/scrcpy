@@ -292,6 +292,32 @@ static void test_get_ip_truncated(void) {
     assert(!ip);
 }
 
+static void test_package_version(void) {
+    const char output[] =
+        "Packages:\n"
+        "  Package [com.genymobile.scrcpy.ime]\n"
+        "    versionCode=40100 minSdk=21 targetSdk=36\n"
+        "    versionName=4.1\r\n";
+
+    char *version = sc_adb_parse_package_version(output);
+    assert(version);
+    assert(!strcmp(version, "4.1"));
+    free(version);
+
+    assert(!sc_adb_parse_package_version("Unable to find package"));
+}
+
+static void test_install_signature_mismatch(void) {
+    assert(sc_adb_install_error_is_signature_mismatch(
+        "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: signatures do not "
+        "match newer version]"));
+    assert(sc_adb_install_error_is_signature_mismatch("signature mismatch"));
+    assert(!sc_adb_install_error_is_signature_mismatch(
+        "Failure [INSTALL_FAILED_VERSION_DOWNGRADE]"));
+    assert(!sc_adb_install_error_is_signature_mismatch(
+        "Failure [INSTALL_FAILED_INSUFFICIENT_STORAGE]"));
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -316,6 +342,8 @@ int main(int argc, char *argv[]) {
     test_get_ip_no_wlan();
     test_get_ip_no_wlan_without_eol();
     test_get_ip_truncated();
+    test_package_version();
+    test_install_signature_mismatch();
 
     return 0;
 }

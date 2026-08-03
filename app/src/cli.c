@@ -111,6 +111,7 @@ enum {
     OPT_RENDER_FIT,
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
     OPT_NO_TERMINAL_TITLE,
+    OPT_IME,
 };
 
 struct sc_option {
@@ -429,6 +430,14 @@ static const struct sc_option options[] = {
         .shortopt = 'h',
         .longopt = "help",
         .text = "Print this help.",
+    },
+    {
+        .longopt_id = OPT_IME,
+        .longopt = "ime",
+        .text = "Use the computer input method to inject arbitrary Unicode "
+                "text through the scrcpy IME sidecar.\n"
+                "This mode is only available for the main display with the "
+                "SDK keyboard.",
     },
     {
         .longopt_id = OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
@@ -1242,6 +1251,10 @@ static const struct sc_envvar envvars[] = {
     {
         .name = "SCRCPY_ICON_DIR",
         .text = "Path to the icon directory",
+    },
+    {
+        .name = "SCRCPY_IME_PATH",
+        .text = "Path to the scrcpy IME sidecar APK",
     },
     {
         .name = "SCRCPY_SERVER_PATH",
@@ -2661,6 +2674,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 opts->key_inject_mode = SC_KEY_INJECT_MODE_TEXT;
                 break;
+            case OPT_IME:
+                opts->ime = true;
+                break;
             case OPT_RAW_KEY_EVENTS:
                 if (opts->key_inject_mode != SC_KEY_INJECT_MODE_MIXED) {
                     LOGE("--prefer-text is incompatible with --raw-key-events");
@@ -3192,6 +3208,30 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("--no-key-repeat is specific to --keyboard=sdk");
             return false;
         }
+    }
+
+    if (opts->ime) {
+        if (!opts->control) {
+            LOGE("--ime requires control to be enabled");
+            return false;
+        }
+        if (opts->video_source != SC_VIDEO_SOURCE_DISPLAY) {
+            LOGE("--ime is only available with --video-source=display");
+            return false;
+        }
+        if (opts->display_id != 0 || opts->new_display) {
+            LOGE("--ime is only supported on the main display");
+            return false;
+        }
+        if (opts->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_SDK) {
+            LOGE("--ime requires --keyboard=sdk");
+            return false;
+        }
+        if (opts->key_inject_mode == SC_KEY_INJECT_MODE_RAW) {
+            LOGE("--ime is incompatible with --raw-key-events");
+            return false;
+        }
+        opts->key_inject_mode = SC_KEY_INJECT_MODE_TEXT;
     }
 
     if (opts->mouse_input_mode != SC_MOUSE_INPUT_MODE_SDK

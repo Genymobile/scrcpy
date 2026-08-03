@@ -121,6 +121,45 @@ static void test_options2(void) {
     assert(opts->record_format == SC_RECORD_FORMAT_MP4);
 }
 
+static void test_ime_option(void) {
+    struct scrcpy_cli_args args = {
+        .opts = scrcpy_options_default,
+    };
+    char *argv[] = {"scrcpy", "--ime", "--no-cleanup"};
+
+    bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+    assert(ok);
+    assert(args.opts.ime);
+    assert(!args.opts.cleanup);
+    assert(args.opts.keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_SDK);
+    assert(args.opts.key_inject_mode == SC_KEY_INJECT_MODE_TEXT);
+}
+
+static void test_ime_invalid_options(void) {
+    struct scrcpy_cli_args args = {
+        .opts = scrcpy_options_default,
+    };
+    char *no_control[] = {"scrcpy", "--ime", "--no-control"};
+    assert(!scrcpy_parse_args(&args, ARRAY_LEN(no_control), no_control));
+
+    args.opts = scrcpy_options_default;
+    char *uhid[] = {"scrcpy", "--ime", "--keyboard=uhid"};
+    assert(!scrcpy_parse_args(&args, ARRAY_LEN(uhid), uhid));
+
+    args.opts = scrcpy_options_default;
+    char *raw[] = {"scrcpy", "--ime", "--raw-key-events"};
+    assert(!scrcpy_parse_args(&args, ARRAY_LEN(raw), raw));
+
+    args.opts = scrcpy_options_default;
+    char *secondary_display[] = {"scrcpy", "--ime", "--display-id=1"};
+    assert(!scrcpy_parse_args(&args, ARRAY_LEN(secondary_display),
+                              secondary_display));
+
+    args.opts = scrcpy_options_default;
+    char *new_display[] = {"scrcpy", "--ime", "--new-display=1920x1080"};
+    assert(!scrcpy_parse_args(&args, ARRAY_LEN(new_display), new_display));
+}
+
 static void test_parse_shortcut_mods(void) {
     uint8_t mods;
     bool ok;
@@ -157,6 +196,8 @@ int main(int argc, char *argv[]) {
     test_flag_help();
     test_options();
     test_options2();
+    test_ime_option();
+    test_ime_invalid_options();
     test_parse_shortcut_mods();
     return 0;
 }

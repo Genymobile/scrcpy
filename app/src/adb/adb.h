@@ -70,6 +70,30 @@ bool
 sc_adb_install(struct sc_intr *intr, const char *serial, const char *local,
                unsigned flags);
 
+enum sc_adb_install_result {
+    SC_ADB_INSTALL_RESULT_SUCCESS,
+    SC_ADB_INSTALL_RESULT_SIGNATURE_MISMATCH,
+    SC_ADB_INSTALL_RESULT_ERROR,
+};
+
+enum sc_adb_install_result
+sc_adb_install_detailed(struct sc_intr *intr, const char *serial,
+                        const char *local);
+
+bool
+sc_adb_uninstall(struct sc_intr *intr, const char *serial,
+                 const char *package_name);
+
+/**
+ * Read the installed package versionName.
+ *
+ * On success, write either an allocated version string or NULL if the package
+ * is not installed to `version`.
+ */
+bool
+sc_adb_get_package_version(struct sc_intr *intr, const char *serial,
+                           const char *package_name, char **version);
+
 /**
  * Execute `adb tcpip <port>`
  */

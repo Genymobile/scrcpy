@@ -8,6 +8,7 @@
 #include <sys/types.h>
 
 #include "adb/adb.h"
+#include "ime.h"
 #include "util/env.h"
 #include "util/file.h"
 #include "util/log.h"
@@ -412,6 +413,9 @@ execute_server(struct sc_server *server,
     if (!params->cleanup) {
         // By default, cleanup is true
         ADD_PARAM("cleanup=false");
+    }
+    if (params->ime) {
+        ADD_PARAM("ime=true");
     }
     if (!params->power_on) {
         // By default, power_on is true
@@ -1051,6 +1055,10 @@ run_server(void *data) {
     const char *serial = server->serial;
     assert(serial);
     LOGD("Device serial: %s", serial);
+
+    if (params->ime && !sc_ime_prepare_device(&server->intr, serial)) {
+        goto error_connection_failed;
+    }
 
     ok = push_server(&server->intr, serial);
     if (!ok) {

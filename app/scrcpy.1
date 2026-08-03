@@ -236,6 +236,14 @@ Also see \fB\-\-keyboard\fR and R\fB\-\-mouse\fR.
 Print this help.
 
 .TP
+.B \-\-ime
+Use the computer input method to inject arbitrary Unicode text through the scrcpy IME sidecar.
+
+This mode automatically uses the SDK keyboard, and is only available for the main display. It is incompatible with OTG, camera capture, UHID/AOA keyboards, raw key events and new or secondary displays.
+
+The sidecar input method is installed if necessary and selected for the duration of the session. The previous input method and the sidecar enabled state are always restored on exit, even with \fB\-\-no\-cleanup\fR.
+
+.TP
 .B \-\-ignore\-video\-encoder\-constraints
 Do not consider video encoder capabilities.
 
@@ -399,6 +407,8 @@ Disable audio playback on the computer.
 By default, scrcpy removes the server binary from the device and restores the device state (show touches, stay awake and power mode) on exit.
 
 This option disables this cleanup.
+
+IME restoration requested by \fB\-\-ime\fR is never disabled by this option.
 
 .TP
 .B \-\-no\-clipboard\-autosync
@@ -913,6 +923,10 @@ Device serial to use if no selector (\fB-s\fR, \fB-d\fR, \fB-e\fR or \fB\-\-tcpi
 .TP
 .B SCRCPY_ICON_DIR
 Path to the icon directory.
+
+.TP
+.B SCRCPY_IME_PATH
+Path to the scrcpy IME sidecar APK. When set, installation is forced even if the installed version matches.
 
 .TP
 .B SCRCPY_SERVER_PATH
