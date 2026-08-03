@@ -6,6 +6,7 @@ import com.genymobile.scrcpy.CleanUp;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.display.DisplayInfo;
+import com.genymobile.scrcpy.ime.ImeManager;
 import com.genymobile.scrcpy.model.DeviceApp;
 import com.genymobile.scrcpy.model.Point;
 import com.genymobile.scrcpy.model.Position;
@@ -90,6 +91,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private final boolean supportsInputEvents;
     private final ControlChannel controlChannel;
     private final CleanUp cleanUp;
+    private final ImeManager imeManager;
     private final DeviceMessageSender sender;
     private final boolean clipboardAutosync;
     private final boolean powerOn;
@@ -112,10 +114,11 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     // Used for resetting video encoding on RESET_VIDEO message or for sending camera controls
     private SurfaceCapture surfaceCapture;
 
-    public Controller(ControlChannel controlChannel, CleanUp cleanUp, Options options) {
+    public Controller(ControlChannel controlChannel, CleanUp cleanUp, ImeManager imeManager, Options options) {
         this.camera = options.getVideoSource() == VideoSource.CAMERA;
         this.controlChannel = controlChannel;
         this.cleanUp = cleanUp;
+        this.imeManager = imeManager;
 
         if (this.camera) {
             // Unused for camera
@@ -350,7 +353,11 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     return true;
                 case ControlMessage.TYPE_INJECT_TEXT:
                     if (supportsInputEvents) {
-                        injectText(msg.getText());
+                        if (imeManager != null) {
+                            imeManager.sendText(msg.getText());
+                        } else {
+                            injectText(msg.getText());
+                        }
                     }
                     return true;
                 case ControlMessage.TYPE_INJECT_TOUCH_EVENT:

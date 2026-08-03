@@ -13,6 +13,7 @@
 #include "util/log.h"
 #include "util/process_intr.h"
 #include "util/str.h"
+#include "util/thread.h"
 
 /* Convenience macro to expand:
  *
@@ -224,6 +225,125 @@ sc_adb_execute_p(const char *const argv[], unsigned flags, sc_pipe *pout) {
     return pid;
 }
 
+static char *
+read_pipe_all(sc_pipe pipe) {
+    size_t len = 0;
+    size_t cap = 4096;
+    char *output = malloc(cap + 1);
+    if (!output) {
+        LOG_OOM();
+        return NULL;
+    }
+
+    for (;;) {
+        if (len == cap) {
+            size_t new_cap = cap * 2;
+            char *new_output = realloc(output, new_cap + 1);
+            if (!new_output) {
+                LOG_OOM();
+                free(output);
+                return NULL;
+            }
+            output = new_output;
+            cap = new_cap;
+        }
+
+        ssize_t r = sc_pipe_read(pipe, &output[len], cap - len);
+        if (r <= 0) {
+            break;
+        }
+        len += r;
+    }
+
+    output[len] = '\0';
+    return output;
+}
+
+struct sc_pipe_reader {
+    sc_pipe pipe;
+    char *output;
+};
+
+static int
+run_pipe_reader(void *data) {
+    struct sc_pipe_reader *reader = data;
+    reader->output = read_pipe_all(reader->pipe);
+    sc_pipe_close(reader->pipe);
+    return 0;
+}
+
+static bool
+adb_execute_capture(struct sc_intr *intr, const char *const argv[],
+                    char **output, sc_exit_code *exit_code) {
+    sc_pipe pout;
+    sc_pipe perr;
+    sc_pid pid;
+    enum sc_process_result r =
+        sc_process_execute_p(argv, &pid, 0, NULL, &pout, &perr);
+    if (r != SC_PROCESS_SUCCESS) {
+        show_adb_err_msg(r, argv);
+        return false;
+    }
+
+    if (intr && !sc_intr_set_process(intr, pid)) {
+        sc_process_terminate(pid);
+        sc_pipe_close(pout);
+        sc_pipe_close(perr);
+        sc_process_wait(pid, true);
+        return false;
+    }
+
+    struct sc_pipe_reader stderr_reader = {
+        .pipe = perr,
+        .output = NULL,
+    };
+    sc_thread stderr_thread;
+    if (!sc_thread_create(&stderr_thread, run_pipe_reader, "scrcpy-adb-err",
+                          &stderr_reader)) {
+        LOGE("Could not start ADB stderr reader");
+        sc_process_terminate(pid);
+        sc_pipe_close(pout);
+        sc_pipe_close(perr);
+        sc_process_wait(pid, false);
+        if (intr) {
+            sc_intr_set_process(intr, SC_PROCESS_NONE);
+        }
+        sc_process_close(pid);
+        return false;
+    }
+
+    char *stdout_output = read_pipe_all(pout);
+    sc_pipe_close(pout);
+    sc_thread_join(&stderr_thread, NULL);
+    char *stderr_output = stderr_reader.output;
+
+    *exit_code = sc_process_wait(pid, false);
+    if (intr) {
+        sc_intr_set_process(intr, SC_PROCESS_NONE);
+    }
+    sc_process_close(pid);
+
+    if (!stdout_output || !stderr_output) {
+        free(stdout_output);
+        free(stderr_output);
+        return false;
+    }
+
+    size_t stdout_len = strlen(stdout_output);
+    size_t stderr_len = strlen(stderr_output);
+    char *combined = realloc(stdout_output, stdout_len + stderr_len + 1);
+    if (!combined) {
+        LOG_OOM();
+        free(stdout_output);
+        free(stderr_output);
+        return false;
+    }
+    memcpy(&combined[stdout_len], stderr_output, stderr_len + 1);
+    free(stderr_output);
+    *output = combined;
+    return true;
+}
+
 sc_pid
 sc_adb_execute(const char *const argv[], unsigned flags) {
     return sc_adb_execute_p(argv, flags, NULL);
@@ -350,6 +470,71 @@ sc_adb_install(struct sc_intr *intr, const char *serial, const char *local,
     sc_pid pid = sc_adb_execute(argv, flags);
 
     return process_check_success_intr(intr, pid, "adb install", flags);
+}
+
+enum sc_adb_install_result
+sc_adb_install_detailed(struct sc_intr *intr, const char *serial,
+                        const char *local) {
+    assert(serial);
+    const char *const argv[] =
+        SC_ADB_COMMAND("-s", serial, "install", "-r", local);
+
+    char *output;
+    sc_exit_code exit_code;
+    if (!adb_execute_capture(intr, argv, &output, &exit_code)) {
+        return SC_ADB_INSTALL_RESULT_ERROR;
+    }
+
+    if (output[0]) {
+        fputs(output, exit_code == 0 ? stdout : stderr);
+    }
+
+    enum sc_adb_install_result result;
+    if (exit_code == 0) {
+        result = SC_ADB_INSTALL_RESULT_SUCCESS;
+    } else if (sc_adb_install_error_is_signature_mismatch(output)) {
+        result = SC_ADB_INSTALL_RESULT_SIGNATURE_MISMATCH;
+    } else {
+        result = SC_ADB_INSTALL_RESULT_ERROR;
+    }
+    free(output);
+    return result;
+}
+
+bool
+sc_adb_uninstall(struct sc_intr *intr, const char *serial,
+                 const char *package_name) {
+    assert(serial);
+    const char *const argv[] =
+        SC_ADB_COMMAND("-s", serial, "uninstall", package_name);
+
+    sc_pid pid = sc_adb_execute(argv, 0);
+    return process_check_success_intr(intr, pid, "adb uninstall", 0);
+}
+
+bool
+sc_adb_get_package_version(struct sc_intr *intr, const char *serial,
+                           const char *package_name, char **version) {
+    assert(serial);
+    assert(version);
+    *version = NULL;
+
+    const char *const argv[] = SC_ADB_COMMAND(
+        "-s", serial, "shell", "dumpsys", "package", package_name);
+    char *output;
+    sc_exit_code exit_code;
+    if (!adb_execute_capture(intr, argv, &output, &exit_code)) {
+        return false;
+    }
+    if (exit_code != 0) {
+        free(output);
+        return false;
+    }
+
+    *version = sc_adb_parse_package_version(output);
+
+    free(output);
+    return true;
 }
 
 bool

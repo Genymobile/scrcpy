@@ -63,6 +63,7 @@ SRC=( \
     com/genymobile/scrcpy/control/*.java \
     com/genymobile/scrcpy/device/*.java \
     com/genymobile/scrcpy/display/*.java \
+    com/genymobile/scrcpy/ime/*.java \
     com/genymobile/scrcpy/model/*.java \
     com/genymobile/scrcpy/opengl/*.java \
     com/genymobile/scrcpy/util/*.java \

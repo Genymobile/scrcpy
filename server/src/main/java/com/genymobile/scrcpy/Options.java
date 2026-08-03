@@ -62,6 +62,7 @@ public class Options {
     private boolean clipboardAutosync = true;
     private boolean downsizeOnError = true;
     private boolean cleanup = true;
+    private boolean ime;
     private boolean powerOn = true;
 
     private NewDisplay newDisplay;
@@ -241,6 +242,10 @@ public class Options {
 
     public boolean getCleanup() {
         return cleanup;
+    }
+
+    public boolean getIme() {
+        return ime;
     }
 
     public boolean getPowerOn() {
@@ -464,6 +469,9 @@ public class Options {
                     break;
                 case "cleanup":
                     options.cleanup = Boolean.parseBoolean(value);
+                    break;
+                case "ime":
+                    options.ime = Boolean.parseBoolean(value);
                     break;
                 case "power_on":
                     options.powerOn = Boolean.parseBoolean(value);

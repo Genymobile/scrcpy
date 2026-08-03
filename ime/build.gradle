@@ -1,0 +1,65 @@
+plugins {
+    id 'com.android.application' version '9.1.0'
+}
+
+base {
+    archivesName = 'scrcpy-ime'
+}
+
+def imeVersionName = providers.gradleProperty('scrcpyVersionName').getOrElse('4.1')
+def imeVersionCode = providers.gradleProperty('scrcpyVersionCode').getOrElse('40100').toInteger()
+def releaseSigningVariables = [
+        'SCRCPY_IME_STORE_FILE',
+        'SCRCPY_IME_STORE_PASSWORD',
+        'SCRCPY_IME_KEY_ALIAS',
+        'SCRCPY_IME_KEY_PASSWORD',
+]
+def releaseSigningConfigured = releaseSigningVariables.every { System.getenv(it) }
+
+android {
+    namespace = 'com.genymobile.scrcpy.ime'
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = 'com.genymobile.scrcpy.ime'
+        minSdk = 21
+        targetSdk = 36
+        versionCode = imeVersionCode
+        versionName = imeVersionName
+    }
+
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            release {
+                storeFile = file(System.getenv('SCRCPY_IME_STORE_FILE'))
+                storePassword = System.getenv('SCRCPY_IME_STORE_PASSWORD')
+                keyAlias = System.getenv('SCRCPY_IME_KEY_ALIAS')
+                keyPassword = System.getenv('SCRCPY_IME_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = false
+            if (releaseSigningConfigured) {
+                signingConfig = signingConfigs.release
+            }
+        }
+    }
+
+    lint {
+        abortOnError = true
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}
+
+gradle.taskGraph.whenReady { graph ->
+    if (graph.allTasks.any { it.name.toLowerCase().contains('release') }
+            && !releaseSigningConfigured) {
+        throw new GradleException('Release signing requires: ' + releaseSigningVariables.join(', '))
+    }
+}

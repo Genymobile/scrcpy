@@ -260,3 +260,30 @@ sc_adb_parse_device_ip(char *str) {
 
     return NULL;
 }
+
+char *
+sc_adb_parse_package_version(const char *str) {
+    static const char marker[] = "versionName=";
+    const char *start = strstr(str, marker);
+    if (!start) {
+        return NULL;
+    }
+
+    start += sizeof(marker) - 1;
+    size_t len = strcspn(start, "\r\n");
+    char *version = malloc(len + 1);
+    if (!version) {
+        LOG_OOM();
+        return NULL;
+    }
+    memcpy(version, start, len);
+    version[len] = '\0';
+    return version;
+}
+
+bool
+sc_adb_install_error_is_signature_mismatch(const char *str) {
+    return strstr(str, "INSTALL_FAILED_UPDATE_INCOMPATIBLE")
+        || strstr(str, "signatures do not match")
+        || strstr(str, "signature mismatch");
+}
