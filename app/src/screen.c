@@ -1,12 +1,17 @@
 #include "screen.h"
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 #include <SDL3/SDL.h>
 
+#include "device_msg.h"
 #include "events.h"
 #include "icon.h"
 #include "options.h"
+#ifdef __APPLE__
+# include "sys/macos/ime_position.h"
+#endif
 #include "util/log.h"
 #include "util/sdl.h"
 
@@ -231,6 +236,121 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
                          screen->render_fit, &screen->rect);
 }
 
+static void
+sc_screen_convert_frame_to_window_coords(struct sc_screen *screen,
+                                         struct sc_point point,
+                                         struct sc_point *result) {
+    assert(screen->video);
+
+    int32_t w = screen->content_size.width;
+    int32_t h = screen->content_size.height;
+
+    int32_t x;
+    int32_t y;
+    switch (screen->orientation) {
+        case SC_ORIENTATION_0:
+            x = point.x;
+            y = point.y;
+            break;
+        case SC_ORIENTATION_90:
+            x = w - point.y;
+            y = point.x;
+            break;
+        case SC_ORIENTATION_180:
+            x = w - point.x;
+            y = h - point.y;
+            break;
+        case SC_ORIENTATION_270:
+            x = point.y;
+            y = h - point.x;
+            break;
+        case SC_ORIENTATION_FLIP_0:
+            x = w - point.x;
+            y = point.y;
+            break;
+        case SC_ORIENTATION_FLIP_90:
+            x = w - point.y;
+            y = h - point.x;
+            break;
+        case SC_ORIENTATION_FLIP_180:
+            x = point.x;
+            y = h - point.y;
+            break;
+        default:
+            assert(screen->orientation == SC_ORIENTATION_FLIP_270);
+            x = point.y;
+            y = point.x;
+            break;
+    }
+
+    result->x = screen->rect.x + (int64_t) x * screen->rect.w / w;
+    result->y = screen->rect.y + (int64_t) y * screen->rect.h / h;
+}
+
+static void
+sc_screen_compute_text_input_area(struct sc_screen *screen, SDL_Rect *area,
+                                  int *cursor) {
+    if (screen->ime_cursor_anchor_valid
+            && screen->frame_size.width
+                    == screen->ime_cursor_anchor_screen_size.width
+            && screen->frame_size.height
+                    == screen->ime_cursor_anchor_screen_size.height
+            && screen->rect.w && screen->rect.h) {
+        struct sc_point start;
+        struct sc_point end;
+        sc_screen_convert_frame_to_window_coords(
+                screen, screen->ime_cursor_anchor_start, &start);
+        sc_screen_convert_frame_to_window_coords(
+                screen, screen->ime_cursor_anchor_end, &end);
+
+        area->x = MIN(start.x, end.x);
+        area->y = MIN(start.y, end.y);
+        area->w = MAX(abs(end.x - start.x), 1);
+        area->h = MAX(abs(end.y - start.y), 1);
+        *cursor = end.x - area->x;
+        return;
+    }
+
+    struct sc_size window_size = sc_sdl_get_window_size(screen->window);
+    area->x = 0;
+    area->y = MAX(window_size.height - 1, 0);
+    area->w = MAX(window_size.width, 1);
+    area->h = 1;
+    *cursor = area->w / 2;
+}
+
+static void
+sc_screen_update_text_input_area(struct sc_screen *screen) {
+    if (!screen->ime) {
+        return;
+    }
+
+    SDL_Rect area;
+    int cursor;
+    sc_screen_compute_text_input_area(screen, &area, &cursor);
+    if (screen->text_input_area_initialized
+            && !memcmp(&screen->text_input_area, &area, sizeof(area))
+            && screen->text_input_cursor == cursor) {
+        return;
+    }
+
+    if (!SDL_SetTextInputArea(screen->window, &area, cursor)) {
+        LOGW("Could not set IME candidate position: %s", SDL_GetError());
+        return;
+    }
+#ifdef __APPLE__
+    if (!sc_macos_ime_invalidate_character_coordinates(screen->window)) {
+        LOGW("Could not refresh the macOS IME candidate position");
+    }
+#endif
+
+    screen->text_input_area_initialized = true;
+    screen->text_input_area = area;
+    screen->text_input_cursor = cursor;
+    LOGV("IME candidate area: %d,%d %dx%d cursor=%d",
+         area.x, area.y, area.w, area.h, cursor);
+}
+
 // render the texture to the renderer
 //
 // Set the update_content_rect flag if the window or content size may have
@@ -242,6 +362,7 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     if (update_content_rect) {
         sc_screen_update_content_rect(screen);
     }
+    sc_screen_update_text_input_area(screen);
 
     SDL_Renderer *renderer = screen->renderer;
     struct sc_screen_bg_color bg = screen->bg;
@@ -492,12 +613,15 @@ sc_screen_init(struct sc_screen *screen,
     screen->orientation = SC_ORIENTATION_0;
     screen->disconnected = false;
     screen->disconnect_started = false;
+    screen->ime_cursor_anchor_valid = false;
+    screen->text_input_area_initialized = false;
 
     screen->video = params->video;
     screen->camera = params->camera;
     screen->window_aspect_ratio_lock = params->window_aspect_ratio_lock;
     screen->render_fit = params->render_fit;
     screen->flex_display = params->flex_display;
+    screen->ime = params->ime;
 
     screen->bg.r = (params->background_color >> 16) & 0xFF;
     screen->bg.g = (params->background_color >> 8) & 0xFF;
@@ -1156,6 +1280,19 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
             bool ok = sc_screen_update_frame(screen);
             if (!ok) {
                 LOGE("Frame update failed\n");
+            }
+            return;
+        }
+        case SC_EVENT_IME_CURSOR_ANCHOR: {
+            struct sc_ime_cursor_anchor *anchor = event->user.data1;
+            assert(anchor);
+            screen->ime_cursor_anchor_valid = anchor->valid;
+            screen->ime_cursor_anchor_start = anchor->start;
+            screen->ime_cursor_anchor_end = anchor->end;
+            screen->ime_cursor_anchor_screen_size = anchor->screen_size;
+            free(anchor);
+            if (screen->window_shown) {
+                sc_screen_update_text_input_area(screen);
             }
             return;
         }

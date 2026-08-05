@@ -111,6 +111,14 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private boolean keepDisplayPowerOff;
 
+    private final Object imeCursorAnchorLock = new Object();
+    private boolean imeCursorAnchorReceived;
+    private boolean imeCursorAnchorValid;
+    private float imeCursorAnchorX1;
+    private float imeCursorAnchorY1;
+    private float imeCursorAnchorX2;
+    private float imeCursorAnchorY2;
+
     // Used for resetting video encoding on RESET_VIDEO message or for sending camera controls
     private SurfaceCapture surfaceCapture;
 
@@ -176,6 +184,39 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 displayDataAvailable.notify();
             }
         }
+        synchronized (imeCursorAnchorLock) {
+            sendImeCursorAnchorLocked(data);
+        }
+    }
+
+    public void onImeCursorAnchor(boolean valid, float x1, float y1, float x2, float y2) {
+        synchronized (imeCursorAnchorLock) {
+            imeCursorAnchorReceived = true;
+            imeCursorAnchorValid = valid;
+            imeCursorAnchorX1 = x1;
+            imeCursorAnchorY1 = y1;
+            imeCursorAnchorX2 = x2;
+            imeCursorAnchorY2 = y2;
+            sendImeCursorAnchorLocked(displayData.get());
+        }
+    }
+
+    private void sendImeCursorAnchorLocked(DisplayData data) {
+        if (!imeCursorAnchorReceived || data == null) {
+            return;
+        }
+
+        PositionMapper mapper = data.positionMapper;
+        Size videoSize = mapper.getVideoSize();
+        Point start = null;
+        Point end = null;
+        boolean valid = imeCursorAnchorValid;
+        if (valid) {
+            start = mapper.unmap(new Point(Math.round(imeCursorAnchorX1), Math.round(imeCursorAnchorY1)));
+            end = mapper.unmap(new Point(Math.round(imeCursorAnchorX2), Math.round(imeCursorAnchorY2)));
+            valid = start != null && end != null;
+        }
+        sender.send(DeviceMessage.createImeCursorAnchor(valid, start, end, videoSize));
     }
 
     public void setSurfaceCapture(SurfaceCapture surfaceCapture) {
@@ -354,9 +395,15 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 case ControlMessage.TYPE_INJECT_TEXT:
                     if (supportsInputEvents) {
                         if (imeManager != null) {
-                            imeManager.sendText(msg.getText());
+                            if (msg.isComposing()) {
+                                imeManager.sendComposingText(msg.getText());
+                            } else {
+                                imeManager.sendText(msg.getText());
+                            }
                         } else {
-                            injectText(msg.getText());
+                            if (!msg.isComposing()) {
+                                injectText(msg.getText());
+                            }
                         }
                     }
                     return true;

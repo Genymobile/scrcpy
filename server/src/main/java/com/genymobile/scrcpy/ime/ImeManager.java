@@ -32,6 +32,7 @@ public final class ImeManager implements AsyncProcessor, AutoCloseable {
     private final DataOutputStream output;
 
     private Thread monitorThread;
+    private CursorAnchorListener cursorAnchorListener;
     private boolean stopping;
     private boolean stopped;
 
@@ -171,17 +172,32 @@ public final class ImeManager implements AsyncProcessor, AutoCloseable {
         }
     }
 
+    public void sendComposingText(String text) throws IOException {
+        synchronized (lock) {
+            if (stopping || stopped) {
+                throw new IOException("scrcpy IME is disconnected");
+            }
+            ImeProtocol.writeComposingText(output, text);
+            output.flush();
+        }
+    }
+
+    public void setCursorAnchorListener(CursorAnchorListener listener) {
+        cursorAnchorListener = listener;
+    }
+
     @Override
     public void start(TerminationListener listener) {
         monitorThread = new Thread(() -> {
             boolean fatal = false;
             try {
-                int value = input.read();
-                if (value != -1) {
-                    Ln.w("Unexpected data received from scrcpy IME");
-                }
-                synchronized (lock) {
-                    fatal = !stopping;
+                while (true) {
+                    ImeProtocol.CursorAnchor anchor = ImeProtocol.readCursorAnchor(input);
+                    CursorAnchorListener anchorListener = cursorAnchorListener;
+                    if (anchorListener != null) {
+                        anchorListener.onCursorAnchor(
+                                anchor.isValid(), anchor.getX1(), anchor.getY1(), anchor.getX2(), anchor.getY2());
+                    }
                 }
             } catch (IOException e) {
                 synchronized (lock) {
@@ -247,5 +263,9 @@ public final class ImeManager implements AsyncProcessor, AutoCloseable {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    public interface CursorAnchorListener {
+        void onCursorAnchor(boolean valid, float x1, float y1, float x2, float y2);
     }
 }

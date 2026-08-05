@@ -300,6 +300,10 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
                               const struct sc_text_event *event) {
     struct sc_keyboard_sdk *kb = DOWNCAST(kp);
 
+    if (event->composing && !kb->ime) {
+        return;
+    }
+
     if (kb->key_inject_mode == SC_KEY_INJECT_MODE_RAW) {
         // Never inject text events
         return;
@@ -317,6 +321,7 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_INJECT_TEXT;
     msg.inject_text.text = strdup(event->text);
+    msg.inject_text.composing = event->composing;
     if (!msg.inject_text.text) {
         LOGW("Could not strdup input text");
         return;
@@ -331,10 +336,11 @@ void
 sc_keyboard_sdk_init(struct sc_keyboard_sdk *kb,
                      struct sc_controller *controller,
                      enum sc_key_inject_mode key_inject_mode,
-                     bool forward_key_repeat) {
+                     bool forward_key_repeat, bool ime) {
     kb->controller = controller;
     kb->key_inject_mode = key_inject_mode;
     kb->forward_key_repeat = forward_key_repeat;
+    kb->ime = ime;
 
     kb->repeat = 0;
 

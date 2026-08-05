@@ -29,4 +29,48 @@ public class ScrcpyInputMethodServiceTest {
         Assert.assertTrue(called[0]);
         Assert.assertFalse(ScrcpyInputMethodService.commitText(null, expected));
     }
+
+    @Test
+    public void testSetComposingText() {
+        String expected = "ni";
+        boolean[] called = {false};
+        InputConnection connection = (InputConnection) Proxy.newProxyInstance(
+                InputConnection.class.getClassLoader(),
+                new Class<?>[]{InputConnection.class},
+                (proxy, method, args) -> {
+                    if ("setComposingText".equals(method.getName())) {
+                        Assert.assertEquals(expected, args[0].toString());
+                        Assert.assertEquals(1, args[1]);
+                        called[0] = true;
+                        return true;
+                    }
+                    return null;
+                });
+
+        Assert.assertTrue(ScrcpyInputMethodService.setComposingText(connection, expected));
+        Assert.assertTrue(called[0]);
+        Assert.assertFalse(ScrcpyInputMethodService.setComposingText(null, expected));
+    }
+
+    @Test
+    public void testRequestCursorAnchorUpdates() {
+        boolean[] called = {false};
+        InputConnection connection = (InputConnection) Proxy.newProxyInstance(
+                InputConnection.class.getClassLoader(),
+                new Class<?>[]{InputConnection.class},
+                (proxy, method, args) -> {
+                    if ("requestCursorUpdates".equals(method.getName())) {
+                        int expected = InputConnection.CURSOR_UPDATE_IMMEDIATE
+                                | InputConnection.CURSOR_UPDATE_MONITOR;
+                        Assert.assertEquals(expected, args[0]);
+                        called[0] = true;
+                        return true;
+                    }
+                    return null;
+                });
+
+        Assert.assertTrue(ScrcpyInputMethodService.requestCursorAnchorUpdates(connection));
+        Assert.assertTrue(called[0]);
+        Assert.assertFalse(ScrcpyInputMethodService.requestCursorAnchorUpdates(null));
+    }
 }

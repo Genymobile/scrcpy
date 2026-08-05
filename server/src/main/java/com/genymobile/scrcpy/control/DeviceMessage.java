@@ -1,16 +1,24 @@
 package com.genymobile.scrcpy.control;
 
+import com.genymobile.scrcpy.model.Point;
+import com.genymobile.scrcpy.model.Size;
+
 public final class DeviceMessage {
 
     public static final int TYPE_CLIPBOARD = 0;
     public static final int TYPE_ACK_CLIPBOARD = 1;
     public static final int TYPE_UHID_OUTPUT = 2;
+    public static final int TYPE_IME_CURSOR_ANCHOR = 3;
 
     private int type;
     private String text;
     private long sequence;
     private int id;
     private byte[] data;
+    private boolean valid;
+    private Point anchorStart;
+    private Point anchorEnd;
+    private Size screenSize;
 
     private DeviceMessage() {
     }
@@ -37,6 +45,16 @@ public final class DeviceMessage {
         return event;
     }
 
+    public static DeviceMessage createImeCursorAnchor(boolean valid, Point start, Point end, Size screenSize) {
+        DeviceMessage event = new DeviceMessage();
+        event.type = TYPE_IME_CURSOR_ANCHOR;
+        event.valid = valid;
+        event.anchorStart = start;
+        event.anchorEnd = end;
+        event.screenSize = screenSize;
+        return event;
+    }
+
     public int getType() {
         return type;
     }
@@ -55,5 +73,21 @@ public final class DeviceMessage {
 
     public byte[] getData() {
         return data;
+    }
+
+    public boolean isValid() {
+        return valid;
+    }
+
+    public Point getAnchorStart() {
+        return anchorStart;
+    }
+
+    public Point getAnchorEnd() {
+        return anchorEnd;
+    }
+
+    public Size getScreenSize() {
+        return screenSize;
     }
 }

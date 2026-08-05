@@ -105,7 +105,11 @@ public class ControlMessageReader {
 
     private ControlMessage parseInjectText() throws IOException {
         String text = parseString();
-        return ControlMessage.createInjectText(text);
+        boolean composing = !text.isEmpty() && text.charAt(0) == '\0';
+        if (composing) {
+            text = text.substring(1);
+        }
+        return ControlMessage.createInjectText(text, composing);
     }
 
     private ControlMessage parseInjectTouchEvent() throws IOException {

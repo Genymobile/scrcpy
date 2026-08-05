@@ -71,6 +71,18 @@ sc_device_msg_deserialize(const uint8_t *buf, size_t len,
 
             return 5 + size;
         }
+        case DEVICE_MSG_TYPE_IME_CURSOR_ANCHOR:
+            if (len < 22) {
+                return 0;
+            }
+            msg->ime_cursor_anchor.valid = buf[1] != 0;
+            msg->ime_cursor_anchor.start.x = sc_read32be(&buf[2]);
+            msg->ime_cursor_anchor.start.y = sc_read32be(&buf[6]);
+            msg->ime_cursor_anchor.end.x = sc_read32be(&buf[10]);
+            msg->ime_cursor_anchor.end.y = sc_read32be(&buf[14]);
+            msg->ime_cursor_anchor.screen_size.width = sc_read16be(&buf[18]);
+            msg->ime_cursor_anchor.screen_size.height = sc_read16be(&buf[20]);
+            return 22;
         default:
             LOGW("Unknown device message type: %d", (int) msg->type);
             return -1; // error, we cannot recover

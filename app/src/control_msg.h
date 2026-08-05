@@ -69,6 +69,7 @@ struct sc_control_msg {
         } inject_keycode;
         struct {
             char *text; // owned, to be freed by free()
+            bool composing;
         } inject_text;
         struct {
             enum android_motionevent_action action;

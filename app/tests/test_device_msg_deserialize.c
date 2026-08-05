@@ -83,6 +83,32 @@ static void test_deserialize_uhid_output(void) {
     sc_device_msg_destroy(&msg);
 }
 
+static void test_deserialize_ime_cursor_anchor(void) {
+    const uint8_t input[] = {
+        DEVICE_MSG_TYPE_IME_CURSOR_ANCHOR,
+        1, // valid
+        0x00, 0x00, 0x00, 0x64, // start x: 100
+        0x00, 0x00, 0x00, 0xc8, // start y: 200
+        0x00, 0x00, 0x00, 0x64, // end x: 100
+        0x00, 0x00, 0x00, 0xdc, // end y: 220
+        0x04, 0x38, // width: 1080
+        0x09, 0x60, // height: 2400
+    };
+
+    struct sc_device_msg msg;
+    ssize_t r = sc_device_msg_deserialize(input, sizeof(input), &msg);
+    assert(r == 22);
+
+    assert(msg.type == DEVICE_MSG_TYPE_IME_CURSOR_ANCHOR);
+    assert(msg.ime_cursor_anchor.valid);
+    assert(msg.ime_cursor_anchor.start.x == 100);
+    assert(msg.ime_cursor_anchor.start.y == 200);
+    assert(msg.ime_cursor_anchor.end.x == 100);
+    assert(msg.ime_cursor_anchor.end.y == 220);
+    assert(msg.ime_cursor_anchor.screen_size.width == 1080);
+    assert(msg.ime_cursor_anchor.screen_size.height == 2400);
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -91,5 +117,6 @@ int main(int argc, char *argv[]) {
     test_deserialize_clipboard_big();
     test_deserialize_ack_set_clipboard();
     test_deserialize_uhid_output();
+    test_deserialize_ime_cursor_anchor();
     return 0;
 }

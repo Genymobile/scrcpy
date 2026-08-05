@@ -261,6 +261,7 @@ clipboard_paste(struct sc_input_manager *im) {
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_INJECT_TEXT;
     msg.inject_text.text = text_dup;
+    msg.inject_text.composing = false;
     if (!sc_controller_push_msg(im->controller, &msg)) {
         free(text_dup);
         LOGW("Could not request 'paste clipboard'");
@@ -350,8 +351,8 @@ apply_orientation_transform(struct sc_input_manager *im,
 }
 
 static void
-sc_input_manager_process_text_input(struct sc_input_manager *im,
-                                    const SDL_TextInputEvent *event) {
+sc_input_manager_process_text(struct sc_input_manager *im, const char *text,
+                              bool composing) {
     if (im->camera || !im->kp || im->screen->paused || im->disconnected) {
         return;
     }
@@ -368,7 +369,8 @@ sc_input_manager_process_text_input(struct sc_input_manager *im,
     }
 
     struct sc_text_event evt = {
-        .text = event->text,
+        .text = text,
+        .composing = composing,
     };
 
     im->kp->ops->process_text(im->kp, &evt);
@@ -1169,8 +1171,11 @@ void
 sc_input_manager_handle_event(struct sc_input_manager *im,
                               const SDL_Event *event) {
     switch (event->type) {
+        case SDL_EVENT_TEXT_EDITING:
+            sc_input_manager_process_text(im, event->edit.text, true);
+            break;
         case SDL_EVENT_TEXT_INPUT:
-            sc_input_manager_process_text_input(im, &event->text);
+            sc_input_manager_process_text(im, event->text.text, false);
             break;
         case SDL_EVENT_KEY_DOWN:
         case SDL_EVENT_KEY_UP:
