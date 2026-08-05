@@ -27,6 +27,7 @@ public final class ScrcpyImeProvider extends ContentProvider {
     private static final int ACK_INCOMPATIBLE = 2;
     private static final int FRAME_TEXT = 1;
     private static final int FRAME_CLOSE = 2;
+    private static final int FRAME_COMPOSING_TEXT = 3;
     private static final int TEXT_MAX_LENGTH = 300;
     private static final int SHELL_UID = 2000;
     private static final long RESTORE_DELAY_MS = 2000;
@@ -120,7 +121,7 @@ public final class ScrcpyImeProvider extends ContentProvider {
                     graceful = true;
                     break;
                 }
-                if (frameType != FRAME_TEXT) {
+                if (frameType != FRAME_TEXT && frameType != FRAME_COMPOSING_TEXT) {
                     throw new IOException("Unknown scrcpy IME frame: " + frameType);
                 }
                 int length = input.readInt();
@@ -131,7 +132,8 @@ public final class ScrcpyImeProvider extends ContentProvider {
                 input.readFully(textBytes);
                 String text = new String(textBytes, StandardCharsets.UTF_8);
                 ParcelFileDescriptor sessionDescriptor = descriptor;
-                mainHandler.post(() -> commitText(sessionDescriptor, text));
+                boolean composing = frameType == FRAME_COMPOSING_TEXT;
+                mainHandler.post(() -> sendText(sessionDescriptor, text, composing));
             }
         } catch (EOFException e) {
             // Unexpected disconnect; schedule restoration below.
@@ -158,7 +160,7 @@ public final class ScrcpyImeProvider extends ContentProvider {
         }
     }
 
-    private void commitText(ParcelFileDescriptor sessionDescriptor, String text) {
+    private void sendText(ParcelFileDescriptor sessionDescriptor, String text, boolean composing) {
         synchronized (connectionLock) {
             if (activeDescriptor != sessionDescriptor) {
                 return;
@@ -166,7 +168,11 @@ public final class ScrcpyImeProvider extends ContentProvider {
         }
         ScrcpyInputMethodService service = inputMethodService;
         if (service != null) {
-            service.commitText(text);
+            if (composing) {
+                service.setComposingText(text);
+            } else {
+                service.commitText(text);
+            }
         }
     }
 

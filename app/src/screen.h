@@ -39,6 +39,7 @@ struct sc_screen {
     bool camera;
     bool window_aspect_ratio_lock;
     bool flex_display;
+    bool ime;
 
     struct sc_controller *controller;
 
@@ -102,6 +103,9 @@ struct sc_screen {
     bool disconnect_started;
     struct sc_disconnect disconnect;
 
+    bool text_input_area_initialized;
+    struct sc_size text_input_area_window_size;
+
     // Track resize requests caused by frame-size changes
     struct sc_resize_tracker {
         sc_tick time; // 0 means none
@@ -144,6 +148,7 @@ struct sc_screen_params {
 
     bool fullscreen;
     bool start_fps_counter;
+    bool ime;
 };
 
 // initialize screen, create window, renderer and texture (window is hidden)

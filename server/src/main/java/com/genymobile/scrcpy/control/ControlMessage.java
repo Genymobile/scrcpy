@@ -39,6 +39,7 @@ public final class ControlMessage {
 
     private int type;
     private String text;
+    private boolean composing;
     private int metaState; // KeyEvent.META_*
     private int action; // KeyEvent.ACTION_* or MotionEvent.ACTION_*
     private int keycode; // KeyEvent.KEYCODE_*
@@ -75,9 +76,14 @@ public final class ControlMessage {
     }
 
     public static ControlMessage createInjectText(String text) {
+        return createInjectText(text, false);
+    }
+
+    public static ControlMessage createInjectText(String text, boolean composing) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_INJECT_TEXT;
         msg.text = text;
+        msg.composing = composing;
         return msg;
     }
 
@@ -201,6 +207,10 @@ public final class ControlMessage {
 
     public String getText() {
         return text;
+    }
+
+    public boolean isComposing() {
+        return composing;
     }
 
     public int getMetaState() {

@@ -354,9 +354,15 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 case ControlMessage.TYPE_INJECT_TEXT:
                     if (supportsInputEvents) {
                         if (imeManager != null) {
-                            imeManager.sendText(msg.getText());
+                            if (msg.isComposing()) {
+                                imeManager.sendComposingText(msg.getText());
+                            } else {
+                                imeManager.sendText(msg.getText());
+                            }
                         } else {
-                            injectText(msg.getText());
+                            if (!msg.isComposing()) {
+                                injectText(msg.getText());
+                            }
                         }
                     }
                     return true;

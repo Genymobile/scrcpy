@@ -55,8 +55,28 @@ public class ControlMessageReaderTest {
         ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_INJECT_TEXT, event.getType());
         Assert.assertEquals("testé", event.getText());
+        Assert.assertFalse(event.isComposing());
 
         Assert.assertEquals(-1, bis.read()); // EOS
+    }
+
+    @Test
+    public void testParseComposingTextEvent() throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_INJECT_TEXT);
+        byte[] text = {0, 'n', 'i'};
+        dos.writeInt(text.length);
+        dos.write(text);
+
+        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+        ControlMessageReader reader = new ControlMessageReader(bis);
+
+        ControlMessage event = reader.read();
+        Assert.assertEquals(ControlMessage.TYPE_INJECT_TEXT, event.getType());
+        Assert.assertEquals("ni", event.getText());
+        Assert.assertTrue(event.isComposing());
+        Assert.assertEquals(-1, bis.read());
     }
 
     @Test

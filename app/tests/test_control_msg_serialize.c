@@ -58,6 +58,7 @@ static void test_serialize_inject_text_long(void) {
     memset(text, 'a', SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
     text[SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH] = '\0';
     msg.inject_text.text = text;
+    msg.inject_text.composing = false;
 
     uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
@@ -71,6 +72,27 @@ static void test_serialize_inject_text_long(void) {
     expected[4] = 0x2c; // text length (32 bits)
     memset(&expected[5], 'a', SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
 
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
+static void test_serialize_inject_composing_text(void) {
+    struct sc_control_msg msg = {
+        .type = SC_CONTROL_MSG_TYPE_INJECT_TEXT,
+        .inject_text = {
+            .text = "ni",
+            .composing = true,
+        },
+    };
+
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
+    size_t size = sc_control_msg_serialize(&msg, buf);
+    assert(size == 8);
+
+    const uint8_t expected[] = {
+        SC_CONTROL_MSG_TYPE_INJECT_TEXT,
+        0x00, 0x00, 0x00, 0x03, // marker + text length
+        0x00, 'n', 'i',
+    };
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
@@ -544,6 +566,7 @@ int main(int argc, char *argv[]) {
     test_serialize_inject_keycode();
     test_serialize_inject_text();
     test_serialize_inject_text_long();
+    test_serialize_inject_composing_text();
     test_serialize_inject_touch_event();
     test_serialize_inject_scroll_event();
     test_serialize_back_or_screen_on();

@@ -171,6 +171,16 @@ public final class ImeManager implements AsyncProcessor, AutoCloseable {
         }
     }
 
+    public void sendComposingText(String text) throws IOException {
+        synchronized (lock) {
+            if (stopping || stopped) {
+                throw new IOException("scrcpy IME is disconnected");
+            }
+            ImeProtocol.writeComposingText(output, text);
+            output.flush();
+        }
+    }
+
     @Override
     public void start(TerminationListener listener) {
         monitorThread = new Thread(() -> {

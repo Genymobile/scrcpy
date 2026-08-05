@@ -11,6 +11,7 @@ public final class ImeProtocol {
     public static final int ACK_BUSY = 1;
     public static final int FRAME_TEXT = 1;
     public static final int FRAME_CLOSE = 2;
+    public static final int FRAME_COMPOSING_TEXT = 3;
     public static final int TEXT_MAX_LENGTH = 300;
 
     private ImeProtocol() {
@@ -29,11 +30,19 @@ public final class ImeProtocol {
     }
 
     public static void writeText(DataOutputStream output, String text) throws IOException {
+        writeTextFrame(output, FRAME_TEXT, text);
+    }
+
+    public static void writeComposingText(DataOutputStream output, String text) throws IOException {
+        writeTextFrame(output, FRAME_COMPOSING_TEXT, text);
+    }
+
+    private static void writeTextFrame(DataOutputStream output, int frameType, String text) throws IOException {
         byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
         if (bytes.length > TEXT_MAX_LENGTH) {
             throw new IOException("IME text payload exceeds " + TEXT_MAX_LENGTH + " bytes");
         }
-        output.writeByte(FRAME_TEXT);
+        output.writeByte(frameType);
         output.writeInt(bytes.length);
         output.write(bytes);
     }

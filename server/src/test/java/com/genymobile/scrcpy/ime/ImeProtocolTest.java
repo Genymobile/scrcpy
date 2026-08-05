@@ -40,6 +40,19 @@ public class ImeProtocolTest {
     }
 
     @Test
+    public void testComposingText() throws IOException {
+        String text = "ni";
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        ImeProtocol.writeComposingText(new DataOutputStream(bytes), text);
+
+        DataInputStream input = new DataInputStream(new ByteArrayInputStream(bytes.toByteArray()));
+        Assert.assertEquals(ImeProtocol.FRAME_COMPOSING_TEXT, input.readUnsignedByte());
+        byte[] textBytes = new byte[input.readInt()];
+        input.readFully(textBytes);
+        Assert.assertEquals(text, new String(textBytes, StandardCharsets.UTF_8));
+    }
+
+    @Test
     public void testTextLengthBoundary() throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         ImeProtocol.writeText(new DataOutputStream(bytes), repeat("🙂", 75));

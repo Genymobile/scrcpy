@@ -30,6 +30,14 @@ public final class ScrcpyInputMethodService extends InputMethodService {
         return connection != null && connection.commitText(text, 1);
     }
 
+    void setComposingText(String text) {
+        setComposingText(getCurrentInputConnection(), text);
+    }
+
+    static boolean setComposingText(InputConnection connection, String text) {
+        return connection != null && connection.setComposingText(text, 1);
+    }
+
     void restoreInputMethod(String inputMethodId) {
         try {
             switchInputMethod(inputMethodId);
