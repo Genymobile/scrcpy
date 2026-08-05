@@ -1,5 +1,8 @@
 package com.genymobile.scrcpy.control;
 
+import com.genymobile.scrcpy.model.Point;
+import com.genymobile.scrcpy.model.Size;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -71,5 +74,28 @@ public class DeviceMessageWriterTest {
         byte[] actual = bos.toByteArray();
 
         Assert.assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    public void testSerializeImeCursorAnchor() throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(DeviceMessage.TYPE_IME_CURSOR_ANCHOR);
+        dos.writeBoolean(true);
+        dos.writeInt(100);
+        dos.writeInt(200);
+        dos.writeInt(100);
+        dos.writeInt(220);
+        dos.writeShort(1080);
+        dos.writeShort(2400);
+        byte[] expected = bos.toByteArray();
+
+        bos = new ByteArrayOutputStream();
+        DeviceMessageWriter writer = new DeviceMessageWriter(bos);
+        DeviceMessage msg = DeviceMessage.createImeCursorAnchor(
+                true, new Point(100, 200), new Point(100, 220), new Size(1080, 2400));
+        writer.write(msg);
+
+        Assert.assertArrayEquals(expected, bos.toByteArray());
     }
 }

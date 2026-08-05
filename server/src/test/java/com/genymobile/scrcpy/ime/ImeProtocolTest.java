@@ -65,6 +65,26 @@ public class ImeProtocolTest {
         }
     }
 
+    @Test
+    public void testCursorAnchor() throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        DataOutputStream output = new DataOutputStream(bytes);
+        output.writeByte(ImeProtocol.FRAME_CURSOR_ANCHOR);
+        output.writeBoolean(true);
+        output.writeFloat(100.5f);
+        output.writeFloat(200.25f);
+        output.writeFloat(100.5f);
+        output.writeFloat(220.75f);
+
+        ImeProtocol.CursorAnchor anchor = ImeProtocol.readCursorAnchor(
+                new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        Assert.assertTrue(anchor.isValid());
+        Assert.assertEquals(100.5f, anchor.getX1(), 0);
+        Assert.assertEquals(200.25f, anchor.getY1(), 0);
+        Assert.assertEquals(100.5f, anchor.getX2(), 0);
+        Assert.assertEquals(220.75f, anchor.getY2(), 0);
+    }
+
     private static String repeat(String value, int count) {
         StringBuilder builder = new StringBuilder(value.length() * count);
         for (int i = 0; i < count; ++i) {

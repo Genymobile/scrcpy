@@ -28,16 +28,23 @@ public final class ScrcpyImeProvider extends ContentProvider {
     private static final int FRAME_TEXT = 1;
     private static final int FRAME_CLOSE = 2;
     private static final int FRAME_COMPOSING_TEXT = 3;
+    private static final int FRAME_CURSOR_ANCHOR = 1; // IME-to-server direction
     private static final int TEXT_MAX_LENGTH = 300;
     private static final int SHELL_UID = 2000;
     private static final long RESTORE_DELAY_MS = 2000;
 
     private static volatile ScrcpyInputMethodService inputMethodService;
+    private static volatile ScrcpyImeProvider instance;
+    // CursorAnchorInfo may be delivered while `ime set` is still running, before
+    // the server opens this provider. Keep the last value so that the first
+    // connection does not miss the only non-redundant update from Android.
+    private static volatile CursorAnchor latestCursorAnchor;
 
     private final Object connectionLock = new Object();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private ParcelFileDescriptor activeDescriptor;
+    private DataOutputStream activeOutput;
     private Runnable pendingRestore;
 
     static void setInputMethodService(ScrcpyInputMethodService service) {
@@ -50,8 +57,18 @@ public final class ScrcpyImeProvider extends ContentProvider {
         }
     }
 
+    static void sendCursorAnchor(boolean valid, float x1, float y1, float x2, float y2) {
+        CursorAnchor cursorAnchor = new CursorAnchor(valid, x1, y1, x2, y2);
+        latestCursorAnchor = cursorAnchor;
+        ScrcpyImeProvider provider = instance;
+        if (provider != null) {
+            provider.writeCursorAnchor(cursorAnchor);
+        }
+    }
+
     @Override
     public boolean onCreate() {
+        instance = this;
         return true;
     }
 
@@ -115,6 +132,22 @@ public final class ScrcpyImeProvider extends ContentProvider {
             output.writeByte(ACK_OK);
             output.flush();
 
+            synchronized (connectionLock) {
+                if (activeDescriptor == descriptor) {
+                    activeOutput = output;
+                    CursorAnchor cursorAnchor = latestCursorAnchor;
+                    if (cursorAnchor != null) {
+                        writeCursorAnchorFrame(output, cursorAnchor);
+                    }
+                }
+            }
+            mainHandler.post(() -> {
+                ScrcpyInputMethodService service = inputMethodService;
+                if (service != null) {
+                    service.requestCursorAnchorUpdates();
+                }
+            });
+
             while (true) {
                 int frameType = input.readUnsignedByte();
                 if (frameType == FRAME_CLOSE) {
@@ -154,9 +187,49 @@ public final class ScrcpyImeProvider extends ContentProvider {
                 return;
             }
             activeDescriptor = null;
+            activeOutput = null;
         }
         if (originalIme != null) {
             scheduleRestore(originalIme);
+        }
+    }
+
+    private void writeCursorAnchor(CursorAnchor cursorAnchor) {
+        synchronized (connectionLock) {
+            if (activeOutput == null) {
+                return;
+            }
+            try {
+                writeCursorAnchorFrame(activeOutput, cursorAnchor);
+            } catch (IOException e) {
+                activeOutput = null;
+            }
+        }
+    }
+
+    private static void writeCursorAnchorFrame(DataOutputStream output, CursorAnchor cursorAnchor) throws IOException {
+        output.writeByte(FRAME_CURSOR_ANCHOR);
+        output.writeBoolean(cursorAnchor.valid);
+        output.writeFloat(cursorAnchor.x1);
+        output.writeFloat(cursorAnchor.y1);
+        output.writeFloat(cursorAnchor.x2);
+        output.writeFloat(cursorAnchor.y2);
+        output.flush();
+    }
+
+    private static final class CursorAnchor {
+        private final boolean valid;
+        private final float x1;
+        private final float y1;
+        private final float x2;
+        private final float y2;
+
+        CursorAnchor(boolean valid, float x1, float y1, float x2, float y2) {
+            this.valid = valid;
+            this.x1 = x1;
+            this.y1 = y1;
+            this.x2 = x2;
+            this.y2 = y2;
         }
     }
 

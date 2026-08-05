@@ -137,6 +137,9 @@ public final class Server {
             if (control) {
                 ControlChannel controlChannel = connection.getControlChannel();
                 controller = new Controller(controlChannel, cleanUp, imeManager, options);
+                if (imeManager != null) {
+                    imeManager.setCursorAnchorListener(controller::onImeCursorAnchor);
+                }
                 asyncProcessors.add(controller);
             }
 

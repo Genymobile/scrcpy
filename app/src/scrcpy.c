@@ -139,6 +139,13 @@ event_loop(struct scrcpy *s, bool has_screen) {
             case SC_EVENT_TIME_LIMIT_REACHED:
                 LOGI("Time limit reached");
                 return SCRCPY_EXIT_SUCCESS;
+            case SC_EVENT_IME_CURSOR_ANCHOR:
+                if (has_screen) {
+                    sc_screen_handle_event(&s->screen, &event);
+                } else {
+                    free(event.user.data1);
+                }
+                break;
             case SDL_EVENT_QUIT:
                 LOGD("User requested to quit");
                 return SCRCPY_EXIT_SUCCESS;

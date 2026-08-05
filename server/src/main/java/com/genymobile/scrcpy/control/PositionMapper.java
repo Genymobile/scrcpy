@@ -9,10 +9,12 @@ public final class PositionMapper {
 
     private final Size videoSize;
     private final AffineMatrix videoToDeviceMatrix;
+    private final AffineMatrix deviceToVideoMatrix;
 
     public PositionMapper(Size videoSize, AffineMatrix videoToDeviceMatrix) {
         this.videoSize = videoSize;
         this.videoToDeviceMatrix = videoToDeviceMatrix;
+        deviceToVideoMatrix = videoToDeviceMatrix != null ? videoToDeviceMatrix.invert() : null;
     }
 
     public static PositionMapper create(Size videoSize, AffineMatrix filterTransform, Size targetSize) {
@@ -42,6 +44,19 @@ public final class PositionMapper {
         Point point = position.getPoint();
         if (videoToDeviceMatrix != null) {
             point = videoToDeviceMatrix.apply(point);
+        }
+        return point;
+    }
+
+    public Point unmap(Point point) {
+        if (videoToDeviceMatrix != null) {
+            if (deviceToVideoMatrix == null) {
+                return null;
+            }
+            point = deviceToVideoMatrix.apply(point);
+        }
+        if (point.getX() < 0 || point.getY() < 0 || point.getX() > videoSize.getWidth() || point.getY() > videoSize.getHeight()) {
+            return null;
         }
         return point;
     }

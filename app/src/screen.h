@@ -103,8 +103,13 @@ struct sc_screen {
     bool disconnect_started;
     struct sc_disconnect disconnect;
 
+    bool ime_cursor_anchor_valid;
+    struct sc_point ime_cursor_anchor_start;
+    struct sc_point ime_cursor_anchor_end;
+    struct sc_size ime_cursor_anchor_screen_size;
     bool text_input_area_initialized;
-    struct sc_size text_input_area_window_size;
+    SDL_Rect text_input_area;
+    int text_input_cursor;
 
     // Track resize requests caused by frame-size changes
     struct sc_resize_tracker {
