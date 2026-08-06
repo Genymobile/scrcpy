@@ -42,7 +42,12 @@ public final class Server {
     static {
         String[] classPaths = System.getProperty("java.class.path").split(File.pathSeparator);
         // By convention, scrcpy is always executed with the absolute path of scrcpy-server.jar as the first item in the classpath
-        SERVER_PATH = classPaths[0];
+        String rawPath = classPaths[0];
+        try {
+            SERVER_PATH = new File(rawPath).getCanonicalPath();
+        } catch (java.io.IOException e) {
+            throw new ExceptionInInitializerError(e);
+        }
     }
 
     private static class Completion {
