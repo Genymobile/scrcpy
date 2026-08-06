@@ -124,19 +124,16 @@ public final class CleanUp {
 
     private void run(int displayId, int restoreStayOn, boolean disableShowTouches, boolean powerOffScreen, int restoreScreenOffTimeout,
             int restoreDisplayImePolicy) throws IOException {
-        String[] cmd = {
+        ProcessBuilder builder = new ProcessBuilder(
                 "app_process",
                 "/",
                 CleanUp.class.getName(),
-                String.valueOf(displayId),
-                String.valueOf(restoreStayOn),
-                String.valueOf(disableShowTouches),
-                String.valueOf(powerOffScreen),
-                String.valueOf(restoreScreenOffTimeout),
-                String.valueOf(restoreDisplayImePolicy),
-        };
-
-        ProcessBuilder builder = new ProcessBuilder(cmd);
+                Integer.toString(displayId),
+                Integer.toString(restoreStayOn),
+                Boolean.toString(disableShowTouches),
+                Boolean.toString(powerOffScreen),
+                Integer.toString(restoreScreenOffTimeout),
+                Integer.toString(restoreDisplayImePolicy));
         builder.environment().put("CLASSPATH", Server.SERVER_PATH);
         Process process = builder.start();
         OutputStream out = process.getOutputStream();
