@@ -337,6 +337,9 @@ struct scrcpy_options {
     bool window;
     bool mouse_hover;
     bool audio_dup;
+    // Comma-separated list of extra audio usages to capture, parsed by the
+    // server. NULL means USAGE_MEDIA only (the historical behavior).
+    const char *audio_dup_usages;
     const char *new_display; // [<width>x<height>][/<dpi>] parsed by the server
     const char *start_app;
     bool vd_destroy_content;

@@ -2,6 +2,7 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.audio.AudioCodec;
 import com.genymobile.scrcpy.audio.AudioSource;
+import com.genymobile.scrcpy.audio.AudioUsage;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.model.CodecOption;
 import com.genymobile.scrcpy.model.NewDisplay;
@@ -17,8 +18,10 @@ import com.genymobile.scrcpy.wrappers.WindowManager;
 import android.graphics.Rect;
 import android.util.Pair;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class Options {
 
@@ -33,6 +36,7 @@ public class Options {
     private VideoSource videoSource = VideoSource.DISPLAY;
     private AudioSource audioSource = AudioSource.OUTPUT;
     private boolean audioDup;
+    private Set<AudioUsage> audioDupUsages = EnumSet.of(AudioUsage.MEDIA);
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
     private float maxFps;
@@ -129,6 +133,10 @@ public class Options {
 
     public boolean getAudioDup() {
         return audioDup;
+    }
+
+    public Set<AudioUsage> getAudioDupUsages() {
+        return audioDupUsages;
     }
 
     public int getVideoBitRate() {
@@ -389,6 +397,9 @@ public class Options {
                 case "audio_dup":
                     options.audioDup = Boolean.parseBoolean(value);
                     break;
+                case "audio_dup_usages":
+                    options.audioDupUsages = parseAudioDupUsages(value);
+                    break;
                 case "max_size":
                     options.maxSize = Integer.parseInt(value);
                     break;
@@ -637,6 +648,25 @@ public class Options {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid float value for " + key + ": \"" + value + "\"");
         }
+    }
+
+    private static Set<AudioUsage> parseAudioDupUsages(String value) {
+        // MEDIA is always captured, so that an empty list behaves like upstream scrcpy
+        Set<AudioUsage> usages = EnumSet.of(AudioUsage.MEDIA);
+
+        for (String name : value.split(",", -1)) {
+            if ("all".equals(name)) {
+                return EnumSet.allOf(AudioUsage.class);
+            }
+
+            AudioUsage usage = AudioUsage.findByName(name);
+            if (usage == null) {
+                throw new IllegalArgumentException("Audio usage \"" + name + "\" not supported");
+            }
+            usages.add(usage);
+        }
+
+        return usages;
     }
 
     private static NewDisplay parseNewDisplay(String newDisplay) {

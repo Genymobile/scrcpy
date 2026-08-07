@@ -16,16 +16,19 @@ import android.os.Build;
 
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.util.Set;
 
 public final class AudioPlaybackCapture implements AudioCapture {
 
     private final boolean keepPlayingOnDevice;
+    private final Set<AudioUsage> usages;
 
     private AudioRecord recorder;
     private AudioRecordReader reader;
 
-    public AudioPlaybackCapture(boolean keepPlayingOnDevice) {
+    public AudioPlaybackCapture(boolean keepPlayingOnDevice, Set<AudioUsage> usages) {
         this.keepPlayingOnDevice = keepPlayingOnDevice;
+        this.usages = usages;
     }
 
     @SuppressLint("PrivateApi")
@@ -44,7 +47,7 @@ public final class AudioPlaybackCapture implements AudioCapture {
             setTargetMixRoleMethod.invoke(audioMixingRuleBuilder, mixRolePlayersConstant);
 
             // audioMixingRuleBuilder.voiceCommunicationCaptureAllowed(true);
-            // Must be called before build(), otherwise it only mutates the builder and has no effect on the rule
+            // Must be called before build(), and is required for USAGE_VOICE_COMMUNICATION to be captured at all
             try {
                 Method voiceCommunicationCaptureAllowedMethod = audioMixingRuleBuilderClass.getMethod("voiceCommunicationCaptureAllowed",
                         boolean.class);
@@ -53,12 +56,14 @@ public final class AudioPlaybackCapture implements AudioCapture {
                 Ln.w("Voice communication capture not supported on this device");
             }
 
-            AudioAttributes attributes = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build();
-
             // audioMixingRuleBuilder.addMixRule(AudioMixingRule.RULE_MATCH_ATTRIBUTE_USAGE, attributes);
+            // A rule matches a usage exactly, and several "match" rules of the same kind are OR-ed together by the audio policy
             int ruleMatchAttributeUsageConstant = audioMixingRuleClass.getField("RULE_MATCH_ATTRIBUTE_USAGE").getInt(null);
             Method addMixRuleMethod = audioMixingRuleBuilderClass.getMethod("addMixRule", int.class, Object.class);
-            addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, attributes);
+            for (AudioUsage usage : usages) {
+                AudioAttributes attributes = new AudioAttributes.Builder().setUsage(usage.getAttributesUsage()).build();
+                addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, attributes);
+            }
 
             // AudioMixingRule audioMixingRule = builder.build();
             Object audioMixingRule = audioMixingRuleBuilderClass.getMethod("build").invoke(audioMixingRuleBuilder);

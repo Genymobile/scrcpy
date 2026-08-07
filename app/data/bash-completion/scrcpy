@@ -8,6 +8,7 @@ _scrcpy() {
         --audio-codec=
         --audio-codec-options=
         --audio-dup
+        --audio-dup=
         --audio-encoder=
         --audio-source=
         --audio-output-buffer=
@@ -169,6 +170,11 @@ _scrcpy() {
             ;;
         --pause-on-exit)
             COMPREPLY=($(compgen -W 'true false if-error' -- "$cur"))
+            return
+            ;;
+        --audio-dup)
+            # Only auto-complete a single usage
+            COMPREPLY=($(compgen -W 'all media unknown game alarm notification assistant sonification accessibility navigation voice-communication' -- "$cur"))
             return
             ;;
         -r|--record)

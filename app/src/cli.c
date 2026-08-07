@@ -198,9 +198,33 @@ static const struct sc_option options[] = {
     {
         .longopt_id = OPT_AUDIO_DUP,
         .longopt = "audio-dup",
+        .argdesc = "usages",
+        .optional_arg = true,
         .text = "Duplicate audio (capture and keep playing on the device).\n"
-                "This feature is only available with --audio-source=playback."
-
+                "This feature is only available with --audio-source=playback.\n"
+                "Audio playback capture matches each player by its audio usage, "
+                "and only \"media\" is captured by default. Games using an audio "
+                "engine such as Wwise declare \"game\" instead, so their sound is "
+                "not captured unless it is requested explicitly.\n"
+                "An optional comma-separated list of extra usages to capture may "
+                "be provided. Possible values are:\n"
+                " - \"all\": every usage listed below.\n"
+                " - \"unknown\": players not declaring any usage.\n"
+                " - \"game\": game audio engines (Wwise, FMOD, Unity, Unreal…).\n"
+                " - \"alarm\"\n"
+                " - \"notification\"\n"
+                " - \"assistant\"\n"
+                " - \"sonification\": UI sounds and other system feedback.\n"
+                " - \"accessibility\"\n"
+                " - \"navigation\"\n"
+                " - \"voice-communication\": voice calls and in-game voice chat.\n"
+                "The \"media\" usage is always captured, so passing no value "
+                "behaves exactly like upstream scrcpy.\n"
+                "Examples:\n"
+                "    --audio-dup             # media only\n"
+                "    --audio-dup=game        # media + game\n"
+                "    --audio-dup=game,voice-communication\n"
+                "    --audio-dup=all"
     },
     {
         .longopt_id = OPT_AUDIO_ENCODER,
@@ -2145,6 +2169,62 @@ parse_audio_source(const char *optarg, enum sc_audio_source *source) {
     return false;
 }
 
+// The names are resolved to AudioAttributes usages by the server
+static const char *const sc_audio_dup_usages[] = {
+    "all",
+    "media",
+    "unknown",
+    "game",
+    "alarm",
+    "notification",
+    "assistant",
+    "sonification",
+    "accessibility",
+    "navigation",
+    "voice-communication",
+};
+
+static bool
+parse_audio_dup_usages(const char *optarg) {
+    if (!*optarg) {
+        LOGE("--audio-dup requires at least one audio usage");
+        return false;
+    }
+
+    const char *p = optarg;
+    for (;;) {
+        const char *sep = strchr(p, ',');
+        size_t len = sep ? (size_t) (sep - p) : strlen(p);
+
+        if (!len) {
+            LOGE("Empty audio usage in --audio-dup list: '%s'", optarg);
+            return false;
+        }
+
+        bool found = false;
+        for (size_t i = 0; i < ARRAY_LEN(sc_audio_dup_usages); ++i) {
+            const char *name = sc_audio_dup_usages[i];
+            if (!strncmp(p, name, len) && !name[len]) {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            LOGE("Unsupported audio usage: '%.*s' (expected all, media, "
+                 "unknown, game, alarm, notification, assistant, sonification, "
+                 "accessibility, navigation or voice-communication)",
+                 (int) len, p);
+            return false;
+        }
+
+        if (!sep) {
+            return true;
+        }
+        p = sep + 1;
+    }
+}
+
 static bool
 parse_camera_facing(const char *optarg, enum sc_camera_facing *facing) {
     if (!strcmp(optarg, "front")) {
@@ -2878,6 +2958,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_AUDIO_DUP:
                 opts->audio_dup = true;
+                if (optarg) {
+                    if (!parse_audio_dup_usages(optarg)) {
+                        return false;
+                    }
+                    opts->audio_dup_usages = optarg;
+                }
                 break;
             case 'G':
                 opts->gamepad_input_mode = SC_GAMEPAD_INPUT_MODE_UHID_OR_AOA;
