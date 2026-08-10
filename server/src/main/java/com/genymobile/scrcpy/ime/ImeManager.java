@@ -8,6 +8,7 @@ import com.genymobile.scrcpy.util.Ln;
 
 import android.content.ContentProviderClient;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.os.SystemClock;
@@ -22,6 +23,10 @@ public final class ImeManager implements AsyncProcessor, AutoCloseable {
     public static final String IME_ID = "com.genymobile.scrcpy.ime/.ScrcpyInputMethodService";
     public static final String PROVIDER_AUTHORITY = "com.genymobile.scrcpy.ime.connection";
     public static final Uri CONNECTION_URI = Uri.parse("content://" + PROVIDER_AUTHORITY + "/connection");
+
+    private static final String METHOD_GET_ORIGINAL_IME = "get_original_ime";
+    private static final String METHOD_PREPARE_SESSION = "prepare_session";
+    private static final String EXTRA_ORIGINAL_IME = "original_ime";
 
     private static final int CONNECT_ATTEMPTS = 50;
     private static final int CONNECT_DELAY_MS = 100;
@@ -44,13 +49,41 @@ public final class ImeManager implements AsyncProcessor, AutoCloseable {
         output = new DataOutputStream(new ParcelFileDescriptor.AutoCloseOutputStream(descriptor));
     }
 
-    private static boolean isImeEnabled(String imeList) {
+    private static boolean containsIme(String imeList, String imeId) {
         for (String line : imeList.split("[\\r\\n]+")) {
-            if (IME_ID.equals(line.trim())) {
+            if (imeId.equals(line.trim())) {
                 return true;
             }
         }
         return false;
+    }
+
+    @SuppressWarnings("deprecation") // ContentProviderClient.close() requires Android 7
+    private static Bundle callProvider(String method, String arg) throws IOException {
+        ContentProviderClient client = FakeContext.get().getContentResolver().acquireContentProviderClient(PROVIDER_AUTHORITY);
+        if (client == null) {
+            throw new IOException("Could not access scrcpy IME connection provider");
+        }
+        try {
+            return client.call(method, arg, null);
+        } catch (RemoteException | RuntimeException e) {
+            throw new IOException("Could not call scrcpy IME connection provider", e);
+        } finally {
+            client.release();
+        }
+    }
+
+    private static String getSavedOriginalIme() throws IOException {
+        Bundle result = callProvider(METHOD_GET_ORIGINAL_IME, null);
+        if (result == null) {
+            return null;
+        }
+        String originalIme = result.getString(EXTRA_ORIGINAL_IME);
+        return originalIme == null ? null : originalIme.trim();
+    }
+
+    private static void prepareSession(String originalIme) throws IOException {
+        callProvider(METHOD_PREPARE_SESSION, originalIme);
     }
 
     private static Process startWatchdog(String originalIme, boolean wasEnabled) throws IOException {
@@ -106,16 +139,30 @@ public final class ImeManager implements AsyncProcessor, AutoCloseable {
             if (originalIme == null || originalIme.isEmpty() || "null".equals(originalIme)) {
                 throw new IOException("Could not determine the current input method");
             }
-            if (IME_ID.equals(originalIme)) {
-                throw new IOException("scrcpy IME is already the default input method; select another input method first");
-            }
             String enabledImes = Command.execReadOutput("ime", "list", "-s");
-            wasEnabled = isImeEnabled(enabledImes);
+            wasEnabled = containsIme(enabledImes, IME_ID);
+            if (IME_ID.equals(originalIme)) {
+                String savedOriginalIme = getSavedOriginalIme();
+                if (savedOriginalIme == null || savedOriginalIme.isEmpty() || IME_ID.equals(savedOriginalIme)) {
+                    savedOriginalIme = ImeRecovery.findFallbackIme(enabledImes, IME_ID);
+                    if (savedOriginalIme == null) {
+                        throw new IOException("scrcpy IME is already the default input method and no other enabled input method is available");
+                    }
+                    Ln.w("The input method from the interrupted scrcpy session is unknown; falling back to: " + savedOriginalIme);
+                }
+                if (!containsIme(enabledImes, savedOriginalIme)) {
+                    Command.exec("ime", "enable", savedOriginalIme);
+                }
+                Ln.i("Recovering input method left by an interrupted scrcpy session: " + savedOriginalIme);
+                Command.exec("ime", "set", savedOriginalIme);
+                originalIme = savedOriginalIme;
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("Interrupted while reading input method state", e);
         }
 
+        prepareSession(originalIme);
         Process watchdog = startWatchdog(originalIme, wasEnabled);
         ImeManager manager = null;
         boolean success = false;

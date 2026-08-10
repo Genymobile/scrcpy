@@ -52,6 +52,11 @@ public final class ScrcpyInputMethodService extends InputMethodService {
     @Override
     public void onStartInput(EditorInfo attribute, boolean restarting) {
         super.onStartInput(attribute, restarting);
+        String originalIme = ScrcpyImeProvider.getOriginalImeToRestore();
+        if (originalIme != null) {
+            restoreInputMethod(originalIme);
+            return;
+        }
         requestCursorAnchorUpdates();
     }
 

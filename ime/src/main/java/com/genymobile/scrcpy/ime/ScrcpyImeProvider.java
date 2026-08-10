@@ -2,9 +2,11 @@ package com.genymobile.scrcpy.ime;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
@@ -32,6 +34,11 @@ public final class ScrcpyImeProvider extends ContentProvider {
     private static final int TEXT_MAX_LENGTH = 300;
     private static final int SHELL_UID = 2000;
     private static final long RESTORE_DELAY_MS = 2000;
+    private static final String METHOD_GET_ORIGINAL_IME = "get_original_ime";
+    private static final String METHOD_PREPARE_SESSION = "prepare_session";
+    private static final String EXTRA_ORIGINAL_IME = "original_ime";
+    private static final String PREFS_NAME = "ime_recovery";
+    private static final String PREF_ORIGINAL_IME = "original_ime";
 
     private static volatile ScrcpyInputMethodService inputMethodService;
     private static volatile ScrcpyImeProvider instance;
@@ -46,6 +53,7 @@ public final class ScrcpyImeProvider extends ContentProvider {
     private ParcelFileDescriptor activeDescriptor;
     private DataOutputStream activeOutput;
     private Runnable pendingRestore;
+    private boolean sessionPending;
 
     static void setInputMethodService(ScrcpyInputMethodService service) {
         inputMethodService = service;
@@ -72,11 +80,60 @@ public final class ScrcpyImeProvider extends ContentProvider {
         return true;
     }
 
-    @Override
-    public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
+    private void checkShellCaller() {
         if (Binder.getCallingUid() != SHELL_UID) {
             throw new SecurityException("Only the Android shell may connect to scrcpy IME");
         }
+    }
+
+    private SharedPreferences getRecoveryPreferences() {
+        return getContext().getSharedPreferences(PREFS_NAME, 0);
+    }
+
+    @Override
+    public Bundle call(String method, String arg, Bundle extras) {
+        checkShellCaller();
+        if (METHOD_GET_ORIGINAL_IME.equals(method)) {
+            Bundle result = new Bundle();
+            result.putString(EXTRA_ORIGINAL_IME, getRecoveryPreferences().getString(PREF_ORIGINAL_IME, null));
+            return result;
+        }
+        if (METHOD_PREPARE_SESSION.equals(method)) {
+            if (arg == null || arg.isEmpty() || IME_ID.equals(arg)) {
+                throw new IllegalArgumentException("Invalid original input method");
+            }
+            synchronized (connectionLock) {
+                sessionPending = true;
+            }
+            // Persist before returning so that even an immediate device reboot can
+            // recover the previous input method.
+            if (!getRecoveryPreferences().edit().putString(PREF_ORIGINAL_IME, arg).commit()) {
+                synchronized (connectionLock) {
+                    sessionPending = false;
+                }
+                throw new IllegalStateException("Could not persist the original input method");
+            }
+            return Bundle.EMPTY;
+        }
+        throw new IllegalArgumentException("Unknown scrcpy IME provider method: " + method);
+    }
+
+    static String getOriginalImeToRestore() {
+        ScrcpyImeProvider provider = instance;
+        if (provider == null) {
+            return null;
+        }
+        synchronized (provider.connectionLock) {
+            if (provider.activeDescriptor != null || provider.sessionPending) {
+                return null;
+            }
+        }
+        return provider.getRecoveryPreferences().getString(PREF_ORIGINAL_IME, null);
+    }
+
+    @Override
+    public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
+        checkShellCaller();
         if (!"connection".equals(uri.getLastPathSegment())) {
             throw new FileNotFoundException("Unknown scrcpy IME endpoint");
         }
@@ -126,6 +183,7 @@ public final class ScrcpyImeProvider extends ContentProvider {
                     pendingRestore = null;
                 }
                 activeDescriptor = descriptor;
+                sessionPending = false;
                 active = true;
             }
 
