@@ -1,6 +1,7 @@
 #include "screen.h"
 
 #include <assert.h>
+#include <math.h>
 #include <string.h>
 #include <SDL3/SDL.h>
 
@@ -231,11 +232,125 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
                          screen->render_fit, &screen->rect);
 }
 
+#define SC_ROTATE_BTN_SIZE 32.0f
+#define SC_ROTATE_BTN_MARGIN 10.0f
+#define SC_ROTATE_BTN_ARC_SEGMENTS 16
+
+static void
+sc_screen_render_rotate_button(struct sc_screen *screen, float scale) {
+    if (!screen->video || screen->disconnected) {
+        return;
+    }
+
+    struct sc_size win_size = sc_sdl_get_window_size(screen->window);
+    if (!win_size.width || !win_size.height) {
+        return;
+    }
+
+    float btn_w = SC_ROTATE_BTN_SIZE;
+    float btn_h = SC_ROTATE_BTN_SIZE;
+    float margin = SC_ROTATE_BTN_MARGIN;
+
+    // Fixed to top-right corner of the SDL window viewport
+    float btn_x = (float) win_size.width - btn_w - margin;
+    float btn_y = margin;
+    if (btn_x < 0) {
+        btn_x = 0;
+    }
+
+    screen->ui.btn_rotate_rect = (SDL_FRect) {
+        .x = btn_x,
+        .y = btn_y,
+        .w = btn_w,
+        .h = btn_h,
+    };
+
+    SDL_Renderer *renderer = screen->renderer;
+
+    SDL_FRect draw_rect = {
+        .x = btn_x * scale,
+        .y = btn_y * scale,
+        .w = btn_w * scale,
+        .h = btn_h * scale,
+    };
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    // Background pill
+    if (screen->ui.btn_rotate_pressed) {
+        SDL_SetRenderDrawColor(renderer, 60, 60, 60, 230);
+    } else if (screen->ui.btn_rotate_hovered) {
+        SDL_SetRenderDrawColor(renderer, 45, 45, 45, 200);
+    } else {
+        SDL_SetRenderDrawColor(renderer, 20, 20, 20, 130);
+    }
+    SDL_RenderFillRect(renderer, &draw_rect);
+
+    // Border
+    if (screen->ui.btn_rotate_pressed) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 220);
+    } else if (screen->ui.btn_rotate_hovered) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 170);
+    } else {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 70);
+    }
+    SDL_RenderRect(renderer, &draw_rect);
+
+    // Rotate circular arrow glyph (↻)
+    if (screen->ui.btn_rotate_pressed) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    } else if (screen->ui.btn_rotate_hovered) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 240);
+    } else {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 180);
+    }
+
+    float cx = draw_rect.x + draw_rect.w / 2.0f;
+    float cy = draw_rect.y + draw_rect.h / 2.0f;
+    float radius = draw_rect.w * 0.28f;
+
+    SDL_FPoint arc_points[SC_ROTATE_BTN_ARC_SEGMENTS + 1];
+    float start_angle = 0.55f; // in radians (~31 degrees)
+    float end_angle = 5.25f;   // in radians (~300 degrees)
+    for (int i = 0; i <= SC_ROTATE_BTN_ARC_SEGMENTS; ++i) {
+        float angle = start_angle + (end_angle - start_angle)
+                                  * ((float) i / SC_ROTATE_BTN_ARC_SEGMENTS);
+        arc_points[i].x = cx + radius * cosf(angle);
+        arc_points[i].y = cy + radius * sinf(angle);
+    }
+    SDL_RenderLines(renderer, arc_points, SC_ROTATE_BTN_ARC_SEGMENTS + 1);
+
+    if (scale > 1.2f) {
+        SDL_FPoint arc_inner[SC_ROTATE_BTN_ARC_SEGMENTS + 1];
+        for (int i = 0; i <= SC_ROTATE_BTN_ARC_SEGMENTS; ++i) {
+            float angle = start_angle + (end_angle - start_angle)
+                                      * ((float) i / SC_ROTATE_BTN_ARC_SEGMENTS);
+            arc_inner[i].x = cx + (radius - 1.0f) * cosf(angle);
+            arc_inner[i].y = cy + (radius - 1.0f) * sinf(angle);
+        }
+        SDL_RenderLines(renderer, arc_inner, SC_ROTATE_BTN_ARC_SEGMENTS + 1);
+    }
+
+    // Arrowhead pointing clockwise
+    float tip_x = arc_points[0].x;
+    float tip_y = arc_points[0].y;
+    SDL_FPoint head1[2] = {
+        { tip_x, tip_y },
+        { tip_x + 4.5f * scale, tip_y - 2.5f * scale }
+    };
+    SDL_FPoint head2[2] = {
+        { tip_x, tip_y },
+        { tip_x - 1.5f * scale, tip_y - 4.5f * scale }
+    };
+    SDL_RenderLines(renderer, head1, 2);
+    SDL_RenderLines(renderer, head2, 2);
+}
+
 // render the texture to the renderer
 //
 // Set the update_content_rect flag if the window or content size may have
 // changed, so that the content rectangle is recomputed
-static void
+void
 sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     assert(screen->window_shown);
 
@@ -304,6 +419,8 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     if (!ok) {
         LOGE("Could not render texture: %s", SDL_GetError());
     }
+
+    sc_screen_render_rotate_button(screen, scale);
 
 end:
     sc_sdl_render_present(renderer);
@@ -498,6 +615,10 @@ sc_screen_init(struct sc_screen *screen,
     screen->window_aspect_ratio_lock = params->window_aspect_ratio_lock;
     screen->render_fit = params->render_fit;
     screen->flex_display = params->flex_display;
+
+    screen->ui.btn_rotate_hovered = false;
+    screen->ui.btn_rotate_pressed = false;
+    memset(&screen->ui.btn_rotate_rect, 0, sizeof(screen->ui.btn_rotate_rect));
 
     screen->bg.r = (params->background_color >> 16) & 0xFF;
     screen->bg.g = (params->background_color >> 8) & 0xFF;
@@ -910,6 +1031,15 @@ sc_screen_set_orientation(struct sc_screen *screen,
     LOGI("Display orientation set to %s", sc_orientation_get_name(orientation));
 
     sc_screen_render(screen, true);
+}
+
+void
+sc_screen_cycle_orientation(struct sc_screen *screen) {
+    assert(screen->video);
+
+    enum sc_orientation new_orientation =
+        sc_orientation_apply(screen->orientation, SC_ORIENTATION_90);
+    sc_screen_set_orientation(screen, new_orientation);
 }
 
 static bool
