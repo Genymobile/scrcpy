@@ -112,6 +112,9 @@ struct sc_screen {
         SDL_FRect btn_rotate_rect;
         bool btn_rotate_hovered;
         bool btn_rotate_pressed;
+        bool btn_rotate_visible;
+        sc_tick last_mouse_activity;
+        SDL_TimerID auto_hide_timer;
     } ui;
 };
 
@@ -200,6 +203,10 @@ sc_screen_cycle_orientation(struct sc_screen *screen);
 // render the screen
 void
 sc_screen_render(struct sc_screen *screen, bool update_content_rect);
+
+// reset the UI auto-hide timer and make controls visible
+void
+sc_screen_reset_ui_auto_hide(struct sc_screen *screen);
 
 // set the display pause state
 void

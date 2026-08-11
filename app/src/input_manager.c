@@ -765,17 +765,18 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
     bool video = im->screen->video;
     bool mouse_relative_mode = im->mp && im->mp->relative_mode;
     if (video && !mouse_relative_mode) {
-        SDL_FRect *btn = &im->screen->ui.btn_rotate_rect;
-        float x = event->x;
-        float y = event->y;
-        bool hovered = (btn->w > 0 && x >= btn->x && x < btn->x + btn->w
-                                   && y >= btn->y && y < btn->y + btn->h);
-        if (hovered != im->screen->ui.btn_rotate_hovered) {
-            im->screen->ui.btn_rotate_hovered = hovered;
-            if (!hovered) {
-                im->screen->ui.btn_rotate_pressed = false;
+        sc_screen_reset_ui_auto_hide(im->screen);
+
+        if (im->screen->ui.btn_rotate_visible) {
+            SDL_FRect *btn = &im->screen->ui.btn_rotate_rect;
+            float x = event->x;
+            float y = event->y;
+            bool hovered = (btn->w > 0 && x >= btn->x && x < btn->x + btn->w
+                                       && y >= btn->y && y < btn->y + btn->h);
+            if (hovered != im->screen->ui.btn_rotate_hovered) {
+                im->screen->ui.btn_rotate_hovered = hovered;
+                sc_screen_render(im->screen, false);
             }
-            sc_screen_render(im->screen, false);
         }
     }
 
@@ -878,23 +879,34 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
 
     // Hit-test Rotate Button overlay
     if (video && !mouse_relative_mode && event->button == SDL_BUTTON_LEFT) {
-        SDL_FRect *btn = &im->screen->ui.btn_rotate_rect;
-        float x = event->x;
-        float y = event->y;
-        bool inside = (btn->w > 0 && x >= btn->x && x < btn->x + btn->w
-                                  && y >= btn->y && y < btn->y + btn->h);
-        if (inside) {
+        if (im->screen->ui.btn_rotate_visible || im->screen->ui.btn_rotate_pressed) {
+            SDL_FRect *btn = &im->screen->ui.btn_rotate_rect;
+            float x = event->x;
+            float y = event->y;
+            bool inside = (btn->w > 0 && x >= btn->x && x < btn->x + btn->w
+                                      && y >= btn->y && y < btn->y + btn->h);
             if (down) {
-                im->screen->ui.btn_rotate_pressed = true;
-                sc_screen_cycle_orientation(im->screen);
+                if (inside) {
+                    im->screen->ui.btn_rotate_pressed = true;
+                    sc_screen_reset_ui_auto_hide(im->screen);
+                    sc_screen_render(im->screen, false);
+                    return; // Consume mouse-down event, do NOT forward to Android
+                }
             } else {
-                im->screen->ui.btn_rotate_pressed = false;
-                sc_screen_render(im->screen, false);
+                // Mouse release
+                if (im->screen->ui.btn_rotate_pressed) {
+                    im->screen->ui.btn_rotate_pressed = false;
+                    sc_screen_reset_ui_auto_hide(im->screen);
+                    if (inside) {
+                        // Released inside hitbox -> trigger rotation
+                        sc_screen_cycle_orientation(im->screen);
+                    } else {
+                        // Released outside hitbox -> cancel rotation
+                        sc_screen_render(im->screen, false);
+                    }
+                    return; // Consume mouse-up event, do NOT forward to Android
+                }
             }
-            return; // Consume click event, do NOT forward to Android
-        } else if (!down && im->screen->ui.btn_rotate_pressed) {
-            im->screen->ui.btn_rotate_pressed = false;
-            sc_screen_render(im->screen, false);
         }
     }
 
