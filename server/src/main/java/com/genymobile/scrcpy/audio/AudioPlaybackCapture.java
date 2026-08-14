@@ -54,15 +54,16 @@ public final class AudioPlaybackCapture implements AudioCapture {
             addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, mediaAttributes);
 
             if (captureVoiceCommunication) {
+                // This opt-in must be enabled before adding the voice-communication rule.
+                // Otherwise Android silently drops the protected usage from the built rule.
+                Method voiceCommunicationCaptureAllowedMethod =
+                        audioMixingRuleBuilderClass.getMethod("voiceCommunicationCaptureAllowed", boolean.class);
+                voiceCommunicationCaptureAllowedMethod.invoke(audioMixingRuleBuilder, true);
+
                 AudioAttributes voiceCommunicationAttributes =
                         new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION).build();
                 addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant,
                         voiceCommunicationAttributes);
-
-                // audioMixingRuleBuilder.voiceCommunicationCaptureAllowed(true);
-                Method voiceCommunicationCaptureAllowedMethod =
-                        audioMixingRuleBuilderClass.getMethod("voiceCommunicationCaptureAllowed", boolean.class);
-                voiceCommunicationCaptureAllowedMethod.invoke(audioMixingRuleBuilder, true);
             }
 
             // AudioMixingRule audioMixingRule = builder.build();
