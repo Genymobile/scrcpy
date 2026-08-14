@@ -8,6 +8,7 @@ import com.genymobile.scrcpy.audio.AudioEncoder;
 import com.genymobile.scrcpy.audio.AudioPlaybackCapture;
 import com.genymobile.scrcpy.audio.AudioRawRecorder;
 import com.genymobile.scrcpy.audio.AudioSource;
+import com.genymobile.scrcpy.audio.LatestAudioBuffer;
 import com.genymobile.scrcpy.control.ControlChannel;
 import com.genymobile.scrcpy.control.Controller;
 import com.genymobile.scrcpy.device.DesktopConnection;
@@ -35,8 +36,6 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -172,11 +171,13 @@ public final class Server {
                     LocalSocket s = connection.getClientAudioSocket();
                     InputStream is = s.getInputStream();
                     BufferedInputStream bis = new BufferedInputStream(is);
-                    PipedOutputStream pos = new PipedOutputStream();
-                    PipedInputStream pis = new PipedInputStream(pos, 500 * 1024);
+                    // Four stereo PCM frames (about 80 ms). If Android consumes
+                    // more slowly, retain the newest speech instead of building
+                    // the old 500 KiB / 2.7-second latency queue.
+                    LatestAudioBuffer pcm = new LatestAudioBuffer(4 * 4096);
                     AudioDecoder decoder = new AudioDecoder();
-                    decoder.start(bis, pos);
-                    AudioInjector.injectAudio(pis);
+                    decoder.start(bis, pcm);
+                    AudioInjector.injectAudio(pcm);
                 } catch (Exception e) {
                     Ln.e("Client audio injection error", e);
                 }

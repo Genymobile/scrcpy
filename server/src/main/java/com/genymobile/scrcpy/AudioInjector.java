@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.audio.LatestAudioBuffer;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -10,7 +11,6 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
 
-import java.io.PipedInputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Objects;
@@ -35,12 +35,12 @@ public final class AudioInjector {
     }
 
     /**
-     * Injects audio from a PipedInputStream into the device's microphone.
+     * Injects audio from a bounded latest-sample buffer into the device's microphone.
      *
-     * @param pis The PipedInputStream containing PCM audio data to inject
+     * @param pcm The PCM audio data to inject
      * @throws Exception if audio injection setup fails
      */
-    public static void injectAudio(PipedInputStream pis) throws Exception {
+    public static void injectAudio(LatestAudioBuffer pcm) throws Exception {
         Context systemContext = Workarounds.getSystemContext();
         Objects.requireNonNull(systemContext);
 
@@ -151,7 +151,7 @@ public final class AudioInjector {
             byte[] audioBuffer = new byte[4096];
             while (true) {
                 try {
-                    int bytesRead = pis.read(audioBuffer);
+                    int bytesRead = pcm.read(audioBuffer);
                     if (bytesRead <= 0) {
                         break;
                     }
