@@ -1,8 +1,9 @@
 package com.genymobile.scrcpy.audio;
 
+import com.genymobile.scrcpy.util.Ln;
+
 import android.media.MediaCodec;
 import android.media.MediaFormat;
-import com.genymobile.scrcpy.util.Ln;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -30,7 +31,7 @@ public class AudioDecoder {
             0x01,                                              // Version
             0x02,                                              // Channel count (2 = stereo)
             0x38, 0x01,                                        // Pre-skip (312 samples, little-endian)
-            (byte)0x80, (byte)0xBB, 0x00, 0x00,               // Input sample rate (48000 Hz, little-endian)
+            (byte) 0x80, (byte) 0xBB, 0x00, 0x00,             // Input sample rate (48000 Hz, little-endian)
             0x00, 0x00,                                        // Output gain (0 dB)
             0x00                                               // Channel mapping family (0 = mono/stereo)
         };
@@ -76,17 +77,16 @@ public class AudioDecoder {
             // Feed input packets (non-blocking)
             int inputIndex = decoder.dequeueInputBuffer(0);
             if (inputIndex >= 0) {
-                int bytesRead = bis.read(sizeBuffer);
-                if (bytesRead == 4) {
-                    int packetSize = ((sizeBuffer[0] & 0xFF) << 24) |
-                                   ((sizeBuffer[1] & 0xFF) << 16) |
-                                   ((sizeBuffer[2] & 0xFF) << 8) |
-                                   (sizeBuffer[3] & 0xFF);
+                boolean hasPacket = readFully(bis, sizeBuffer);
+                if (hasPacket) {
+                    int packetSize = ((sizeBuffer[0] & 0xFF) << 24)
+                            | ((sizeBuffer[1] & 0xFF) << 16)
+                            | ((sizeBuffer[2] & 0xFF) << 8)
+                            | (sizeBuffer[3] & 0xFF);
 
                     if (packetSize > 0 && packetSize <= 100000) {
                         byte[] opusData = new byte[packetSize];
-                        int actualRead = bis.read(opusData);
-                        if (actualRead == packetSize) {
+                        if (readFully(bis, opusData)) {
                             ByteBuffer inputBuffer = decoder.getInputBuffer(inputIndex);
                             inputBuffer.clear();
                             inputBuffer.put(opusData);
@@ -95,7 +95,7 @@ public class AudioDecoder {
                             presentationTime += 20000; // microseconds
                         }
                     }
-                } else if (bytesRead == -1) {
+                } else {
                     // End of stream
                     decoder.queueInputBuffer(inputIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                     break;
@@ -121,13 +121,26 @@ public class AudioDecoder {
         }
     }
 
+    /** Read one complete framed field even when the socket splits it across packets. */
+    private static boolean readFully(BufferedInputStream input, byte[] buffer) throws IOException {
+        int offset = 0;
+        while (offset < buffer.length) {
+            int read = input.read(buffer, offset, buffer.length - offset);
+            if (read == -1) {
+                return false;
+            }
+            offset += read;
+        }
+        return true;
+    }
+
     public void stop() {
         running = false;
         if (decoder != null) {
             try {
                 decoder.stop();
                 decoder.release();
-            } catch (Exception e) {}
+            } catch (Exception e) { }
             decoder = null;
         }
     }
