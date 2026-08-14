@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.util.Ln;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.media.AudioAttributes;
@@ -7,8 +9,6 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
-
-import com.genymobile.scrcpy.util.Ln;
 
 import java.io.PipedInputStream;
 import java.lang.reflect.Constructor;
@@ -55,24 +55,24 @@ public final class AudioInjector {
             // audioMixRuleBuilder.setTargetMixRole(MIX_ROLE_INJECTOR);
             Method setTargetMixRoleMethod =
                             audioMixRuleBuilder.getClass().getDeclaredMethod("setTargetMixRole", int.class);
-            int MIX_ROLE_INJECTOR = 1;
-            setTargetMixRoleMethod.invoke(audioMixRuleBuilder, MIX_ROLE_INJECTOR);
+            int mixRoleInjector = 1;
+            setTargetMixRoleMethod.invoke(audioMixRuleBuilder, mixRoleInjector);
         } catch (Exception ignored) {
         }
 
         Method addMixRuleMethod = audioMixRuleBuilder.getClass()
                         .getDeclaredMethod("addMixRule", int.class, Object.class);
-        int RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET = 0x1 << 1;
+        int ruleMatchAttributeCapturePreset = 0x1 << 1;
 
         // Add mix rules for various capture presets to intercept all microphone capture
-        addMixRuleMethod.invoke(audioMixRuleBuilder, RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET,
+        addMixRuleMethod.invoke(audioMixRuleBuilder, ruleMatchAttributeCapturePreset,
                                                         createAudioAttributes(MediaRecorder.AudioSource.DEFAULT));
-        addMixRuleMethod.invoke(audioMixRuleBuilder, RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET,
+        addMixRuleMethod.invoke(audioMixRuleBuilder, ruleMatchAttributeCapturePreset,
                                                         createAudioAttributes(MediaRecorder.AudioSource.MIC));
-        addMixRuleMethod.invoke(audioMixRuleBuilder, RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET,
+        addMixRuleMethod.invoke(audioMixRuleBuilder, ruleMatchAttributeCapturePreset,
                                                         createAudioAttributes(
                                                                         MediaRecorder.AudioSource.VOICE_COMMUNICATION));
-        addMixRuleMethod.invoke(audioMixRuleBuilder, RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET,
+        addMixRuleMethod.invoke(audioMixRuleBuilder, ruleMatchAttributeCapturePreset,
                                                         createAudioAttributes(MediaRecorder.AudioSource.UNPROCESSED));
 
         // var audioMixingRule = audioMixRuleBuilder.build();
@@ -100,8 +100,8 @@ public final class AudioInjector {
         // audioMixBuilder.setRouteFlags(ROUTE_FLAG_LOOP_BACK);
         Method setRouteFlagsMethod =
             audioMixBuilder.getClass().getDeclaredMethod("setRouteFlags", int.class);
-        int ROUTE_FLAG_LOOP_BACK = 0x1 << 1;
-        setRouteFlagsMethod.invoke(audioMixBuilder, ROUTE_FLAG_LOOP_BACK);
+        int routeFlagLoopBack = 0x1 << 1;
+        setRouteFlagsMethod.invoke(audioMixBuilder, routeFlagLoopBack);
 
         // var audioMix = audioMixBuilder.build();
         Method audioMixBuildMethod = audioMixBuilder.getClass().getDeclaredMethod("build");

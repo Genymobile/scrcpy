@@ -1,7 +1,5 @@
 package com.genymobile.scrcpy;
 
-import android.net.LocalSocket;
-
 import com.genymobile.scrcpy.audio.AudioCapture;
 import com.genymobile.scrcpy.audio.AudioCodec;
 import com.genymobile.scrcpy.audio.AudioDecoder;
@@ -28,6 +26,7 @@ import com.genymobile.scrcpy.video.SurfaceEncoder;
 import com.genymobile.scrcpy.video.VideoSource;
 
 import android.annotation.SuppressLint;
+import android.net.LocalSocket;
 import android.os.Build;
 import android.os.Looper;
 import android.system.Os;
@@ -103,14 +102,14 @@ public final class Server {
         boolean control = options.getControl();
         boolean video = options.getVideo();
         boolean audio = options.getAudio();
-        boolean client_audio = options.getClientAudio();
+        boolean clientAudio = options.getClientAudio();
         boolean sendDummyByte = options.getSendDummyByte();
 
         Workarounds.apply();
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
-        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, client_audio, sendDummyByte);
+        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, clientAudio, sendDummyByte);
         try {
             if (options.getSendDeviceMeta()) {
                 connection.sendDeviceMeta(Device.getDeviceName());
@@ -168,7 +167,7 @@ public final class Server {
                 }
             }
 
-            if (client_audio) {
+            if (clientAudio) {
                 try {
                     LocalSocket s = connection.getClientAudioSocket();
                     InputStream is = s.getInputStream();
