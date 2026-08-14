@@ -7,7 +7,6 @@ import android.media.MediaFormat;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -15,7 +14,7 @@ public class AudioDecoder {
     private MediaCodec decoder;
     private boolean running = false;
 
-    public void start(BufferedInputStream bis, OutputStream pcmOutput) throws IOException {
+    public void start(BufferedInputStream bis, LatestAudioBuffer pcmOutput) throws IOException {
         // Initialize Opus decoder
         decoder = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_OPUS);
         MediaFormat format = MediaFormat.createAudioFormat(
@@ -68,7 +67,7 @@ public class AudioDecoder {
         }, "opus-decoder").start();
     }
 
-    private void decode(BufferedInputStream bis, OutputStream pcmOutput) throws IOException {
+    private void decode(BufferedInputStream bis, LatestAudioBuffer pcmOutput) throws IOException {
         byte[] sizeBuffer = new byte[4];
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
         long presentationTime = 0;
@@ -112,7 +111,6 @@ public class AudioDecoder {
                     outputBuffer.limit(bufferInfo.offset + bufferInfo.size);
                     outputBuffer.get(pcmData);
                     pcmOutput.write(pcmData);
-                    pcmOutput.flush();
                 }
                 decoder.releaseOutputBuffer(outputIndex, false);
             } else if (outputIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
