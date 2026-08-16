@@ -707,12 +707,9 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     }
 
     enum sc_keycode keycode = sc_keycode_from_sdl(sdl_keycode);
-    if (keycode == SC_KEYCODE_UNKNOWN) {
-        return;
-    }
-
     enum sc_scancode scancode = sc_scancode_from_sdl(event->scancode);
-    if (scancode == SC_SCANCODE_UNKNOWN) {
+
+    if (keycode == SC_KEYCODE_UNKNOWN && scancode == SC_SCANCODE_UNKNOWN) {
         return;
     }
 
