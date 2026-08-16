@@ -8,3 +8,5 @@ build/
 /x/
 local.properties
 /scrcpy-server
+Start-Wireless-Scrcpy.bat
+issue6983.json
