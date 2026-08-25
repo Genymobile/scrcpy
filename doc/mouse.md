@@ -16,7 +16,7 @@ are injected at the Android API level with absolute coordinates.
 
 Note that on some devices, an additional option must be enabled in developer
 options for this mouse mode to work. See
-[prerequisites](/README.md#prerequisites).
+[prerequisites](../README.md#prerequisites).
 
 ### Mouse hover
 
