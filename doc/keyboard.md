@@ -20,7 +20,7 @@ limited to ASCII and some other characters.
 
 Note that on some devices, an additional option must be enabled in developer
 options for this keyboard mode to work. See
-[prerequisites](/README.md#prerequisites).
+[prerequisites](../README.md#prerequisites).
 
 Additional parameters (specific to `--keyboard=sdk`) described below allow to
 customize the behavior.
