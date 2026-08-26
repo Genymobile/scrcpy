@@ -120,6 +120,12 @@ if d3d11va_support
     src += [ 'src/interop/interop_d3d11va.c' ]
 endif
 
+videotoolbox_support = get_option('videotoolbox') \
+                       and host_machine.system() == 'darwin'
+if videotoolbox_support
+    src += [ 'src/interop/interop_videotoolbox.c' ]
+endif
+
 usb_support = get_option('usb')
 if usb_support
     src += [
@@ -218,6 +224,9 @@ conf.set('HAVE_VAAPI', vaapi_support)
 
 # enable D3D11 hardware decoding (windows only)
 conf.set('HAVE_D3D11VA', d3d11va_support)
+
+# enable VideoToolbox hardware decoding (macOS only)
+conf.set('HAVE_VIDEOTOOLBOX', videotoolbox_support)
 
 # enable HID over AOA support (linux only)
 conf.set('HAVE_USB', usb_support)
