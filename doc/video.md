@@ -120,14 +120,25 @@ hardware decoder is used, and software decoding is used otherwise.
 Hardware decoding can be configured explicitly:
 
 ```bash
-scrcpy --hwdec=auto      # default
+scrcpy --hwdec=auto      # use hardware decoding if possible (default)
 scrcpy --hwdec=disabled  # software decoding
+scrcpy --hwdec=vaapi     # VA-API, Linux only
 ```
 
 Hardware decoding is only supported when video playback is enabled and V4L2 is
 disabled.
 
-For now, only software decoding is available.
+The available hardware decoders are:
+ - `vaapi` (Linux only). This requires the renderer to use EGL: this is always
+   the case on Wayland, and scrcpy also requests EGL on X11 (where SDL uses GLX
+   by default). Set `SDL_VIDEO_FORCE_EGL=0` to force GLX (hardware decoding is
+   then unavailable). The VA-API driver for the GPU must be installed
+   (`va-driver-all` on Debian/Ubuntu). Trilinear filtering (mipmaps) is not
+   available for hardware frames.
+
+With `--hwdec=auto`, if the hardware decoder cannot decode the stream, FFmpeg
+falls back to software decoding. It fails instead if a specific hardware decoder
+is explicitly requested (e.g. `--hwdec=vaapi`).
 
 
 ## Orientation

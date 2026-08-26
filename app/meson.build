@@ -110,6 +110,11 @@ if v4l2_support
     src += [ 'src/v4l2_sink.c' ]
 endif
 
+vaapi_support = get_option('vaapi') and host_machine.system() == 'linux'
+if vaapi_support
+    src += [ 'src/interop/interop_vaapi.c' ]
+endif
+
 usb_support = get_option('usb')
 if usb_support
     src += [
@@ -136,6 +141,12 @@ dependencies = [
 
 if v4l2_support
     dependencies += dependency('libavdevice', static: static)
+endif
+
+if vaapi_support
+    libdrm_dep = dependency('libdrm')
+    dependencies += libdrm_dep.partial_dependency(compile_args: true,
+                                                 includes: true)
 endif
 
 if usb_support
@@ -186,6 +197,9 @@ conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 
 # enable V4L2 support (linux only)
 conf.set('HAVE_V4L2', v4l2_support)
+
+# enable VA-API hardware decoding (linux only)
+conf.set('HAVE_VAAPI', vaapi_support)
 
 # enable HID over AOA support (linux only)
 conf.set('HAVE_USB', usb_support)
