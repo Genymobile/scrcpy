@@ -115,6 +115,11 @@ if vaapi_support
     src += [ 'src/interop/interop_vaapi.c' ]
 endif
 
+d3d11va_support = get_option('d3d11va') and host_machine.system() == 'windows'
+if d3d11va_support
+    src += [ 'src/interop/interop_d3d11va.c' ]
+endif
+
 usb_support = get_option('usb')
 if usb_support
     src += [
@@ -210,6 +215,9 @@ conf.set('HAVE_V4L2', v4l2_support)
 
 # enable VA-API hardware decoding (linux only)
 conf.set('HAVE_VAAPI', vaapi_support)
+
+# enable D3D11 hardware decoding (windows only)
+conf.set('HAVE_D3D11VA', d3d11va_support)
 
 # enable HID over AOA support (linux only)
 conf.set('HAVE_USB', usb_support)
