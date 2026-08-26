@@ -2,6 +2,7 @@
 
 #include <assert.h>
 
+#include <libavutil/error.h>
 #include <libavutil/pixdesc.h>
 
 #include "util/log.h"
@@ -18,6 +19,19 @@ sc_hwdec_init(struct sc_hwdec *hwdec, enum AVHWDeviceType hw_type,
             hwdec->name = "software";
             hwdec->hw_device_ctx = NULL;
             break;
+#ifdef HAVE_VAAPI
+        case AV_HWDEVICE_TYPE_VAAPI: {
+            int ret = av_hwdevice_ctx_create(&hwdec->hw_device_ctx, hw_type,
+                                             NULL, NULL, 0);
+            if (ret < 0) {
+                LOGE("Could not create VA-API device: %s", av_err2str(ret));
+                return false;
+            }
+
+            hwdec->name = "vaapi";
+            break;
+        }
+#endif
         default:
             LOGE("No decoder for hardware device type: %s",
                  av_hwdevice_get_type_name(hw_type));
