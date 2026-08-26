@@ -102,6 +102,22 @@ else
         )
     fi
 
+    if [[ "$HOST" == win* ]]
+    then
+        conf+=(
+            --enable-d3d11va
+            # Only the *_d3d11va2 hwaccels are used, but the FFmpeg Makefile
+            # compiles their source files only for the *_d3d11va hwaccels
+            # (legacy API), so both must be enabled.
+            --enable-hwaccel=h264_d3d11va
+            --enable-hwaccel=h264_d3d11va2
+            --enable-hwaccel=hevc_d3d11va
+            --enable-hwaccel=hevc_d3d11va2
+            --enable-hwaccel=av1_d3d11va
+            --enable-hwaccel=av1_d3d11va2
+        )
+    fi
+
     if [[ "$LINK_TYPE" == static ]]
     then
         conf+=(

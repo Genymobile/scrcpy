@@ -7,3 +7,4 @@ option('server_debugger', type: 'boolean', value: false, description: 'Run a ser
 option('v4l2', type: 'boolean', value: true, description: 'Enable V4L2 feature when supported')
 option('usb', type: 'boolean', value: true, description: 'Enable HID/OTG features when supported')
 option('vaapi', type: 'boolean', value: true, description: 'Enable VA-API hardware decoding (Linux)')
+option('d3d11va', type: 'boolean', value: true, description: 'Enable D3D11VA hardware decoding (Windows)')

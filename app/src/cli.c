@@ -438,7 +438,8 @@ static const struct sc_option options[] = {
         .text = "Configure hardware video decoding on the computer.\n"
                 "Possible values are \"auto\" (the first available hardware "
                 "decoder, software decoding otherwise), \"disabled\" "
-                "(always use software decoding) and \"vaapi\" (Linux only).\n"
+                "(always use software decoding), \"vaapi\" (Linux only) and "
+                "\"d3d11va\" (Windows only).\n"
                 "Default is \"auto\".",
     },
     {
@@ -2520,8 +2521,18 @@ parse_hwdec_mode(const char *optarg, enum sc_hwdec_mode *mode) {
 #endif
     }
 
-    LOGE("Unsupported hwdec mode: %s (expected auto, disabled or vaapi)",
-         optarg);
+    if (!strcmp(optarg, "d3d11va")) {
+#ifdef HAVE_D3D11VA
+        *mode = SC_HWDEC_MODE_D3D11VA;
+        return true;
+#else
+        LOGE("D3D11VA support is disabled on this platform.");
+        return false;
+#endif
+    }
+
+    LOGE("Unsupported hwdec mode: %s (expected auto, disabled, vaapi or "
+         "d3d11va)", optarg);
     return false;
 }
 
