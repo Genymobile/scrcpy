@@ -105,6 +105,20 @@ sc_hwdec_init(struct sc_hwdec *hwdec, enum AVHWDeviceType hw_type,
             hwdec->name = "d3d11va";
             break;
 #endif
+#ifdef HAVE_VIDEOTOOLBOX
+        case AV_HWDEVICE_TYPE_VIDEOTOOLBOX: {
+            int ret = av_hwdevice_ctx_create(&hwdec->hw_device_ctx, hw_type,
+                                             NULL, NULL, 0);
+            if (ret < 0) {
+                LOGE("Could not create VideoToolbox device: %s",
+                     av_err2str(ret));
+                return false;
+            }
+
+            hwdec->name = "videotoolbox";
+            break;
+        }
+#endif
         default:
             LOGE("No decoder for hardware device type: %s",
                  av_hwdevice_get_type_name(hw_type));
