@@ -27,6 +27,7 @@ unset PKG_CONFIG_PATH
 export PKG_CONFIG_LIBDIR="$DEPS_INSTALL_DIR/lib/pkgconfig"
 
 rm -rf "$LINUX_BUILD_DIR"
+# VA-API is not available in the static build (it requires libva and libdrm)
 meson setup "$LINUX_BUILD_DIR" \
     -Dc_args="-I$DEPS_INSTALL_DIR/include" \
     -Dc_link_args="-L$DEPS_INSTALL_DIR/lib" \
@@ -35,7 +36,8 @@ meson setup "$LINUX_BUILD_DIR" \
     -Db_lto=true \
     -Dcompile_server=false \
     -Dportable=true \
-    -Dstatic=true
+    -Dstatic=true \
+    -Dvaapi=false
 ninja -C "$LINUX_BUILD_DIR"
 
 # Group intermediate outputs into a 'dist' directory

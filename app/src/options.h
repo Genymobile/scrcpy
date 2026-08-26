@@ -74,6 +74,7 @@ enum sc_audio_source {
 enum sc_hwdec_mode {
     SC_HWDEC_MODE_AUTO,
     SC_HWDEC_MODE_DISABLED,
+    SC_HWDEC_MODE_VAAPI,
 };
 
 static inline const char *
@@ -83,6 +84,8 @@ sc_hwdec_mode_get_name(enum sc_hwdec_mode mode) {
             return "auto";
         case SC_HWDEC_MODE_DISABLED:
             return "disabled";
+        case SC_HWDEC_MODE_VAAPI:
+            return "vaapi";
         default:
             return "(unknown)";
     }

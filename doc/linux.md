@@ -37,10 +37,10 @@ First, you need to install the required packages:
 
 ```bash
 # for Debian/Ubuntu
-sudo apt install ffmpeg libsdl3-0 libusb-1.0-0 adb wget \
+sudo apt install ffmpeg libsdl3-0 libusb-1.0-0 adb wget va-driver-all \
                  gcc git pkg-config meson ninja-build libsdl3-dev \
                  libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev \
-                 libswresample-dev libusb-1.0-0-dev libv4l-dev
+                 libswresample-dev libusb-1.0-0-dev libv4l-dev libdrm-dev
 ```
 
 Then clone the repo and execute the installation script

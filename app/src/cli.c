@@ -437,8 +437,8 @@ static const struct sc_option options[] = {
         .argdesc = "mode",
         .text = "Configure hardware video decoding on the computer.\n"
                 "Possible values are \"auto\" (the first available hardware "
-                "decoder, software decoding otherwise) and \"disabled\" "
-                "(always use software decoding).\n"
+                "decoder, software decoding otherwise), \"disabled\" "
+                "(always use software decoding) and \"vaapi\" (Linux only).\n"
                 "Default is \"auto\".",
     },
     {
@@ -2510,7 +2510,18 @@ parse_hwdec_mode(const char *optarg, enum sc_hwdec_mode *mode) {
         return true;
     }
 
-    LOGE("Unsupported hwdec mode: %s (expected auto or disabled)", optarg);
+    if (!strcmp(optarg, "vaapi")) {
+#ifdef HAVE_VAAPI
+        *mode = SC_HWDEC_MODE_VAAPI;
+        return true;
+#else
+        LOGE("VA-API support is disabled on this platform.");
+        return false;
+#endif
+    }
+
+    LOGE("Unsupported hwdec mode: %s (expected auto, disabled or vaapi)",
+         optarg);
     return false;
 }
 
