@@ -6,6 +6,9 @@
 #ifdef HAVE_VAAPI
 # include "interop_vaapi.h"
 #endif
+#ifdef HAVE_D3D11VA
+# include "interop_d3d11va.h"
+#endif
 #include "util/log.h"
 
 struct sc_interop *
@@ -25,6 +28,20 @@ sc_interop_new(enum sc_hwdec_mode hwdec_mode, SDL_Renderer *renderer,
             return NULL;
         }
         LOGI("VA-API interop unavailable");
+    }
+#endif
+
+#ifdef HAVE_D3D11VA
+    if (any || hwdec_mode == SC_HWDEC_MODE_D3D11VA) {
+        struct sc_interop_d3d11va *d3d11va = sc_interop_d3d11va_new(renderer);
+        if (d3d11va) {
+            return &d3d11va->interop;
+        }
+        if (!any) {
+            LOGE("D3D11VA interop unavailable");
+            return NULL;
+        }
+        LOGI("D3D11VA interop unavailable");
     }
 #endif
 

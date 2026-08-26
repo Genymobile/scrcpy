@@ -5,7 +5,71 @@
 #include <libavutil/error.h>
 #include <libavutil/pixdesc.h>
 
+#ifdef HAVE_D3D11VA
+// Define the GUIDs (IID_ID3D10Multithread)
+# define INITGUID
+# define COBJMACROS
+# include <d3d11.h>
+# include <libavutil/hwcontext_d3d11va.h>
+#endif
+
 #include "util/log.h"
+
+#ifdef HAVE_D3D11VA
+static bool
+sc_hwdec_init_d3d11va(struct sc_hwdec *hwdec, SDL_Renderer *renderer) {
+    assert(renderer);
+
+    // The properties are owned by the renderer
+    SDL_PropertiesID props = SDL_GetRendererProperties(renderer);
+    ID3D11Device *device =
+        SDL_GetPointerProperty(props, SDL_PROP_RENDERER_D3D11_DEVICE_POINTER,
+                               NULL);
+    if (!device) {
+        LOGE("D3D11VA: SDL did not expose its Direct3D 11 device");
+        return false;
+    }
+
+    UINT flags = ID3D11Device_GetCreationFlags(device);
+    if (flags & D3D11_CREATE_DEVICE_SINGLETHREADED) {
+        LOGE("D3D11VA: the Direct3D 11 device is single-threaded");
+        return false;
+    }
+
+    ID3D10Multithread *multithread = NULL;
+    HRESULT hr = ID3D11Device_QueryInterface(device, &IID_ID3D10Multithread,
+                                             (void **) &multithread);
+    if (FAILED(hr)) {
+        LOGE("D3D11VA: could not enable multithread protection");
+        return false;
+    }
+    ID3D10Multithread_SetMultithreadProtected(multithread, TRUE);
+    ID3D10Multithread_Release(multithread);
+
+    AVBufferRef *hw_device_ctx =
+        av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_D3D11VA);
+    if (!hw_device_ctx) {
+        LOG_OOM();
+        return false;
+    }
+
+    // FFmpeg releases its reference when the device context is freed
+    AVHWDeviceContext *device_ctx = (AVHWDeviceContext *) hw_device_ctx->data;
+    AVD3D11VADeviceContext *hwctx = device_ctx->hwctx;
+    hwctx->device = device;
+    ID3D11Device_AddRef(device);
+
+    int ret = av_hwdevice_ctx_init(hw_device_ctx);
+    if (ret < 0) {
+        LOGE("Could not create D3D11VA device: %s", av_err2str(ret));
+        av_buffer_unref(&hw_device_ctx);
+        return false;
+    }
+
+    hwdec->hw_device_ctx = hw_device_ctx;
+    return true;
+}
+#endif
 
 bool
 sc_hwdec_init(struct sc_hwdec *hwdec, enum AVHWDeviceType hw_type,
@@ -31,6 +95,15 @@ sc_hwdec_init(struct sc_hwdec *hwdec, enum AVHWDeviceType hw_type,
             hwdec->name = "vaapi";
             break;
         }
+#endif
+#ifdef HAVE_D3D11VA
+        case AV_HWDEVICE_TYPE_D3D11VA:
+            if (!sc_hwdec_init_d3d11va(hwdec, renderer)) {
+                return false;
+            }
+
+            hwdec->name = "d3d11va";
+            break;
 #endif
         default:
             LOGE("No decoder for hardware device type: %s",

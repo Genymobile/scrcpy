@@ -207,7 +207,7 @@ _scrcpy() {
             return
             ;;
         --hwdec)
-            COMPREPLY=($(compgen -W 'auto disabled vaapi' -- "$cur"))
+            COMPREPLY=($(compgen -W 'auto disabled vaapi d3d11va' -- "$cur"))
             return
             ;;
         --audio-bit-rate \

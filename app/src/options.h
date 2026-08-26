@@ -75,6 +75,7 @@ enum sc_hwdec_mode {
     SC_HWDEC_MODE_AUTO,
     SC_HWDEC_MODE_DISABLED,
     SC_HWDEC_MODE_VAAPI,
+    SC_HWDEC_MODE_D3D11VA,
 };
 
 static inline const char *
@@ -86,6 +87,8 @@ sc_hwdec_mode_get_name(enum sc_hwdec_mode mode) {
             return "disabled";
         case SC_HWDEC_MODE_VAAPI:
             return "vaapi";
+        case SC_HWDEC_MODE_D3D11VA:
+            return "d3d11va";
         default:
             return "(unknown)";
     }
