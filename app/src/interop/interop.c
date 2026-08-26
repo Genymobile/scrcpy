@@ -9,6 +9,9 @@
 #ifdef HAVE_D3D11VA
 # include "interop_d3d11va.h"
 #endif
+#ifdef HAVE_VIDEOTOOLBOX
+# include "interop_videotoolbox.h"
+#endif
 #include "util/log.h"
 
 struct sc_interop *
@@ -42,6 +45,21 @@ sc_interop_new(enum sc_hwdec_mode hwdec_mode, SDL_Renderer *renderer,
             return NULL;
         }
         LOGI("D3D11VA interop unavailable");
+    }
+#endif
+
+#ifdef HAVE_VIDEOTOOLBOX
+    if (any || hwdec_mode == SC_HWDEC_MODE_VIDEOTOOLBOX) {
+        struct sc_interop_videotoolbox *vt =
+            sc_interop_videotoolbox_new(renderer);
+        if (vt) {
+            return &vt->interop;
+        }
+        if (!any) {
+            LOGE("VideoToolbox interop unavailable");
+            return NULL;
+        }
+        LOGI("VideoToolbox interop unavailable");
     }
 #endif
 

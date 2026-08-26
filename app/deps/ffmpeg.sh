@@ -116,6 +116,14 @@ else
             --enable-hwaccel=av1_d3d11va
             --enable-hwaccel=av1_d3d11va2
         )
+    elif [[ "$HOST" == macos ]]
+    then
+        conf+=(
+            --enable-videotoolbox
+            --enable-hwaccel=h264_videotoolbox
+            --enable-hwaccel=hevc_videotoolbox
+            --enable-hwaccel=av1_videotoolbox
+        )
     fi
 
     if [[ "$LINK_TYPE" == static ]]
