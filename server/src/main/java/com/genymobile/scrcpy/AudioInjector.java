@@ -10,6 +10,7 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
+import android.os.Build;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -34,13 +35,45 @@ public final class AudioInjector {
         return audioAttributesBuilder.build();
     }
 
+    private static void addCapturePreset(Object builder, Method addMixRuleMethod, int rule, int preset) throws Exception {
+        addMixRuleMethod.invoke(builder, rule, createAudioAttributes(preset));
+    }
+
+    private static AudioTrack createAudioTrack(Object audioPolicy, Object audioMix) throws Exception {
+        Method createAudioTrackSourceMethod = audioPolicy.getClass()
+                        .getDeclaredMethod("createAudioTrackSource", audioMix.getClass());
+        AudioTrack audioTrack = (AudioTrack) createAudioTrackSourceMethod.invoke(audioPolicy, audioMix);
+        Objects.requireNonNull(audioTrack);
+        try {
+            audioTrack.play();
+            return audioTrack;
+        } catch (Exception e) {
+            audioTrack.release();
+            throw e;
+        }
+    }
+
+    private static void unregisterAudioPolicy(AudioManager audioManager, Object audioPolicy) {
+        try {
+            Method unregisterAudioPolicyMethod = audioManager.getClass()
+                            .getDeclaredMethod("unregisterAudioPolicy", audioPolicy.getClass());
+            unregisterAudioPolicyMethod.invoke(audioManager, audioPolicy);
+        } catch (Exception e) {
+            Ln.w("Could not unregister client audio policy", e);
+        }
+    }
+
     /**
      * Injects audio from a bounded latest-sample buffer into the device's microphone.
      *
      * @param pcm The PCM audio data to inject
      * @throws Exception if audio injection setup fails
      */
-    public static void injectAudio(LatestAudioBuffer pcm) throws Exception {
+    public static void injectAudio(LatestAudioBuffer pcm, Runnable onFailure) throws Exception {
+        if (Build.VERSION.SDK_INT < AndroidVersions.API_33_ANDROID_13) {
+            throw new UnsupportedOperationException("Client audio injection requires Android 13 or newer");
+        }
+
         Context systemContext = Workarounds.getSystemContext();
         Objects.requireNonNull(systemContext);
 
@@ -65,15 +98,16 @@ public final class AudioInjector {
         int ruleMatchAttributeCapturePreset = 0x1 << 1;
 
         // Add mix rules for various capture presets to intercept all microphone capture
-        addMixRuleMethod.invoke(audioMixRuleBuilder, ruleMatchAttributeCapturePreset,
-                                                        createAudioAttributes(MediaRecorder.AudioSource.DEFAULT));
-        addMixRuleMethod.invoke(audioMixRuleBuilder, ruleMatchAttributeCapturePreset,
-                                                        createAudioAttributes(MediaRecorder.AudioSource.MIC));
-        addMixRuleMethod.invoke(audioMixRuleBuilder, ruleMatchAttributeCapturePreset,
-                                                        createAudioAttributes(
-                                                                        MediaRecorder.AudioSource.VOICE_COMMUNICATION));
-        addMixRuleMethod.invoke(audioMixRuleBuilder, ruleMatchAttributeCapturePreset,
-                                                        createAudioAttributes(MediaRecorder.AudioSource.UNPROCESSED));
+        addCapturePreset(audioMixRuleBuilder, addMixRuleMethod, ruleMatchAttributeCapturePreset, MediaRecorder.AudioSource.DEFAULT);
+        addCapturePreset(audioMixRuleBuilder, addMixRuleMethod, ruleMatchAttributeCapturePreset, MediaRecorder.AudioSource.MIC);
+        addCapturePreset(audioMixRuleBuilder, addMixRuleMethod, ruleMatchAttributeCapturePreset, MediaRecorder.AudioSource.VOICE_COMMUNICATION);
+        addCapturePreset(audioMixRuleBuilder, addMixRuleMethod, ruleMatchAttributeCapturePreset, MediaRecorder.AudioSource.UNPROCESSED);
+        // Recorder and speech apps commonly choose these presets instead of MIC.
+        // They are still microphone capture paths and should receive the operator
+        // audio while passthrough is explicitly enabled.
+        addCapturePreset(audioMixRuleBuilder, addMixRuleMethod, ruleMatchAttributeCapturePreset, MediaRecorder.AudioSource.CAMCORDER);
+        addCapturePreset(audioMixRuleBuilder, addMixRuleMethod, ruleMatchAttributeCapturePreset, MediaRecorder.AudioSource.VOICE_RECOGNITION);
+        addCapturePreset(audioMixRuleBuilder, addMixRuleMethod, ruleMatchAttributeCapturePreset, MediaRecorder.AudioSource.VOICE_PERFORMANCE);
 
         // var audioMixingRule = audioMixRuleBuilder.build();
         Method audioMixRuleBuildMethod = audioMixRuleBuilder.getClass().getDeclaredMethod("build");
@@ -126,7 +160,8 @@ public final class AudioInjector {
         Object audioPolicy = audioPolicyBuildMethod.invoke(audioPolicyBuilder);
         Objects.requireNonNull(audioPolicy);
 
-        Object audioManager = (AudioManager) systemContext.getSystemService(AudioManager.class);
+        AudioManager audioManager = (AudioManager) systemContext.getSystemService(AudioManager.class);
+        Objects.requireNonNull(audioManager);
 
         // audioManager.registerAudioPolicy(audioPolicy);
         Method registerAudioPolicyMethod = audioManager.getClass()
@@ -135,31 +170,44 @@ public final class AudioInjector {
         int result = (int) registerAudioPolicyMethod.invoke(audioManager, audioPolicy);
 
         if (result != 0) {
-            Ln.d("registerAudioPolicy failed");
-            return;
+            throw new IllegalStateException("registerAudioPolicy failed with status " + result);
         }
 
-        // var audioTrack = audioPolicy.createAudioTrackSource(audioMix);
-        Method createAudioTrackSourceMethod = audioPolicy.getClass()
-                        .getDeclaredMethod("createAudioTrackSource", audioMix.getClass());
-        AudioTrack audioTrack = (AudioTrack) createAudioTrackSourceMethod.invoke(audioPolicy, audioMix);
-        Objects.requireNonNull(audioTrack);
-
-        audioTrack.play();
+        AudioTrack audioTrack;
+        try {
+            audioTrack = createAudioTrack(audioPolicy, audioMix);
+        } catch (Exception e) {
+            unregisterAudioPolicy(audioManager, audioPolicy);
+            throw e;
+        }
 
         new Thread(() -> {
             byte[] audioBuffer = new byte[4096];
-            while (true) {
-                try {
+            try {
+                while (true) {
                     int bytesRead = pcm.read(audioBuffer);
                     if (bytesRead <= 0) {
                         break;
                     }
-                    audioTrack.write(audioBuffer, 0, bytesRead);
-                } catch (Exception e) {
-                    Ln.e("Audio injection error", e);
-                    break;
+                    int written = audioTrack.write(audioBuffer, 0, bytesRead);
+                    if (written < 0) {
+                        throw new IllegalStateException("AudioTrack write failed with status " + written);
+                    }
+                    if (written != bytesRead) {
+                        Ln.w("Client audio short write: " + written + "/" + bytesRead + " bytes");
+                    }
                 }
+            } catch (Exception e) {
+                Ln.e("Audio injection error", e);
+                onFailure.run();
+            } finally {
+                try {
+                    audioTrack.stop();
+                } catch (Exception e) {
+                    // It may already be stopped after an AudioTrack failure.
+                }
+                audioTrack.release();
+                unregisterAudioPolicy(audioManager, audioPolicy);
             }
         }, "client-audio-injector").start();
     }

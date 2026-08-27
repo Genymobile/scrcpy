@@ -63,6 +63,9 @@ public class AudioDecoder {
                 Ln.e("Opus decoder error", e);
             } finally {
                 stop();
+                // Wake the injector if it is waiting for another decoded frame,
+                // so it can release its AudioTrack and unregister the policy.
+                pcmOutput.close();
             }
         }, "opus-decoder").start();
     }
