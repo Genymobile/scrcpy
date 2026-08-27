@@ -167,8 +167,8 @@ public final class Server {
             }
 
             if (clientAudio) {
+                LocalSocket s = connection.getClientAudioSocket();
                 try {
-                    LocalSocket s = connection.getClientAudioSocket();
                     InputStream is = s.getInputStream();
                     BufferedInputStream bis = new BufferedInputStream(is);
                     // Four stereo PCM frames (about 80 ms). If Android consumes
@@ -177,9 +177,14 @@ public final class Server {
                     LatestAudioBuffer pcm = new LatestAudioBuffer(4 * 4096);
                     AudioDecoder decoder = new AudioDecoder();
                     decoder.start(bis, pcm);
-                    AudioInjector.injectAudio(pcm);
+                    AudioInjector.injectAudio(pcm, () -> closeClientAudioSocket(connection));
                 } catch (Exception e) {
                     Ln.e("Client audio injection error", e);
+                    // Socket four is the only failure signal Viewport can observe.
+                    // Leaving it open makes a rejected AudioPolicy look healthy:
+                    // the browser stays green and Viewport keeps writing audio
+                    // which Android will never apply.
+                    closeClientAudioSocket(connection);
                 }
             }
 
@@ -215,6 +220,14 @@ public final class Server {
             }
 
             connection.close();
+        }
+    }
+
+    private static void closeClientAudioSocket(DesktopConnection connection) {
+        try {
+            connection.closeClientAudio();
+        } catch (IOException e) {
+            Ln.w("Could not close failed client audio socket", e);
         }
     }
 
