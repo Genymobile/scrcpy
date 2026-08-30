@@ -81,5 +81,5 @@ else
     cmake "$SOURCES_DIR/$PROJECT_DIR" "${conf[@]}"
 fi
 
-cmake --build . -j
+cmake --build . -j"$NPROC"
 cmake --install .
