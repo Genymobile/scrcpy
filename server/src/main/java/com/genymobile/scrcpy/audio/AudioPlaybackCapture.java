@@ -16,6 +16,8 @@ import android.os.Build;
 
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class AudioPlaybackCapture implements AudioCapture {
 
@@ -23,6 +25,9 @@ public final class AudioPlaybackCapture implements AudioCapture {
 
     private AudioRecord recorder;
     private AudioRecordReader reader;
+
+    private Object audioMix;
+    private Object audioPolicy;
 
     public AudioPlaybackCapture(boolean keepPlayingOnDevice) {
         this.keepPlayingOnDevice = keepPlayingOnDevice;
@@ -43,19 +48,22 @@ public final class AudioPlaybackCapture implements AudioCapture {
             Method setTargetMixRoleMethod = audioMixingRuleBuilderClass.getMethod("setTargetMixRole", int.class);
             setTargetMixRoleMethod.invoke(audioMixingRuleBuilder, mixRolePlayersConstant);
 
-            AudioAttributes attributes = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build();
+            AudioAttributes mediaAttr = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build();
 
-            // audioMixingRuleBuilder.addMixRule(AudioMixingRule.RULE_MATCH_ATTRIBUTE_USAGE, attributes);
+            // audioMixingRuleBuilder.addMixRule(AudioMixingRule.RULE_MATCH_ATTRIBUTE_USAGE, mediaAttr);
             int ruleMatchAttributeUsageConstant = audioMixingRuleClass.getField("RULE_MATCH_ATTRIBUTE_USAGE").getInt(null);
             Method addMixRuleMethod = audioMixingRuleBuilderClass.getMethod("addMixRule", int.class, Object.class);
-            addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, attributes);
+            addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, mediaAttr);
 
-            // AudioMixingRule audioMixingRule = builder.build();
-            Object audioMixingRule = audioMixingRuleBuilderClass.getMethod("build").invoke(audioMixingRuleBuilder);
+            AudioAttributes navAttr = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE).build();
+            addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, navAttr);
 
             // audioMixingRuleBuilder.voiceCommunicationCaptureAllowed(true);
             Method voiceCommunicationCaptureAllowedMethod = audioMixingRuleBuilderClass.getMethod("voiceCommunicationCaptureAllowed", boolean.class);
             voiceCommunicationCaptureAllowedMethod.invoke(audioMixingRuleBuilder, true);
+
+            // AudioMixingRule audioMixingRule = builder.build();
+            Object audioMixingRule = audioMixingRuleBuilderClass.getMethod("build").invoke(audioMixingRuleBuilder);
 
             Class<?> audioMixClass = Class.forName("android.media.audiopolicy.AudioMix");
             Class<?> audioMixBuilderClass = Class.forName("android.media.audiopolicy.AudioMix$Builder");
@@ -75,7 +83,7 @@ public final class AudioPlaybackCapture implements AudioCapture {
             setRouteFlags.invoke(audioMixBuilder, routeFlags);
 
             // AudioMix audioMix = audioMixBuilder.build();
-            Object audioMix = audioMixBuilderClass.getMethod("build").invoke(audioMixBuilder);
+            audioMix = audioMixBuilderClass.getMethod("build").invoke(audioMixBuilder);
 
             Class<?> audioPolicyClass = Class.forName("android.media.audiopolicy.AudioPolicy");
             Class<?> audioPolicyBuilderClass = Class.forName("android.media.audiopolicy.AudioPolicy$Builder");
@@ -88,7 +96,7 @@ public final class AudioPlaybackCapture implements AudioCapture {
             addMixMethod.invoke(audioPolicyBuilder, audioMix);
 
             // AudioPolicy audioPolicy = audioPolicyBuilder.build();
-            Object audioPolicy = audioPolicyBuilderClass.getMethod("build").invoke(audioPolicyBuilder);
+            audioPolicy = audioPolicyBuilderClass.getMethod("build").invoke(audioPolicyBuilder);
 
             // AudioManager.registerAudioPolicyStatic(audioPolicy);
             Method registerAudioPolicyStaticMethod = AudioManager.class.getDeclaredMethod("registerAudioPolicyStatic", audioPolicyClass);
@@ -127,7 +135,41 @@ public final class AudioPlaybackCapture implements AudioCapture {
         if (recorder != null) {
             // Will call .stop() if necessary, without throwing an IllegalStateException
             recorder.release();
+            recorder = null;
         }
+
+        // audioPolicy may be registered even when recorder is null, e.g. if
+        // createAudioRecordSink threw or returned null after registration.
+        if (audioPolicy != null) {
+            try {
+                Class<?> audioPolicyClass = Class.forName("android.media.audiopolicy.AudioPolicy");
+
+                List<Object> audioMixList = new ArrayList<>();
+                audioMixList.add(audioMix);
+
+                // AudioPolicy.detachMixes(audioMixList);
+                Method detachMixesMethod = audioPolicyClass.getMethod("detachMixes", List.class);
+                detachMixesMethod.invoke(audioPolicy, audioMixList);
+
+                Method unregisterMethod;
+                try {
+                    unregisterMethod = AudioManager.class.getDeclaredMethod("unregisterAudioPolicyAsyncStatic", audioPolicyClass);
+                } catch (NoSuchMethodException e) {
+                    unregisterMethod = AudioManager.class.getDeclaredMethod("unregisterAudioPolicyStatic", audioPolicyClass);
+                }
+                unregisterMethod.setAccessible(true);
+                unregisterMethod.invoke(null, audioPolicy);
+            } catch (Exception e) {
+                Ln.e("Could not stop audio playback capture", e);
+            } finally {
+                audioMix = null;
+                audioPolicy = null;
+            }
+
+            Ln.e("Audio playback capture stopped");
+        }
+
+        reader = null;
     }
 
     @Override
