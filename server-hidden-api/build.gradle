@@ -1,0 +1,9 @@
+apply plugin: 'com.android.library'
+
+android {
+    namespace = 'com.genymobile.scrcpy.hiddenapi'
+    compileSdk = 36
+    defaultConfig {
+        minSdkVersion 21
+    }
+}

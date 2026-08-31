@@ -26,6 +26,7 @@ android {
 }
 
 dependencies {
+    compileOnly project(':server-hidden-api')
     testImplementation 'junit:junit:4.13.2'
 }
 
