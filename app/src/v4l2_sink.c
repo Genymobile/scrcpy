@@ -200,8 +200,8 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs, const AVCodecContext *ctx,
         goto error_avformat_free_context;
     }
 #else
-    strncpy(vs->format_ctx->filename, vs->device_name,
-            sizeof(vs->format_ctx->filename));
+    sc_strncpy(vs->format_ctx->filename, vs->device_name,
+               sizeof(vs->format_ctx->filename));
 #endif
 
     AVStream *ostream = avformat_new_stream(vs->format_ctx, encoder);
