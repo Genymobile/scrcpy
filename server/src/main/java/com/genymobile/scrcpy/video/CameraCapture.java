@@ -357,6 +357,14 @@ public class CameraCapture extends SurfaceCapture {
     public void stop() {
         cameraHandler.post(() -> {
             assertCameraThread();
+            if (currentSession != null) {
+                try {
+                    currentSession.stopRepeating();
+                } catch (CameraAccessException | IllegalStateException e) {
+                    // The session may already be closed (for example if the camera has been disconnected)
+                    Ln.d("Could not stop repeating capture request: " + e.getMessage());
+                }
+            }
             currentSession = null;
             requestBuilder = null;
             started = false;
