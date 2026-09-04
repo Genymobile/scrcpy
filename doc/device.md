@@ -1,6 +1,6 @@
 # Device
 
-Some command line arguments perform actions on the device itself while scrcpy is
+Some command line arguments perform actions on the device itself while slink is
 running.
 
 
@@ -10,7 +10,7 @@ To prevent the device from turning off due to inactivity, `--keep-active`
 periodically signals user activity to the system:
 
 ```bash
-scrcpy --keep-active
+slink --keep-active
 ```
 
 
@@ -20,11 +20,11 @@ To prevent the device from sleeping after a delay **when the device is plugged
 in**:
 
 ```bash
-scrcpy --stay-awake
-scrcpy -w
+slink --stay-awake
+slink -w
 ```
 
-The initial state is restored when _scrcpy_ is closed.
+The initial state is restored when _slink_ is closed.
 
 If the device is not plugged in (i.e. only connected over TCP/IP),
 `--stay-awake` has no effect (this is the Android behavior).
@@ -49,10 +49,10 @@ adb shell settings put global stay_on_while_plugged_in 0
 
 The Android screen automatically turns off after some delay.
 
-To change this delay while scrcpy is running:
+To change this delay while slink is running:
 
 ```bash
-scrcpy --screen-off-timeout=300  # 300 seconds (5 minutes)
+slink --screen-off-timeout=300  # 300 seconds (5 minutes)
 ```
 
 The initial value is restored on exit.
@@ -66,7 +66,7 @@ adb shell settings get system screen_off_timeout
 adb shell settings put system screen_off_timeout 30000
 ```
 
-Note that the Android value is in milliseconds, but the scrcpy command line
+Note that the Android value is in milliseconds, but the slink command line
 argument is in seconds.
 
 
@@ -76,8 +76,8 @@ It is possible to turn the device screen off while mirroring on start with a
 command-line option:
 
 ```bash
-scrcpy --turn-screen-off
-scrcpy -S   # short version
+slink --turn-screen-off
+slink -S   # short version
 ```
 
 Or by pressing <kbd>MOD</kbd>+<kbd>o</kbd> at any time (see
@@ -86,15 +86,15 @@ Or by pressing <kbd>MOD</kbd>+<kbd>o</kbd> at any time (see
 To turn it back on, press <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>.
 
 On Android, the `POWER` button always turns the screen on. For convenience, if
-`POWER` is sent via _scrcpy_ (via right-click or <kbd>MOD</kbd>+<kbd>p</kbd>),
+`POWER` is sent via _slink_ (via right-click or <kbd>MOD</kbd>+<kbd>p</kbd>),
 it will force to turn the screen off after a small delay (on a best effort
 basis). The physical `POWER` button will still cause the screen to be turned on.
 
 It can also be useful to prevent the device from sleeping:
 
 ```bash
-scrcpy --turn-screen-off --stay-awake
-scrcpy -Sw   # short version
+slink --turn-screen-off --stay-awake
+slink -Sw   # short version
 ```
 
 Since Android 15, it is possible to change this setting manually:
@@ -112,12 +112,12 @@ adb shell cmd display power-on 0
 For presentations, it may be useful to show physical touches (on the physical
 device). Android exposes this feature in _Developers options_.
 
-_Scrcpy_ provides an option to enable this feature on start and restore the
+_slink_ provides an option to enable this feature on start and restore the
 initial value on exit:
 
 ```bash
-scrcpy --show-touches
-scrcpy -t   # short version
+slink --show-touches
+slink -t   # short version
 ```
 
 Note that it only shows _physical_ touches (by a finger on the device).
@@ -135,10 +135,10 @@ adb shell settings put system show_touches 0
 
 ## Power off on close
 
-To turn the device screen off when closing _scrcpy_:
+To turn the device screen off when closing _slink_:
 
 ```bash
-scrcpy --power-off-on-close
+slink --power-off-on-close
 ```
 
 ## Power on on start
@@ -146,7 +146,7 @@ scrcpy --power-off-on-close
 By default, on start, the device is powered on. To prevent this behavior:
 
 ```bash
-scrcpy --no-power-on
+slink --no-power-on
 ```
 
 
@@ -155,34 +155,34 @@ scrcpy --no-power-on
 To list the Android apps installed on the device:
 
 ```bash
-scrcpy --list-apps
+slink --list-apps
 ```
 
 An app, selected by its package name, can be launched on start:
 
 ```bash
-scrcpy --start-app=org.mozilla.firefox
+slink --start-app=org.mozilla.firefox
 ```
 
 This feature can be used to run an app in a [virtual
 display](virtual-display.md):
 
 ```bash
-scrcpy --new-display=1920x1080 --start-app=org.videolan.vlc
+slink --new-display=1920x1080 --start-app=org.videolan.vlc
 ```
 
 The app can be optionally forced-stop before being started, by adding a `+`
 prefix:
 
 ```bash
-scrcpy --start-app=+org.mozilla.firefox
+slink --start-app=+org.mozilla.firefox
 ```
 
 For convenience, it is also possible to select an app by its name, by adding a
 `?` prefix:
 
 ```bash
-scrcpy --start-app=?firefox
+slink --start-app=?firefox
 ```
 
 But retrieving app names may take some time (sometimes several seconds), so
@@ -191,5 +191,5 @@ passing the package name is recommended.
 The `+` and `?` prefixes can be combined (in that order):
 
 ```bash
-scrcpy --start-app=+?firefox
+slink --start-app=+?firefox
 ```

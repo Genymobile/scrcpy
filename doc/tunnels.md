@@ -1,6 +1,6 @@
 # Tunnels
 
-Scrcpy is designed to mirror local Android devices. Tunnels allow to connect to
+slink is designed to mirror local Android devices. Tunnels allow to connect to
 a remote device (e.g. over the Internet).
 
 To connect to a remote device, it is possible to connect a local `adb` client to
@@ -22,33 +22,33 @@ adb -a nodaemon server start
 unencrypted.**
 
 Suppose that this server is accessible at 192.168.1.2. Then, from another
-terminal, run `scrcpy`:
+terminal, run `slink`:
 
 ```bash
 # in bash
 export ADB_SERVER_SOCKET=tcp:192.168.1.2:5037
-scrcpy --tunnel-host=192.168.1.2
+slink --tunnel-host=192.168.1.2
 ```
 
 ```cmd
 :: in cmd
 set ADB_SERVER_SOCKET=tcp:192.168.1.2:5037
-scrcpy --tunnel-host=192.168.1.2
+slink --tunnel-host=192.168.1.2
 ```
 
 ```powershell
 # in PowerShell
 $env:ADB_SERVER_SOCKET = 'tcp:192.168.1.2:5037'
-scrcpy --tunnel-host=192.168.1.2
+slink --tunnel-host=192.168.1.2
 ```
 
-By default, `scrcpy` uses the local port used for `adb forward` tunnel
+By default, `slink` uses the local port used for `adb forward` tunnel
 establishment (typically `27183`, see `--port`). It is also possible to force a
 different tunnel port (it may be useful in more complex situations, when more
 redirections are involved):
 
 ```bash
-scrcpy --tunnel-port=1234
+slink --tunnel-port=1234
 ```
 
 
@@ -72,24 +72,24 @@ ssh -CN -L5038:localhost:5037 -R27183:localhost:27183 your_remote_computer
 # keep this open
 ```
 
-From another terminal, run `scrcpy`:
+From another terminal, run `slink`:
 
 ```bash
 # in bash
 export ADB_SERVER_SOCKET=tcp:localhost:5038
-scrcpy
+slink
 ```
 
 ```cmd
 :: in cmd
 set ADB_SERVER_SOCKET=tcp:localhost:5038
-scrcpy
+slink
 ```
 
 ```powershell
 # in PowerShell
 $env:ADB_SERVER_SOCKET = 'tcp:localhost:5038'
-scrcpy
+slink
 ```
 
 To avoid enabling remote port forwarding, you could force a forward connection
@@ -102,22 +102,22 @@ ssh -CN -L5038:localhost:5037 -L27183:localhost:27183 your_remote_computer
 # keep this open
 ```
 
-From another terminal, run `scrcpy`:
+From another terminal, run `slink`:
 
 ```bash
 # in bash
 export ADB_SERVER_SOCKET=tcp:localhost:5038
-scrcpy --force-adb-forward
+slink --force-adb-forward
 ```
 
 ```cmd
 :: in cmd
 set ADB_SERVER_SOCKET=tcp:localhost:5038
-scrcpy --force-adb-forward
+slink --force-adb-forward
 ```
 
 ```powershell
 # in PowerShell
 $env:ADB_SERVER_SOCKET = 'tcp:localhost:5038'
-scrcpy --force-adb-forward
+slink --force-adb-forward
 ```

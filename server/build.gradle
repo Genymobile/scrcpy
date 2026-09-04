@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = 'com.genymobile.scrcpy'
+    namespace = 'com.slickyincorp.slink'
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.genymobile.scrcpy"
+        applicationId = "com.slickyincorp.slink"
         minSdkVersion 21
         targetSdkVersion 36
         versionCode 40100

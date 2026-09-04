@@ -29,7 +29,7 @@ src = [
     'src/packet_merger.c',
     'src/receiver.c',
     'src/recorder.c',
-    'src/scrcpy.c',
+    'src/slink.c',
     'src/screen.c',
     'src/sdl_hints.c',
     'src/server.c',
@@ -63,9 +63,8 @@ src = [
     'src/util/strbuf.c',
     'src/util/str.c',
     'src/util/term.c',
-    'src/util/thread.c',
-    'src/util/tick.c',
     'src/util/timeout.c',
+    'src/util/tick.c',
 ]
 
 feature_test_macros = [
@@ -82,7 +81,7 @@ if host_machine.system() == 'windows'
         'src/util/command.c',
         'src/sys/win/file.c',
         'src/sys/win/process.c',
-        windows.compile_resources('scrcpy-windows.rc'),
+        windows.compile_resources('slink-windows.rc'),
     ]
     feature_test_macros += [
         '-D_WIN32_WINNT=0x0600',
@@ -162,13 +161,13 @@ endforeach
 conf.set('HAVE_SOCK_CLOEXEC', host_machine.system() != 'windows' and
                               cc.has_header_symbol('sys/socket.h', 'SOCK_CLOEXEC'))
 
-# the version, updated on release
+# Slink client version, updated on release.
 conf.set_quoted('SCRCPY_VERSION', meson.project_version())
 
 # the prefix used during configuration (meson --prefix=PREFIX)
 conf.set_quoted('PREFIX', get_option('prefix'))
 
-# build a "portable" version (with scrcpy-server accessible from the same
+# build a "portable" version (with the Android server accessible from the same
 # directory as the executable)
 conf.set('PORTABLE', get_option('portable'))
 
@@ -190,7 +189,7 @@ configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
 
-executable('scrcpy', src,
+executable('slink', src,
            dependencies: dependencies,
            include_directories: src_dir,
            install: true,
@@ -199,22 +198,21 @@ executable('scrcpy', src,
 # <https://mesonbuild.com/Builtin-options.html#directories>
 datadir = get_option('datadir') # by default 'share'
 
-install_man('scrcpy.1')
-install_data('data/scrcpy.png',
+install_man('slink.1')
+install_data('data/slink.png',
              install_dir: datadir / 'icons/hicolor/256x256/apps')
 install_data('data/disconnected.png',
              install_dir: datadir / 'icons/hicolor/256x256/apps')
-install_data('data/zsh-completion/_scrcpy',
+install_data('data/zsh-completion/_slink',
              install_dir: datadir / 'zsh/site-functions')
-install_data('data/bash-completion/scrcpy',
+install_data('data/bash-completion/slink',
              install_dir: datadir / 'bash-completion/completions')
 
 # Desktop entry file for application launchers
 if host_machine.system() == 'linux'
-    # Install a launcher (ex: /usr/local/share/applications/scrcpy.desktop)
-    install_data('data/scrcpy.desktop',
+    install_data('data/slink.desktop',
                  install_dir: datadir / 'applications')
-    install_data('data/scrcpy-console.desktop',
+    install_data('data/slink-console.desktop',
                  install_dir: datadir / 'applications')
 endif
 

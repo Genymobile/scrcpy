@@ -67,10 +67,10 @@ For example:
 
 ```console
 $ shasum -a 256 -c SHA256SUMS.txt
-scrcpy-server-v3.3.4: OK
-scrcpy-linux-x86_64-v3.3.4.tar.gz: OK
-scrcpy-win32-v3.3.4.zip: OK
-scrcpy-win64-v3.3.4.zip: OK
-scrcpy-macos-aarch64-v3.3.4.tar.gz: OK
-scrcpy-macos-x86_64-v3.3.4.tar.gz: OK
+slink-server-v3.3.4: OK
+slink-linux-x86_64-v3.3.4.tar.gz: OK
+slink-win32-v3.3.4.zip: OK
+slink-win64-v3.3.4.zip: OK
+slink-macos-aarch64-v3.3.4.tar.gz: OK
+slink-macos-x86_64-v3.3.4.tar.gz: OK
 ```

@@ -1,0 +1,161 @@
+name: Slink source migration
+on:
+  push:
+    branches: [rebrand/slink-phase2]
+permissions:
+  contents: write
+jobs:
+  migrate:
+    if: "!contains(github.event.head_commit.message, '[slink-migration]')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Migrate source symbols, packages, and paths
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: rebrand/slink-phase2
+        shell: python
+        run: |
+          import base64
+          import json
+          import os
+          import re
+          import urllib.parse
+          import urllib.request
+
+          token = os.environ['GH_TOKEN']
+          repo = os.environ['REPO']
+          branch = os.environ['BRANCH']
+          api = f'https://api.github.com/repos/{repo}'
+          headers = {
+              'Authorization': f'Bearer {token}',
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+              'User-Agent': 'slink-source-migration',
+          }
+
+          def request(url, method='GET', payload=None):
+              data = None if payload is None else json.dumps(payload).encode()
+              req = urllib.request.Request(url, data=data, headers=headers, method=method)
+              with urllib.request.urlopen(req) as response:
+                  raw = response.read()
+                  return json.loads(raw.decode()) if raw else {}
+
+          def contents(path):
+              encoded = '/'.join(urllib.parse.quote(part, safe='') for part in path.split('/'))
+              return request(f'{api}/contents/{encoded}?ref={urllib.parse.quote(branch, safe="")}')
+
+          # Keep historical/legal upstream references intact. These identify the
+          # original Genymobile/scrcpy project and must not be rewritten.
+          protected_url = re.compile(r'https://github\\.com/Genymobile/scrcpy(?:/[^\\s)\\]>]*)?')
+          protected_external = re.compile(r'https://github\\.com/pierlon/scrcpy-docker(?:/[^\\s)\\]>]*)?')
+          text_ext = {
+              '.c', '.h', '.cc', '.cpp', '.java', '.kt', '.kts', '.xml', '.gradle',
+              '.properties', '.toml', '.ini', '.cfg', '.conf', '.txt', '.json',
+              '.yml', '.yaml', '.meson', '.mk', '.cmake', '.rc', '.vbs', '.sh',
+              '.bat', '.ps1', '.py', '.md'
+          }
+
+          def migrate_text(old):
+              protected = []
+              def protect(match):
+                  key = f'__SLINK_PROTECTED_{len(protected)}__'
+                  protected.append((key, match.group(0)))
+                  return key
+              text = protected_url.sub(protect, old)
+              text = protected_external.sub(protect, text)
+              text = re.sub(r'(?i)scrcpy', 'slink', text)
+              for key, value in protected:
+                  text = text.replace(key, value)
+              return text
+
+          # Walk the repository through the Contents API so this also covers
+          # nested Android packages and source directories.
+          files = []
+          def walk(path=''):
+              listing = contents(path)
+              if isinstance(listing, dict):
+                  listing = [listing]
+              for item in listing:
+                  if item['type'] == 'dir':
+                      walk(item['path'])
+                  elif item['type'] == 'file':
+                      files.append(item)
+          walk('')
+
+          changed = 0
+          path_moves = []
+          for item in files:
+              path = item['path']
+              lower = path.lower()
+              ext = os.path.splitext(path)[1].lower()
+              # Migrate all source/config text, plus any path carrying the legacy name.
+              if ext not in text_ext and 'scrcpy' not in lower:
+                  continue
+
+              data = request(item['url'])
+              try:
+                  old = base64.b64decode(data['content']).decode('utf-8')
+              except (KeyError, UnicodeDecodeError):
+                  continue
+
+              new = migrate_text(old)
+              new_path = re.sub(r'(?i)scrcpy', 'slink', path)
+              if new == old and new_path == path:
+                  continue
+
+              if new_path != path:
+                  path_moves.append((path, new_path, data['sha'], new))
+              else:
+                  payload = {
+                      'message': f'rebrand: migrate {path} [slink-migration]',
+                      'content': base64.b64encode(new.encode('utf-8')).decode('ascii'),
+                      'sha': data['sha'],
+                      'branch': branch,
+                  }
+                  request(f'{api}/contents/{urllib.parse.quote(path, safe="/")}', 'PUT', payload)
+                  changed += 1
+
+          # Create destination files first, then remove old paths. This handles
+          # Java package directories and source filenames without requiring git push.
+          for old_path, new_path, sha, new in path_moves:
+              if old_path == new_path:
+                  continue
+              payload = {
+                  'message': f'rebrand: move {old_path} to {new_path} [slink-migration]',
+                  'content': base64.b64encode(new.encode('utf-8')).decode('ascii'),
+                  'branch': branch,
+              }
+              request(f'{api}/contents/{urllib.parse.quote(new_path, safe="/")}', 'PUT', payload)
+              changed += 1
+              request(f'{api}/contents/{urllib.parse.quote(old_path, safe="/")}', 'DELETE', {
+                  'message': f'rebrand: remove legacy path {old_path} [slink-migration]',
+                  'sha': sha,
+                  'branch': branch,
+              })
+
+          print(f'Migrated {changed} source/config files and {len(path_moves)} legacy paths.')
+
+          # Audit source/config files. The only remaining scrcpy references must be
+          # genuine upstream URLs or external project URLs.
+          remaining = []
+          files = []
+          walk('')
+          for item in files:
+              path = item['path']
+              ext = os.path.splitext(path)[1].lower()
+              if ext not in text_ext and 'scrcpy' not in path.lower():
+                  continue
+              data = request(item['url'])
+              try:
+                  text = base64.b64decode(data['content']).decode('utf-8')
+              except (KeyError, UnicodeDecodeError):
+                  continue
+              text = protected_url.sub('', text)
+              text = protected_external.sub('', text)
+              if re.search(r'(?i)scrcpy', text) or re.search(r'(?i)scrcpy', path):
+                  remaining.append(path)
+
+          if remaining:
+              raise SystemExit('Legacy Slink migration references remain: ' + ', '.join(remaining))
+          print('Slink source/config migration audit passed.')

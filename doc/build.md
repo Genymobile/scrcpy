@@ -1,6 +1,6 @@
-# Build scrcpy
+# Build slink
 
-Here are the instructions to build _scrcpy_ (client and server).
+Here are the instructions to build _slink_ (client and server).
 
 If you just want to build and install the latest release, follow the simplified
 process described in [doc/linux.md](linux.md).
@@ -28,7 +28,7 @@ the following files to a directory accessible from your `PATH`:
  - `AdbWinApi.dll`
  - `AdbWinUsbApi.dll`
 
-It is also available in scrcpy releases.
+It is also available in slink releases.
 
 The client requires [FFmpeg] and [SDL]. Just follow the instructions.
 
@@ -183,7 +183,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 
 ### Docker
 
-See [pierlon/scrcpy-docker](https://github.com/pierlon/scrcpy-docker).
+See [pierlon/slink-docker](https://github.com/pierlon/slink-docker).
 
 
 ## Common steps
@@ -191,8 +191,8 @@ See [pierlon/scrcpy-docker](https://github.com/pierlon/scrcpy-docker).
 **As a non-root user**, clone the project:
 
 ```bash
-git clone https://github.com/Genymobile/scrcpy
-cd scrcpy
+git clone https://github.com/slickyincorp/slink
+cd slink
 ```
 
 
@@ -231,22 +231,22 @@ ninja -Cx  # DO NOT RUN AS ROOT
 _Note: `ninja` [must][ninja-user] be run as a non-root user (only `ninja
 install` must be run as root)._
 
-[ninja-user]: https://github.com/Genymobile/scrcpy/commit/4c49b27e9f6be02b8e63b508b60535426bd0291a
+[ninja-user]: https://github.com/Genymobile/slink/commit/4c49b27e9f6be02b8e63b508b60535426bd0291a
 
 
 #### Option 2: Use prebuilt server
 
- - [`scrcpy-server-v4.1`][direct-scrcpy-server]  
+ - [`slink-server-v4.1`][direct-slink-server]  
    <sub>SHA-256: `deacb991ed2509715160ffdc7907e47b4160eb30d1566217e9047fd5b8850cae`</sub>
 
-[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v4.1/scrcpy-server-v4.1
+[direct-slink-server]: https://github.com/Genymobile/slink/releases/download/v4.1/slink-server-v4.1
 
 Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:
 
 ```bash
 meson setup x --buildtype=release --strip -Db_lto=true \
-    -Dprebuilt_server=/path/to/scrcpy-server
+    -Dprebuilt_server=/path/to/slink-server
 ninja -Cx  # DO NOT RUN AS ROOT
 ```
 
@@ -263,7 +263,7 @@ The server only works with a matching client version (this server works with the
 
 ### Install
 
-After a successful build, you can install _scrcpy_ on the system:
+After a successful build, you can install _slink_ on the system:
 
 ```bash
 sudo ninja -Cx install    # without sudo on Windows
@@ -271,20 +271,20 @@ sudo ninja -Cx install    # without sudo on Windows
 
 This installs several files:
 
- - `/usr/local/bin/scrcpy` (main app)
- - `/usr/local/share/scrcpy/scrcpy-server` (server to push to the device)
- - `/usr/local/share/man/man1/scrcpy.1` (manpage)
- - `/usr/local/share/icons/hicolor/256x256/apps/scrcpy.png` (app icon)
+ - `/usr/local/bin/slink` (main app)
+ - `/usr/local/share/slink/slink-server` (server to push to the device)
+ - `/usr/local/share/man/man1/slink.1` (manpage)
+ - `/usr/local/share/icons/hicolor/256x256/apps/slink.png` (app icon)
  - `/usr/local/share/icons/hicolor/256x256/apps/disconnected.png` (device
    disconnected icon)
- - `/usr/local/share/zsh/site-functions/_scrcpy` (zsh completion)
- - `/usr/local/share/bash-completion/completions/scrcpy` (bash completion)
- - `/usr/local/share/applications/scrcpy.desktop` (app-without-console desktop
+ - `/usr/local/share/zsh/site-functions/_slink` (zsh completion)
+ - `/usr/local/share/bash-completion/completions/slink` (bash completion)
+ - `/usr/local/share/applications/slink.desktop` (app-without-console desktop
    entry file)
- - `/usr/local/share/applications/scrcpy-console.desktop` (app-with-console
+ - `/usr/local/share/applications/slink-console.desktop` (app-with-console
    desktop entry file)
 
-You can then run `scrcpy`.
+You can then run `slink`.
 
 
 ### Uninstall

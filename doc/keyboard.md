@@ -8,7 +8,7 @@ Several keyboard input modes are available:
  - `--keyboard=aoa`: simulates a physical HID keyboard using the AOAv2 protocol
  - `--keyboard=disabled`
 
-By default, `sdk` is used, but if you use scrcpy regularly, it is recommended to
+By default, `sdk` is used, but if you use slink regularly, it is recommended to
 use [`uhid`](#uhid) and configure the keyboard layout once and for all.
 
 
@@ -40,7 +40,7 @@ But this may [cause issues][prefertext]. If you encounter such a problem, you
 can inject letters as text (or just switch to [UHID](#uhid)):
 
 ```bash
-scrcpy --prefer-text
+slink --prefer-text
 ```
 
 (but this will break keyboard behavior in games)
@@ -48,11 +48,11 @@ scrcpy --prefer-text
 On the contrary, you could force to always inject raw key events:
 
 ```bash
-scrcpy --raw-key-events
+slink --raw-key-events
 ```
 
-[textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
-[prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
+[textevents]: https://blog.rom1v.com/2018/03/introducing-slink/#handle-text-input
+[prefertext]: https://github.com/Genymobile/slink/issues/650#issuecomment-512945343
 
 
 ### Key repeat
@@ -63,7 +63,7 @@ performance problems in some games, where these events are useless anyway.
 To avoid forwarding repeated key events:
 
 ```bash
-scrcpy --no-key-repeat
+slink --no-key-repeat
 ```
 
 
@@ -75,7 +75,7 @@ To work properly, it is necessary to configure (once and for all) the keyboard
 layout on the device to match that of the computer.
 
 The configuration page can be opened in one of the following ways:
- - from the scrcpy window (when `uhid` or `aoa` is used), by pressing
+ - from the slink window (when `uhid` or `aoa` is used), by pressing
    <kbd>MOD</kbd>+<kbd>k</kbd> (see [shortcuts](shortcuts.md))
  - from the device, in Settings → System → Languages and input → Physical
    devices
@@ -96,8 +96,8 @@ device.
 To enable UHID keyboard, use:
 
 ```bash
-scrcpy --keyboard=uhid
-scrcpy -K  # short version
+slink --keyboard=uhid
+slink -K  # short version
 ```
 
 Once the keyboard layout is configured (see above), it is the best mode for
@@ -121,13 +121,13 @@ This mode simulates a physical HID keyboard using the [AOAv2] protocol.
 To enable AOA keyboard, use:
 
 ```bash
-scrcpy --keyboard=aoa
+slink --keyboard=aoa
 ```
 
 Contrary to the other modes, it works at the USB level directly (so it only
 works over USB).
 
-It does not use the scrcpy server, and does not require `adb` (USB debugging).
+It does not use the slink server, and does not require `adb` (USB debugging).
 Therefore, it is possible to control the device (but not mirror) even with USB
 debugging disabled (see [OTG](otg.md)).
 

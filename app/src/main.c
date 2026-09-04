@@ -10,7 +10,7 @@
 #include "cli.h"
 #include "events.h"
 #include "options.h"
-#include "scrcpy.h"
+#include "slink.h"
 #ifdef HAVE_USB
 # include "usb/scrcpy_otg.h"
 #endif
@@ -33,8 +33,7 @@ main_scrcpy(int argc, char *argv[]) {
     setbuf(stderr, NULL);
 #endif
 
-    printf("scrcpy " SCRCPY_VERSION
-           " <https://github.com/Genymobile/scrcpy>\n");
+    printf("Slink " SCRCPY_VERSION "\n");
 
     struct scrcpy_cli_args args = {
         .opts = scrcpy_options_default,
@@ -60,7 +59,7 @@ main_scrcpy(int argc, char *argv[]) {
 
     if (args.opts.update_terminal_title) {
         sc_term_save_title();
-        sc_term_set_title("scrcpy");
+        sc_term_set_title("Slink");
         term_title_saved = true;
     }
 

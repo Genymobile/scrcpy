@@ -1,10 +1,10 @@
-# scrcpy for developers
+# slink for developers
 
 ## Overview
 
 This application is composed of two parts:
- - the server (`scrcpy-server`), to be executed on the device,
- - the client (the `scrcpy` binary), executed on the host computer.
+ - the server (`slink-server`), to be executed on the device,
+ - the client (the `slink` binary), executed on the host computer.
 
 The client is responsible to push the server to the device and start its
 execution.
@@ -14,7 +14,7 @@ video, audio and controls. Any of them may be disabled (but not all), so
 there are 1, 2 or 3 socket(s).
 
 The server initially sends the device name on the first socket (it is used for
-the scrcpy window title), then each socket is used for its own purpose. All
+the slink window title), then each socket is used for its own purpose. All
 reads and writes are performed from a dedicated thread for each socket, both on
 the client and on the server.
 
@@ -29,7 +29,7 @@ Similarly, if audio is enabled, then the server sends a raw audio stream (OPUS
 by default) of the device audio output (or the microphone if
 `--audio-source=mic` is specified), with some additional headers for each
 packet. The client decodes the stream, attempts to keep a minimal latency by
-maintaining an average buffering. The [blog post][scrcpy2] of the scrcpy 2.0
+maintaining an average buffering. The [blog post][slink2] of the slink 2.0
 release gives more details about the audio feature.
 
 If control is enabled, then the client captures relevant keyboard and mouse
@@ -38,7 +38,7 @@ is the only socket which is used in both direction: input events are sent from
 the client to the device, and when the device clipboard changes, the new content
 is sent from the device to the client to support seamless copy-paste.
 
-[scrcpy2]: https://blog.rom1v.com/2023/03/scrcpy-2-0-with-audio/
+[slink2]: https://blog.rom1v.com/2023/03/slink-2-0-with-audio/
 
 Note that the client-server roles are expressed at the application level:
 
@@ -68,7 +68,7 @@ The server is a Java application (with a [`public static void main(String...
 args)`][main] method), compiled against the Android framework, and executed as
 `shell` on the Android device.
 
-[main]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/Server.java#L212
+[main]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/Server.java#L212
 
 To run such a Java application, the classes must be [_dexed_][dex] (typically,
 to `classes.dex`). If `my.package.MainClass` is the main class, compiled to
@@ -84,7 +84,7 @@ application may not replace the server just before the client executes it._
 Instead of a raw _dex_ file, `app_process` accepts a _jar_ containing
 `classes.dex` (e.g. an [APK]). For simplicity, and to benefit from the gradle
 build system, the server is built to an (unsigned) APK (renamed to
-`scrcpy-server.jar`).
+`slink-server.jar`).
 
 [dex]: https://en.wikipedia.org/wiki/Dalvik_(software)
 [apk]: https://en.wikipedia.org/wiki/Android_application_package
@@ -100,8 +100,8 @@ They can be called using reflection though. The communication with hidden
 components is provided by [_wrappers_ classes][wrappers] and [aidl].
 
 [hidden]: https://stackoverflow.com/a/31908373/1987178
-[wrappers]: https://github.com/Genymobile/scrcpy/tree/master/server/src/main/java/com/genymobile/scrcpy/wrappers
-[aidl]: https://github.com/Genymobile/scrcpy/tree/master/server/src/main/aidl
+[wrappers]: https://github.com/Genymobile/slink/tree/master/server/src/main/java/com/genymobile/slink/wrappers
+[aidl]: https://github.com/Genymobile/slink/tree/master/server/src/main/aidl
 
 
 
@@ -111,12 +111,12 @@ The server is started by the client basically by executing the following
 commands:
 
 ```bash
-adb push scrcpy-server /data/local/tmp/scrcpy-server.jar
-adb forward tcp:27183 localabstract:scrcpy
-adb shell CLASSPATH=/data/local/tmp/scrcpy-server.jar app_process / com.genymobile.scrcpy.Server 4.0
+adb push slink-server /data/local/tmp/slink-server.jar
+adb forward tcp:27183 localabstract:slink
+adb shell CLASSPATH=/data/local/tmp/slink-server.jar app_process / com.genymobile.slink.Server 4.0
 ```
 
-The first argument (`4.0` in the example) is the client scrcpy version. The
+The first argument (`4.0` in the example) is the client slink version. The
 server fails if the client and the server do not have the exact same version.
 The protocol between the client and the server may change from version to
 version (see [protocol](#protocol) below), and there is no backward or forward
@@ -128,15 +128,15 @@ It is followed by any number of arguments, in the form of `key=value` pairs.
 Their order is irrelevant. The possible keys and associated value types can be
 found in the [server][server-options] and [client][client-options] code.
 
-[server-options]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/Options.java#L339
-[client-options]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/app/src/server.c#L265
+[server-options]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/Options.java#L339
+[client-options]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/app/src/server.c#L265
 
-For example, if we execute `scrcpy -m1920 --no-audio`, then the server
+For example, if we execute `slink -m1920 --no-audio`, then the server
 execution will look like this:
 
 ```bash
 # scid is a random number to identify different clients running on the same device
-adb shell CLASSPATH=/data/local/tmp/scrcpy-server.jar app_process / com.genymobile.scrcpy.Server 4.0 scid=12345678 log_level=info audio=false max_size=1920
+adb shell CLASSPATH=/data/local/tmp/slink-server.jar app_process / com.genymobile.slink.Server 4.0 scid=12345678 log_level=info audio=false max_size=1920
 ```
 
 ### Components
@@ -165,8 +165,8 @@ The video is encoded using the [`MediaCodec`] API. The codec encodes the content
 of a `Surface` associated to the display, and writes the encoding packets to the
 client (on the _video_ socket).
 
-[`ScreenCapture`]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/video/ScreenCapture.java
-[`SurfaceEncoder`]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/video/SurfaceEncoder.java
+[`ScreenCapture`]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/video/ScreenCapture.java
+[`SurfaceEncoder`]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/video/SurfaceEncoder.java
 [`MediaCodec`]: https://developer.android.com/reference/android/media/MediaCodec.html
 
 On device rotation (or folding), the encoding session is reset and restarted.
@@ -180,7 +180,7 @@ send unnecessary frames, but by default there might be drawbacks:
 Both problems are [solved][repeat] by the flag
 [`KEY_REPEAT_PREVIOUS_FRAME_AFTER`][repeat-flag].
 
-[repeat]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/video/SurfaceEncoder.java#L313-L314
+[repeat]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/video/SurfaceEncoder.java#L313-L314
 [repeat-flag]: https://developer.android.com/reference/android/media/MediaFormat.html#KEY_REPEAT_PREVIOUS_FRAME_AFTER
 
 
@@ -189,10 +189,10 @@ Both problems are [solved][repeat] by the flag
 Similarly, the audio is [captured] using an [`AudioRecord`], and [encoded] using
 the [`MediaCodec`] asynchronous API.
 
-More details are available on the [blog post][scrcpy2] introducing the audio feature.
+More details are available on the [blog post][slink2] introducing the audio feature.
 
-[captured]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/audio/AudioDirectCapture.java
-[encoded]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/audio/AudioEncoder.java
+[captured]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/audio/AudioDirectCapture.java
+[encoded]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/audio/AudioEncoder.java
 [`AudioRecord`]: https://developer.android.com/reference/android/media/AudioRecord
 
 
@@ -209,10 +209,10 @@ separate thread). There are several types of input events:
 Some of them need to inject input events to the system. To do so, they use the
 _hidden_ method [`InputManager.injectInputEvent()`].
 
-[`Controller`]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/control/Controller.java
+[`Controller`]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/control/Controller.java
 [`KeyEvent`]: https://developer.android.com/reference/android/view/KeyEvent.html
 [`MotionEvent`]: https://developer.android.com/reference/android/view/MotionEvent.html
-[`InputManager.injectInputEvent()`]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/wrappers/InputManager.java#L48
+[`InputManager.injectInputEvent()`]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/wrappers/InputManager.java#L48
 
 
 
@@ -231,12 +231,12 @@ The video and audio streams are decoded by [FFmpeg].
 
 The client parses the command line arguments, then [runs one of two code
 paths][run]:
- - scrcpy in "normal" mode ([`scrcpy.c`])
- - scrcpy in [OTG mode](otg.md) ([`scrcpy_otg.c`])
+ - slink in "normal" mode ([`slink.c`])
+ - slink in [OTG mode](otg.md) ([`slink_otg.c`])
 
-[run]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/app/src/main.c#L93
-[`scrcpy.c`]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/app/src/scrcpy.c#L305-L306
-[`scrcpy_otg.c`]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/app/src/usb/scrcpy_otg.c#L61-L62
+[run]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/app/src/main.c#L93
+[`slink.c`]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/app/src/slink.c#L305-L306
+[`slink_otg.c`]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/app/src/usb/slink_otg.c#L61-L62
 
 In the remaining of this document, we assume that the "normal" mode is used
 (read the code for the OTG mode).
@@ -249,7 +249,7 @@ On startup, the client:
 
 ### Video and audio streams
 
-Depending on the arguments passed to `scrcpy`, several components may be used.
+Depending on the arguments passed to `slink`, several components may be used.
 Here is an overview of the video and audio components:
 
 ```
@@ -275,7 +275,7 @@ single file). The packets are encoded on the device (by `MediaCodec`), but when
 recording, they are _muxed_ (asynchronously) into a container (MKV or MP4) on
 the client side.
 
-Video frames are sent to the screen/display to be rendered in the scrcpy window.
+Video frames are sent to the screen/display to be rendered in the slink window.
 They may also be sent to a [V4L2 sink](v4l2.md).
 
 Audio "frames" (an array of decoded samples) are sent to the audio player.
@@ -301,7 +301,7 @@ number of sockets, the order in which the sockets must be opened, the data
 format on the wire…) from version to version. A client must always be run with a
 matching server version.
 
-This section documents the current protocol in scrcpy 4.0.
+This section documents the current protocol in slink 4.0.
 
 ### Connection
 
@@ -309,15 +309,15 @@ Firstly, the client sets up an adb tunnel:
 
 ```bash
 # By default, a reverse redirection: the computer listens, the device connects
-adb reverse localabstract:scrcpy_<SCID> tcp:27183
+adb reverse localabstract:slink_<SCID> tcp:27183
 
 # As a fallback (or if --force-adb forward is set), a forward redirection:
 # the device listens, the computer connects
-adb forward tcp:27183 localabstract:scrcpy_<SCID>
+adb forward tcp:27183 localabstract:slink_<SCID>
 ```
 
 (`<SCID>` is a 31-bit random number, so that it does not fail when several
-scrcpy instances start "at the same time" for the same device.)
+slink instances start "at the same time" for the same device.)
 
 Then, up to 3 sockets are opened, in that order:
  - a _video_ socket
@@ -337,14 +337,14 @@ Still on this _first_ socket, the device sends some [metadata][device meta] to
 the client (currently only the device name, used as the window title, but there
 might be other fields in the future).
 
-[dummy byte]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/device/DesktopConnection.java#L70
-[device meta]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/device/DesktopConnection.java#L155
+[dummy byte]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/device/DesktopConnection.java#L70
+[device meta]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/device/DesktopConnection.java#L155
 
 You can read the [client][client-connection] and [server][server-connection]
 code for more details.
 
-[client-connection]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/app/src/server.c#L604-L605
-[server-connection]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/device/DesktopConnection.java#L56
+[client-connection]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/app/src/server.c#L604-L605
+[server-connection]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/device/DesktopConnection.java#L56
 
 Then each socket is used for its intended purpose.
 
@@ -384,7 +384,7 @@ session (a session changes when the device rotates):
 The "client resized" flag is used for _flex displays_ to indicate that the frame
 size changed due to a client resize request (see [#6772]).
 
-[#6772]: https://github.com/Genymobile/scrcpy/pull/6772
+[#6772]: https://github.com/Genymobile/slink/pull/6772
 
 For the _audio_ stream, there are no _session packets_.
 
@@ -426,7 +426,7 @@ The most significant bits of the PTS are used for packet flags:
 _Session packets_ and _media packets_ are distinguished by their first bit (the
 MSB).
 
-[frame header]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/device/Streamer.java#L107
+[frame header]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/device/Streamer.java#L107
 
 
 ### Controls
@@ -434,15 +434,15 @@ MSB).
 Controls messages are sent via a custom binary protocol.
 
 The only documentation for this protocol is the set of unit tests on both sides:
- - `ControlMessage` (from client to device): [serialization](https://github.com/Genymobile/scrcpy/blob/master/app/tests/test_control_msg_serialize.c)
-   | [deserialization](https://github.com/Genymobile/scrcpy/blob/master/server/src/test/java/com/genymobile/scrcpy/control/ControlMessageReaderTest.java)
- - `DeviceMessage` (from device to client) [serialization](https://github.com/Genymobile/scrcpy/blob/master/server/src/test/java/com/genymobile/scrcpy/control/DeviceMessageWriterTest.java)
-   | [deserialization](https://github.com/Genymobile/scrcpy/blob/master/app/tests/test_device_msg_deserialize.c)
+ - `ControlMessage` (from client to device): [serialization](https://github.com/Genymobile/slink/blob/master/app/tests/test_control_msg_serialize.c)
+   | [deserialization](https://github.com/Genymobile/slink/blob/master/server/src/test/java/com/genymobile/slink/control/ControlMessageReaderTest.java)
+ - `DeviceMessage` (from device to client) [serialization](https://github.com/Genymobile/slink/blob/master/server/src/test/java/com/genymobile/slink/control/DeviceMessageWriterTest.java)
+   | [deserialization](https://github.com/Genymobile/slink/blob/master/app/tests/test_device_msg_deserialize.c)
 
 
 ## Standalone server
 
-Although the server is designed to work for the scrcpy client, it can be used
+Although the server is designed to work for the slink client, it can be used
 with any client which uses the same protocol.
 
 For simplicity, some [server-specific options] have been added to produce raw
@@ -454,15 +454,15 @@ streams easily:
  - `send_stream_meta`: disable codec and video size metadata
  - `raw_stream`: disable all the above
 
-[server-specific options]: https://github.com/Genymobile/scrcpy/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/scrcpy/Options.java#L542-L562
+[server-specific options]: https://github.com/Genymobile/slink/blob/19057b48afb9d5388bd143c6f885008f48055552/server/src/main/java/com/genymobile/slink/Options.java#L542-L562
 
 Concretely, here is how to expose a raw H.264 stream on a TCP socket:
 
 ```bash
-adb push scrcpy-server-v4.0 /data/local/tmp/scrcpy-server-manual.jar
-adb forward tcp:1234 localabstract:scrcpy
-adb shell CLASSPATH=/data/local/tmp/scrcpy-server-manual.jar \
-    app_process / com.genymobile.scrcpy.Server 4.0 \
+adb push slink-server-v4.0 /data/local/tmp/slink-server-manual.jar
+adb forward tcp:1234 localabstract:slink
+adb shell CLASSPATH=/data/local/tmp/slink-server-manual.jar \
+    app_process / com.genymobile.slink.Server 4.0 \
     tunnel_forward=true audio=false control=false cleanup=false \
     raw_stream=true max_size=1920
 ```
@@ -498,7 +498,7 @@ meson setup x -Dserver_debugger=true
 meson configure x -Dserver_debugger=true
 ```
 
-Then recompile, and run scrcpy.
+Then recompile, and run slink.
 
 For Android < 11, it will start a debugger on port 5005 on the device and wait:
 Redirect that port to the computer:

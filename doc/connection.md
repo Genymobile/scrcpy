@@ -9,26 +9,26 @@ However, if there are multiple devices connected, you must specify the one to
 use in one of 4 ways:
  - by its serial:
    ```bash
-   scrcpy --serial=0123456789abcdef
-   scrcpy -s 0123456789abcdef   # short version
+   slink --serial=0123456789abcdef
+   slink -s 0123456789abcdef   # short version
 
    # the serial is the ip:port if connected over TCP/IP (same behavior as adb)
-   scrcpy --serial=192.168.1.1:5555
+   slink --serial=192.168.1.1:5555
    ```
  - the one connected over USB (if there is exactly one):
    ```bash
-   scrcpy --select-usb
-   scrcpy -d   # short version
+   slink --select-usb
+   slink -d   # short version
    ```
  - the one connected over TCP/IP (if there is exactly one):
    ```bash
-   scrcpy --select-tcpip
-   scrcpy -e   # short version
+   slink --select-tcpip
+   slink -e   # short version
    ```
  - a device already listening on TCP/IP (see [below](#tcpip-wireless)):
    ```bash
-   scrcpy --tcpip=192.168.1.1:5555
-   scrcpy --tcpip=192.168.1.1        # default port is 5555
+   slink --tcpip=192.168.1.1:5555
+   slink --tcpip=192.168.1.1        # default port is 5555
    ```
 
 The serial may also be provided via the environment variable `ANDROID_SERIAL`
@@ -37,25 +37,25 @@ The serial may also be provided via the environment variable `ANDROID_SERIAL`
 ```bash
 # in bash
 export ANDROID_SERIAL=0123456789abcdef
-scrcpy
+slink
 ```
 
 ```cmd
 :: in cmd
 set ANDROID_SERIAL=0123456789abcdef
-scrcpy
+slink
 ```
 
 ```powershell
 # in PowerShell
 $env:ANDROID_SERIAL = '0123456789abcdef'
-scrcpy
+slink
 ```
 
 
 ## TCP/IP (wireless)
 
-_Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
+_slink_ uses `adb` to communicate with the device, and `adb` can [connect] to a
 device over TCP/IP. The device must be connected on the same network as the
 computer.
 
@@ -71,7 +71,7 @@ If _adb_ TCP/IP mode is disabled on the device (or if you don't know the IP
 address), connect the device over USB, then run:
 
 ```bash
-scrcpy --tcpip   # without arguments
+slink --tcpip   # without arguments
 ```
 
 It will automatically find the device IP address and adb port, enable TCP/IP
@@ -81,14 +81,14 @@ If the device (accessible at 192.168.1.1 in this example) already listens on a
 port (typically 5555) for incoming _adb_ connections, then run:
 
 ```bash
-scrcpy --tcpip=192.168.1.1       # default port is 5555
-scrcpy --tcpip=192.168.1.1:5555
+slink --tcpip=192.168.1.1       # default port is 5555
+slink --tcpip=192.168.1.1:5555
 ```
 
 Prefix the address with a '+' to force a reconnection:
 
 ```bash
-scrcpy --tcpip=+192.168.1.1
+slink --tcpip=+192.168.1.1
 ```
 
 
@@ -110,7 +110,7 @@ Alternatively, it is possible to enable the TCP/IP connection manually using
 5. Unplug your device.
 6. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`
 with the device IP address you found)_.
-7. Run `scrcpy` as usual.
+7. Run `slink` as usual.
 8. Run `adb disconnect` once you're done.
 
 Since Android 11, a [wireless debugging option][adb-wireless] allows you to
@@ -121,12 +121,12 @@ bypass having to physically connect your device to your computer.
 
 ## Autostart
 
-A small tool (by the scrcpy author) allows you to run arbitrary commands
+A small tool (by the slink author) allows you to run arbitrary commands
 whenever a new Android device is connected: [AutoAdb]. It can be used to start
-scrcpy:
+slink:
 
 ```bash
-autoadb scrcpy -s '{}'
+autoadb slink -s '{}'
 ```
 
 [AutoAdb]: https://github.com/rom1v/autoadb

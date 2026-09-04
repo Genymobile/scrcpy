@@ -7,19 +7,19 @@ assignees: ''
 
 ---
 
-_Please read the [prerequisites] to run scrcpy._
+_Please read the [prerequisites] to run slink._
 
-[prerequisites]: https://github.com/Genymobile/scrcpy#prerequisites
+[prerequisites]: https://github.com/Genymobile/slink#prerequisites
 
 _Also read the [FAQ] and check if your [issue][issues] already exists._
 
-[FAQ]: https://github.com/Genymobile/scrcpy/blob/master/FAQ.md
-[issues]: https://github.com/Genymobile/scrcpy/issues
+[FAQ]: https://github.com/Genymobile/slink/blob/master/FAQ.md
+[issues]: https://github.com/Genymobile/slink/issues
 
 ## Environment
 
  - **OS:** [e.g. Debian, Windows, macOS...]
- - **Scrcpy version:** [e.g. 2.5]
+ - **slink version:** [e.g. 2.5]
  - **Installation method:** [e.g. manual build, apt, snap, brew, Windows release...]
  - **Device model:**
  - **Android version:** [e.g. 14]

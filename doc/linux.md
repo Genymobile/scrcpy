@@ -6,27 +6,27 @@
 
 Download a static build of the [latest release]:
 
- - [`scrcpy-linux-x86_64-v4.1.tar.gz`][direct-linux-x86_64] (x86_64)  
+ - [`slink-linux-x86_64-v4.1.tar.gz`][direct-linux-x86_64] (x86_64)  
    <sub>SHA-256: `ad56ae8bfeedf41e824945c11dbf55fcb092b3e615b9b486f48a50e30d389635`</sub>
 
-[latest release]: https://github.com/Genymobile/scrcpy/releases/latest
-[direct-linux-x86_64]: https://github.com/Genymobile/scrcpy/releases/download/v4.1/scrcpy-linux-x86_64-v4.1.tar.gz
+[latest release]: https://github.com/Genymobile/slink/releases/latest
+[direct-linux-x86_64]: https://github.com/Genymobile/slink/releases/download/v4.1/slink-linux-x86_64-v4.1.tar.gz
 
 and extract it.
 
 
 ### From your package manager
 
-<a href="https://repology.org/project/scrcpy/versions"><img src="https://repology.org/badge/vertical-allrepos/scrcpy.svg" alt="Packaging status" align="right"></a>
+<a href="https://repology.org/project/slink/versions"><img src="https://repology.org/badge/vertical-allrepos/slink.svg" alt="Packaging status" align="right"></a>
 
-Scrcpy is packaged in several distributions and package managers:
+slink is packaged in several distributions and package managers:
 
- - Debian/Ubuntu: ~~`apt install scrcpy`~~ _(obsolete version)_
- - Arch Linux: `pacman -S scrcpy`
- - Fedora: `dnf copr enable zeno/scrcpy && dnf install scrcpy`
- - Gentoo: `emerge scrcpy`
- - Snap: ~~`snap install scrcpy`~~ _(obsolete version)_
- - … (see [repology](https://repology.org/project/scrcpy/versions))
+ - Debian/Ubuntu: ~~`apt install slink`~~ _(obsolete version)_
+ - Arch Linux: `pacman -S slink`
+ - Fedora: `dnf copr enable zeno/slink && dnf install slink`
+ - Gentoo: `emerge slink`
+ - Snap: ~~`snap install slink`~~ _(obsolete version)_
+ - … (see [repology](https://repology.org/project/slink/versions))
 
 
 ### From an install script
@@ -47,8 +47,8 @@ Then clone the repo and execute the installation script
 ([source](/install_release.sh)):
 
 ```bash
-git clone https://github.com/Genymobile/scrcpy
-cd scrcpy
+git clone https://github.com/slickyincorp/slink
+cd slink
 ./install_release.sh
 ```
 
@@ -79,16 +79,16 @@ _Make sure that your device meets the [prerequisites](/README.md#prerequisites).
 Once installed, run from a terminal:
 
 ```bash
-scrcpy
+slink
 ```
 
 or with arguments (here to disable audio and record to `file.mkv`):
 
 ```bash
-scrcpy --no-audio --record=file.mkv
+slink --no-audio --record=file.mkv
 ```
 
 Documentation for command line arguments is available:
- - `man scrcpy`
- - `scrcpy --help`
+ - `man slink`
+ - `slink --help`
  - on [github](/README.md)

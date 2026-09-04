@@ -1,6 +1,6 @@
 # Shortcuts
 
-Actions can be performed on the scrcpy window using keyboard and mouse
+Actions can be performed on the slink window using keyboard and mouse
 shortcuts.
 
 In the following list, <kbd>MOD</kbd> is the shortcut modifier. By default, it's
@@ -11,10 +11,10 @@ It can be changed using `--shortcut-mod`. Possible keys are `lctrl`, `rctrl`,
 
 ```bash
 # use RCtrl for shortcuts
-scrcpy --shortcut-mod=rctrl
+slink --shortcut-mod=rctrl
 
 # use either LCtrl or LSuper for shortcuts
-scrcpy --shortcut-mod=lctrl,lsuper
+slink --shortcut-mod=lctrl,lsuper
 ```
 
 _<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._

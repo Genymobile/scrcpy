@@ -2,7 +2,7 @@
 
 ## Source
 
-By default, scrcpy mirrors the device screen.
+By default, slink mirrors the device screen.
 
 It is possible to capture the device camera instead.
 
@@ -11,21 +11,21 @@ See the dedicated [camera](camera.md) page.
 
 ## Size
 
-By default, scrcpy attempts to mirror at the Android device resolution.
+By default, slink attempts to mirror at the Android device resolution.
 
 It might be useful to mirror at a lower definition to increase performance. To
 limit both width and height to some maximum value (here 1024):
 
 ```bash
-scrcpy --max-size=1024
-scrcpy -m 1024   # short version
+slink --max-size=1024
+slink -m 1024   # short version
 ```
 
 The other dimension is computed so that the Android device aspect ratio is
 preserved (except for flex displays). That way, a device in 1920×1080 will be
 mirrored at 1024×576.
 
-If encoding fails, scrcpy automatically tries again with a lower definition
+If encoding fails, slink automatically tries again with a lower definition
 (unless `--no-downsize-on-error` is enabled).
 
 For camera mirroring, the `--max-size` value is used to select the camera source
@@ -39,7 +39,7 @@ The alignment can be forced to a minimum value. For instance, to force the width
 and height to be multiples of 8:
 
 ```bash
-scrcpy --min-size-alignment=8
+slink --min-size-alignment=8
 ```
 
 
@@ -48,9 +48,9 @@ scrcpy --min-size-alignment=8
 The default video bit rate is 8 Mbps. To change it:
 
 ```bash
-scrcpy --video-bit-rate=2M
-scrcpy --video-bit-rate=2000000  # equivalent
-scrcpy -b 2M                     # short version
+slink --video-bit-rate=2M
+slink --video-bit-rate=2000000  # equivalent
+slink -b 2M                     # short version
 ```
 
 
@@ -59,13 +59,13 @@ scrcpy -b 2M                     # short version
 The capture frame rate can be limited:
 
 ```bash
-scrcpy --max-fps=15
+slink --max-fps=15
 ```
 
 The actual capture frame rate may be printed to the console:
 
 ```bash
-scrcpy --print-fps
+slink --print-fps
 ```
 
 It may also be enabled or disabled at anytime with <kbd>MOD</kbd>+<kbd>i</kbd>
@@ -73,7 +73,7 @@ It may also be enabled or disabled at anytime with <kbd>MOD</kbd>+<kbd>i</kbd>
 
 The frame rate is intrinsically variable: a new frame is produced only when the
 screen content changes. For example, if you play a fullscreen video at 24fps on
-your device, you should not get more than 24 frames per second in scrcpy.
+your device, you should not get more than 24 frames per second in slink.
 
 
 ## Codec
@@ -82,16 +82,16 @@ The video codec can be selected. The possible values are `h264` (default),
 `h265` and `av1`:
 
 ```bash
-scrcpy --video-codec=h264  # default
-scrcpy --video-codec=h265
-scrcpy --video-codec=av1
+slink --video-codec=h264  # default
+slink --video-codec=h265
+slink --video-codec=av1
 ```
 
 H265 may provide better quality, but H264 should provide lower latency.
 AV1 encoders are not common on current Android devices.
 
 For advanced usage, to pass arbitrary parameters to the [`MediaFormat`],
-check `--video-codec-options` in the manpage or in `scrcpy --help`.
+check `--video-codec-options` in the manpage or in `slink --help`.
 
 [`MediaFormat`]: https://developer.android.com/reference/android/media/MediaFormat
 
@@ -101,14 +101,14 @@ check `--video-codec-options` in the manpage or in `scrcpy --help`.
 Several encoders may be available on the device. They can be listed by:
 
 ```bash
-scrcpy --list-encoders
+slink --list-encoders
 ```
 
 Sometimes, the default encoder may have issues or even crash, so it is useful to
 try another one:
 
 ```bash
-scrcpy --video-codec=h264 --video-encoder=OMX.qcom.video.encoder.avc
+slink --video-codec=h264 --video-encoder=OMX.qcom.video.encoder.avc
 ```
 
 
@@ -128,29 +128,29 @@ The orientation may be applied at 3 different levels:
 To capture the video with a specific orientation:
 
 ```bash
-scrcpy --capture-orientation=0
-scrcpy --capture-orientation=90       # 90° clockwise
-scrcpy --capture-orientation=180      # 180°
-scrcpy --capture-orientation=270      # 270° clockwise
-scrcpy --capture-orientation=flip0    # hflip
-scrcpy --capture-orientation=flip90   # hflip + 90° clockwise
-scrcpy --capture-orientation=flip180  # hflip + 180°
-scrcpy --capture-orientation=flip270  # hflip + 270° clockwise
+slink --capture-orientation=0
+slink --capture-orientation=90       # 90° clockwise
+slink --capture-orientation=180      # 180°
+slink --capture-orientation=270      # 270° clockwise
+slink --capture-orientation=flip0    # hflip
+slink --capture-orientation=flip90   # hflip + 90° clockwise
+slink --capture-orientation=flip180  # hflip + 180°
+slink --capture-orientation=flip270  # hflip + 270° clockwise
 ```
 
 The capture orientation can be locked by using `@`, so that a physical device
 rotation does not change the captured video orientation:
 
 ```bash
-scrcpy --capture-orientation=@         # locked to the initial orientation
-scrcpy --capture-orientation=@0        # locked to 0°
-scrcpy --capture-orientation=@90       # locked to 90° clockwise
-scrcpy --capture-orientation=@180      # locked to 180°
-scrcpy --capture-orientation=@270      # locked to 270° clockwise
-scrcpy --capture-orientation=@flip0    # locked to hflip
-scrcpy --capture-orientation=@flip90   # locked to hflip + 90° clockwise
-scrcpy --capture-orientation=@flip180  # locked to hflip + 180°
-scrcpy --capture-orientation=@flip270  # locked to hflip + 270° clockwise
+slink --capture-orientation=@         # locked to the initial orientation
+slink --capture-orientation=@0        # locked to 0°
+slink --capture-orientation=@90       # locked to 90° clockwise
+slink --capture-orientation=@180      # locked to 180°
+slink --capture-orientation=@270      # locked to 270° clockwise
+slink --capture-orientation=@flip0    # locked to hflip
+slink --capture-orientation=@flip90   # locked to hflip + 90° clockwise
+slink --capture-orientation=@flip180  # locked to hflip + 180°
+slink --capture-orientation=@flip270  # locked to hflip + 270° clockwise
 ```
 
 The capture orientation transform is applied after `--crop`, but before
@@ -159,14 +159,14 @@ The capture orientation transform is applied after `--crop`, but before
 To orient the video (on the client side):
 
 ```bash
-scrcpy --orientation=0
-scrcpy --orientation=90       # 90° clockwise
-scrcpy --orientation=180      # 180°
-scrcpy --orientation=270      # 270° clockwise
-scrcpy --orientation=flip0    # hflip
-scrcpy --orientation=flip90   # hflip + 90° clockwise
-scrcpy --orientation=flip180  # vflip (hflip + 180°)
-scrcpy --orientation=flip270  # hflip + 270° clockwise
+slink --orientation=0
+slink --orientation=90       # 90° clockwise
+slink --orientation=180      # 180°
+slink --orientation=270      # 270° clockwise
+slink --orientation=flip0    # hflip
+slink --orientation=flip90   # hflip + 90° clockwise
+slink --orientation=flip180  # vflip (hflip + 180°)
+slink --orientation=flip270  # hflip + 270° clockwise
 ```
 
 The orientation can be set separately for display and record if necessary, via
@@ -182,7 +182,7 @@ values are allowed when recording.
 To rotate the video content by a custom angle (in degrees, clockwise):
 
 ```bash
-scrcpy --angle=23
+slink --angle=23
 ```
 
 The center of rotation is the center of the visible area.
@@ -197,7 +197,7 @@ The device screen may be cropped to mirror only part of the screen.
 This is useful, for example, to mirror only one eye of the Oculus Go:
 
 ```bash
-scrcpy --crop=1224:1440:0:0   # 1224x1440 at offset (0,0)
+slink --crop=1224:1440:0:0   # 1224x1440 at offset (0,0)
 ```
 
 The values are expressed in the device natural orientation (portrait for a
@@ -216,13 +216,13 @@ If several displays are available on the Android device, it is possible to
 select the display to mirror:
 
 ```bash
-scrcpy --display-id=1
+slink --display-id=1
 ```
 
 The list of display ids can be retrieved by:
 
 ```bash
-scrcpy --list-displays
+slink --list-displays
 ```
 
 A secondary display may only be controlled if the device runs at least Android
@@ -238,21 +238,21 @@ By default, there is no video buffering, to get the lowest possible latency.
 Buffering can be added to delay the video stream and compensate for jitter to
 get a smoother playback (see [#2464]).
 
-[#2464]: https://github.com/Genymobile/scrcpy/issues/2464
+[#2464]: https://github.com/Genymobile/slink/issues/2464
 
 The configuration is available independently for the display,
 [v4l2 sinks](v4l2.md#buffering) and [audio](audio.md#buffering) playback.
 
 ```bash
-scrcpy --video-buffer=50     # add 50ms buffering for video playback
-scrcpy --audio-buffer=200    # set 200ms buffering for audio playback
-scrcpy --v4l2-buffer=300     # add 300ms buffering for v4l2 sink
+slink --video-buffer=50     # add 50ms buffering for video playback
+slink --audio-buffer=200    # set 200ms buffering for audio playback
+slink --v4l2-buffer=300     # add 300ms buffering for v4l2 sink
 ```
 
 They can be applied simultaneously:
 
 ```bash
-scrcpy --video-buffer=50 --v4l2-buffer=300
+slink --video-buffer=50 --v4l2-buffer=300
 ```
 
 
@@ -263,8 +263,8 @@ the computer. This option is useful when [recording](recording.md) or when
 [v4l2](#video4linux) is enabled:
 
 ```bash
-scrcpy --v4l2-sink=/dev/video2 --no-playback
-scrcpy --record=file.mkv --no-playback
+slink --v4l2-sink=/dev/video2 --no-playback
+slink --record=file.mkv --no-playback
 # interrupt with Ctrl+C
 ```
 
@@ -272,10 +272,10 @@ It is also possible to disable video and audio playback separately:
 
 ```bash
 # Send video to V4L2 sink without playing it, but keep audio playback
-scrcpy --v4l2-sink=/dev/video2 --no-video-playback
+slink --v4l2-sink=/dev/video2 --no-video-playback
 
 # Record both video and audio, but only play video
-scrcpy --record=file.mkv --no-audio-playback
+slink --record=file.mkv --no-audio-playback
 ```
 
 
@@ -284,7 +284,7 @@ scrcpy --record=file.mkv --no-audio-playback
 To disable video forwarding completely, so that only audio is forwarded:
 
 ```bash
-scrcpy --no-video
+slink --no-video
 ```
 
 
