@@ -141,12 +141,13 @@ On Windows, if `scrcpy --otg` (or `--keyboard=aoa`/`--mouse=aoa`) results in:
 
 (or if only unrelated USB devices are detected), there might be drivers issues.
 
-Please read [#3654], in particular [this comment][#3654-comment1] and [the next
-one][#3654-comment2].
+Please read [#3654], in particular [this comment][#3654-comment1], [the next
+one][#3654-comment2] and [this one][#3654-comment3].
 
 [#3654]: https://github.com/Genymobile/scrcpy/issues/3654
 [#3654-comment1]: https://github.com/Genymobile/scrcpy/issues/3654#issuecomment-1369278232
 [#3654-comment2]: https://github.com/Genymobile/scrcpy/issues/3654#issuecomment-1369295011
+[#3654-comment3]: https://github.com/Genymobile/scrcpy/issues/3654#issuecomment-2613219725
 
 
 ## Control issues

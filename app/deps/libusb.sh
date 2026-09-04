@@ -3,9 +3,9 @@ set -ex
 . $(dirname ${BASH_SOURCE[0]})/_init
 process_args "$@"
 
-VERSION=1.0.29
+VERSION=1.0.30
 URL="https://github.com/libusb/libusb/archive/refs/tags/v$VERSION.tar.gz"
-SHA256SUM=7c2dd39c0b2589236e48c93247c986ae272e27570942b4163cb00a060fcf1b74
+SHA256SUM=2ae28adb0bb9558c86135c4e1c11b320b0805461e207a64a6e520a114094bf07
 
 PROJECT_DIR="libusb-$VERSION"
 FILENAME="$PROJECT_DIR.tar.gz"

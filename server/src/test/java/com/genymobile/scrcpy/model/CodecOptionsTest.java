@@ -1,4 +1,4 @@
-package com.genymobile.scrcpy.util;
+package com.genymobile.scrcpy.model;
 
 import org.junit.Assert;
 import org.junit.Test;

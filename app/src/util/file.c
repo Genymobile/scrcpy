@@ -6,6 +6,25 @@
 #include "util/log.h"
 
 char *
+sc_file_build_path(const char *dir, const char *name) {
+    size_t dir_len = strlen(dir);
+    size_t name_len = strlen(name);
+
+    size_t len = dir_len + name_len + 2; // +2: '/' and '\0'
+    char *path = malloc(len);
+    if (!path) {
+        LOG_OOM();
+        return NULL;
+    }
+
+    memcpy(path, dir, dir_len);
+    path[dir_len] = SC_PATH_SEPARATOR;
+    // namelen + 1 to copy the final '\0'
+    memcpy(&path[dir_len + 1], name, name_len + 1);
+    return path;
+}
+
+char *
 sc_file_get_local_path(const char *name) {
     char *executable_path = sc_file_get_executable_path();
     if (!executable_path) {
@@ -25,24 +44,9 @@ sc_file_get_local_path(const char *name) {
 
     *p = '\0'; // modify executable_path in place
     char *dir = executable_path;
-    size_t dirlen = strlen(dir);
-    size_t namelen = strlen(name);
-
-    size_t len = dirlen + namelen + 2; // +2: '/' and '\0'
-    char *file_path = malloc(len);
-    if (!file_path) {
-        LOG_OOM();
-        free(executable_path);
-        return NULL;
-    }
-
-    memcpy(file_path, dir, dirlen);
-    file_path[dirlen] = SC_PATH_SEPARATOR;
-    // namelen + 1 to copy the final '\0'
-    memcpy(&file_path[dirlen + 1], name, namelen + 1);
+    char *file_path = sc_file_build_path(dir, name);
 
     free(executable_path);
 
     return file_path;
 }
-

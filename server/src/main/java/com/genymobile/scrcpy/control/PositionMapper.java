@@ -1,8 +1,8 @@
 package com.genymobile.scrcpy.control;
 
-import com.genymobile.scrcpy.device.Point;
-import com.genymobile.scrcpy.device.Position;
-import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.model.Point;
+import com.genymobile.scrcpy.model.Position;
+import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.util.AffineMatrix;
 
 public final class PositionMapper {

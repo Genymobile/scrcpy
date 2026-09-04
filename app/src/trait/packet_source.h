@@ -28,7 +28,8 @@ sc_packet_source_add_sink(struct sc_packet_source *source,
 
 bool
 sc_packet_source_sinks_open(struct sc_packet_source *source,
-                            AVCodecContext *ctx);
+                            AVCodecContext *ctx,
+                            const struct sc_stream_session *session);
 
 void
 sc_packet_source_sinks_close(struct sc_packet_source *source);
@@ -36,6 +37,10 @@ sc_packet_source_sinks_close(struct sc_packet_source *source);
 bool
 sc_packet_source_sinks_push(struct sc_packet_source *source,
                             const AVPacket *packet);
+
+bool
+sc_packet_source_sinks_push_session(struct sc_packet_source *source,
+                                    const struct sc_stream_session *session);
 
 void
 sc_packet_source_sinks_disable(struct sc_packet_source *source);

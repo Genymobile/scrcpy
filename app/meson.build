@@ -12,10 +12,9 @@ src = [
     'src/control_msg.c',
     'src/controller.c',
     'src/decoder.c',
-    'src/delay_buffer.c',
     'src/demuxer.c',
     'src/device_msg.c',
-    'src/display.c',
+    'src/disconnect.c',
     'src/events.c',
     'src/icon.c',
     'src/file_pusher.c',
@@ -32,8 +31,11 @@ src = [
     'src/recorder.c',
     'src/scrcpy.c',
     'src/screen.c',
+    'src/sdl_hints.c',
     'src/server.c',
+    'src/texture.c',
     'src/version.c',
+    'src/video_regulator.c',
     'src/hid/hid_gamepad.c',
     'src/hid/hid_keyboard.c',
     'src/hid/hid_mouse.c',
@@ -43,10 +45,10 @@ src = [
     'src/uhid/keyboard_uhid.c',
     'src/uhid/mouse_uhid.c',
     'src/uhid/uhid_output.c',
-    'src/util/config_file.c',
     'src/util/acksync.c',
     'src/util/audiobuf.c',
     'src/util/average.c',
+    'src/util/config_file.c',
     'src/util/env.c',
     'src/util/file.c',
     'src/util/intmap.c',
@@ -58,6 +60,7 @@ src = [
     'src/util/process.c',
     'src/util/process_intr.c',
     'src/util/rand.c',
+    'src/util/sdl.c',
     'src/util/strbuf.c',
     'src/util/str.c',
     'src/util/term.c',
@@ -66,30 +69,38 @@ src = [
     'src/util/timeout.c',
 ]
 
-conf = configuration_data()
+feature_test_macros = [
+    '-D_GNU_SOURCE',
+    '-D_POSIX_C_SOURCE=200809L',
+    '-D_XOPEN_SOURCE=700',
+]
 
-conf.set('_POSIX_C_SOURCE', '200809L')
-conf.set('_XOPEN_SOURCE', '700')
-conf.set('_GNU_SOURCE', true)
+conf = configuration_data()
 
 if host_machine.system() == 'windows'
     windows = import('windows')
     src += [
+        'src/util/command.c',
         'src/sys/win/file.c',
         'src/sys/win/process.c',
         windows.compile_resources('scrcpy-windows.rc'),
     ]
-    conf.set('_WIN32_WINNT', '0x0600')
-    conf.set('WINVER', '0x0600')
+    feature_test_macros += [
+        '-D_WIN32_WINNT=0x0600',
+        '-DWINVER=0x0600',
+    ]
 else
     src += [
         'src/sys/unix/file.c',
         'src/sys/unix/process.c',
     ]
     if host_machine.system() == 'darwin'
-        conf.set('_DARWIN_C_SOURCE', true)
+        feature_test_macros += '-D_DARWIN_C_SOURCE'
     endif
 endif
+
+
+add_project_arguments(feature_test_macros, language: 'c')
 
 v4l2_support = get_option('v4l2') and host_machine.system() == 'linux'
 if v4l2_support
@@ -104,7 +115,6 @@ if usb_support
         'src/usb/keyboard_aoa.c',
         'src/usb/mouse_aoa.c',
         'src/usb/scrcpy_otg.c',
-        'src/usb/screen_otg.c',
         'src/usb/usb.c',
     ]
 endif
@@ -118,7 +128,7 @@ dependencies = [
     dependency('libavcodec', version: '>= 57.37', static: static),
     dependency('libavutil', static: static),
     dependency('libswresample', static: static),
-    dependency('sdl2', version: '>= 2.0.5', static: static),
+    dependency('sdl3', version: '>= 3.2.0', static: static),
 ]
 
 if v4l2_support
@@ -191,8 +201,9 @@ executable('scrcpy', src,
 datadir = get_option('datadir') # by default 'share'
 
 install_man('scrcpy.1')
-install_data('data/icon.png',
-             rename: 'scrcpy.png',
+install_data('data/scrcpy.png',
+             install_dir: datadir / 'icons/hicolor/256x256/apps')
+install_data('data/disconnected.png',
              install_dir: datadir / 'icons/hicolor/256x256/apps')
 install_data('data/zsh-completion/_scrcpy',
              install_dir: datadir / 'zsh/site-functions')
@@ -213,6 +224,21 @@ endif
 
 # do not build tests in release (assertions would not be executed at all)
 if get_option('buildtype') == 'debug'
+    config_file_test_sources = [
+        'tests/test_config_file.c',
+        'src/util/config_file.c',
+        'src/util/env.c',
+        'src/util/file.c',
+        'src/util/log.c',
+        'src/util/str.c',
+        'src/util/strbuf.c',
+    ]
+    if host_machine.system() == 'windows'
+        config_file_test_sources += 'src/sys/win/file.c'
+    else
+        config_file_test_sources += 'src/sys/unix/file.c'
+    endif
+
     tests = [
         ['test_adb_parser', [
             'tests/test_adb_parser.c',
@@ -238,6 +264,13 @@ if get_option('buildtype') == 'debug'
             'src/util/str.c',
             'src/util/strbuf.c',
             'src/util/term.c',
+        ]],
+        ['test_config_file', config_file_test_sources],
+        ['test_command_windows', [
+          'tests/test_command_windows.c',
+          'src/util/command.c',
+          'src/util/str.c',
+          'src/util/strbuf.c',
         ]],
         ['test_control_msg_serialize', [
             'tests/test_control_msg_serialize.c',
@@ -276,13 +309,13 @@ if get_option('buildtype') == 'debug'
         exe = executable(t[0], sources,
                          include_directories: src_dir,
                          dependencies: dependencies,
-                         c_args: ['-DSDL_MAIN_HANDLED', '-DSC_TEST'])
+                         c_args: ['-DSC_TEST'])
         test(t[0], exe)
     endforeach
 endif
 
 if meson.version().version_compare('>= 0.58.0')
        devenv = environment()
-       devenv.set('SCRCPY_ICON_PATH', meson.current_source_dir() / 'data/icon.png')
+       devenv.set('SCRCPY_ICON_DIR', meson.current_source_dir() / 'data')
        meson.add_devenv(devenv)
 endif

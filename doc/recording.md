@@ -45,7 +45,7 @@ The container is automatically selected based on the filename.
 It is also possible to explicitly select a container (in that case the filename
 needs not end with a known extension):
 
-```
+```bash
 scrcpy --record=file --record-format=mkv
 ```
 
@@ -89,6 +89,6 @@ scrcpy --record=file.mkv --time-limit=20  # in seconds
 The `--time-limit` option is not limited to recording, it also impacts simple
 mirroring:
 
-```
+```bash
 scrcpy --time-limit=20
 ```

@@ -149,6 +149,36 @@ static void test_parse_shortcut_mods(void) {
     assert(!ok);
 }
 
+static void test_config_file_options(void) {
+    const char *path;
+    bool disabled;
+
+    char *argv1[] = {
+        "scrcpy",
+        "--window-title", "--no-config",
+        "--config=one.ini",
+    };
+    bool ok = scrcpy_parse_config_file_options(ARRAY_LEN(argv1), argv1,
+                                                &path, &disabled);
+    assert(ok);
+    assert(!strcmp(path, "one.ini"));
+    assert(!disabled);
+    assert(!strcmp(argv1[1], "--window-title"));
+    assert(!strcmp(argv1[2], "--no-config"));
+
+    char *argv2[] = {
+        "scrcpy",
+        "--config=one.ini",
+        "--config-file", "two.ini",
+        "--no-config",
+    };
+    ok = scrcpy_parse_config_file_options(ARRAY_LEN(argv2), argv2,
+                                           &path, &disabled);
+    assert(ok);
+    assert(!strcmp(path, "two.ini"));
+    assert(disabled);
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -158,5 +188,6 @@ int main(int argc, char *argv[]) {
     test_options();
     test_options2();
     test_parse_shortcut_mods();
+    test_config_file_options();
     return 0;
 }

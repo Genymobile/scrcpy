@@ -1,7 +1,7 @@
 package com.genymobile.scrcpy.video;
 
-import com.genymobile.scrcpy.device.Orientation;
-import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.model.Orientation;
+import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.util.AffineMatrix;
 
 import android.graphics.Rect;

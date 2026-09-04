@@ -4,19 +4,23 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 
 struct sc_config_argv {
-    char **argv;   // merged argv array
-    int argc;      // merged argc
-    char **allocs; // heap strings to free later
-    int nallocs;
+    char **argv;
+    int argc;
+    char **owned_args;
+    size_t owned_argc;
 };
 
-// Build a merged argv from config file + real argv.
-// CLI args come after config args so they override ("last wins").
-// Returns false on allocation failure.
+/**
+ * Prepend options from the configuration file to the command-line arguments.
+ *
+ * The result must be destroyed by sc_config_argv_destroy().
+ */
 bool
-sc_config_argv_init(struct sc_config_argv *ca, int argc, char *argv[]);
+sc_config_argv_init(struct sc_config_argv *ca, int argc, char *argv[],
+                    const char *config_path, bool config_disabled);
 
 void
 sc_config_argv_destroy(struct sc_config_argv *ca);

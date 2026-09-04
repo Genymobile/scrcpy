@@ -25,6 +25,7 @@ public final class ActivityManager {
     private Method removeContentProviderExternalMethod;
     private Method startActivityAsUserMethod;
     private Method forceStopPackageMethod;
+    private Method broadcastIntentMethod;
 
     static ActivityManager create() {
         try {
@@ -158,6 +159,32 @@ public final class ActivityManager {
         try {
             Method method = getForceStopPackageMethod();
             method.invoke(manager, packageName, /* userId */ /* UserHandle.USER_CURRENT */ -2);
+        } catch (Throwable e) {
+            Ln.e("Could not invoke method", e);
+        }
+    }
+
+    private Method getBroadcastIntentMethod() throws NoSuchMethodException {
+        if (broadcastIntentMethod == null) {
+            try {
+                Class<?> iApplicationThreadClass = Class.forName("android.app.IApplicationThread");
+                Class<?> iIntentReceiverClass = Class.forName("android.content.IIntentReceiver");
+                broadcastIntentMethod = manager.getClass()
+                        .getMethod("broadcastIntent", iApplicationThreadClass, Intent.class, String.class, iIntentReceiverClass, int.class,
+                                String.class, Bundle.class, String[].class, int.class, Bundle.class, boolean.class, boolean.class, int.class);
+            } catch (ClassNotFoundException e) {
+                throw new AssertionError(e);
+            }
+        }
+        return broadcastIntentMethod;
+    }
+
+    public void sendBroadcast(Intent intent) {
+        try {
+            // Equivalent to:
+            //     adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file://<path>
+            Method method = getBroadcastIntentMethod();
+            method.invoke(manager, null, intent, null, null, 0, null, null, null, -1, null, true, false, /* userId */ -2);
         } catch (Throwable e) {
             Ln.e("Could not invoke method", e);
         }

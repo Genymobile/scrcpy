@@ -331,30 +331,11 @@ sc_adb_reverse_remove(struct sc_intr *intr, const char *serial,
 bool
 sc_adb_push(struct sc_intr *intr, const char *serial, const char *local,
             const char *remote, unsigned flags) {
-#ifdef _WIN32
-    // Windows will parse the string, so the paths must be quoted
-    // (see sys/win/command.c)
-    local = sc_str_quote(local);
-    if (!local) {
-        return SC_PROCESS_NONE;
-    }
-    remote = sc_str_quote(remote);
-    if (!remote) {
-        free((void *) local);
-        return SC_PROCESS_NONE;
-    }
-#endif
-
     assert(serial);
     const char *const argv[] =
         SC_ADB_COMMAND("-s", serial, "push", local, remote);
 
     sc_pid pid = sc_adb_execute(argv, flags);
-
-#ifdef _WIN32
-    free((void *) remote);
-    free((void *) local);
-#endif
 
     return process_check_success_intr(intr, pid, "adb push", flags);
 }
@@ -362,24 +343,11 @@ sc_adb_push(struct sc_intr *intr, const char *serial, const char *local,
 bool
 sc_adb_install(struct sc_intr *intr, const char *serial, const char *local,
                unsigned flags) {
-#ifdef _WIN32
-    // Windows will parse the string, so the local name must be quoted
-    // (see sys/win/command.c)
-    local = sc_str_quote(local);
-    if (!local) {
-        return SC_PROCESS_NONE;
-    }
-#endif
-
     assert(serial);
     const char *const argv[] =
         SC_ADB_COMMAND("-s", serial, "install", "-r", local);
 
     sc_pid pid = sc_adb_execute(argv, flags);
-
-#ifdef _WIN32
-    free((void *) local);
-#endif
 
     return process_check_success_intr(intr, pid, "adb install", flags);
 }

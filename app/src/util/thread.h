@@ -10,8 +10,8 @@
 
 /* Forward declarations */
 typedef struct SDL_Thread SDL_Thread;
-typedef struct SDL_mutex SDL_mutex;
-typedef struct SDL_cond SDL_cond;
+typedef struct SDL_Mutex SDL_Mutex;
+typedef struct SDL_Condition SDL_Condition;
 
 typedef int sc_thread_fn(void *);
 typedef unsigned sc_thread_id;
@@ -29,17 +29,15 @@ enum sc_thread_priority {
 };
 
 typedef struct sc_mutex {
-    SDL_mutex *mutex;
+    SDL_Mutex *mutex;
 #ifndef NDEBUG
     sc_atomic_thread_id locker;
 #endif
 } sc_mutex;
 
 typedef struct sc_cond {
-    SDL_cond *cond;
+    SDL_Condition *cond;
 } sc_cond;
-
-extern sc_thread_id SC_MAIN_THREAD_ID;
 
 bool
 sc_thread_create(sc_thread *thread, sc_thread_fn fn, const char *name,
@@ -65,6 +63,9 @@ sc_mutex_unlock(sc_mutex *mutex);
 
 sc_thread_id
 sc_thread_get_id(void);
+
+bool
+sc_thread_is_main(void);
 
 #ifndef NDEBUG
 bool

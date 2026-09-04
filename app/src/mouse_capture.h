@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 struct sc_mouse_capture {
     SDL_Window *window;

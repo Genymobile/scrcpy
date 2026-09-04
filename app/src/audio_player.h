@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-#include <SDL2/SDL_audio.h>
+#include <SDL3/SDL_audio.h>
 
 #include "audio_regulator.h"
 #include "trait/frame_sink.h"
@@ -22,7 +22,11 @@ struct sc_audio_player {
     // SDL audio output buffer size
     sc_tick output_buffer_duration;
 
-    SDL_AudioDeviceID device;
+    uint8_t *aout_buffer;
+    size_t aout_buffer_size;
+
+    SDL_AudioStream *stream;
+    SDL_AudioDeviceID device; // owned by the audio stream
     struct sc_audio_regulator audioreg;
 };
 

@@ -138,3 +138,11 @@ The target directory can be changed on start:
 ```bash
 scrcpy --push-target=/sdcard/Movies/
 ```
+
+After each successful push, _scrcpy_ requests the media scanner to scan the
+"push directory" so that the new files immediately appear in media apps.
+
+Note that some gallery apps only show files from a fixed list of folders
+(typically `DCIM/Camera`) in their main view; the file is then still reachable
+through the system Photo Picker and the folder view, but may not appear on the
+gallery home screen.

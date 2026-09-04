@@ -8,6 +8,49 @@
 #include "util/log.h"
 #include "util/str.h"
 
+static size_t
+rstrip_len(const char *s, size_t len) {
+    size_t i = len;
+
+    // Ignore trailing whitespaces
+    while (i > 0 && (s[i-1] == ' ' || s[i-1] == '\t')) {
+        --i;
+    }
+
+    return i;
+}
+
+static void
+locate_last_token(const char *s, size_t len, size_t *start, size_t *end) {
+    size_t i = rstrip_len(s, len);
+    *end = i; // excluded
+
+    // The token contains non-whitespace chars
+    while (i > 0 && (s[i-1] != ' ' && s[i-1] != '\t')) {
+        --i;
+    }
+
+    *start = i; // included
+}
+
+static bool
+is_device_state(const char *s) {
+    // <https://android.googlesource.com/platform/packages/modules/adb/+/1cf2f017d312f73b3dc53bda85ef2610e35a80e9/adb.cpp#144>
+    // "device", "unauthorized" and "offline" are the most common states, so
+    // check them first.
+    return !strcmp(s, "device")
+        || !strcmp(s, "unauthorized")
+        || !strcmp(s, "offline")
+        || !strcmp(s, "bootloader")
+        || !strcmp(s, "host")
+        || !strcmp(s, "recovery")
+        || !strcmp(s, "rescue")
+        || !strcmp(s, "sideload")
+        || !strcmp(s, "authorizing")
+        || !strcmp(s, "connecting")
+        || !strcmp(s, "detached");
+}
+
 static bool
 sc_adb_parse_device(char *line, struct sc_adb_device *device) {
     // One device line looks like:
@@ -25,64 +68,54 @@ sc_adb_parse_device(char *line, struct sc_adb_device *device) {
         return false;
     }
 
-    char *s = line; // cursor in the line
+    size_t len = strlen(line);
 
-    // After the serial:
-    //  - "adb devices" writes a single '\t'
-    //  - "adb devices -l" writes multiple spaces
-    // For flexibility, accept both.
-    size_t serial_len = strcspn(s, " \t");
+    size_t start;
+    size_t end;
+
+    // The serial (the first token) may contain spaces, which are also token
+    // separators. To avoid ambiguity, parse the string backwards:
+    //  - first, parse all the trailing values until the device state,
+    //    identified using a list of well-known values;
+    //  - finally, treat the remaining leading token as the device serial.
+    //
+    // Refs:
+    //  - <https://github.com/Genymobile/scrcpy/issues/6248>
+    //  - <https://github.com/Genymobile/scrcpy/issues/3537>
+    const char *state;
+    const char *model = NULL;
+    for (;;) {
+        locate_last_token(line, len, &start, &end);
+        if (start == end) {
+            // No more tokens, unexpected
+            return false;
+        }
+
+        const char *token = &line[start];
+        line[end] = '\0';
+
+        if (!strncmp("model:", token, sizeof("model:") - 1)) {
+            model = &token[sizeof("model:") - 1];
+            // We only need the model
+        } else if (is_device_state(token)) {
+            state = token;
+            // The device state is the item immediately after the device serial
+            break;
+        }
+
+        // Remove the trailing parts already handled
+        len = start;
+    }
+
+    assert(state);
+
+    size_t serial_len = rstrip_len(line, start);
     if (!serial_len) {
         // empty serial
         return false;
     }
-    bool eol = s[serial_len] == '\0';
-    if (eol) {
-        // serial alone is unexpected
-        return false;
-    }
-    s[serial_len] = '\0';
-    char *serial = s;
-    s += serial_len + 1;
-    // After the serial, there might be several spaces
-    s += strspn(s, " \t"); // consume all separators
-
-    size_t state_len = strcspn(s, " ");
-    if (!state_len) {
-        // empty state
-        return false;
-    }
-    eol = s[state_len] == '\0';
-    s[state_len] = '\0';
-    char *state = s;
-
-    char *model = NULL;
-    if (!eol) {
-        s += state_len + 1;
-
-        // Iterate over all properties "key:value key:value ..."
-        for (;;) {
-            size_t token_len = strcspn(s, " ");
-            if (!token_len) {
-                break;
-            }
-            eol = s[token_len] == '\0';
-            s[token_len] = '\0';
-            char *token = s;
-
-            if (!strncmp("model:", token, sizeof("model:") - 1)) {
-                model = &token[sizeof("model:") - 1];
-                // We only need the model
-                break;
-            }
-
-            if (eol) {
-                break;
-            } else {
-                s+= token_len + 1;
-            }
-        }
-    }
+    char *serial = line;
+    line[serial_len] = '\0';
 
     device->serial = strdup(serial);
     if (!device->serial) {

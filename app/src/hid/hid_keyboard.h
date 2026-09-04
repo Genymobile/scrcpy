@@ -9,7 +9,7 @@
 #include "hid/hid_event.h"
 #include "input_events.h"
 
-// See "SDL2/SDL_scancode.h".
+// See "SDL3/SDL_scancode.h".
 // Maybe SDL_Keycode is used by most people, but SDL_Scancode is taken from USB
 // HID protocol.
 // 0x65 is Application, typically AT-101 Keyboard ends here.

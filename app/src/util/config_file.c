@@ -1,6 +1,7 @@
 #include "config_file.h"
 
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,256 +9,334 @@
 #include "util/env.h"
 #include "util/file.h"
 #include "util/log.h"
-#include "util/str.h"
+#include "util/vector.h"
+#ifdef _WIN32
+# include "util/str.h"
+#endif
 
 #define SC_CONFIG_FILENAME "config.ini"
+#define SC_CONFIG_LINE_MAX 4096
 
-// Get the default config file path for the current platform.
-// Returns a heap-allocated string, or NULL if not found.
+struct sc_config_args SC_VECTOR(char *);
+
 static char *
 sc_config_get_default_path(void) {
 #ifdef PORTABLE
     return sc_file_get_local_path(SC_CONFIG_FILENAME);
 #else
 # ifdef _WIN32
-    char *appdata = sc_get_env("APPDATA");
-    if (!appdata) {
+    char *base = sc_get_env("APPDATA");
+    if (!base || !*base) {
+        free(base);
         return NULL;
     }
-    char *dir = sc_str_concat(appdata, "\\scrcpy");
-    free(appdata);
-    if (!dir) {
-        return NULL;
-    }
-    char *path = sc_str_concat(dir, "\\" SC_CONFIG_FILENAME);
-    free(dir);
-    return path;
 # else
-    // Unix: $XDG_CONFIG_HOME/scrcpy/config.ini
-    // fallback: ~/.config/scrcpy/config.ini
     char *base = sc_get_env("XDG_CONFIG_HOME");
+    if (base && !*base) {
+        free(base);
+        base = NULL;
+    }
     if (!base) {
         char *home = sc_get_env("HOME");
-        if (!home) {
+        if (!home || !*home) {
+            free(home);
             return NULL;
         }
-        base = sc_str_concat(home, "/.config");
+        base = sc_file_build_path(home, ".config");
         free(home);
         if (!base) {
             return NULL;
         }
     }
-    char *dir = sc_str_concat(base, "/scrcpy");
+# endif
+
+    char *dir = sc_file_build_path(base, "scrcpy");
     free(base);
     if (!dir) {
         return NULL;
     }
-    char *path = sc_str_concat(dir, "/" SC_CONFIG_FILENAME);
+
+    char *path = sc_file_build_path(dir, SC_CONFIG_FILENAME);
     free(dir);
     return path;
-# endif
 #endif
 }
 
-// Resolve config file path: --config-file=PATH > env > default
-static char *
-sc_config_get_path(int argc, char *argv[]) {
-    // Check for --config-file= in CLI args
-    for (int i = 1; i < argc; ++i) {
-        if (!strncmp(argv[i], "--config-file=", 14)) {
-            return strdup(argv[i] + 14);
-        }
-        if (!strcmp(argv[i], "--config-file") && i + 1 < argc) {
-            return strdup(argv[i + 1]);
-        }
-    }
-
-    // Check env var
-    char *env = sc_get_env("SCRCPY_CONFIG_FILE");
-    if (env) {
-        return env; // already heap-allocated
-    }
-
-    return sc_config_get_default_path();
-}
-
-// Check if --no-config is present in CLI args
 static bool
-sc_config_has_no_config(int argc, char *argv[]) {
-    for (int i = 1; i < argc; ++i) {
-        if (!strcmp(argv[i], "--no-config")) {
-            return true;
-        }
+sc_config_get_path(const char *cli_path, bool disabled, char **path,
+                   bool *required) {
+    if (disabled) {
+        *path = NULL;
+        *required = false;
+        return true;
     }
-    return false;
+
+    if (cli_path) {
+        *path = strdup(cli_path);
+        if (!*path) {
+            LOG_OOM();
+            return false;
+        }
+        *required = true;
+        return true;
+    }
+
+    char *env_path = sc_get_env("SCRCPY_CONFIG_FILE");
+    if (env_path && *env_path) {
+        *path = env_path;
+        *required = true;
+        return true;
+    }
+    free(env_path);
+
+    *path = sc_config_get_default_path();
+    *required = false;
+    return true;
 }
 
-// Parse config file into an array of "--key=value" or "--key" strings.
-// Returns the number of entries written to `out`, or -1 on error.
-// Caller must free each out[i].
-static int
-sc_config_parse_file(const char *path, char **out, int max) {
-    FILE *f = fopen(path, "r");
-    if (!f) {
-        LOGD("Could not open config file: %s: %s", path, strerror(errno));
-        return 0; // not an error, just no config
+static FILE *
+sc_config_open(const char *path) {
+#ifdef _WIN32
+    wchar_t *wide_path = sc_str_to_wchars(path);
+    if (!wide_path) {
+        errno = EINVAL;
+        return NULL;
     }
 
-    int count = 0;
-    char line[4096];
+    FILE *file = _wfopen(wide_path, L"rb");
+    free(wide_path);
+    return file;
+#else
+    return fopen(path, "rb");
+#endif
+}
 
-    while (fgets(line, sizeof(line), f)) {
+static char *
+sc_config_skip_spaces(char *s) {
+    while (*s == ' ' || *s == '\t') {
+        ++s;
+    }
+    return s;
+}
 
-        // Strip trailing newline/carriage return
+static void
+sc_config_trim_right(char *s) {
+    size_t len = strlen(s);
+    while (len && (s[len - 1] == ' ' || s[len - 1] == '\t')) {
+        s[--len] = '\0';
+    }
+}
+
+static void
+sc_config_strip_inline_comment(char *s) {
+    if (!*s) {
+        return;
+    }
+
+    char *p = s + 1;
+    while ((p = strchr(p, '#'))) {
+        if (p[-1] == ' ' || p[-1] == '\t') {
+            *p = '\0';
+            return;
+        }
+        ++p;
+    }
+}
+
+static bool
+sc_config_create_arg(char *line, const char *path, size_t line_number,
+                     char **out) {
+    char *key = sc_config_skip_spaces(line);
+    if (!*key || *key == '#') {
+        *out = NULL;
+        return true;
+    }
+
+    char *separator = strchr(key, '=');
+    char *value = NULL;
+    if (separator) {
+        *separator = '\0';
+        value = sc_config_skip_spaces(separator + 1);
+        sc_config_strip_inline_comment(value);
+        sc_config_trim_right(value);
+    } else {
+        sc_config_strip_inline_comment(key);
+    }
+    sc_config_trim_right(key);
+
+    if (!*key) {
+        LOGE("Invalid configuration option in %s:%zu", path, line_number);
+        return false;
+    }
+
+    size_t key_len = strlen(key);
+    size_t value_len = value ? strlen(value) : 0;
+    size_t arg_len = 2 + key_len + (value ? 1 + value_len : 0);
+    char *arg = malloc(arg_len + 1);
+    if (!arg) {
+        LOG_OOM();
+        return false;
+    }
+
+    arg[0] = '-';
+    arg[1] = '-';
+    memcpy(arg + 2, key, key_len);
+    size_t offset = 2 + key_len;
+    if (value) {
+        arg[offset++] = '=';
+        memcpy(arg + offset, value, value_len);
+        offset += value_len;
+    }
+    arg[offset] = '\0';
+    *out = arg;
+    return true;
+}
+
+static void
+sc_config_args_destroy(struct sc_config_args *args) {
+    for (size_t i = 0; i < args->size; ++i) {
+        free(args->data[i]);
+    }
+    sc_vector_destroy(args);
+}
+
+static bool
+sc_config_parse(FILE *file, const char *path, struct sc_config_args *args) {
+    char line[SC_CONFIG_LINE_MAX];
+    size_t line_number = 0;
+
+    while (fgets(line, sizeof(line), file)) {
+        ++line_number;
         size_t len = strlen(line);
-        while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r')) {
+        if (len && line[len - 1] == '\n') {
+            line[--len] = '\0';
+        } else if (!feof(file)) {
+            LOGE("Configuration line too long in %s:%zu", path, line_number);
+            return false;
+        }
+        if (len && line[len - 1] == '\r') {
             line[--len] = '\0';
         }
 
-        // Strip leading whitespace
-        char *p = line;
-        while (*p == ' ' || *p == '\t') {
-            ++p;
+        char *content = line;
+        if (line_number == 1 && len >= 3
+                && !memcmp(content, "\xef\xbb\xbf", 3)) {
+            content += 3;
         }
 
-        // Skip empty lines and comments
-        if (*p == '\0' || *p == '#') {
+        char *arg;
+        if (!sc_config_create_arg(content, path, line_number, &arg)) {
+            return false;
+        }
+        if (!arg) {
             continue;
         }
 
-        if (count >= max) {
-            LOGW("Config file: too many entries (max %d), ignoring rest", max);
-            break;
+        if (!sc_vector_push(args, arg)) {
+            LOG_OOM();
+            free(arg);
+            return false;
         }
-
-        // Build "--key=value" or "--key"
-        char *eq = strchr(p, '=');
-        char *arg;
-        if (eq) {
-            // key=value → "--key=value"
-            *eq = '\0';
-            const char *key = p;
-            const char *value = eq + 1;
-
-            // "--" + key + "=" + value + '\0'
-            size_t arglen = 2 + strlen(key) + 1 + strlen(value) + 1;
-            arg = malloc(arglen);
-            if (!arg) {
-                LOG_OOM();
-                fclose(f);
-                return -1;
-            }
-            snprintf(arg, arglen, "--%s=%s", key, value);
-        } else {
-            // boolean key → "--key"
-            // "--" + key + '\0'
-            size_t arglen = 2 + strlen(p) + 1;
-            arg = malloc(arglen);
-            if (!arg) {
-                LOG_OOM();
-                fclose(f);
-                return -1;
-            }
-            snprintf(arg, arglen, "--%s", p);
-        }
-
-        out[count++] = arg;
     }
 
-    fclose(f);
+    if (ferror(file)) {
+        LOGE("Could not read configuration file %s: %s", path,
+             strerror(errno));
+        return false;
+    }
 
-    LOGD("Config file: loaded %d entries from %s", count, path);
-    return count;
+    return true;
 }
 
 bool
-sc_config_argv_init(struct sc_config_argv *ca, int argc, char *argv[]) {
-    ca->argv = NULL;
-    ca->argc = 0;
-    ca->allocs = NULL;
-    ca->nallocs = 0;
+sc_config_argv_init(struct sc_config_argv *ca, int argc, char *argv[],
+                    const char *config_path, bool config_disabled) {
+    *ca = (struct sc_config_argv) {0};
 
-    if (sc_config_has_no_config(argc, argv)) {
-        // No config: just reference original argv
+    char *path;
+    bool required;
+    if (!sc_config_get_path(config_path, config_disabled, &path, &required)) {
+        return false;
+    }
+
+    if (!path) {
         ca->argv = argv;
         ca->argc = argc;
         return true;
     }
 
-    char *path = sc_config_get_path(argc, argv);
-    if (!path || !sc_file_is_regular(path)) {
+    FILE *file = sc_config_open(path);
+    if (!file) {
+        int error = errno;
+        if (!required && (error == ENOENT || error == ENOTDIR)) {
+            free(path);
+            ca->argv = argv;
+            ca->argc = argc;
+            return true;
+        }
+
+        LOGE("Could not open configuration file %s: %s", path,
+             strerror(error));
         free(path);
-        // No config file: just use original argv
-        ca->argv = argv;
-        ca->argc = argc;
-        return true;
+        return false;
     }
 
-    // Parse config file entries (max 256 entries)
-    #define SC_CONFIG_MAX_ENTRIES 256
-    char *config_args[SC_CONFIG_MAX_ENTRIES];
-    int nconfig = sc_config_parse_file(path, config_args, SC_CONFIG_MAX_ENTRIES);
+    struct sc_config_args config_args = {0};
+    bool ok = sc_config_parse(file, path, &config_args);
+    fclose(file);
+    if (!ok) {
+        sc_config_args_destroy(&config_args);
+        free(path);
+        return false;
+    }
+
+    LOGD("Loaded %zu configuration option(s) from %s", config_args.size,
+         path);
     free(path);
 
-    if (nconfig < 0) {
-        return false;
-    }
-
-    if (nconfig == 0) {
+    if (!config_args.size) {
+        sc_vector_destroy(&config_args);
         ca->argv = argv;
         ca->argc = argc;
         return true;
     }
 
-    // Build merged argv: [argv[0]] + config_args + [argv[1:]]
-    int merged_argc = 1 + nconfig + (argc - 1);
-    char **merged_argv = malloc((merged_argc + 1) * sizeof(char *));
+    size_t merged_argc = (size_t) argc + config_args.size;
+    if (merged_argc > INT_MAX) {
+        LOGE("Too many configuration options");
+        sc_config_args_destroy(&config_args);
+        return false;
+    }
+
+    char **merged_argv = malloc((merged_argc + 1) * sizeof(*merged_argv));
     if (!merged_argv) {
         LOG_OOM();
-        for (int i = 0; i < nconfig; ++i) {
-            free(config_args[i]);
-        }
+        sc_config_args_destroy(&config_args);
         return false;
     }
 
-    int idx = 0;
-    merged_argv[idx++] = argv[0];
-    for (int i = 0; i < nconfig; ++i) {
-        merged_argv[idx++] = config_args[i];
-    }
-    for (int i = 1; i < argc; ++i) {
-        merged_argv[idx++] = argv[i];
-    }
-    merged_argv[idx] = NULL;
-
-    // Save allocations for cleanup
-    char **allocs = malloc(nconfig * sizeof(char *));
-    if (!allocs) {
-        LOG_OOM();
-        for (int i = 0; i < nconfig; ++i) {
-            free(config_args[i]);
-        }
-        free(merged_argv);
-        return false;
-    }
-    memcpy(allocs, config_args, nconfig * sizeof(char *));
+    merged_argv[0] = argv[0];
+    memcpy(&merged_argv[1], config_args.data,
+           config_args.size * sizeof(*merged_argv));
+    memcpy(&merged_argv[config_args.size + 1], &argv[1],
+           (argc - 1) * sizeof(*merged_argv));
+    merged_argv[merged_argc] = NULL;
 
     ca->argv = merged_argv;
-    ca->argc = merged_argc;
-    ca->allocs = allocs;
-    ca->nallocs = nconfig;
-
+    ca->argc = (int) merged_argc;
+    ca->owned_args = config_args.data;
+    ca->owned_argc = config_args.size;
     return true;
 }
 
 void
 sc_config_argv_destroy(struct sc_config_argv *ca) {
-    for (int i = 0; i < ca->nallocs; ++i) {
-        free(ca->allocs[i]);
+    for (size_t i = 0; i < ca->owned_argc; ++i) {
+        free(ca->owned_args[i]);
     }
-    free(ca->allocs);
-    // merged_argv is NULL when we used original argv directly
-    if (ca->nallocs > 0) {
+    free(ca->owned_args);
+    if (ca->owned_argc) {
         free(ca->argv);
     }
+    *ca = (struct sc_config_argv) {0};
 }

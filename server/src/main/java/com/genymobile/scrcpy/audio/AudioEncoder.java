@@ -3,10 +3,10 @@ package com.genymobile.scrcpy.audio;
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.AsyncProcessor;
 import com.genymobile.scrcpy.Options;
-import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Streamer;
-import com.genymobile.scrcpy.util.Codec;
-import com.genymobile.scrcpy.util.CodecOption;
+import com.genymobile.scrcpy.model.Codec;
+import com.genymobile.scrcpy.model.CodecOption;
+import com.genymobile.scrcpy.model.ConfigurationException;
 import com.genymobile.scrcpy.util.CodecUtils;
 import com.genymobile.scrcpy.util.IO;
 import com.genymobile.scrcpy.util.Ln;
@@ -266,13 +266,13 @@ public final class AudioEncoder implements AsyncProcessor {
             outputThread.start();
 
             waitEnded();
-        } catch (ConfigurationException e) {
-            // Notify the error to make scrcpy exit
-            streamer.writeDisableStream(true);
-            throw e;
-        } catch (Throwable e) {
+        } catch (AudioCaptureException e) {
             // Notify the client that the audio could not be captured
             streamer.writeDisableStream(false);
+            throw e;
+        } catch (Throwable e) {
+            // Notify the error to make scrcpy exit
+            streamer.writeDisableStream(true);
             throw e;
         } finally {
             // Cleanup everything (either at the end or on error at any step of the initialization)

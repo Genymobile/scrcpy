@@ -163,6 +163,45 @@ static void test_adb_devices_spaces(void) {
     sc_adb_devices_destroy(&vec);
 }
 
+static void test_adb_devices_serial_with_spaces(void) {
+    char output[] =
+        "List of devices attached\n"
+        "adb-0123456789AB-CDdefg (2)._adb-tls-connect._tcp device "
+            "product:blazer model:Pixel_10_Pro device:blazer transport_id:3\n";
+
+    struct sc_vec_adb_devices vec = SC_VECTOR_INITIALIZER;
+    bool ok = sc_adb_parse_devices(output, &vec);
+    assert(ok);
+    assert(vec.size == 1);
+
+    struct sc_adb_device *device = &vec.data[0];
+    assert(!strcmp("adb-0123456789AB-CDdefg (2)._adb-tls-connect._tcp",
+                   device->serial));
+    assert(!strcmp("device", device->state));
+    assert(!strcmp("Pixel_10_Pro", device->model));
+
+    sc_adb_devices_destroy(&vec);
+}
+
+static void test_adb_devices_with_devpath_without_colon(void) {
+    char output[] =
+        "List of devices attached\n"
+        "12345678               device 3-1 product:manet model:23117RK66C "
+            "device:manet transport_id:2\n";
+
+    struct sc_vec_adb_devices vec = SC_VECTOR_INITIALIZER;
+    bool ok = sc_adb_parse_devices(output, &vec);
+    assert(ok);
+    assert(vec.size == 1);
+
+    struct sc_adb_device *device = &vec.data[0];
+    assert(!strcmp("12345678", device->serial));
+    assert(!strcmp("device", device->state));
+    assert(!strcmp("23117RK66C", device->model));
+
+    sc_adb_devices_destroy(&vec);
+}
+
 static void test_get_ip_single_line(void) {
     char ip_route[] = "192.168.1.0/24 dev wlan0  proto kernel  scope link  src "
                       "192.168.12.34\r\r\n";
@@ -265,6 +304,8 @@ int main(int argc, char *argv[]) {
     test_adb_devices_without_header();
     test_adb_devices_corrupted();
     test_adb_devices_spaces();
+    test_adb_devices_serial_with_spaces();
+    test_adb_devices_with_devpath_without_colon();
 
     test_get_ip_single_line();
     test_get_ip_single_line_without_eol();

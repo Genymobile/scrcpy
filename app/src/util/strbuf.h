@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+#include <sys/types.h>
 
 struct sc_strbuf {
     char *s;
@@ -52,6 +53,10 @@ static inline bool
 sc_strbuf_append_str(struct sc_strbuf *buf, const char *s) {
     return sc_strbuf_append(buf, s, strlen(s));
 }
+
+ssize_t
+sc_strbuf_append_str_truncate_utf8(struct sc_strbuf *buf, const char *utf8,
+                                   size_t max_len);
 
 /**
  * Append a static string

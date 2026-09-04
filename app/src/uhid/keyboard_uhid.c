@@ -2,8 +2,8 @@
 
 #include <assert.h>
 #include <string.h>
-#include <SDL2/SDL_keyboard.h>
-#include <SDL2/SDL_keycode.h>
+#include <SDL3/SDL_keyboard.h>
+#include <SDL3/SDL_keycode.h>
 
 #include "util/log.h"
 #include "util/thread.h"
@@ -60,7 +60,7 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
                              uint64_t ack_to_wait) {
     (void) ack_to_wait;
 
-    assert(sc_thread_get_id() == SC_MAIN_THREAD_ID);
+    assert(sc_thread_is_main());
 
     if (event->repeat) {
         // In USB HID protocol, key repeat is handled by the host (Android), so
@@ -104,7 +104,7 @@ sc_keyboard_uhid_to_sc_mod(uint8_t hid_led) {
 void
 sc_keyboard_uhid_process_hid_output(struct sc_keyboard_uhid *kb,
                                     const uint8_t *data, size_t size) {
-    assert(sc_thread_get_id() == SC_MAIN_THREAD_ID);
+    assert(sc_thread_is_main());
 
     assert(size);
 

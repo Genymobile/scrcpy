@@ -8,6 +8,7 @@
 #include "options.h"
 
 enum sc_pause_on_exit {
+    SC_PAUSE_ON_EXIT_UNDEFINED,
     SC_PAUSE_ON_EXIT_TRUE,
     SC_PAUSE_ON_EXIT_FALSE,
     SC_PAUSE_ON_EXIT_IF_ERROR,
@@ -22,6 +23,10 @@ struct scrcpy_cli_args {
 
 void
 scrcpy_print_usage(const char *arg0);
+
+bool
+scrcpy_parse_config_file_options(int argc, char *argv[], const char **path,
+                                 bool *disabled);
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]);
