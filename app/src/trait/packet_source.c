@@ -27,12 +27,13 @@ sc_packet_source_sinks_close_firsts(struct sc_packet_source *source,
 
 bool
 sc_packet_source_sinks_open(struct sc_packet_source *source,
-                            AVCodecContext *ctx,
+                            const AVCodec *codec,
+                            const AVCodecParameters *params,
                             const struct sc_stream_session *session) {
     assert(source->sink_count);
     for (unsigned i = 0; i < source->sink_count; ++i) {
         struct sc_packet_sink *sink = source->sinks[i];
-        if (!sink->ops->open(sink, ctx, session)) {
+        if (!sink->ops->open(sink, codec, params, session)) {
             sc_packet_source_sinks_close_firsts(source, i);
             return false;
         }

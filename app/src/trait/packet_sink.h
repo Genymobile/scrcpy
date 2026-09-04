@@ -26,8 +26,8 @@ struct sc_stream_session {
 };
 
 struct sc_packet_sink_ops {
-    /* The codec context is valid until the sink is closed */
-    bool (*open)(struct sc_packet_sink *sink, AVCodecContext *ctx,
+    bool (*open)(struct sc_packet_sink *sink, const AVCodec *codec,
+                 const AVCodecParameters *params,
                  const struct sc_stream_session *session);
     void (*close)(struct sc_packet_sink *sink);
     bool (*push)(struct sc_packet_sink *sink, const AVPacket *packet);

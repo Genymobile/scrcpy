@@ -28,7 +28,8 @@ sc_packet_source_add_sink(struct sc_packet_source *source,
 
 bool
 sc_packet_source_sinks_open(struct sc_packet_source *source,
-                            AVCodecContext *ctx,
+                            const AVCodec *codec,
+                            const AVCodecParameters *params,
                             const struct sc_stream_session *session);
 
 void

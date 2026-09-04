@@ -10,23 +10,42 @@
 #define DOWNCAST(SINK) container_of(SINK, struct sc_decoder, packet_sink)
 
 static bool
-sc_decoder_open(struct sc_decoder *decoder, AVCodecContext *ctx,
+sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec,
+                const AVCodecParameters *params,
                 const struct sc_stream_session *session) {
-    decoder->frame = av_frame_alloc();
-    if (!decoder->frame) {
+    // A video stream must have a session
+    assert(session || codec->type != AVMEDIA_TYPE_VIDEO);
+
+    decoder->ctx = avcodec_alloc_context3(codec);
+    if (!decoder->ctx) {
         LOG_OOM();
         return false;
     }
 
-    if (!sc_frame_source_sinks_open(&decoder->frame_source, ctx, session)) {
-        av_frame_free(&decoder->frame);
-        return false;
+    int r = avcodec_parameters_to_context(decoder->ctx, params);
+    if (r < 0) {
+        LOGE("Decoder '%s': could not set codec parameters", decoder->name);
+        goto error_free_context;
     }
 
-    decoder->ctx = ctx;
+    decoder->ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
 
-    // A video stream must have a session
-    assert(session || ctx->codec_type != AVMEDIA_TYPE_VIDEO);
+    r = avcodec_open2(decoder->ctx, codec, NULL);
+    if (r < 0) {
+        LOGE("Decoder '%s': could not open codec", decoder->name);
+        goto error_free_context;
+    }
+
+    decoder->frame = av_frame_alloc();
+    if (!decoder->frame) {
+        LOG_OOM();
+        goto error_free_context;
+    }
+
+    if (!sc_frame_source_sinks_open(&decoder->frame_source, decoder->ctx,
+                                    session)) {
+        goto error_free_frame;
+    }
 
     if (session) {
         decoder->session = *session;
@@ -35,12 +54,20 @@ sc_decoder_open(struct sc_decoder *decoder, AVCodecContext *ctx,
     memset(&decoder->frame_size, 0, sizeof(decoder->frame_size));
 
     return true;
+
+error_free_frame:
+    av_frame_free(&decoder->frame);
+error_free_context:
+    avcodec_free_context(&decoder->ctx);
+
+    return false;
 }
 
 static void
 sc_decoder_close(struct sc_decoder *decoder) {
     sc_frame_source_sinks_close(&decoder->frame_source);
     av_frame_free(&decoder->frame);
+    avcodec_free_context(&decoder->ctx);
 }
 
 static bool
@@ -117,10 +144,11 @@ sc_decoder_push_session(struct sc_decoder *decoder,
 }
 
 static bool
-sc_decoder_packet_sink_open(struct sc_packet_sink *sink, AVCodecContext *ctx,
+sc_decoder_packet_sink_open(struct sc_packet_sink *sink, const AVCodec *codec,
+                            const AVCodecParameters *params,
                             const struct sc_stream_session *session) {
     struct sc_decoder *decoder = DOWNCAST(sink);
-    return sc_decoder_open(decoder, ctx, session);
+    return sc_decoder_open(decoder, codec, params, session);
 }
 
 static void
