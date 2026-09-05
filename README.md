@@ -2,6 +2,173 @@
 > **This GitHub repo (<https://github.com/Genymobile/scrcpy>) is the only official
 source for the project. Do not download releases from random websites, even if
 their name contains `scrcpy`.**
+--- scrcpy_gui/README.md (原始)
+
+
++++ scrcpy_gui/README.md (修改后)
+# scrcpy-gui
+
+A modern GUI for scrcpy with Material Design 3 styling.
+
+## Features
+
+- **Material Design 3** - Beautiful, modern interface
+- **Multi-language Support** - English and Russian localization
+- **Easy Device Connection** - USB and WiFi (TCP/IP) support
+- **Full scrcpy Settings** - All video, audio, recording, and control options
+- **Tabbed Interface** - Organized settings by category
+- **Built-in Tutorials** - Step-by-step connection guides
+- **Configuration Save/Load** - Save your preferred settings
+- **Dark/Light Themes** - Choose your preferred appearance
+
+## Requirements
+
+- Python 3.8+
+- PySide6
+- scrcpy (installed separately)
+- adb (Android Debug Bridge)
+
+## Installation
+
+### Windows
+
+1. Install Python from https://python.org
+2. Run `build.bat` to build the application
+3. Run `dist\run.bat` to start the application
+
+Or manually:
+```bash
+pip install PySide6
+python scrcpy_gui.py
+```
+
+### Linux/macOS
+
+```bash
+chmod +x build.sh
+./build.sh
+./dist/run.sh
+```
+
+Or manually:
+```bash
+pip3 install PySide6
+python3 scrcpy_gui.py
+```
+
+## Usage
+
+### Connecting via USB
+
+1. Enable Developer Options on your Android device
+   - Go to Settings → About phone
+   - Tap "Build number" 7 times
+2. Enable USB debugging
+   - Go to Settings → System → Developer options
+   - Enable "USB debugging"
+3. Connect your device via USB cable
+4. Accept the USB debugging prompt on your device
+5. Click "Refresh Devices" in scrcpy-gui
+6. Select your device and click "Connect"
+7. Click "Start Mirroring"
+
+### Connecting via WiFi
+
+1. First complete USB setup above
+2. Connect device and computer to the same WiFi network
+3. Get device IP address:
+   - Settings → About phone → Status
+   - Or run: `adb shell ip route | awk '{print $9}'`
+4. Enable TCP/IP mode: `adb tcpip 5555`
+5. Disconnect USB cable
+6. Enter IP address in scrcpy-gui and click "Connect"
+7. Click "Start Mirroring"
+
+## Settings
+
+### Video Tab
+- Max Resolution (0 = unlimited)
+- Bit Rate (Mbps)
+- Max FPS
+- Display ID
+- Video Codec (h264, h265, av1)
+- Crop Video
+
+### Audio Tab
+- Enable/Disable Audio
+- Audio Bit Rate
+- Audio Codec (opus, aac, flac, raw)
+- Audio Source (output, playback, mic)
+
+### Recording Tab
+- Enable Recording
+- Record Format (mp4, mkv)
+- Record File Path
+- No Video Playback (record only)
+- No Audio Playback (record only)
+
+### Control Tab
+- Prefer Text Input
+- Raw Key Events
+- Gamepad Support
+- Mouse Binding Mode
+
+### Window Tab
+- Window Title
+- Always on Top
+- Borderless Window
+- Start Fullscreen
+- Window Position (X, Y)
+- Window Size (Width, Height)
+- Background Color
+- Disable Screensaver
+
+### Advanced Tab
+- Time Limit
+- Turn Screen Off
+- Power Off on Close
+- Don't Power On
+- Kill ADB on Close
+- Force ADB Forward
+- Tunnel Host/Port
+
+## Keyboard Shortcuts (in scrcpy window)
+
+- `Alt+F` - Toggle fullscreen
+- `Right-click` - Back button
+- `Middle-click` - Home button
+- `Ctrl+C` - Copy
+- `Ctrl+V` - Paste
+
+For more shortcuts, see scrcpy documentation.
+
+## Configuration
+
+Settings are automatically saved to `~/.scrcpy-gui/config.json`
+
+You can also manually save/load configurations from the Advanced tab.
+
+## License
+
+This GUI is provided as-is. Original scrcpy by Genymobile.
+
+## Troubleshooting
+
+### "No devices found"
+- Make sure USB debugging is enabled
+- Try a different USB cable
+- Install proper USB drivers (Windows)
+- Run `adb devices` to verify detection
+
+### "Failed to connect"
+- Check that device and computer are on same network
+- Verify IP address is correct
+- Make sure port 5555 is not blocked by firewall
+- Try `adb kill-server` and reconnect
+
+### "scrcpy not found"
+- Install scrcpy from https://github.com/Genymobile/scrcpy
+- Make sure scrcpy is in your system PATH
 
 # scrcpy (v4.1)
 
