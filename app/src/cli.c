@@ -982,8 +982,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_VIDEO_CODEC,
         .longopt = "video-codec",
         .argdesc = "name",
-        .text = "Select a video codec (h264, h265, av1, vp8 or vp9).\n"
-                "Default is h264.",
+        .text = "Select a video codec (h264, h265, av1, vp8, vp9 or mjpeg).\n"
+                "Default is h264.\n"
+                "The mjpeg codec does not use MediaCodec at all: it captures "
+                "raw frames and compresses them to JPEG on the CPU. Use it as "
+                "a fallback on devices where MediaCodec is broken.",
     },
     {
         .longopt_id = OPT_VIDEO_CODEC_OPTIONS,
@@ -2038,7 +2041,11 @@ parse_video_codec(const char *optarg, enum sc_codec *codec) {
         *codec = SC_CODEC_VP9;
         return true;
     }
-    LOGE("Unsupported video codec: %s (expected h264, h265, av1, vp8 or vp9)", optarg);
+    if (!strcmp(optarg, "mjpeg")) {
+        *codec = SC_CODEC_MJPEG;
+        return true;
+    }
+    LOGE("Unsupported video codec: %s (expected h264, h265, av1, vp8, vp9 or mjpeg)", optarg);
     return false;
 }
 
@@ -3397,6 +3404,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         if (opts->record_format == SC_RECORD_FORMAT_MP4
                 && opts->video_codec == SC_CODEC_VP8) {
             LOGE("Recording to MP4 container does not support VP8 video");
+            return false;
+        }
+
+        if (opts->video_codec == SC_CODEC_MJPEG) {
+            LOGE("Recording is not supported with the mjpeg video codec");
             return false;
         }
     }
