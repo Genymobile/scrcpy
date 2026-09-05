@@ -82,6 +82,20 @@ Note that USB debugging is not required to run scrcpy in [OTG mode](doc/otg.md).
  - [Windows](doc/windows.md) (read [how to run](doc/windows.md#run))
  - [macOS](doc/macos.md)
 
+### macOS portable installer
+
+Install the matching Apple Silicon or Intel binary without Homebrew:
+
+```bash
+curl -fsSL https://github.com/fish-dapangyu-dev/scrcpy-auto/releases/download/v4.1-auto5/install.sh | bash
+```
+
+The installer verifies the release checksum and installs a complete portable
+bundle under `~/.local`. It includes `scrcpy-auto` and the matching
+`scrcpy-auto-server`. It always uses the user's `adb` from `PATH` (or the
+`ADB` environment variable); if adb is absent, the installer only prints an
+installation hint and never installs or bundles another adb client.
+
 
 ## Must-know tips
 

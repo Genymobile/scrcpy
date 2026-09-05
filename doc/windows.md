@@ -91,6 +91,7 @@ scrcpy --prefer-text --turn-screen-off --stay-awake --pause-on-exit=if-error
 
 Then just double-click on that file to run it.
 
-To start scrcpy without opening a terminal, double-click `scrcpy-noconsole.vbs`
-(note that errors won't be shown). To pass arguments, edit (a copy of)
-`scrcpy-noconsole.vbs` and add the desired arguments.
+To start scrcpy-auto without opening a terminal, double-click
+`scrcpy-auto-noconsole.vbs` (note that errors won't be shown). To pass
+arguments, edit (a copy of) `scrcpy-auto-noconsole.vbs` and add the desired
+arguments.

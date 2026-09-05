@@ -2,14 +2,19 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #ifdef HAVE_V4L2
 # include <libavdevice/avdevice.h>
 #endif
 #include <SDL3/SDL.h>
 
 #include "cli.h"
+#include "daemon/client.h"
+#include "daemon/daemon.h"
+#include "daemon/mirror.h"
 #include "events.h"
 #include "options.h"
+#include "plugins.h"
 #include "scrcpy.h"
 #ifdef HAVE_USB
 # include "usb/scrcpy_otg.h"
@@ -17,6 +22,7 @@
 #include "util/log.h"
 #include "util/net.h"
 #include "util/term.h"
+#include "user_config.h"
 #include "version.h"
 
 #ifdef _WIN32
@@ -32,9 +38,6 @@ main_scrcpy(int argc, char *argv[]) {
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 #endif
-
-    printf("scrcpy " SCRCPY_VERSION
-           " <https://github.com/Genymobile/scrcpy>\n");
 
     struct scrcpy_cli_args args = {
         .opts = scrcpy_options_default,
@@ -56,7 +59,14 @@ main_scrcpy(int argc, char *argv[]) {
         goto end;
     }
 
-    sc_set_log_level(args.opts.log_level);
+    sc_set_log_level(args.opts.json ? SC_LOG_LEVEL_ERROR : args.opts.log_level);
+
+    // Banner on stdout, except under --json (stdout must stay pure JSON there)
+    if (!args.opts.json) {
+        printf("scrcpy " SCRCPY_VERSION
+               " <https://github.com/fish-dapangyu-dev/scrcpy-auto>\n"
+               "  (fork of <https://github.com/Genymobile/scrcpy>)\n");
+    }
 
     if (args.opts.update_terminal_title) {
         sc_term_save_title();
@@ -93,6 +103,31 @@ main_scrcpy(int argc, char *argv[]) {
 
     sc_log_configure();
 
+    if (args.opts.client_port) {
+        if (args.opts.mirror) {
+            // Mirror mode: open the normal scrcpy window rendering the
+            // daemon's video stream (doc/daemon.md §8.8). Needs the main-thread
+            // runnable pump, like a normal session.
+            if (!sc_main_thread_init()) {
+                ret = SCRCPY_EXIT_FAILURE;
+                goto net_cleanup;
+            }
+            ret = sc_mirror_run(&args.opts);
+            sc_main_thread_destroy();
+        } else {
+            // Thin client of a running daemon: no SDL, no adb, no device
+            // session
+            ret = sc_client_run(&args.opts);
+        }
+        goto net_cleanup;
+    }
+
+    if (args.opts.daemon_port) {
+        // Persistent daemon mode (doc/daemon.md)
+        ret = sc_daemon_run(&args.opts);
+        goto net_cleanup;
+    }
+
     if (!sc_main_thread_init()) {
         ret = SCRCPY_EXIT_FAILURE;
         goto net_cleanup;
@@ -128,6 +163,16 @@ end:
 int
 main(int argc, char *argv[]) {
 #ifndef _WIN32
+    // Package installation may run as root or in a sandbox, so it cannot
+    // safely initialize a per-user directory. Ensure it for the actual user
+    // before dispatching any command instead.
+    (void) sc_user_config_ensure_dir();
+
+    if (argc >= 2 && (!strcmp(argv[1], "plugins-install")
+                      || !strcmp(argv[1], "plugins-upgrade"))) {
+        return sc_plugins_cli(argc, argv);
+    }
+
     return main_scrcpy(argc, argv);
 #else
     (void) argc;

@@ -1,0 +1,267 @@
+name: Publish Linux and macOS binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release tag, for example v4.1-auto1'
+        required: true
+  push:
+    tags:
+      - 'v*-auto*'
+
+permissions:
+  contents: write
+
+env:
+  VERSION: ${{ inputs.version || github.ref_name }}
+
+jobs:
+  build-scrcpy-server:
+    runs-on: ubuntu-latest
+    env:
+      GRADLE: gradle
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Build server
+        run: release/build_server.sh
+
+      - name: Upload server
+        uses: actions/upload-artifact@v7
+        with:
+          name: scrcpy-auto-server
+          path: release/work/build-server/server/scrcpy-auto-server
+
+  build-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-latest
+            deployment_target: '11.0'
+          - arch: x86_64
+            runner: macos-15-intel
+            deployment_target: '10.13'
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check architecture
+        run: |
+          actual="$(uname -m)"
+          if [[ "$actual" != "${{ matrix.arch }}" ]]
+          then
+              echo "Unexpected architecture: $actual" >&2
+              exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install build dependencies
+        run: brew install meson nasm libiconv zlib automake autoconf libtool
+
+      - name: Build portable client
+        env:
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment_target }}
+        run: release/build_macos.sh "${{ matrix.arch }}"
+
+      # upload-artifact does not preserve permissions, so wrap the directory.
+      - name: Preserve portable bundle
+        run: |
+          cd "release/work/build-macos-${{ matrix.arch }}"
+          mkdir dist-tar
+          tar -C . -cvf dist-tar/dist.tar.gz dist/
+
+      - name: Upload portable bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-macos-${{ matrix.arch }}-intermediate
+          path: release/work/build-macos-${{ matrix.arch }}/dist-tar/
+
+  build-linux-portable:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check architecture
+        run: |
+          actual="$(uname -m)"
+          if [[ "$actual" != x86_64 ]]
+          then
+              echo "Unexpected architecture: $actual" >&2
+              exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      # https://wiki.libsdl.org/SDL3/README-linux#build-dependencies
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y meson ninja-build nasm ffmpeg libavcodec-dev \
+             libavdevice-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev \
+             libusb-1.0-0 libusb-1.0-0-dev libv4l-dev \
+             libasound2-dev libpulse-dev \
+             libaudio-dev libfribidi-dev libjack-dev libsndio-dev libx11-dev libxext-dev \
+             libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
+             libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev \
+             libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev libudev-dev libthai-dev \
+             libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
+
+      - name: Build portable client
+        run: release/build_linux.sh x86_64
+
+      # upload-artifact does not preserve permissions, so wrap the directory.
+      - name: Preserve portable bundle
+        run: |
+          cd release/work/build-linux-x86_64
+          mkdir dist-tar
+          tar -C . -cvf dist-tar/dist.tar.gz dist/
+
+      - name: Upload portable bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-linux-x86_64-intermediate
+          path: release/work/build-linux-x86_64/dist-tar/
+
+  build-linux-deb:
+    needs:
+      - build-scrcpy-server
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download server
+        uses: actions/download-artifact@v8
+        with:
+          name: scrcpy-auto-server
+          path: release/work/build-server/server/
+
+      - name: Build and test Debian package
+        run: |
+          deb_version="${VERSION#v}"
+          packaging/deb/build-deb.sh \
+              --output "$PWD/release/output" \
+              --server "$PWD/release/work/build-server/server/scrcpy-auto-server" \
+              --version "$deb_version" \
+              --test
+
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-linux-deb-intermediate
+          path: release/output/*.deb
+
+  publish:
+    needs:
+      - build-scrcpy-server
+      - build-macos
+      - build-linux-portable
+      - build-linux-deb
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download server
+        uses: actions/download-artifact@v8
+        with:
+          name: scrcpy-auto-server
+          path: release/work/build-server/server/
+
+      - name: Download arm64 client
+        uses: actions/download-artifact@v8
+        with:
+          name: build-macos-arm64-intermediate
+          path: release/work/build-macos-arm64/dist-tar/
+
+      - name: Download x86_64 client
+        uses: actions/download-artifact@v8
+        with:
+          name: build-macos-x86_64-intermediate
+          path: release/work/build-macos-x86_64/dist-tar/
+
+      - name: Download Linux Debian package
+        uses: actions/download-artifact@v8
+        with:
+          name: build-linux-deb-intermediate
+          path: release/output/
+
+      - name: Download Linux portable client
+        uses: actions/download-artifact@v8
+        with:
+          name: build-linux-x86_64-intermediate
+          path: release/work/build-linux-x86_64/dist-tar/
+
+      - name: Package Linux portable client and server
+        run: |
+          cd release/work/build-linux-x86_64
+          tar xf dist-tar/dist.tar.gz
+          cd ../../..
+          release/package_client.sh linux-x86_64 tar.gz
+          release/verify_portable_archive.sh linux-x86_64
+
+      - name: Package arm64 client and server
+        run: |
+          cd release/work/build-macos-arm64
+          tar xf dist-tar/dist.tar.gz
+          cd ../../..
+          release/package_client.sh macos-arm64 tar.gz
+          release/verify_portable_archive.sh macos-arm64
+
+      - name: Package x86_64 client and server
+        run: |
+          cd release/work/build-macos-x86_64
+          tar xf dist-tar/dist.tar.gz
+          cd ../../..
+          release/package_client.sh macos-x86_64 tar.gz
+          release/verify_portable_archive.sh macos-x86_64
+
+      - name: Generate macOS checksums
+        run: |
+          cd release/output
+          sha256sum \
+              "scrcpy-auto-macos-arm64-$VERSION.tar.gz" \
+              "scrcpy-auto-macos-x86_64-$VERSION.tar.gz" \
+              > SHA256SUMS-macos.txt
+
+      - name: Generate all-platform checksums
+        run: |
+          cd release/output
+          sha256sum \
+              "scrcpy-auto_${VERSION#v}_amd64.deb" \
+              "scrcpy-auto-linux-x86_64-$VERSION.tar.gz" \
+              "scrcpy-auto-macos-arm64-$VERSION.tar.gz" \
+              "scrcpy-auto-macos-x86_64-$VERSION.tar.gz" \
+              > SHA256SUMS.txt
+
+      - name: Stage installer
+        run: cp install.sh release/output/install.sh
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: scrcpy-auto-release-${{ env.VERSION }}
+          path: release/output/
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1
+          then
+              gh release upload "$VERSION" release/output/* \
+                  --repo "$GITHUB_REPOSITORY" --clobber
+          else
+              gh release create "$VERSION" release/output/* \
+                  --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+                  --title "$VERSION" --generate-notes
+          fi

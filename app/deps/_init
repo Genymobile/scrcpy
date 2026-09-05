@@ -65,12 +65,23 @@ get_file() {
     local url="$1"
     local file="$2"
     local sum="$3"
-    if [[ -f "$file" ]]
+    if [[ -f "$file" ]] && checksum "$file" "$sum"
     then
         echo "$file: found"
-    else
-        echo "$file: not found, downloading..."
-        wget "$url" -O "$file"
+        return
     fi
+
+    rm -f "$file" "$file.tmp"
+    echo "$file: downloading..."
+    if command -v curl >/dev/null 2>&1
+    then
+        curl --fail --location \
+            --retry 5 --retry-all-errors --retry-delay 2 \
+            --connect-timeout 30 \
+            "$url" --output "$file.tmp"
+    else
+        wget --tries=5 --timeout=30 "$url" -O "$file.tmp"
+    fi
+    mv "$file.tmp" "$file"
     checksum "$file" "$sum"
 }

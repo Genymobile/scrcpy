@@ -1,12 +1,12 @@
 [Desktop Entry]
-Name=scrcpy (console)
+Name=scrcpy-auto (console)
 GenericName=Android Remote Control
 Comment=Display and control your Android device
 # For some users, the PATH or ADB environment variables are set from the shell
 # startup file, like .bashrc or .zshrc… Run an interactive shell to get
 # environment correctly initialized.
-Exec=/bin/sh -c "\\$SHELL -i -c 'scrcpy --pause-on-exit=if-error'"
-Icon=scrcpy
+Exec=/bin/sh -c "\\$SHELL -i -c 'scrcpy-auto --pause-on-exit=if-error'"
+Icon=scrcpy-auto
 Terminal=true
 Type=Application
 Categories=Utility;RemoteAccess;

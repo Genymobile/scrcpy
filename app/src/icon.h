@@ -5,8 +5,8 @@
 
 #include <SDL3/SDL_surface.h>
 
-#define SC_ICON_FILENAME_SCRCPY "scrcpy.png"
-#define SC_ICON_FILENAME_DISCONNECTED "disconnected.png"
+#define SC_ICON_FILENAME_SCRCPY "scrcpy-auto.png"
+#define SC_ICON_FILENAME_DISCONNECTED "scrcpy-auto-disconnected.png"
 
 SDL_Surface *
 sc_icon_load(const char *filename);

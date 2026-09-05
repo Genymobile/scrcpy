@@ -1,5 +1,6 @@
 src = [
     'src/main.c',
+    'src/plugins.c',
     'src/adb/adb.c',
     'src/adb/adb_device.c',
     'src/adb/adb_parser.c',
@@ -29,11 +30,27 @@ src = [
     'src/packet_merger.c',
     'src/receiver.c',
     'src/recorder.c',
+    'src/control_exec.c',
+    'src/daemon/addon.c',
+    'src/daemon/broadcaster.c',
+    'src/daemon/client.c',
+    'src/daemon/clip_buffer.c',
+    'src/daemon/codec.c',
+    'src/daemon/daemon.c',
+    'src/daemon/frame_keeper.c',
+    'src/daemon/mirror.c',
+    'src/daemon/plugin_event.c',
+    'src/daemon/protocol.c',
+    'src/daemon/registry.c',
+    'src/daemon/report.c',
+    'src/daemon/touch_report.c',
+    'src/screencap.c',
     'src/scrcpy.c',
     'src/screen.c',
     'src/sdl_hints.c',
     'src/server.c',
     'src/texture.c',
+    'src/user_config.c',
     'src/version.c',
     'src/video_regulator.c',
     'src/hid/hid_gamepad.c',
@@ -127,6 +144,7 @@ dependencies = [
     dependency('libavcodec', version: '>= 57.37', static: static),
     dependency('libavutil', static: static),
     dependency('libswresample', static: static),
+    dependency('libswscale', static: static),
     dependency('sdl3', version: '>= 3.2.0', static: static),
 ]
 
@@ -168,7 +186,7 @@ conf.set_quoted('SCRCPY_VERSION', meson.project_version())
 # the prefix used during configuration (meson --prefix=PREFIX)
 conf.set_quoted('PREFIX', get_option('prefix'))
 
-# build a "portable" version (with scrcpy-server accessible from the same
+# build a "portable" version (with scrcpy-auto-server accessible from the same
 # directory as the executable)
 conf.set('PORTABLE', get_option('portable'))
 
@@ -190,31 +208,31 @@ configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
 
-executable('scrcpy', src,
-           dependencies: dependencies,
-           include_directories: src_dir,
-           install: true,
-           c_args: [])
+scrcpy_exe = executable('scrcpy-auto', src,
+                        dependencies: dependencies,
+                        include_directories: src_dir,
+                        install: true,
+                        c_args: [])
 
 # <https://mesonbuild.com/Builtin-options.html#directories>
 datadir = get_option('datadir') # by default 'share'
 
-install_man('scrcpy.1')
-install_data('data/scrcpy.png',
+install_man('scrcpy-auto.1')
+install_data('data/scrcpy-auto.png',
              install_dir: datadir / 'icons/hicolor/256x256/apps')
-install_data('data/disconnected.png',
+install_data('data/scrcpy-auto-disconnected.png',
              install_dir: datadir / 'icons/hicolor/256x256/apps')
-install_data('data/zsh-completion/_scrcpy',
+install_data('data/zsh-completion/_scrcpy-auto',
              install_dir: datadir / 'zsh/site-functions')
-install_data('data/bash-completion/scrcpy',
+install_data('data/bash-completion/scrcpy-auto',
              install_dir: datadir / 'bash-completion/completions')
 
 # Desktop entry file for application launchers
 if host_machine.system() == 'linux'
-    # Install a launcher (ex: /usr/local/share/applications/scrcpy.desktop)
-    install_data('data/scrcpy.desktop',
+    # Install a launcher (ex: /usr/local/share/applications/scrcpy-auto.desktop)
+    install_data('data/scrcpy-auto.desktop',
                  install_dir: datadir / 'applications')
-    install_data('data/scrcpy-console.desktop',
+    install_data('data/scrcpy-auto-console.desktop',
                  install_dir: datadir / 'applications')
 endif
 
@@ -234,6 +252,17 @@ if get_option('buildtype') == 'debug'
         ['test_binary', [
             'tests/test_binary.c',
         ]],
+        ['test_broadcaster', [
+            'tests/test_broadcaster.c',
+            'src/daemon/broadcaster.c',
+            'src/daemon/codec.c',
+            'src/daemon/protocol.c',
+            'src/util/log.c',
+            'src/util/net.c',
+            'src/util/strbuf.c',
+            'src/util/thread.c',
+            'src/util/tick.c',
+        ]],
         ['test_audiobuf', [
             'tests/test_audiobuf.c',
             'src/util/audiobuf.c',
@@ -248,6 +277,25 @@ if get_option('buildtype') == 'debug'
             'src/util/str.c',
             'src/util/strbuf.c',
             'src/util/term.c',
+        ]],
+        ['test_clip_buffer', [
+            'tests/test_clip_buffer.c',
+            'src/daemon/clip_buffer.c',
+            'src/daemon/frame_keeper.c',
+            'src/util/log.c',
+            'src/util/thread.c',
+            'src/util/tick.c',
+        ]],
+        ['test_daemon_codec', [
+            'tests/test_daemon_codec.c',
+            'src/daemon/codec.c',
+        ]],
+        ['test_frame_keeper', [
+            'tests/test_frame_keeper.c',
+            'src/daemon/frame_keeper.c',
+            'src/util/log.c',
+            'src/util/thread.c',
+            'src/util/tick.c',
         ]],
         ['test_command_windows', [
           'tests/test_command_windows.c',
@@ -269,9 +317,45 @@ if get_option('buildtype') == 'debug'
             'tests/test_orientation.c',
             'src/options.c',
         ]],
+        ['test_plugin_event', [
+            'tests/test_plugin_event.c',
+            'src/daemon/plugin_event.c',
+            'src/util/strbuf.c',
+        ]],
+        ['test_recorder', [
+            'tests/test_recorder.c',
+            'src/recorder.c',
+            'src/options.c',
+            'src/util/log.c',
+            'src/util/memory.c',
+            'src/util/str.c',
+            'src/util/strbuf.c',
+            'src/util/thread.c',
+            'src/util/tick.c',
+        ]],
+        ['test_report_timeline', [
+            'tests/test_report_timeline.c',
+            'src/daemon/codec.c',
+            'src/daemon/frame_keeper.c',
+            'src/daemon/protocol.c',
+            'src/daemon/report.c',
+            'src/options.c',
+            'src/recorder.c',
+            'src/util/log.c',
+            'src/util/memory.c',
+            'src/util/net.c',
+            'src/util/str.c',
+            'src/util/strbuf.c',
+            'src/util/thread.c',
+            'src/util/tick.c',
+        ]],
         ['test_strbuf', [
             'tests/test_strbuf.c',
             'src/util/strbuf.c',
+        ]],
+        ['test_touch_report', [
+            'tests/test_touch_report.c',
+            'src/daemon/touch_report.c',
         ]],
         ['test_str', [
             'tests/test_str.c',
@@ -286,6 +370,21 @@ if get_option('buildtype') == 'debug'
             'tests/test_vector.c',
         ]],
     ]
+
+    if host_machine.system() != 'windows'
+        tests += [['test_user_config', [
+            'tests/test_user_config.c',
+            'src/user_config.c',
+        ]]]
+
+        test('test_user_config_startup',
+             find_program('sh'),
+             args: [
+                 join_paths(meson.current_source_dir(),
+                            'tests/test_user_config_startup.sh'),
+                 scrcpy_exe,
+             ])
+    endif
 
     foreach t : tests
         sources = t[1] + ['src/compat.c']

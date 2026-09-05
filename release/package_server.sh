@@ -6,5 +6,5 @@ OUTPUT_DIR="$PWD/output"
 cd .. # root project dir
 
 mkdir -p "$OUTPUT_DIR"
-cp "$WORK_DIR/build-server/server/scrcpy-server" "$OUTPUT_DIR/scrcpy-server-$VERSION"
-echo "Generated '$OUTPUT_DIR/scrcpy-server-$VERSION'"
+cp "$WORK_DIR/build-server/server/scrcpy-auto-server" "$OUTPUT_DIR/scrcpy-auto-server-$VERSION"
+echo "Generated '$OUTPUT_DIR/scrcpy-auto-server-$VERSION'"

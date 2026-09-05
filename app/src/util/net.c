@@ -117,6 +117,23 @@ net_perror(const char *s) {
 #endif
 }
 
+static bool
+net_configure_no_sigpipe(sc_raw_socket raw_sock) {
+    // A disconnected daemon client must fail this socket only, not terminate
+    // the whole process (and a process-wide SIGPIPE ignore would leak to exec).
+#if !defined(_WIN32) && !defined(MSG_NOSIGNAL) && defined(SO_NOSIGPIPE)
+    int value = 1;
+    if (setsockopt(raw_sock, SOL_SOCKET, SO_NOSIGPIPE,
+                   (const void *) &value, sizeof(value)) == -1) {
+        net_perror("setsockopt(SO_NOSIGPIPE)");
+        return false;
+    }
+#else
+    (void) raw_sock;
+#endif
+    return true;
+}
+
 sc_socket
 net_socket(void) {
 #ifdef HAVE_SOCK_CLOEXEC
@@ -128,6 +145,12 @@ net_socket(void) {
         return SC_SOCKET_NONE;
     }
 #endif
+
+    if (raw_sock != SC_RAW_SOCKET_NONE
+            && !net_configure_no_sigpipe(raw_sock)) {
+        sc_raw_socket_close(raw_sock);
+        return SC_SOCKET_NONE;
+    }
 
     sc_socket sock = wrap(raw_sock);
     if (sock == SC_SOCKET_NONE) {
@@ -200,7 +223,25 @@ net_accept(sc_socket server_socket) {
     }
 #endif
 
+    if (raw_sock != SC_RAW_SOCKET_NONE
+            && !net_configure_no_sigpipe(raw_sock)) {
+        sc_raw_socket_close(raw_sock);
+        return SC_SOCKET_NONE;
+    }
+
     return wrap(raw_sock);
+}
+
+uint16_t
+net_local_port(sc_socket socket) {
+    sc_raw_socket raw_sock = unwrap(socket);
+    SOCKADDR_IN sin;
+    socklen_t len = sizeof(sin);
+    if (getsockname(raw_sock, (SOCKADDR *) &sin, &len) == SOCKET_ERROR) {
+        net_perror("getsockname");
+        return 0;
+    }
+    return ntohs(sin.sin_port);
 }
 
 ssize_t
@@ -218,7 +259,11 @@ net_recv_all(sc_socket socket, void *buf, size_t len) {
 ssize_t
 net_send(sc_socket socket, const void *buf, size_t len) {
     sc_raw_socket raw_sock = unwrap(socket);
+#ifdef MSG_NOSIGNAL
+    return send(raw_sock, buf, len, MSG_NOSIGNAL);
+#else
     return send(raw_sock, buf, len, 0);
+#endif
 }
 
 ssize_t

@@ -9,7 +9,7 @@ sc_sdl_set_hints(const char *render_driver, bool disable_screensaver) {
     }
 
     // App name used in various contexts (such as PulseAudio)
-    if (!SDL_SetHint(SDL_HINT_APP_NAME, "scrcpy")) {
+    if (!SDL_SetHint(SDL_HINT_APP_NAME, "scrcpy-auto")) {
         LOGW("Could not set app name");
     }
 

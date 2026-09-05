@@ -15,10 +15,10 @@
 #include "util/process.h"
 #include "util/str.h"
 
-#define SC_SERVER_FILENAME "scrcpy-server"
+#define SC_SERVER_FILENAME "scrcpy-auto-server"
 
-#define SC_SERVER_PATH_DEFAULT PREFIX "/share/scrcpy/" SC_SERVER_FILENAME
-#define SC_DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
+#define SC_SERVER_PATH_DEFAULT PREFIX "/share/scrcpy-auto/" SC_SERVER_FILENAME
+#define SC_DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-auto-server.jar"
 
 #define SC_ADB_PORT_DEFAULT 5555
 #define SC_SOCKET_NAME_PREFIX "scrcpy_"

@@ -1,4 +1,4 @@
-#compdef scrcpy scrcpy.exe
+#compdef scrcpy-auto scrcpy-auto.exe
 #
 # name: scrcpy
 # auth: hltdev [hltdev8642@gmail.com]
@@ -28,6 +28,13 @@ arguments=(
     '--camera-size=[Specify an explicit camera capture size]'
     '--camera-torch[Turn on the camera torch when the camera starts]'
     '--camera-zoom[Specify the camera zoom initial value]'
+    '--client-port=[Run as a thin client of a scrcpy-auto daemon on 127.0.0.1\:port]'
+    '*--control=[Send a control command to the device \(click, swipe, input\)]'
+    '--daemon-port=[Run as a persistent daemon listening on 127.0.0.1\:port]'
+    '--daemon-reconnect=[Set the daemon reconnection policy]:policy:(auto none)'
+    '--daemon-status[Print the daemon state as JSON \(requires --client-port\)]'
+    '--daemon-stop[Ask the daemon to shut down gracefully \(requires --client-port\)]'
+    '--screencap=[Take a screenshot and save it to file]:file:_files'
     '--capture-orientation=[Set the capture video orientation]:orientation:(0 90 180 270 flip0 flip90 flip180 flip270 @0 @90 @180 @270 @flip0 @flip90 @flip180 @flip270)'
     '--crop=[\[width\:height\:x\:y\] Crop the device screen on the server]'
     {-d,--select-usb}'[Use USB device]'

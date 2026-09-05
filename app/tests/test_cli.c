@@ -1,6 +1,7 @@
 #include "common.h"
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "cli.h"
@@ -149,6 +150,97 @@ static void test_parse_shortcut_mods(void) {
     assert(!ok);
 }
 
+static void test_tilde_expansion(void) {
+    // A shell does not expand a tilde that follows '=' (e.g. --record=~/x) nor
+    // one passed as a literal argument, so path options must resolve a leading
+    // "~/" to $HOME themselves.
+    setenv("HOME", "/home/tester", 1);
+
+    // "~/..." resolves to "$HOME/..."
+    {
+        struct scrcpy_cli_args args = {
+            .opts = scrcpy_options_default,
+            .help = false,
+            .version = false,
+        };
+        char *argv[] = {"scrcpy", "--record", "~/videos/rec.mp4"};
+        bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+        assert(ok);
+        assert(!strcmp(args.opts.record_filename,
+                       "/home/tester/videos/rec.mp4"));
+    }
+
+    // A tilde that is not at the start of the path is left untouched.
+    {
+        struct scrcpy_cli_args args = {
+            .opts = scrcpy_options_default,
+            .help = false,
+            .version = false,
+        };
+        char *argv[] = {"scrcpy", "--record", "/tmp/a~b.mp4"};
+        bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+        assert(ok);
+        assert(!strcmp(args.opts.record_filename, "/tmp/a~b.mp4"));
+    }
+}
+
+static void test_daemon_accepts_vpx(void) {
+    const char *codecs[] = {"vp8", "vp9"};
+    const enum sc_codec expected[] = {SC_CODEC_VP8, SC_CODEC_VP9};
+    for (size_t i = 0; i < ARRAY_LEN(codecs); ++i) {
+        struct scrcpy_cli_args args = {
+            .opts = scrcpy_options_default,
+            .help = false,
+            .version = false,
+        };
+        char *argv[] = {
+            "scrcpy",
+            "--daemon-port", "27183",
+            "--no-window",
+            "--video-codec", (char *) codecs[i],
+        };
+        bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+        assert(ok);
+        assert(args.opts.video_codec == expected[i]);
+        assert(args.opts.video);
+        assert(!args.opts.audio);
+    }
+}
+
+static void test_mirror_resolves_input_defaults(void) {
+    struct scrcpy_cli_args args = {
+        .opts = scrcpy_options_default,
+        .help = false,
+        .version = false,
+    };
+    char *argv[] = {"scrcpy", "--client-port", "27183"};
+
+    bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+    assert(ok);
+    assert(args.opts.mirror);
+    assert(args.opts.keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_SDK);
+    assert(args.opts.mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK);
+    // The daemon hello owns the flex-display capability, so mirror resolves
+    // AUTO only after connecting.
+    assert(args.opts.render_fit == SC_RENDER_FIT_AUTO);
+    assert(args.opts.mouse_bindings.pri.right_click == SC_MOUSE_BINDING_BACK);
+    assert(args.opts.mouse_bindings.sec.right_click == SC_MOUSE_BINDING_CLICK);
+}
+
+static void test_mirror_rejects_gamepad(void) {
+    struct scrcpy_cli_args args = {
+        .opts = scrcpy_options_default,
+        .help = false,
+        .version = false,
+    };
+    char *argv[] = {
+        "scrcpy", "--client-port", "27183", "--gamepad=uhid",
+    };
+
+    bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+    assert(!ok);
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -158,5 +250,9 @@ int main(int argc, char *argv[]) {
     test_options();
     test_options2();
     test_parse_shortcut_mods();
+    test_tilde_expansion();
+    test_daemon_accepts_vpx();
+    test_mirror_resolves_input_defaults();
+    test_mirror_rejects_gamepad();
     return 0;
 }

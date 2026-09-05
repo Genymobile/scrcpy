@@ -48,8 +48,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: scrcpy-server
-          path: release/work/build-server/server/scrcpy-server
+          name: scrcpy-auto-server
+          path: release/work/build-server/server/scrcpy-auto-server
 
   test-build-scrcpy-server-without-gradle:
     runs-on: ubuntu-latest
@@ -77,7 +77,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y meson ninja-build nasm ffmpeg libavcodec-dev \
-             libavdevice-dev libavformat-dev libavutil-dev libswresample-dev \
+             libavdevice-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev \
              libusb-1.0-0 libusb-1.0-0-dev libv4l-dev \
              libasound2-dev libpulse-dev \
              libaudio-dev libfribidi-dev libjack-dev libsndio-dev libx11-dev libxext-dev \
@@ -117,7 +117,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y meson ninja-build nasm ffmpeg libavcodec-dev \
-             libavdevice-dev libavformat-dev libavutil-dev libswresample-dev \
+             libavdevice-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev \
              libusb-1.0-0 libusb-1.0-0-dev libv4l-dev \
              libasound2-dev libpulse-dev \
              libaudio-dev libfribidi-dev libjack-dev libsndio-dev libx11-dev libxext-dev \
@@ -201,7 +201,7 @@ jobs:
           name: build-win64-intermediate
           path: release/work/build-win64/dist-tar/
 
-  build-macos-aarch64:
+  build-macos-arm64:
     runs-on: macos-latest
     steps:
       - name: Check architecture
@@ -227,13 +227,13 @@ jobs:
           #
           # then the minimal supported deployment target of that macOS SDK can be found at
           # <https://developer.apple.com/support/xcode/#minimum-requirements>
-          MACOSX_DEPLOYMENT_TARGET: 10.13
-        run: release/build_macos.sh aarch64
+          MACOSX_DEPLOYMENT_TARGET: 11.0
+        run: release/build_macos.sh arm64
 
       # upload-artifact does not preserve permissions
       - name: Tar
         run: |
-            cd release/work/build-macos-aarch64
+            cd release/work/build-macos-arm64
             mkdir dist-tar
             cd dist-tar
             tar -C .. -cvf dist.tar.gz dist/
@@ -241,8 +241,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: build-macos-aarch64-intermediate
-          path: release/work/build-macos-aarch64/dist-tar/
+          name: build-macos-arm64-intermediate
+          path: release/work/build-macos-arm64/dist-tar/
 
   build-macos-x86_64:
     runs-on: macos-15-intel
@@ -299,7 +299,7 @@ jobs:
       - name: Download scrcpy-server
         uses: actions/download-artifact@v8
         with:
-          name: scrcpy-server
+          name: scrcpy-auto-server
           path: release/work/build-server/server/
 
       - name: Download build-linux-x86_64
@@ -335,7 +335,7 @@ jobs:
       - name: Download scrcpy-server
         uses: actions/download-artifact@v8
         with:
-          name: scrcpy-server
+          name: scrcpy-auto-server
           path: release/work/build-server/server/
 
       - name: Download build-win32
@@ -371,7 +371,7 @@ jobs:
       - name: Download scrcpy-server
         uses: actions/download-artifact@v8
         with:
-          name: scrcpy-server
+          name: scrcpy-auto-server
           path: release/work/build-server/server/
 
       - name: Download build-win64
@@ -395,10 +395,10 @@ jobs:
           name: release-win64
           path: release/output
 
-  package-macos-aarch64:
+  package-macos-arm64:
     needs:
       - build-scrcpy-server
-      - build-macos-aarch64
+      - build-macos-arm64
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -407,28 +407,31 @@ jobs:
       - name: Download scrcpy-server
         uses: actions/download-artifact@v8
         with:
-          name: scrcpy-server
+          name: scrcpy-auto-server
           path: release/work/build-server/server/
 
-      - name: Download build-macos-aarch64
+      - name: Download build-macos-arm64
         uses: actions/download-artifact@v8
         with:
-          name: build-macos-aarch64-intermediate
-          path: release/work/build-macos-aarch64/dist-tar/
+          name: build-macos-arm64-intermediate
+          path: release/work/build-macos-arm64/dist-tar/
 
       # upload-artifact does not preserve permissions
       - name: Detar
         run: |
-            cd release/work/build-macos-aarch64
+            cd release/work/build-macos-arm64
             tar xf dist-tar/dist.tar.gz
 
       - name: Package
-        run: release/package_client.sh macos-aarch64 tar.gz
+        run: release/package_client.sh macos-arm64 tar.gz
+
+      - name: Verify portable archive
+        run: release/verify_portable_archive.sh macos-arm64
 
       - name: Upload release
         uses: actions/upload-artifact@v7
         with:
-          name: release-macos-aarch64
+          name: release-macos-arm64
           path: release/output/
 
   package-macos-x86_64:
@@ -443,7 +446,7 @@ jobs:
       - name: Download scrcpy-server
         uses: actions/download-artifact@v8
         with:
-          name: scrcpy-server
+          name: scrcpy-auto-server
           path: release/work/build-server/server/
 
       - name: Download build-macos
@@ -461,6 +464,9 @@ jobs:
       - name: Package
         run: release/package_client.sh macos-x86_64 tar.gz
 
+      - name: Verify portable archive
+        run: release/verify_portable_archive.sh macos-x86_64
+
       - name: Upload release
         uses: actions/upload-artifact@v7
         with:
@@ -473,7 +479,7 @@ jobs:
       - package-linux-x86_64
       - package-win32
       - package-win64
-      - package-macos-aarch64
+      - package-macos-arm64
       - package-macos-x86_64
     runs-on: ubuntu-latest
     steps:
@@ -483,7 +489,7 @@ jobs:
       - name: Download scrcpy-server
         uses: actions/download-artifact@v8
         with:
-          name: scrcpy-server
+          name: scrcpy-auto-server
           path: release/work/build-server/server/
 
       - name: Download release-linux-x86_64
@@ -504,10 +510,10 @@ jobs:
           name: release-win64
           path: release/output/
 
-      - name: Download release-macos-aarch64
+      - name: Download release-macos-arm64
         uses: actions/download-artifact@v8
         with:
-          name: release-macos-aarch64
+          name: release-macos-arm64
           path: release/output/
 
       - name: Download release-macos-x86_64
@@ -525,5 +531,5 @@ jobs:
       - name: Upload release artifact
         uses: actions/upload-artifact@v7
         with:
-          name: scrcpy-release-${{ env.VERSION }}
+          name: scrcpy-auto-release-${{ env.VERSION }}
           path: release/output

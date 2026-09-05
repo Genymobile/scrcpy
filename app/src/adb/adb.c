@@ -36,24 +36,11 @@ sc_adb_init(void) {
         return true;
     }
 
-#if !defined(PORTABLE) || defined(_WIN32)
     adb_executable = strdup("adb");
     if (!adb_executable) {
         LOG_OOM();
         return false;
     }
-#else
-    // For portable builds, use the absolute path to the adb executable
-    // in the same directory as scrcpy (except on Windows, where "adb"
-    // is sufficient)
-    adb_executable = sc_file_get_local_path("adb");
-    if (!adb_executable) {
-        // Error already logged
-        return false;
-    }
-
-    LOGD("Using adb (portable): %s", adb_executable);
-#endif
 
     return true;
 }
@@ -110,7 +97,7 @@ show_adb_installation_msg(void) {
     } pkg_managers[] = {
         {"apt", "apt install adb"},
         {"apt-get", "apt-get install adb"},
-        {"brew", "brew install --cask android-platform-tools"},
+        {"brew", "brew install android-platform-tools"},
         {"dnf", "dnf install android-tools"},
         {"emerge", "emerge dev-util/android-tools"},
         {"pacman", "pacman -S android-tools"},
@@ -243,6 +230,39 @@ sc_adb_kill_server(struct sc_intr *intr, unsigned flags) {
 
     sc_pid pid = sc_adb_execute(argv, flags);
     return process_check_success_intr(intr, pid, "adb kill-server", flags);
+}
+
+char *
+sc_adb_get_serialno(struct sc_intr *intr, const char *serial, unsigned flags) {
+    assert(serial);
+    const char *const argv[] =
+        SC_ADB_COMMAND("-s", serial, "get-serialno");
+
+    sc_pipe pout;
+    sc_pid pid = sc_adb_execute_p(argv, flags, &pout);
+    if (pid == SC_PROCESS_NONE) {
+        LOGD("Could not execute \"adb get-serialno\"");
+        return NULL;
+    }
+
+    char buf[256];
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf) - 1);
+    sc_pipe_close(pout);
+
+    bool ok =
+        process_check_success_intr(intr, pid, "adb get-serialno", flags);
+    if (!ok || r <= 0 || r == sizeof(buf) - 1) {
+        return NULL;
+    }
+
+    buf[r] = '\0';
+    size_t len = strcspn(buf, " \r\n");
+    buf[len] = '\0';
+    if (!len || !strcmp(buf, "unknown")) {
+        return NULL;
+    }
+
+    return strdup(buf);
 }
 
 bool

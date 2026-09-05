@@ -45,6 +45,15 @@ sc_adb_start_server(struct sc_intr *intr, unsigned flags);
 bool
 sc_adb_kill_server(struct sc_intr *intr, unsigned flags);
 
+/**
+ * Execute `adb -s <serial> get-serialno`
+ *
+ * Return the real device serial, to be freed by the caller, or NULL if it
+ * could not be retrieved.
+ */
+char *
+sc_adb_get_serialno(struct sc_intr *intr, const char *serial, unsigned flags);
+
 bool
 sc_adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,
                const char *device_socket_name, unsigned flags);

@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <libavcodec/avcodec.h>
@@ -71,6 +72,8 @@ sc_recorder_get_format_name(enum sc_record_format format) {
         case SC_RECORD_FORMAT_MKV:
         case SC_RECORD_FORMAT_MKA:
             return "matroska";
+        case SC_RECORD_FORMAT_WEBM:
+            return "webm";
         case SC_RECORD_FORMAT_OPUS:
             return "opus";
         case SC_RECORD_FORMAT_FLAC:
@@ -173,10 +176,15 @@ sc_recorder_open_output_file(struct sc_recorder *recorder) {
     return true;
 }
 
-static void
+static bool
 sc_recorder_close_output_file(struct sc_recorder *recorder) {
-    avio_close(recorder->ctx->pb);
+    int ret = avio_close(recorder->ctx->pb);
     avformat_free_context(recorder->ctx);
+    if (ret < 0) {
+        LOGE("Failed to flush/close output file: %s", recorder->filename);
+        return false;
+    }
+    return true;
 }
 
 static inline bool
@@ -299,6 +307,7 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
     // We can write a video packet only once we received the next one so that
     // we can set its duration (next_pts - current_pts)
     AVPacket *video_pkt_previous = NULL;
+    AVPacket *video_config = NULL;
 
     bool error = false;
 
@@ -306,15 +315,22 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
         sc_mutex_lock(&recorder->mutex);
 
         while (!recorder->stopped) {
-            if (recorder->video && !video_pkt &&
-                    !sc_vecdeque_is_empty(&recorder->video_queue)) {
-                // A new packet may be assigned to video_pkt and be processed
-                break;
-            }
-            if (recorder->audio && !audio_pkt
-                    && !sc_vecdeque_is_empty(&recorder->audio_queue)) {
-                // A new packet may be assigned to audio_pkt and be processed
-                break;
+            bool waiting_for_origin =
+                recorder->video_pts_origin_required
+                && recorder->video_pts_origin_us == AV_NOPTS_VALUE;
+            if (!waiting_for_origin) {
+                if (recorder->video && !video_pkt
+                        && !sc_vecdeque_is_empty(&recorder->video_queue)) {
+                    // A new packet may be assigned to video_pkt and be
+                    // processed
+                    break;
+                }
+                if (recorder->audio && !audio_pkt
+                        && !sc_vecdeque_is_empty(&recorder->audio_queue)) {
+                    // A new packet may be assigned to audio_pkt and be
+                    // processed
+                    break;
+                }
             }
             sc_cond_wait(&recorder->cond, &recorder->mutex);
         }
@@ -347,15 +363,32 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
             break;
         }
 
+        if (recorder->video_pts_origin_required
+                && recorder->video_pts_origin_us == AV_NOPTS_VALUE) {
+            sc_mutex_unlock(&recorder->mutex);
+            LOGE("Recording stopped before the decoded-frame origin was set");
+            error = true;
+            break;
+        }
+
+        int64_t forced_video_origin = recorder->video_pts_origin_us;
+
         assert(video_pkt || audio_pkt); // at least one
 
         sc_mutex_unlock(&recorder->mutex);
 
-        // Ignore further config packets (e.g. on device orientation
-        // change). The next non-config packet will have the config packet
-        // data prepended.
+        // Ignore further config packets for H.26x: the demuxer prepends them
+        // to the next media packet. AV1 config is not merged by the demuxer,
+        // so retain it and prepend it here; otherwise a report after an
+        // encoder reset keeps stale MP4 extradata and the new segment may be
+        // undecodable.
         if (video_pkt && video_pkt->pts == AV_NOPTS_VALUE) {
-            av_packet_free(&video_pkt);
+            if (recorder->video_merges_late_config) {
+                av_packet_free(&video_config);
+                video_config = video_pkt;
+            } else {
+                av_packet_free(&video_pkt);
+            }
             video_pkt = NULL;
         }
 
@@ -364,8 +397,43 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
             audio_pkt = NULL;
         }
 
+        // A config-only iteration may happen while draining the queue after
+        // stop. Continue so a following media packet can consume the retained
+        // AV1 config instead of treating the config itself as missing video.
+        if (!video_pkt && !audio_pkt) {
+            continue;
+        }
+
+        if (video_pkt && forced_video_origin != AV_NOPTS_VALUE
+                && video_pkt->pts < forced_video_origin) {
+            // Decoder preroll before the first visible frame is not part of
+            // the report timeline.
+            av_packet_free(&video_pkt);
+            continue;
+        }
+
         if (pts_origin == AV_NOPTS_VALUE) {
-            if (!recorder->audio && video_pkt) {
+            if (forced_video_origin != AV_NOPTS_VALUE && video_pkt) {
+                if (video_pkt->pts != forced_video_origin) {
+                    LOGE("First report packet PTS (%" PRId64
+                         ") does not match first decoded-frame PTS (%" PRId64
+                         ")", video_pkt->pts, forced_video_origin);
+                    error = true;
+                    goto end;
+                }
+                if (!(video_pkt->flags & AV_PKT_FLAG_KEY)) {
+                    // A rare failure to retain the decoder's initial frame
+                    // could otherwise move the chosen origin to a delta frame.
+                    // Keeping pre-origin media would invent negative report
+                    // time, while starting from that delta would produce a
+                    // report which is not independently decodable.
+                    LOGE("First report packet at the decoded-frame origin is "
+                         "not a keyframe");
+                    error = true;
+                    goto end;
+                }
+                pts_origin = forced_video_origin;
+            } else if (!recorder->audio && video_pkt) {
                 pts_origin = video_pkt->pts;
             } else if (!recorder->video && audio_pkt) {
                 pts_origin = audio_pkt->pts;
@@ -391,6 +459,21 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
         assert(pts_origin != AV_NOPTS_VALUE);
 
         if (video_pkt) {
+            if (video_config) {
+                size_t config_size = video_config->size;
+                size_t media_size = video_pkt->size;
+                if (config_size > INT_MAX
+                        || av_grow_packet(video_pkt, (int) config_size)) {
+                    LOG_OOM();
+                    error = true;
+                    goto end;
+                }
+                memmove(video_pkt->data + config_size, video_pkt->data,
+                        media_size);
+                memcpy(video_pkt->data, video_config->data, config_size);
+                av_packet_free(&video_config);
+            }
+
             video_pkt->pts -= pts_origin;
             video_pkt->dts = video_pkt->pts;
 
@@ -430,17 +513,39 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
 
     // Write the last video packet
     AVPacket *last = video_pkt_previous;
+    video_pkt_previous = NULL;
+    sc_mutex_lock(&recorder->mutex);
+    int64_t target = recorder->video_end_target_us;
+    sc_mutex_unlock(&recorder->mutex);
     if (last) {
-        // assign an arbitrary duration to the last packet
-        last->duration = 100000;
+        // Normal recordings retain upstream's 100ms fallback. Auto-test
+        // reports provide an exact session end so a static final frame spans
+        // the whole report timeline instead of ending playback early.
+        last->duration = target != AV_NOPTS_VALUE
+                       ? (target > last->pts ? target - last->pts : 1)
+                       : 100000;
+        // sc_recorder_write_video() rescales the packet in place to the
+        // container time base. Preserve the microsecond-domain duration for
+        // report manifest consumers before that mutation.
+        int64_t final_duration_us = last->pts + last->duration;
         bool ok = sc_recorder_write_video(recorder, last);
         if (!ok) {
-            // failing to write the last frame is not very serious, no
-            // future frame may depend on it, so the resulting file
-            // will still be valid
-            LOGW("Could not record last packet");
+            if (target != AV_NOPTS_VALUE) {
+                // Reports promise that the media covers their exact timeline;
+                // do not mark one finalized if its held tail was not written.
+                LOGE("Could not record final report packet");
+                error = true;
+            } else {
+                // Preserve upstream behavior for ordinary recordings.
+                LOGW("Could not record last packet");
+            }
+        } else {
+            recorder->video_duration_us = final_duration_us;
         }
         av_packet_free(&last);
+    } else if (recorder->video && target != AV_NOPTS_VALUE) {
+        LOGE("Could not finalize report: no video media packet was recorded");
+        error = true;
     }
 
     int ret = av_write_trailer(recorder->ctx);
@@ -456,20 +561,21 @@ end:
     if (audio_pkt) {
         av_packet_free(&audio_pkt);
     }
+    if (video_config) {
+        av_packet_free(&video_config);
+    }
+    if (video_pkt_previous) {
+        av_packet_free(&video_pkt_previous);
+    }
 
     return !error;
 }
 
 static bool
 sc_recorder_record(struct sc_recorder *recorder) {
-    bool ok = sc_recorder_open_output_file(recorder);
-    if (!ok) {
-        return false;
-    }
-
-    ok = sc_recorder_process_packets(recorder);
-    sc_recorder_close_output_file(recorder);
-    return ok;
+    bool process_ok = sc_recorder_process_packets(recorder);
+    bool close_ok = sc_recorder_close_output_file(recorder);
+    return process_ok && close_ok;
 }
 
 static int
@@ -584,6 +690,11 @@ sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
     // A config packet is provided for all supported formats except VPx
     recorder->video_expects_config_packet = ctx->codec_id != AV_CODEC_ID_VP8
                                          && ctx->codec_id != AV_CODEC_ID_VP9;
+#ifdef SCRCPY_LAVC_HAS_AV1
+    recorder->video_merges_late_config = ctx->codec_id == AV_CODEC_ID_AV1;
+#else
+    recorder->video_merges_late_config = false;
+#endif
 
     recorder->video_init = true;
     sc_cond_signal(&recorder->cond);
@@ -792,6 +903,11 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
 
     recorder->video_expects_config_packet = false;
     recorder->audio_expects_config_packet = false;
+    recorder->video_merges_late_config = false;
+    recorder->video_end_target_us = AV_NOPTS_VALUE;
+    recorder->video_duration_us = 0;
+    recorder->video_pts_origin_required = false;
+    recorder->video_pts_origin_us = AV_NOPTS_VALUE;
 
     sc_recorder_stream_init(&recorder->video_stream);
     sc_recorder_stream_init(&recorder->audio_stream);
@@ -835,10 +951,18 @@ error_free_filename:
 
 bool
 sc_recorder_start(struct sc_recorder *recorder) {
+    // Open synchronously before producers may call packet_sink.open(). This
+    // publishes recorder->ctx before the demuxer thread can create streams and
+    // removes the historical startup race with the recorder worker.
+    if (!sc_recorder_open_output_file(recorder)) {
+        return false;
+    }
+
     bool ok = sc_thread_create(&recorder->thread, run_recorder,
                                "scrcpy-recorder", recorder);
     if (!ok) {
         LOGE("Could not start recorder thread");
+        sc_recorder_close_output_file(recorder);
         return false;
     }
 
@@ -854,8 +978,48 @@ sc_recorder_stop(struct sc_recorder *recorder) {
 }
 
 void
+sc_recorder_set_video_end(struct sc_recorder *recorder, int64_t end_us) {
+    assert(end_us >= 0);
+    sc_mutex_lock(&recorder->mutex);
+    if (recorder->video_end_target_us == AV_NOPTS_VALUE
+            || end_us > recorder->video_end_target_us) {
+        recorder->video_end_target_us = end_us;
+    }
+    sc_mutex_unlock(&recorder->mutex);
+}
+
+void
+sc_recorder_require_video_pts_origin(struct sc_recorder *recorder) {
+    sc_mutex_lock(&recorder->mutex);
+    recorder->video_pts_origin_required = true;
+    sc_mutex_unlock(&recorder->mutex);
+}
+
+void
+sc_recorder_set_video_pts_origin(struct sc_recorder *recorder,
+                                 int64_t origin_us) {
+    assert(origin_us != AV_NOPTS_VALUE);
+    sc_mutex_lock(&recorder->mutex);
+    if (recorder->video_pts_origin_us == AV_NOPTS_VALUE) {
+        recorder->video_pts_origin_us = origin_us;
+        sc_cond_signal(&recorder->cond);
+    } else {
+        assert(recorder->video_pts_origin_us == origin_us);
+    }
+    sc_mutex_unlock(&recorder->mutex);
+}
+
+void
 sc_recorder_join(struct sc_recorder *recorder) {
     sc_thread_join(&recorder->thread, NULL);
+}
+
+int64_t
+sc_recorder_get_video_duration(struct sc_recorder *recorder) {
+    sc_mutex_lock(&recorder->mutex);
+    int64_t duration = recorder->video_duration_us;
+    sc_mutex_unlock(&recorder->mutex);
+    return duration;
 }
 
 void
