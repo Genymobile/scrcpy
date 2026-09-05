@@ -17,6 +17,17 @@ scrcpy --shortcut-mod=rctrl
 scrcpy --shortcut-mod=lctrl,lsuper
 ```
 
+Individual shortcut keys can also be overridden with
+`--shortcut-key=action=key`. For example:
+
+```bash
+# use MOD+j for HOME instead of MOD+h
+scrcpy --shortcut-key=home=j
+
+# use MOD+, / MOD+Shift+, / MOD+,, for the panel shortcuts
+scrcpy --shortcut-key=panels=comma
+```
+
 _<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
 
 [Super]: https://en.wikipedia.org/wiki/Super_key_(keyboard_button)

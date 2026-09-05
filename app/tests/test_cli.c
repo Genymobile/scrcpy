@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <SDL3/SDL_keycode.h>
 
 #include "cli.h"
 #include "options.h"
@@ -149,6 +150,47 @@ static void test_parse_shortcut_mods(void) {
     assert(!ok);
 }
 
+static void test_shortcut_key_options(void) {
+    struct scrcpy_cli_args args = {
+        .opts = scrcpy_options_default,
+        .help = false,
+        .version = false,
+    };
+
+    char *argv[] = {
+        "scrcpy",
+        "--shortcut-key=home=j",
+        "--shortcut-key=panels=comma",
+        "--shortcut-key=rotate-left=a",
+    };
+
+    bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+    assert(ok);
+
+    const struct sc_shortcut_key_bindings *keys = &args.opts.shortcut_keys;
+    assert(keys->home == SDLK_J);
+    assert(keys->panels == SDLK_COMMA);
+    assert(keys->rotate_left == SDLK_A);
+    assert(keys->fullscreen == SDLK_F);
+}
+
+static void test_shortcut_key_conflict(void) {
+    struct scrcpy_cli_args args = {
+        .opts = scrcpy_options_default,
+        .help = false,
+        .version = false,
+    };
+
+    char *argv[] = {
+        "scrcpy",
+        "--shortcut-key=home=j",
+        "--shortcut-key=back=j",
+    };
+
+    bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+    assert(!ok);
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -158,5 +200,7 @@ int main(int argc, char *argv[]) {
     test_options();
     test_options2();
     test_parse_shortcut_mods();
+    test_shortcut_key_options();
+    test_shortcut_key_conflict();
     return 0;
 }
