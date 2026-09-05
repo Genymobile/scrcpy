@@ -6,6 +6,25 @@ Here are the common reported problems and their status.
 
 If you encounter any error, the first step is to upgrade to the latest version.
 
+- [Frequently Asked Questions](#frequently-asked-questions)
+  - [`adb` and USB issues](#adb-and-usb-issues)
+    - [`adb` not found](#adb-not-found)
+    - [Device not detected](#device-not-detected)
+    - [Device unauthorized](#device-unauthorized)
+    - [Several devices connected](#several-devices-connected)
+    - [Conflicts between adb versions](#conflicts-between-adb-versions)
+    - [Device disconnected](#device-disconnected)
+  - [OTG issues on Windows](#otg-issues-on-windows)
+  - [Control issues](#control-issues)
+    - [Mouse and keyboard do not work](#mouse-and-keyboard-do-not-work)
+    - [Special characters do not work](#special-characters-do-not-work)
+  - [Client issues](#client-issues)
+    - [Issue with Wayland](#issue-with-wayland)
+    - [KWin compositor crashes](#kwin-compositor-crashes)
+  - [Crashes](#crashes)
+    - [Exception](#exception)
+  - [Translations](#translations)
+
 
 ## `adb` and USB issues
 
