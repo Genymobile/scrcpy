@@ -7,6 +7,14 @@
 #include <string.h>
 #include <sys/types.h>
 
+#ifdef _WIN32
+# include <io.h>
+# define isatty _isatty
+# define fileno _fileno
+#else
+# include <unistd.h>
+#endif
+
 #include "adb/adb.h"
 #include "util/env.h"
 #include "util/file.h"
@@ -961,6 +969,328 @@ sc_server_kill_adb_if_requested(struct sc_server *server) {
     }
 }
 
+#ifndef STDIN_FILENO
+# define STDIN_FILENO 0
+#endif
+#ifndef STDOUT_FILENO
+# define STDOUT_FILENO 1
+#endif
+
+struct menu_item {
+    char *display_name;
+    char *serial;
+    bool is_active;
+    bool is_emulator;
+};
+
+struct sc_vec_menu_items SC_VECTOR(struct menu_item);
+
+static bool
+sc_adb_select_device_via_menu(struct sc_intr *intr, struct sc_server *server,
+                              struct sc_adb_device *out_device) {
+    struct sc_vec_adb_devices active_devices = SC_VECTOR_INITIALIZER;
+    bool list_ok = sc_adb_list_devices(intr, SC_ADB_SILENT, &active_devices);
+    if (!list_ok) {
+        LOGE("Could not list ADB devices");
+        return false;
+    }
+
+    struct sc_vec_str avds = SC_VECTOR_INITIALIZER;
+    list_ok = sc_adb_list_avds(intr, SC_ADB_SILENT, &avds);
+    if (!list_ok) {
+        sc_adb_devices_destroy(&active_devices);
+        return false;
+    }
+
+    struct sc_vec_menu_items items = SC_VECTOR_INITIALIZER;
+
+    // First add active devices
+    for (size_t i = 0; i < active_devices.size; ++i) {
+        struct sc_adb_device *d = &active_devices.data[i];
+        struct menu_item item;
+        item.is_active = true;
+        item.is_emulator = (sc_adb_device_get_type(d->serial) == SC_ADB_DEVICE_TYPE_EMULATOR);
+        item.serial = strdup(d->serial);
+        if (!item.serial) {
+            LOG_OOM();
+            goto error;
+        }
+        
+        char *model_or_serial = d->model ? d->model : d->serial;
+        char *status = d->state;
+        char *display = NULL;
+        if (asprintf(&display, "%s (%s, %s)", model_or_serial, d->serial, status) != -1) {
+            item.display_name = display;
+        } else {
+            item.display_name = strdup(model_or_serial);
+        }
+        if (!item.display_name) {
+            LOG_OOM();
+            free(item.serial);
+            goto error;
+        }
+        
+        if (!sc_vector_push(&items, item)) {
+            LOG_OOM();
+            free(item.display_name);
+            free(item.serial);
+            goto error;
+        }
+    }
+
+    // Now add AVDs that are not already running
+    for (size_t i = 0; i < avds.size; ++i) {
+        const char *avd_name = avds.data[i];
+        bool is_running = false;
+        
+        for (size_t j = 0; j < active_devices.size; ++j) {
+            struct sc_adb_device *d = &active_devices.data[j];
+            if (sc_adb_device_get_type(d->serial) == SC_ADB_DEVICE_TYPE_EMULATOR) {
+                char *running_avd = sc_adb_getprop(intr, d->serial, "ro.boot.qemu.avd_name", SC_ADB_SILENT);
+                if (running_avd) {
+                    if (strcmp(running_avd, avd_name) == 0) {
+                        is_running = true;
+                    }
+                    free(running_avd);
+                }
+                if (is_running) {
+                    break;
+                }
+            }
+        }
+        
+        if (!is_running) {
+            struct menu_item item;
+            item.is_active = false;
+            item.is_emulator = true;
+            item.serial = strdup(avd_name);
+            if (!item.serial) {
+                LOG_OOM();
+                goto error;
+            }
+            
+            char *display = NULL;
+            if (asprintf(&display, "%s (Offline Emulator)", avd_name) != -1) {
+                item.display_name = display;
+            } else {
+                item.display_name = strdup(avd_name);
+            }
+            if (!item.display_name) {
+                LOG_OOM();
+                free(item.serial);
+                goto error;
+            }
+            
+            if (!sc_vector_push(&items, item)) {
+                LOG_OOM();
+                free(item.display_name);
+                free(item.serial);
+                goto error;
+            }
+        }
+    }
+
+    // Clean up temporary avds list
+    for (size_t i = 0; i < avds.size; ++i) {
+        free(avds.data[i]);
+    }
+    sc_vector_destroy(&avds);
+
+    if (items.size == 0) {
+        LOGE("No devices or emulators found.");
+        sc_adb_devices_destroy(&active_devices);
+        return false;
+    }
+
+    // If only 1 option and it is active, bypass the menu
+    if (items.size == 1 && items.data[0].is_active) {
+        size_t active_idx = 0;
+        for (size_t i = 0; i < active_devices.size; ++i) {
+            if (strcmp(active_devices.data[i].serial, items.data[0].serial) == 0) {
+                active_idx = i;
+                break;
+            }
+        }
+        
+        sc_adb_device_move(out_device, &active_devices.data[active_idx]);
+        
+        for (size_t i = 0; i < items.size; ++i) {
+            free(items.data[i].display_name);
+            free(items.data[i].serial);
+        }
+        sc_vector_destroy(&items);
+        sc_adb_devices_destroy(&active_devices);
+        return true;
+    }
+
+    // Display menu
+    printf("\n========================================\n");
+    printf("   scrcpy: Device Selection Menu\n");
+    printf("========================================\n");
+    for (size_t i = 0; i < items.size; ++i) {
+        printf("[%zu] %s\n", i + 1, items.data[i].display_name);
+    }
+    printf("----------------------------------------\n");
+    
+    int choice = -1;
+    while (choice < 1 || choice > (int)items.size) {
+        printf("Select device [1-%zu] (q to quit): ", items.size);
+        fflush(stdout);
+        
+        char choice_str[16];
+        if (!fgets(choice_str, sizeof(choice_str), stdin)) {
+            break;
+        }
+        
+        size_t len = strlen(choice_str);
+        if (len > 0 && choice_str[len-1] == '\n') {
+            choice_str[len-1] = '\0';
+        }
+        
+        if (strcmp(choice_str, "q") == 0 || strcmp(choice_str, "Q") == 0) {
+            choice = -2;
+            break;
+        }
+        
+        char *endptr;
+        long val = strtol(choice_str, &endptr, 10);
+        if (endptr != choice_str && *endptr == '\0' && val >= 1 && val <= (long)items.size) {
+            choice = (int)val;
+        } else {
+            printf("Invalid choice. Please try again.\n");
+        }
+    }
+
+    if (choice < 1) {
+        for (size_t i = 0; i < items.size; ++i) {
+            free(items.data[i].display_name);
+            free(items.data[i].serial);
+        }
+        sc_vector_destroy(&items);
+        sc_adb_devices_destroy(&active_devices);
+        return false;
+    }
+
+    struct menu_item selected_item = items.data[choice - 1];
+    bool success = false;
+
+    if (selected_item.is_active) {
+        size_t active_idx = 0;
+        for (size_t i = 0; i < active_devices.size; ++i) {
+            if (strcmp(active_devices.data[i].serial, selected_item.serial) == 0) {
+                active_idx = i;
+                break;
+            }
+        }
+        sc_adb_device_move(out_device, &active_devices.data[active_idx]);
+        success = true;
+    } else {
+        printf("Starting emulator: %s...\n", selected_item.serial);
+        
+        char *cmd = NULL;
+#ifdef _WIN32
+        if (asprintf(&cmd, "start /b emulator -avd \"%s\"", selected_item.serial) != -1) {
+            const char *const argv[] = { "cmd.exe", "/c", cmd, NULL };
+            sc_pid pid;
+            if (sc_process_execute(argv, &pid, SC_PROCESS_NO_STDOUT | SC_PROCESS_NO_STDERR) == SC_PROCESS_SUCCESS) {
+                sc_process_close(pid);
+            }
+            free(cmd);
+        }
+#else
+        if (asprintf(&cmd, "emulator -avd \"%s\" >/dev/null 2>&1 &", selected_item.serial) != -1) {
+            const char *const argv[] = { "sh", "-c", cmd, NULL };
+            sc_pid pid;
+            if (sc_process_execute(argv, &pid, SC_PROCESS_NO_STDOUT | SC_PROCESS_NO_STDERR) == SC_PROCESS_SUCCESS) {
+                sc_process_close(pid);
+            }
+            free(cmd);
+        }
+#endif
+
+        printf("Waiting for emulator to connect (timeout 60s)...");
+        fflush(stdout);
+        
+        bool found = false;
+        char *found_serial = NULL;
+        
+        for (int attempt = 0; attempt < 60; ++attempt) {
+            sc_tick deadline = sc_tick_now() + SC_TICK_FROM_MS(1000);
+            sc_server_sleep(server, deadline);
+            
+            if (sc_intr_is_interrupted(intr)) {
+                break;
+            }
+            
+            struct sc_vec_adb_devices adb_devices = SC_VECTOR_INITIALIZER;
+            if (sc_adb_list_devices(intr, SC_ADB_SILENT, &adb_devices)) {
+                for (size_t i = 0; i < adb_devices.size; ++i) {
+                    struct sc_adb_device *d = &adb_devices.data[i];
+                    if (sc_adb_device_get_type(d->serial) == SC_ADB_DEVICE_TYPE_EMULATOR) {
+                        char *cur_avd = sc_adb_getprop(intr, d->serial, "ro.boot.qemu.avd_name", SC_ADB_SILENT);
+                        if (cur_avd) {
+                            bool match = (strcmp(cur_avd, selected_item.serial) == 0);
+                            free(cur_avd);
+                            if (match && strcmp(d->state, "device") == 0) {
+                                char *boot_completed = sc_adb_getprop(intr, d->serial, "sys.boot_completed", SC_ADB_SILENT);
+                                if (boot_completed) {
+                                    bool is_booted = (strcmp(boot_completed, "1") == 0);
+                                    free(boot_completed);
+                                    if (is_booted) {
+                                        found_serial = strdup(d->serial);
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                sc_adb_devices_destroy(&adb_devices);
+            }
+            
+            if (found) {
+                break;
+            }
+            printf(".");
+            fflush(stdout);
+        }
+        
+        if (found) {
+            printf("\nEmulator connected!\n");
+            out_device->serial = found_serial;
+            out_device->state = strdup("device");
+            out_device->model = strdup(selected_item.serial);
+            out_device->selected = true;
+            success = true;
+        } else {
+            printf("\nFailed to connect to emulator within 60s.\n");
+        }
+    }
+
+    for (size_t i = 0; i < items.size; ++i) {
+        free(items.data[i].display_name);
+        free(items.data[i].serial);
+    }
+    sc_vector_destroy(&items);
+    sc_adb_devices_destroy(&active_devices);
+
+    return success;
+
+error:
+    for (size_t i = 0; i < items.size; ++i) {
+        free(items.data[i].display_name);
+        free(items.data[i].serial);
+    }
+    sc_vector_destroy(&items);
+    for (size_t i = 0; i < avds.size; ++i) {
+        free(avds.data[i]);
+    }
+    sc_vector_destroy(&avds);
+    sc_adb_devices_destroy(&active_devices);
+    return false;
+}
+
 static int
 run_server(void *data) {
     struct sc_server *server = data;
@@ -1013,8 +1343,26 @@ run_server(void *data) {
                 selector.type = SC_ADB_DEVICE_SELECT_ALL;
             }
         }
+
+        bool use_menu = false;
+        if (!params->req_serial && !params->select_usb && !params->select_tcpip && !getenv("ANDROID_SERIAL")) {
+#ifdef _WIN32
+            if (isatty(0) && isatty(1)) {
+                use_menu = true;
+            }
+#else
+            if (isatty(STDIN_FILENO) && isatty(STDOUT_FILENO)) {
+                use_menu = true;
+            }
+#endif
+        }
+
         struct sc_adb_device device;
-        ok = sc_adb_select_device(&server->intr, &selector, 0, &device);
+        if (use_menu) {
+            ok = sc_adb_select_device_via_menu(&server->intr, server, &device);
+        } else {
+            ok = sc_adb_select_device(&server->intr, &selector, 0, &device);
+        }
         if (!ok) {
             goto error_connection_failed;
         }

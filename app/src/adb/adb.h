@@ -94,6 +94,10 @@ sc_adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags);
 bool
 sc_adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags);
 
+bool
+sc_adb_list_devices(struct sc_intr *intr, unsigned flags,
+                    struct sc_vec_adb_devices *out_vec);
+
 /**
  * Execute `adb devices` and parse the result to select a device
  *
@@ -125,5 +129,10 @@ sc_adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags);
  */
 uint16_t
 sc_adb_get_device_sdk_version(struct sc_intr *intr, const char *serial);
+
+struct sc_vec_str SC_VECTOR(char *);
+
+bool
+sc_adb_list_avds(struct sc_intr *intr, unsigned flags, struct sc_vec_str *out_vec);
 
 #endif
