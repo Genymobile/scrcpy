@@ -1,5 +1,16 @@
 # On Windows
 
+## Prerequisites
+
+Install the Android USB drivers so `adb` will detect your device:
+
+- [Google USB driver][usb-google],
+- [Samsung USB driver][usb-samsung], or
+- Your manufacturer-specific USB drivers.
+
+[usb-google]: https://developer.android.com/studio/run/win-usb
+[usb-samsung]: https://developer.samsung.com/android-usb-driver
+
 ## Install
 
 ### From the official release
