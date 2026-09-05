@@ -104,6 +104,9 @@ enum {
     OPT_DISPLAY_IME_POLICY,
     OPT_CAMERA_TORCH,
     OPT_CAMERA_ZOOM,
+    OPT_CAMERA_ISO,
+    OPT_CAMERA_EXPOSURE,
+    OPT_CAMERA_AWB_LOCK,
     OPT_MIN_SIZE_ALIGNMENT,
     OPT_NO_WINDOW_ASPECT_RATIO_LOCK,
     OPT_KEEP_ACTIVE,
@@ -321,6 +324,27 @@ static const struct sc_option options[] = {
         .longopt = "camera-zoom",
         .argdesc = "zoom",
         .text = "Specify the camera zoom initial value.",
+    },
+    {
+        .longopt_id = OPT_CAMERA_ISO,
+        .longopt = "camera-iso",
+        .argdesc = "value",
+        .text = "Set the camera ISO sensitivity manually.\n"
+                "Requires --camera-exposure to also be set.\n"
+                "0 (default) means auto.",
+    },
+    {
+        .longopt_id = OPT_CAMERA_EXPOSURE,
+        .longopt = "camera-exposure",
+        .argdesc = "value",
+        .text = "Set the camera exposure time in nanoseconds manually.\n"
+                "Requires --camera-iso to also be set.\n"
+                "0 (default) means auto.",
+    },
+    {
+        .longopt_id = OPT_CAMERA_AWB_LOCK,
+        .longopt = "camera-awb-lock",
+        .text = "Lock the auto white balance (AWB) when the camera starts.",
     },
     {
         .longopt_id = OPT_CAPTURE_ORIENTATION,
@@ -2186,6 +2210,30 @@ parse_camera_fps(const char *s, uint16_t *camera_fps) {
 }
 
 static bool
+parse_camera_iso(const char *s, uint32_t *camera_iso) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF, "camera iso");
+    if (!ok) {
+        return false;
+    }
+
+    *camera_iso = (uint32_t) value;
+    return true;
+}
+
+static bool
+parse_camera_exposure(const char *s, uint64_t *camera_exposure) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF, "camera exposure");
+    if (!ok) {
+        return false;
+    }
+
+    *camera_exposure = (uint64_t) value;
+    return true;
+}
+
+static bool
 parse_keyboard(const char *optarg, enum sc_keyboard_input_mode *mode) {
     if (!strcmp(optarg, "disabled")) {
         *mode = SC_KEYBOARD_INPUT_MODE_DISABLED;
@@ -2873,6 +2921,19 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_CAMERA_ZOOM:
                 opts->camera_zoom = optarg;
                 break;
+            case OPT_CAMERA_ISO:
+                if (!parse_camera_iso(optarg, &opts->camera_iso)) {
+                    return false;
+                }
+                break;
+            case OPT_CAMERA_EXPOSURE:
+                if (!parse_camera_exposure(optarg, &opts->camera_exposure)) {
+                    return false;
+                }
+                break;
+            case OPT_CAMERA_AWB_LOCK:
+                opts->camera_awb_lock = true;
+                break;
             case OPT_NO_WINDOW:
                 opts->window = false;
                 break;
@@ -3240,6 +3301,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
 
+        if ((opts->camera_iso > 0) != (opts->camera_exposure > 0)) {
+            LOGE("--camera-iso and --camera-exposure must be set together");
+            return false;
+        }
+
         if (opts->control) {
             // Disable all inputs for camera
             opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_DISABLED;
@@ -3251,7 +3317,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             || opts->camera_facing != SC_CAMERA_FACING_ANY
             || opts->camera_fps
             || opts->camera_high_speed
-            || opts->camera_size) {
+            || opts->camera_size
+            || opts->camera_iso
+            || opts->camera_exposure
+            || opts->camera_awb_lock) {
         LOGE("Camera options are only available with --video-source=camera");
         return false;
     }
