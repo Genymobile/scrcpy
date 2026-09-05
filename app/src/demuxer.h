@@ -17,6 +17,8 @@ struct sc_demuxer {
     sc_socket socket;
     sc_thread thread;
 
+    bool hwaccel;
+
     const struct sc_demuxer_callbacks *cbs;
     void *cbs_userdata;
 };

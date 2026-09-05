@@ -20,6 +20,7 @@
 #include "demuxer.h"
 #include "events.h"
 #include "file_pusher.h"
+#include "hwaccel.h"
 #include "keyboard_sdk.h"
 #include "mouse_sdk.h"
 #include "recorder.h"
@@ -535,6 +536,14 @@ scrcpy(struct scrcpy_options *options) {
         };
         sc_demuxer_init(&s->video_demuxer, "video", s->server.video_socket,
                         &video_demuxer_cbs, NULL);
+        bool hwaccel = options->hwaccel;
+        if (hwaccel && !sc_hwaccel_is_supported()) {
+            LOGW("--hwaccel requires Metal renderer, disabled");
+            hwaccel = false;
+        }
+        s->video_demuxer.hwaccel = hwaccel;
+    } else if (options->hwaccel) {
+        LOGW("--hwaccel has no effect when video is disabled");
     }
 
     if (options->audio) {
@@ -753,6 +762,15 @@ aoa_complete:
 
     // There is a controller if and only if control is enabled
     assert(options->control == !!controller);
+
+#ifdef HAVE_V4L2
+    if (options->video && options->v4l2_device
+            && s->video_demuxer.hwaccel) {
+        LOGE("V4L2 sink is incompatible with --hwaccel because hardware "
+             "decoding produces frames not supported by V4L2");
+        goto end;
+    }
+#endif
 
     if (options->window) {
         struct sc_screen_params screen_params = {

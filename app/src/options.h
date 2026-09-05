@@ -308,6 +308,7 @@ struct scrcpy_options {
     bool window_aspect_ratio_lock;
     bool window_borderless;
     bool mipmaps;
+    bool hwaccel;
     bool stay_awake;
     bool force_adb_forward;
     bool disable_screensaver;

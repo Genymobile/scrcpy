@@ -27,6 +27,10 @@ struct sc_texture {
 
     bool mipmaps;
     uint32_t texture_id; // only set if mipmaps is enabled
+    int pix_fmt; // AV_PIX_FMT_NONE (unused/icon), AV_PIX_FMT_YUV420P
+                  // (software decoding), or AV_PIX_FMT_VIDEOTOOLBOX
+                  // (hardware decoding). NV12 is not listed because
+                  // software decoding always requests YUV420P.
 };
 
 bool

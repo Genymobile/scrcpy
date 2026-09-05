@@ -5,6 +5,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/channel_layout.h>
 
+#include "hwaccel.h"
 #include "packet_merger.h"
 #include "util/binary.h"
 #include "util/log.h"
@@ -252,7 +253,10 @@ run_demuxer(void *data) {
 
         codec_ctx->width = session_data.video.width;
         codec_ctx->height = session_data.video.height;
-        codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+
+        if (!demuxer->hwaccel || !sc_hwaccel_setup(codec_ctx)) {
+            codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+        }
 
     } else {
         // Hardcoded audio properties
@@ -362,6 +366,8 @@ sc_demuxer_init(struct sc_demuxer *demuxer, const char *name, sc_socket socket,
     demuxer->name = name; // statically allocated
     demuxer->socket = socket;
     sc_packet_source_init(&demuxer->packet_source);
+
+    demuxer->hwaccel = false;
 
     assert(cbs && cbs->on_ended);
 
