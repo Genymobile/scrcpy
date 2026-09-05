@@ -136,6 +136,13 @@ else
                 echo "Unsupported host: $HOST" >&2
                 exit 1
         esac
+    elif [[ "$HOST" == winarm64 ]]
+    then
+        # Native Windows ARM64 build (MSYS2 CLANGARM64)
+        conf+=(
+            --target-os=mingw32
+            --arch=aarch64
+        )
     fi
 
     "$SOURCES_DIR/$PROJECT_DIR"/configure "${conf[@]}"
