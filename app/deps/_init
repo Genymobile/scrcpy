@@ -3,7 +3,7 @@
 process_args() {
     if [[ $# != 3 ]]
     then
-        # <host>: linux, macos, win32 or win64
+        # <host>: linux, macos, win32, win64 or winarm64
         # <build_type>: native or cross
         # <link_type>: static or shared
         echo "Syntax: $0 <host> <build_type> <link_type>" >&2
