@@ -200,8 +200,12 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs, const AVCodecContext *ctx,
         goto error_avformat_free_context;
     }
 #else
-    sc_strncpy(vs->format_ctx->filename, vs->device_name,
-               sizeof(vs->format_ctx->filename));
+    size_t n = sc_strncpy(vs->format_ctx->filename, vs->device_name,
+                          sizeof(vs->format_ctx->filename));
+    if (n == sizeof(vs->format_ctx->filename)) {
+        LOGE("Device name too long: %s", vs->device_name);
+        goto error_avformat_free_context;
+    }
 #endif
 
     AVStream *ostream = avformat_new_stream(vs->format_ctx, encoder);
