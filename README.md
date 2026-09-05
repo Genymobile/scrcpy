@@ -5,6 +5,8 @@ their name contains `scrcpy`.**
 
 # scrcpy-gui
 
+[English](README.md) | [Русский](README.ru.md)
+
 A modern GUI for scrcpy with Material Design 3 styling.
 
 ## Features
