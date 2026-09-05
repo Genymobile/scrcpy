@@ -2,10 +2,7 @@
 > **This GitHub repo (<https://github.com/Genymobile/scrcpy>) is the only official
 source for the project. Do not download releases from random websites, even if
 their name contains `scrcpy`.**
---- scrcpy_gui/README.md (原始)
 
-
-+++ scrcpy_gui/README.md (修改后)
 # scrcpy-gui
 
 A modern GUI for scrcpy with Material Design 3 styling.
