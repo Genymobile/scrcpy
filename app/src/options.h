@@ -325,6 +325,7 @@ struct scrcpy_options {
     bool power_on;
     bool video;
     bool audio;
+    const char *client_audio_source;
     bool require_audio;
     bool kill_adb_on_close;
     bool camera_high_speed;
@@ -337,6 +338,7 @@ struct scrcpy_options {
     bool window;
     bool mouse_hover;
     bool audio_dup;
+    bool audio_playback_capture_voice;
     const char *new_display; // [<width>x<height>][/<dpi>] parsed by the server
     const char *start_app;
     bool vd_destroy_content;

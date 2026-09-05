@@ -55,7 +55,9 @@ struct sc_server_params {
     enum sc_display_ime_policy display_ime_policy;
     bool video;
     bool audio;
+    bool client_audio;
     bool audio_dup;
+    bool audio_playback_capture_voice;
     bool show_touches;
     bool stay_awake;
     bool force_adb_forward;
@@ -97,6 +99,7 @@ struct sc_server {
 
     sc_socket video_socket;
     sc_socket audio_socket;
+    sc_socket client_mic_socket;
     sc_socket control_socket;
 
     const struct sc_server_callbacks *cbs;

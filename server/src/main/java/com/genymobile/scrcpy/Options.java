@@ -26,6 +26,7 @@ public class Options {
     private int scid = -1; // 31-bit non-negative value, or -1
     private boolean video = true;
     private boolean audio = true;
+    private boolean clientAudio;
     private int maxSize;
     private int minSizeAlignment = 1;
     private VideoCodec videoCodec = VideoCodec.H264;
@@ -33,6 +34,7 @@ public class Options {
     private VideoSource videoSource = VideoSource.DISPLAY;
     private AudioSource audioSource = AudioSource.OUTPUT;
     private boolean audioDup;
+    private boolean audioPlaybackCaptureVoice;
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
     private float maxFps;
@@ -103,6 +105,10 @@ public class Options {
         return audio;
     }
 
+    public boolean getClientAudio() {
+        return clientAudio;
+    }
+
     public int getMaxSize() {
         return maxSize;
     }
@@ -129,6 +135,10 @@ public class Options {
 
     public boolean getAudioDup() {
         return audioDup;
+    }
+
+    public boolean getAudioPlaybackCaptureVoice() {
+        return audioPlaybackCaptureVoice;
     }
 
     public int getVideoBitRate() {
@@ -358,6 +368,9 @@ public class Options {
                 case "audio":
                     options.audio = Boolean.parseBoolean(value);
                     break;
+                case "client_audio":
+                    options.clientAudio = Boolean.parseBoolean(value);
+                    break;
                 case "video_codec":
                     VideoCodec videoCodec = VideoCodec.findByName(value);
                     if (videoCodec == null) {
@@ -388,6 +401,9 @@ public class Options {
                     break;
                 case "audio_dup":
                     options.audioDup = Boolean.parseBoolean(value);
+                    break;
+                case "audio_playback_capture_voice":
+                    options.audioPlaybackCaptureVoice = Boolean.parseBoolean(value);
                     break;
                 case "max_size":
                     options.maxSize = Integer.parseInt(value);
@@ -577,6 +593,12 @@ public class Options {
         if (options.newDisplay != null) {
             assert options.displayId == 0 : "Must not set both displayId and newDisplay";
             options.displayId = Device.DISPLAY_ID_NONE;
+        }
+
+        if (options.clientAudio
+                && (options.audioSource == AudioSource.VOICE_CALL
+                || options.audioSource == AudioSource.VOICE_CALL_UPLINK)) {
+            throw new IllegalArgumentException("client_audio is incompatible with audio_source=voice-call and audio_source=voice-call-uplink");
         }
 
         return options;

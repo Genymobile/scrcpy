@@ -11,6 +11,7 @@ static void test_flag_version(void) {
         .opts = scrcpy_options_default,
         .help = false,
         .version = false,
+        .list_audio_sources = false,
     };
 
     char *argv[] = {"scrcpy", "-v"};
@@ -26,6 +27,7 @@ static void test_flag_help(void) {
         .opts = scrcpy_options_default,
         .help = false,
         .version = false,
+        .list_audio_sources = false,
     };
 
     char *argv[] = {"scrcpy", "-v"};
@@ -41,6 +43,7 @@ static void test_options(void) {
         .opts = scrcpy_options_default,
         .help = false,
         .version = false,
+        .list_audio_sources = false,
     };
 
     char *argv[] = {
@@ -101,6 +104,7 @@ static void test_options2(void) {
         .opts = scrcpy_options_default,
         .help = false,
         .version = false,
+        .list_audio_sources = false,
     };
 
     char *argv[] = {
@@ -119,6 +123,26 @@ static void test_options2(void) {
     assert(!opts->audio_playback);
     assert(!strcmp(opts->record_filename, "file.mp4"));
     assert(opts->record_format == SC_RECORD_FORMAT_MP4);
+}
+
+static void test_audio_playback_capture_voice(void) {
+    struct scrcpy_cli_args args = {
+        .opts = scrcpy_options_default,
+        .help = false,
+        .version = false,
+    };
+
+    char *argv[] = {
+        "scrcpy",
+        "--audio-playback-capture-voice",
+    };
+
+    bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+    assert(ok);
+
+    const struct scrcpy_options *opts = &args.opts;
+    assert(opts->audio_playback_capture_voice);
+    assert(opts->audio_source == SC_AUDIO_SOURCE_PLAYBACK);
 }
 
 static void test_parse_shortcut_mods(void) {
@@ -157,6 +181,7 @@ int main(int argc, char *argv[]) {
     test_flag_help();
     test_options();
     test_options2();
+    test_audio_playback_capture_voice();
     test_parse_shortcut_mods();
     return 0;
 }
