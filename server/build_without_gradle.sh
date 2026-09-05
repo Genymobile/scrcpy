@@ -21,8 +21,10 @@ BUILD_TOOLS_DIR="$ANDROID_HOME/build-tools/$BUILD_TOOLS"
 
 BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
 CLASSES_DIR="$BUILD_DIR/classes"
+HIDDEN_API_CLASSES_DIR="$BUILD_DIR/hidden-api-classes"
 GEN_DIR="$BUILD_DIR/gen"
-SERVER_DIR=$(dirname "$0")
+SERVER_DIR="$(cd "$(dirname "$0")" && pwd)"
+HIDDEN_API_SRC="$SERVER_DIR/../server-hidden-api/src/main/java"
 SERVER_BINARY=scrcpy-server
 ANDROID_JAR="$PLATFORM_TOOLS/android.jar"
 ANDROID_AIDL="$PLATFORM_TOOLS/framework.aidl"
@@ -32,8 +34,9 @@ echo "Platform: android-$PLATFORM"
 echo "Build-tools: $BUILD_TOOLS"
 echo "Build dir: $BUILD_DIR"
 
-rm -rf "$CLASSES_DIR" "$GEN_DIR" "$BUILD_DIR/$SERVER_BINARY" classes.dex
+rm -rf "$CLASSES_DIR" "$HIDDEN_API_CLASSES_DIR" "$GEN_DIR" "$BUILD_DIR/$SERVER_BINARY" classes.dex
 mkdir -p "$CLASSES_DIR"
+mkdir -p "$HIDDEN_API_CLASSES_DIR"
 mkdir -p "$GEN_DIR/com/genymobile/scrcpy"
 
 << EOF cat > "$GEN_DIR/com/genymobile/scrcpy/BuildConfig.java"
@@ -52,9 +55,10 @@ cd "$SERVER_DIR/src/main/aidl"
 "$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" -I. -p "$ANDROID_AIDL" \
     android/view/IDisplayWindowListener.aidl
 
-# Fake sources to expose hidden Android types to the project
-FAKE_SRC=( \
-    android/content/*java \
+GEN_SRC=( \
+    "$GEN_DIR/com/genymobile/scrcpy/BuildConfig.java" \
+    "$GEN_DIR/android/content/IOnPrimaryClipChangedListener.java" \
+    "$GEN_DIR/android/view/IDisplayWindowListener.java" \
 )
 
 SRC=( \
@@ -76,13 +80,19 @@ do
     CLASSES+=("${src%.java}.class")
 done
 
+echo "Compiling hidden API stubs..."
+javac -encoding UTF-8 -bootclasspath "$ANDROID_JAR" \
+    -d "$HIDDEN_API_CLASSES_DIR" \
+    -source 1.8 -target 1.8 \
+    "$HIDDEN_API_SRC/android/content/IContentProvider.java"
+
 echo "Compiling java sources..."
 cd ../java
 javac -encoding UTF-8 -bootclasspath "$ANDROID_JAR" \
-    -cp "$LAMBDA_JAR:$GEN_DIR" \
+    -cp "$LAMBDA_JAR:$GEN_DIR:$HIDDEN_API_CLASSES_DIR" \
     -d "$CLASSES_DIR" \
     -source 1.8 -target 1.8 \
-    ${FAKE_SRC[@]} \
+    "${GEN_SRC[@]}" \
     ${SRC[@]}
 
 echo "Dexing..."
@@ -93,7 +103,7 @@ then
     # use dx
     "$BUILD_TOOLS_DIR/dx" --dex --output "$BUILD_DIR/classes.dex" \
         android/view/*.class \
-        android/content/*.class \
+        android/content/IOnPrimaryClipChangedListener*.class \
         ${CLASSES[@]}
 
     echo "Archiving..."
@@ -103,15 +113,16 @@ then
 else
     # use d8
     "$BUILD_TOOLS_DIR/d8" --classpath "$ANDROID_JAR" \
+        --classpath "$HIDDEN_API_CLASSES_DIR" \
         --output "$BUILD_DIR/classes.zip" \
         android/view/*.class \
-        android/content/*.class \
+        android/content/IOnPrimaryClipChangedListener*.class \
         ${CLASSES[@]}
 
     cd "$BUILD_DIR"
     mv classes.zip "$SERVER_BINARY"
 fi
 
-rm -rf "$GEN_DIR" "$CLASSES_DIR"
+rm -rf "$GEN_DIR" "$CLASSES_DIR" "$HIDDEN_API_CLASSES_DIR"
 
 echo "Server generated in $BUILD_DIR/$SERVER_BINARY"

@@ -6,13 +6,13 @@ import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.SettingsException;
 
 import android.annotation.SuppressLint;
-import android.content.AttributionSource;
+import android.content.IContentProvider;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.RemoteException;
 
 import java.io.Closeable;
-import java.lang.reflect.Method;
 
 public final class ContentProvider implements Closeable {
 
@@ -33,16 +33,20 @@ public final class ContentProvider implements Closeable {
 
     private static final String NAME_VALUE_TABLE_VALUE = "value";
 
+    private static final int CALL_METHOD_VERSION_UNKNOWN = -1;
+    private static final int CALL_METHOD_VERSION_ATTRIBUTION_SOURCE = 0;
+    private static final int CALL_METHOD_VERSION_ATTRIBUTION_TAG = 1;
+    private static final int CALL_METHOD_VERSION_AUTHORITY = 2;
+    private static final int CALL_METHOD_VERSION_LEGACY = 3;
+
     private final ActivityManager manager;
-    // android.content.IContentProvider
-    private final Object provider;
+    private final IContentProvider provider;
     private final String name;
     private final IBinder token;
 
-    private Method callMethod;
-    private int callMethodVersion;
+    private int callMethodVersion = CALL_METHOD_VERSION_UNKNOWN;
 
-    ContentProvider(ActivityManager manager, Object provider, String name, IBinder token) {
+    ContentProvider(ActivityManager manager, IContentProvider provider, String name, IBinder token) {
         this.manager = manager;
         this.provider = provider;
         this.name = name;
@@ -50,54 +54,44 @@ public final class ContentProvider implements Closeable {
     }
 
     @SuppressLint("PrivateApi")
-    private Method getCallMethod() throws NoSuchMethodException {
-        if (callMethod == null) {
-            if (Build.VERSION.SDK_INT >= AndroidVersions.API_31_ANDROID_12) {
-                callMethod = provider.getClass().getMethod("call", AttributionSource.class, String.class, String.class, String.class, Bundle.class);
-                callMethodVersion = 0;
-            } else {
-                // old versions
-                try {
-                    callMethod = provider.getClass()
-                            .getMethod("call", String.class, String.class, String.class, String.class, String.class, Bundle.class);
-                    callMethodVersion = 1;
-                } catch (NoSuchMethodException e1) {
-                    try {
-                        callMethod = provider.getClass().getMethod("call", String.class, String.class, String.class, String.class, Bundle.class);
-                        callMethodVersion = 2;
-                    } catch (NoSuchMethodException e2) {
-                        callMethod = provider.getClass().getMethod("call", String.class, String.class, String.class, Bundle.class);
-                        callMethodVersion = 3;
-                    }
-                }
-            }
-        }
-        return callMethod;
-    }
-
-    private Bundle call(String callMethod, String arg, Bundle extras) throws ReflectiveOperationException {
+    private Bundle call(String callMethod, String arg, Bundle extras) throws RemoteException {
         try {
-            Method method = getCallMethod();
-            Object[] args;
+            switch (callMethodVersion) {
+                case CALL_METHOD_VERSION_ATTRIBUTION_SOURCE:
+                    return provider.call(FakeContext.get().getAttributionSource(), "settings", callMethod, arg, extras);
+                case CALL_METHOD_VERSION_ATTRIBUTION_TAG:
+                    return provider.call(FakeContext.PACKAGE_NAME, null, "settings", callMethod, arg, extras);
+                case CALL_METHOD_VERSION_AUTHORITY:
+                    return provider.call(FakeContext.PACKAGE_NAME, "settings", callMethod, arg, extras);
+                case CALL_METHOD_VERSION_LEGACY:
+                    return provider.call(FakeContext.PACKAGE_NAME, callMethod, arg, extras);
+                default:
+                    break;
+            }
 
-            if (Build.VERSION.SDK_INT >= AndroidVersions.API_31_ANDROID_12 && callMethodVersion == 0) {
-                args = new Object[]{FakeContext.get().getAttributionSource(), "settings", callMethod, arg, extras};
-            } else {
-                switch (callMethodVersion) {
-                    case 1:
-                        args = new Object[]{FakeContext.PACKAGE_NAME, null, "settings", callMethod, arg, extras};
-                        break;
-                    case 2:
-                        args = new Object[]{FakeContext.PACKAGE_NAME, "settings", callMethod, arg, extras};
-                        break;
-                    default:
-                        args = new Object[]{FakeContext.PACKAGE_NAME, callMethod, arg, extras};
-                        break;
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_31_ANDROID_12) {
+                Bundle result = provider.call(FakeContext.get().getAttributionSource(), "settings", callMethod, arg, extras);
+                callMethodVersion = CALL_METHOD_VERSION_ATTRIBUTION_SOURCE;
+                return result;
+            }
+
+            try {
+                Bundle result = provider.call(FakeContext.PACKAGE_NAME, null, "settings", callMethod, arg, extras);
+                callMethodVersion = CALL_METHOD_VERSION_ATTRIBUTION_TAG;
+                return result;
+            } catch (NoSuchMethodError e) {
+                try {
+                    Bundle result = provider.call(FakeContext.PACKAGE_NAME, "settings", callMethod, arg, extras);
+                    callMethodVersion = CALL_METHOD_VERSION_AUTHORITY;
+                    return result;
+                } catch (NoSuchMethodError e2) {
+                    Bundle result = provider.call(FakeContext.PACKAGE_NAME, callMethod, arg, extras);
+                    callMethodVersion = CALL_METHOD_VERSION_LEGACY;
+                    return result;
                 }
             }
-            return (Bundle) method.invoke(provider, args);
-        } catch (ReflectiveOperationException e) {
-            Ln.e("Could not invoke method", e);
+        } catch (RemoteException | RuntimeException | LinkageError e) {
+            Ln.e("Could not call content provider", e);
             throw e;
         }
     }
@@ -142,7 +136,7 @@ public final class ContentProvider implements Closeable {
                 return null;
             }
             return bundle.getString("value");
-        } catch (Exception e) {
+        } catch (Exception | LinkageError e) {
             throw new SettingsException(table, "get", key, null, e);
         }
 
@@ -155,7 +149,7 @@ public final class ContentProvider implements Closeable {
         arg.putString(NAME_VALUE_TABLE_VALUE, value);
         try {
             call(method, key, arg);
-        } catch (Exception e) {
+        } catch (Exception | LinkageError e) {
             throw new SettingsException(table, "put", key, value, e);
         }
     }
