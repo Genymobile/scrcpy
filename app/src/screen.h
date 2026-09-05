@@ -107,6 +107,15 @@ struct sc_screen {
         sc_tick time; // 0 means none
         struct sc_size size;
     } resize_tracker;
+
+    struct {
+        SDL_FRect btn_rotate_rect;
+        bool btn_rotate_hovered;
+        bool btn_rotate_pressed;
+        bool btn_rotate_visible;
+        sc_tick last_mouse_activity;
+        SDL_TimerID auto_hide_timer;
+    } ui;
 };
 
 struct sc_screen_params {
@@ -186,6 +195,18 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen);
 void
 sc_screen_set_orientation(struct sc_screen *screen,
                           enum sc_orientation orientation);
+
+// cycle the display orientation by 90 degrees clockwise (0 -> 90 -> 180 -> 270 -> 0)
+void
+sc_screen_cycle_orientation(struct sc_screen *screen);
+
+// render the screen
+void
+sc_screen_render(struct sc_screen *screen, bool update_content_rect);
+
+// reset the UI auto-hide timer and make controls visible
+void
+sc_screen_reset_ui_auto_hide(struct sc_screen *screen);
 
 // set the display pause state
 void

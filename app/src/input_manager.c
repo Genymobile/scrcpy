@@ -505,6 +505,11 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                     }
                 }
                 return;
+            case SDLK_L:
+                if (video && !shift && !repeat && down) {
+                    sc_screen_cycle_orientation(im->screen);
+                }
+                return;
             case SDLK_F:
                 if (video && !shift && !repeat && down) {
                     sc_screen_toggle_fullscreen(im->screen);
@@ -757,6 +762,24 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
         return;
     }
 
+    bool video = im->screen->video;
+    bool mouse_relative_mode = im->mp && im->mp->relative_mode;
+    if (video && !mouse_relative_mode) {
+        sc_screen_reset_ui_auto_hide(im->screen);
+
+        if (im->screen->ui.btn_rotate_visible) {
+            SDL_FRect *btn = &im->screen->ui.btn_rotate_rect;
+            float x = event->x;
+            float y = event->y;
+            bool hovered = (btn->w > 0 && x >= btn->x && x < btn->x + btn->w
+                                       && y >= btn->y && y < btn->y + btn->h);
+            if (hovered != im->screen->ui.btn_rotate_hovered) {
+                im->screen->ui.btn_rotate_hovered = hovered;
+                sc_screen_render(im->screen, false);
+            }
+        }
+    }
+
     struct sc_mouse_motion_event evt = {
         .position = sc_input_manager_get_position(im, event->x, event->y),
         .pointer_id = im->vfinger_down ? SC_POINTER_ID_GENERIC_FINGER
@@ -850,9 +873,45 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         return;
     }
 
+    bool down = event->type == SDL_EVENT_MOUSE_BUTTON_DOWN;
+    bool video = im->screen->video;
+    bool mouse_relative_mode = im->mp && im->mp->relative_mode;
+
+    // Hit-test Rotate Button overlay
+    if (video && !mouse_relative_mode && event->button == SDL_BUTTON_LEFT) {
+        if (im->screen->ui.btn_rotate_visible || im->screen->ui.btn_rotate_pressed) {
+            SDL_FRect *btn = &im->screen->ui.btn_rotate_rect;
+            float x = event->x;
+            float y = event->y;
+            bool inside = (btn->w > 0 && x >= btn->x && x < btn->x + btn->w
+                                      && y >= btn->y && y < btn->y + btn->h);
+            if (down) {
+                if (inside) {
+                    im->screen->ui.btn_rotate_pressed = true;
+                    sc_screen_reset_ui_auto_hide(im->screen);
+                    sc_screen_render(im->screen, false);
+                    return; // Consume mouse-down event, do NOT forward to Android
+                }
+            } else {
+                // Mouse release
+                if (im->screen->ui.btn_rotate_pressed) {
+                    im->screen->ui.btn_rotate_pressed = false;
+                    sc_screen_reset_ui_auto_hide(im->screen);
+                    if (inside) {
+                        // Released inside hitbox -> trigger rotation
+                        sc_screen_cycle_orientation(im->screen);
+                    } else {
+                        // Released outside hitbox -> cancel rotation
+                        sc_screen_render(im->screen, false);
+                    }
+                    return; // Consume mouse-up event, do NOT forward to Android
+                }
+            }
+        }
+    }
+
     bool control = im->controller;
     bool paused = im->screen->paused;
-    bool down = event->type == SDL_EVENT_MOUSE_BUTTON_DOWN;
 
     enum sc_mouse_button button = sc_mouse_button_from_sdl(event->button);
     if (button == SC_MOUSE_BUTTON_UNKNOWN) {
@@ -912,8 +971,6 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     }
 
     // double-click on black borders resizes to fit the device screen
-    bool video = im->screen->video;
-    bool mouse_relative_mode = im->mp && im->mp->relative_mode;
     if (video && !mouse_relative_mode && event->button == SDL_BUTTON_LEFT
             && event->clicks == 2) {
         int32_t x = event->x;

@@ -1,6 +1,7 @@
 #include "screen.h"
 
 #include <assert.h>
+#include <math.h>
 #include <string.h>
 #include <SDL3/SDL.h>
 
@@ -231,11 +232,317 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
                          screen->render_fit, &screen->rect);
 }
 
+#define SC_ROTATE_BTN_SIZE 32.0f
+#define SC_ROTATE_BTN_MARGIN 12.0f
+#define SC_ROTATE_BTN_RADIUS 8.0f
+#define SC_ROTATE_BTN_HITBOX_PAD 2.0f
+#define SC_ROTATE_BTN_ARC_SEGMENTS 16
+#define SC_CORNER_SEGMENTS 6
+
+static void
+sc_draw_rounded_rect_filled(SDL_Renderer *renderer, const SDL_FRect *rect,
+                            float radius) {
+    if (radius <= 0.5f) {
+        SDL_RenderFillRect(renderer, rect);
+        return;
+    }
+
+    float x = rect->x;
+    float y = rect->y;
+    float w = rect->w;
+    float h = rect->h;
+    float r = radius;
+    if (r > w / 2.0f) {
+        r = w / 2.0f;
+    }
+    if (r > h / 2.0f) {
+        r = h / 2.0f;
+    }
+
+    // Central horizontal body
+    SDL_FRect center_body = { x + r, y, w - 2.0f * r, h };
+    SDL_RenderFillRect(renderer, &center_body);
+
+    // Left and right vertical slabs
+    SDL_FRect left_slab = { x, y + r, r, h - 2.0f * r };
+    SDL_FRect right_slab = { x + w - r, y + r, r, h - 2.0f * r };
+    SDL_RenderFillRect(renderer, &left_slab);
+    SDL_RenderFillRect(renderer, &right_slab);
+
+    // 4 rounded corners using horizontal scanlines
+    int r_int = (int) ceilf(r);
+    for (int i = 0; i < r_int; ++i) {
+        float dy = (float) i + 0.5f;
+        if (dy > r) {
+            dy = r;
+        }
+        float dx = sqrtf(fmaxf(0.0f, r * r - (r - dy) * (r - dy)));
+        float span = r - dx;
+
+        // Top-left and Top-right corner row
+        float y_top = y + (float) i;
+        SDL_FRect tl = { x + span, y_top, r - span, 1.0f };
+        SDL_FRect tr = { x + w - r, y_top, r - span, 1.0f };
+        SDL_RenderFillRect(renderer, &tl);
+        SDL_RenderFillRect(renderer, &tr);
+
+        // Bottom-left and Bottom-right corner row
+        float y_bot = y + h - 1.0f - (float) i;
+        SDL_FRect bl = { x + span, y_bot, r - span, 1.0f };
+        SDL_FRect br = { x + w - r, y_bot, r - span, 1.0f };
+        SDL_RenderFillRect(renderer, &bl);
+        SDL_RenderFillRect(renderer, &br);
+    }
+}
+
+static void
+sc_draw_rounded_rect_outline(SDL_Renderer *renderer, const SDL_FRect *rect,
+                             float radius) {
+    if (radius <= 0.5f) {
+        SDL_RenderRect(renderer, rect);
+        return;
+    }
+
+    float x = rect->x;
+    float y = rect->y;
+    float w = rect->w;
+    float h = rect->h;
+    float r = radius;
+    if (r > w / 2.0f) {
+        r = w / 2.0f;
+    }
+    if (r > h / 2.0f) {
+        r = h / 2.0f;
+    }
+
+    // 4 straight line segments
+    SDL_RenderLine(renderer, x + r, y, x + w - r, y);
+    SDL_RenderLine(renderer, x + r, y + h, x + w - r, y + h);
+    SDL_RenderLine(renderer, x, y + r, x, y + h - r);
+    SDL_RenderLine(renderer, x + w, y + r, x + w, y + h - r);
+
+    // 4 corner arcs
+    SDL_FPoint pts[SC_CORNER_SEGMENTS + 1];
+
+    // Top-right corner arc (3pi/2 to 2pi)
+    float cx = x + w - r;
+    float cy = y + r;
+    for (int i = 0; i <= SC_CORNER_SEGMENTS; ++i) {
+        float a = 4.71238898f + 1.57079633f * ((float) i / SC_CORNER_SEGMENTS);
+        pts[i].x = cx + r * cosf(a);
+        pts[i].y = cy + r * sinf(a);
+    }
+    SDL_RenderLines(renderer, pts, SC_CORNER_SEGMENTS + 1);
+
+    // Bottom-right corner arc (0 to pi/2)
+    cx = x + w - r;
+    cy = y + h - r;
+    for (int i = 0; i <= SC_CORNER_SEGMENTS; ++i) {
+        float a = 1.57079633f * ((float) i / SC_CORNER_SEGMENTS);
+        pts[i].x = cx + r * cosf(a);
+        pts[i].y = cy + r * sinf(a);
+    }
+    SDL_RenderLines(renderer, pts, SC_CORNER_SEGMENTS + 1);
+
+    // Bottom-left corner arc (pi/2 to pi)
+    cx = x + r;
+    cy = y + h - r;
+    for (int i = 0; i <= SC_CORNER_SEGMENTS; ++i) {
+        float a = 1.57079633f + 1.57079633f * ((float) i / SC_CORNER_SEGMENTS);
+        pts[i].x = cx + r * cosf(a);
+        pts[i].y = cy + r * sinf(a);
+    }
+    SDL_RenderLines(renderer, pts, SC_CORNER_SEGMENTS + 1);
+
+    // Top-left corner arc (pi to 3pi/2)
+    cx = x + r;
+    cy = y + r;
+    for (int i = 0; i <= SC_CORNER_SEGMENTS; ++i) {
+        float a = 3.14159265f + 1.57079633f * ((float) i / SC_CORNER_SEGMENTS);
+        pts[i].x = cx + r * cosf(a);
+        pts[i].y = cy + r * sinf(a);
+    }
+    SDL_RenderLines(renderer, pts, SC_CORNER_SEGMENTS + 1);
+}
+
+static void
+sc_draw_triangle_filled(SDL_Renderer *renderer, const SDL_FPoint *p0,
+                        const SDL_FPoint *p1, const SDL_FPoint *p2) {
+    SDL_FPoint v0 = *p0;
+    SDL_FPoint v1 = *p1;
+    SDL_FPoint v2 = *p2;
+
+    // Sort vertices by Y ascending: v0.y <= v1.y <= v2.y
+    if (v0.y > v1.y) { SDL_FPoint t = v0; v0 = v1; v1 = t; }
+    if (v1.y > v2.y) { SDL_FPoint t = v1; v1 = v2; v2 = t; }
+    if (v0.y > v1.y) { SDL_FPoint t = v0; v0 = v1; v1 = t; }
+
+    int y_start = (int) floorf(v0.y);
+    int y_end = (int) ceilf(v2.y);
+    if (y_end <= y_start) {
+        SDL_RenderLine(renderer, v0.x, v0.y, v2.x, v2.y);
+        return;
+    }
+
+    for (int y = y_start; y <= y_end; ++y) {
+        float yf = (float) y + 0.5f;
+        if (yf < v0.y || yf > v2.y) {
+            continue;
+        }
+
+        float x_a = v0.x + (v2.x - v0.x)
+                    * ((yf - v0.y) / (v2.y - v0.y > 0.001f ? (v2.y - v0.y) : 1.0f));
+        float x_b;
+        if (yf < v1.y) {
+            x_b = v0.x + (v1.x - v0.x)
+                  * ((yf - v0.y) / (v1.y - v0.y > 0.001f ? (v1.y - v0.y) : 1.0f));
+        } else {
+            x_b = v1.x + (v2.x - v1.x)
+                  * ((yf - v1.y) / (v2.y - v1.y > 0.001f ? (v2.y - v1.y) : 1.0f));
+        }
+
+        float min_x = fminf(x_a, x_b);
+        float max_x = fmaxf(x_a, x_b);
+        SDL_RenderLine(renderer, min_x, yf, max_x, yf);
+    }
+}
+
+static void
+sc_screen_render_rotate_button(struct sc_screen *screen, float scale) {
+    if (!screen->video || screen->disconnected || !screen->ui.btn_rotate_visible) {
+        return;
+    }
+
+    struct sc_size win_size = sc_sdl_get_window_size(screen->window);
+    if (!win_size.width || !win_size.height) {
+        return;
+    }
+
+    float btn_w = SC_ROTATE_BTN_SIZE;
+    float btn_h = SC_ROTATE_BTN_SIZE;
+    float margin = SC_ROTATE_BTN_MARGIN;
+    float hitbox_pad = SC_ROTATE_BTN_HITBOX_PAD;
+
+    // Visual button top-right anchor
+    float btn_x = (float) win_size.width - btn_w - margin;
+    float btn_y = margin;
+    if (btn_x < 0.0f) {
+        btn_x = 0.0f;
+    }
+
+    // 36x36 hitbox extending 2px around the 32x32 visual button
+    screen->ui.btn_rotate_rect = (SDL_FRect) {
+        .x = btn_x - hitbox_pad,
+        .y = btn_y - hitbox_pad,
+        .w = btn_w + 2.0f * hitbox_pad,
+        .h = btn_h + 2.0f * hitbox_pad,
+    };
+
+    SDL_Renderer *renderer = screen->renderer;
+
+    SDL_FRect draw_rect = {
+        .x = btn_x * scale,
+        .y = btn_y * scale,
+        .w = btn_w * scale,
+        .h = btn_h * scale,
+    };
+    float radius = SC_ROTATE_BTN_RADIUS * scale;
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    // Layer 1: Outer Contrast / Ambient Shadow Underlay
+    SDL_FRect shadow_rect = {
+        .x = draw_rect.x,
+        .y = draw_rect.y + 1.0f * scale,
+        .w = draw_rect.w,
+        .h = draw_rect.h,
+    };
+    if (screen->ui.btn_rotate_pressed) {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 160);
+    } else if (screen->ui.btn_rotate_hovered) {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 130);
+    } else {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 85);
+    }
+    sc_draw_rounded_rect_filled(renderer, &shadow_rect, radius);
+
+    // Layer 2: Main Translucent Glass Background
+    if (screen->ui.btn_rotate_pressed) {
+        SDL_SetRenderDrawColor(renderer, 10, 12, 16, 245);
+    } else if (screen->ui.btn_rotate_hovered) {
+        SDL_SetRenderDrawColor(renderer, 32, 36, 44, 215);
+    } else {
+        SDL_SetRenderDrawColor(renderer, 18, 20, 24, 135);
+    }
+    sc_draw_rounded_rect_filled(renderer, &draw_rect, radius);
+
+    // Layer 3: Specular Rim Border
+    if (screen->ui.btn_rotate_pressed) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 190);
+    } else if (screen->ui.btn_rotate_hovered) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 140);
+    } else {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 45);
+    }
+    sc_draw_rounded_rect_outline(renderer, &draw_rect, radius);
+
+    // Layer 4: Vector Rotation Icon
+    if (screen->ui.btn_rotate_pressed || screen->ui.btn_rotate_hovered) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    } else {
+        SDL_SetRenderDrawColor(renderer, 240, 240, 245, 185);
+    }
+
+    float cx = draw_rect.x + draw_rect.w / 2.0f;
+    float cy = draw_rect.y + draw_rect.h / 2.0f;
+    if (screen->ui.btn_rotate_pressed) {
+        cy += 0.5f * scale; // tactile click feedback
+    }
+
+    float arc_radius = 6.8f * scale;
+
+    // Clockwise circular arc sweeping ~280 degrees from left-bottom to top
+    float start_angle = 3.35f; // in radians (~192 degrees)
+    float end_angle = 4.71238898f; // in radians (270 degrees / top center)
+    float angle_span = end_angle + 6.2831853f - start_angle; // ~280 degrees sweep
+
+    SDL_FPoint arc_points[SC_ROTATE_BTN_ARC_SEGMENTS + 1];
+    for (int i = 0; i <= SC_ROTATE_BTN_ARC_SEGMENTS; ++i) {
+        float angle = start_angle + angle_span * ((float) i / SC_ROTATE_BTN_ARC_SEGMENTS);
+        arc_points[i].x = cx + arc_radius * cosf(angle);
+        arc_points[i].y = cy + arc_radius * sinf(angle);
+    }
+    SDL_RenderLines(renderer, arc_points, SC_ROTATE_BTN_ARC_SEGMENTS + 1);
+
+    // Inner and outer concentric passes for bold, uniform stroke weight
+    float stroke_offsets[] = { -0.7f, 0.7f, -1.3f, 1.3f };
+    int passes = (scale > 1.2f) ? 4 : 2;
+    for (int p = 0; p < passes; ++p) {
+        float r_off = arc_radius + stroke_offsets[p] * scale;
+        SDL_FPoint pts[SC_ROTATE_BTN_ARC_SEGMENTS + 1];
+        for (int i = 0; i <= SC_ROTATE_BTN_ARC_SEGMENTS; ++i) {
+            float angle = start_angle + angle_span * ((float) i / SC_ROTATE_BTN_ARC_SEGMENTS);
+            pts[i].x = cx + r_off * cosf(angle);
+            pts[i].y = cy + r_off * sinf(angle);
+        }
+        SDL_RenderLines(renderer, pts, SC_ROTATE_BTN_ARC_SEGMENTS + 1);
+    }
+
+    // Solid vector arrowhead pointing clockwise (rightward at top)
+    float head_center_x = cx;
+    float head_center_y = cy - arc_radius;
+    SDL_FPoint p_tip = { head_center_x + 3.8f * scale, head_center_y };
+    SDL_FPoint p_top = { head_center_x - 1.4f * scale, head_center_y - 3.8f * scale };
+    SDL_FPoint p_bot = { head_center_x - 1.4f * scale, head_center_y + 3.8f * scale };
+
+    sc_draw_triangle_filled(renderer, &p_tip, &p_top, &p_bot);
+}
+
 // render the texture to the renderer
 //
 // Set the update_content_rect flag if the window or content size may have
 // changed, so that the content rectangle is recomputed
-static void
+void
 sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     assert(screen->window_shown);
 
@@ -304,6 +611,8 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     if (!ok) {
         LOGE("Could not render texture: %s", SDL_GetError());
     }
+
+    sc_screen_render_rotate_button(screen, scale);
 
 end:
     sc_sdl_render_present(renderer);
@@ -498,6 +807,13 @@ sc_screen_init(struct sc_screen *screen,
     screen->window_aspect_ratio_lock = params->window_aspect_ratio_lock;
     screen->render_fit = params->render_fit;
     screen->flex_display = params->flex_display;
+
+    screen->ui.btn_rotate_hovered = false;
+    screen->ui.btn_rotate_pressed = false;
+    screen->ui.btn_rotate_visible = true;
+    screen->ui.last_mouse_activity = sc_tick_now();
+    screen->ui.auto_hide_timer = 0;
+    memset(&screen->ui.btn_rotate_rect, 0, sizeof(screen->ui.btn_rotate_rect));
 
     screen->bg.r = (params->background_color >> 16) & 0xFF;
     screen->bg.g = (params->background_color >> 8) & 0xFF;
@@ -771,6 +1087,7 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
     screen->window_shown = true;
     sc_sdl_show_window(screen->window);
     sc_screen_update_content_rect(screen);
+    sc_screen_reset_ui_auto_hide(screen);
 }
 
 void
@@ -804,6 +1121,10 @@ sc_screen_destroy(struct sc_screen *screen) {
 #ifndef NDEBUG
     assert(!screen->open);
 #endif
+    if (screen->ui.auto_hide_timer) {
+        SDL_RemoveTimer(screen->ui.auto_hide_timer);
+        screen->ui.auto_hide_timer = 0;
+    }
     if (screen->disconnect_started) {
         sc_disconnect_destroy(&screen->disconnect);
     }
@@ -910,6 +1231,46 @@ sc_screen_set_orientation(struct sc_screen *screen,
     LOGI("Display orientation set to %s", sc_orientation_get_name(orientation));
 
     sc_screen_render(screen, true);
+}
+
+void
+sc_screen_cycle_orientation(struct sc_screen *screen) {
+    assert(screen->video);
+
+    enum sc_orientation new_orientation =
+        sc_orientation_apply(screen->orientation, SC_ORIENTATION_90);
+    sc_screen_set_orientation(screen, new_orientation);
+}
+
+static Uint32 SDLCALL
+sc_ui_auto_hide_callback(void *userdata, SDL_TimerID timer_id, Uint32 interval) {
+    (void) timer_id;
+    (void) interval;
+    (void) userdata;
+    sc_push_event(SC_EVENT_UI_AUTO_HIDE);
+    return 0;
+}
+
+void
+sc_screen_reset_ui_auto_hide(struct sc_screen *screen) {
+    if (!screen->video || screen->disconnected) {
+        return;
+    }
+
+    screen->ui.last_mouse_activity = sc_tick_now();
+
+    if (!screen->ui.btn_rotate_visible) {
+        screen->ui.btn_rotate_visible = true;
+        sc_screen_render(screen, false);
+    }
+
+    if (screen->ui.auto_hide_timer) {
+        SDL_RemoveTimer(screen->ui.auto_hide_timer);
+        screen->ui.auto_hide_timer = 0;
+    }
+
+    screen->ui.auto_hide_timer =
+        SDL_AddTimer(2000, sc_ui_auto_hide_callback, NULL);
 }
 
 static bool
@@ -1211,6 +1572,42 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                 screen->disconnect_started = true;
             }
 
+            return;
+        case SC_EVENT_UI_AUTO_HIDE: {
+            screen->ui.auto_hide_timer = 0;
+            if (screen->ui.btn_rotate_pressed || screen->ui.btn_rotate_hovered) {
+                screen->ui.auto_hide_timer =
+                    SDL_AddTimer(2000, sc_ui_auto_hide_callback, NULL);
+                return;
+            }
+
+            sc_tick now = sc_tick_now();
+            if (now - screen->ui.last_mouse_activity >= SC_TICK_FROM_MS(2000)) {
+                if (screen->ui.btn_rotate_visible) {
+                    screen->ui.btn_rotate_visible = false;
+                    sc_screen_render(screen, false);
+                }
+            } else {
+                sc_tick elapsed = now - screen->ui.last_mouse_activity;
+                uint32_t remaining_ms = 2000 - (uint32_t) SC_TICK_TO_MS(elapsed);
+                screen->ui.auto_hide_timer =
+                    SDL_AddTimer(remaining_ms ? remaining_ms : 1,
+                                 sc_ui_auto_hide_callback, NULL);
+            }
+            return;
+        }
+        case SDL_EVENT_WINDOW_MOUSE_ENTER:
+            if (screen->video) {
+                sc_screen_reset_ui_auto_hide(screen);
+            }
+            return;
+        case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+            if (screen->video) {
+                if (screen->ui.btn_rotate_hovered) {
+                    screen->ui.btn_rotate_hovered = false;
+                    sc_screen_render(screen, false);
+                }
+            }
             return;
     }
 
