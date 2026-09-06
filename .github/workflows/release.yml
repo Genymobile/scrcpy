@@ -201,6 +201,47 @@ jobs:
           name: build-win64-intermediate
           path: release/work/build-win64/dist-tar/
 
+  build-winarm64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y meson ninja-build
+
+        # The mingw-w64 (GCC) toolchain from Ubuntu does not support aarch64
+      - name: Install llvm-mingw
+        env:
+          LLVM_MINGW_VERSION: 20260826
+          LLVM_MINGW_SHA256SUM: cee8d2ce3da5145ce4dc882e70d0b0719a783d53a99752c60948fc0659975a65
+        run: |
+          cd "$RUNNER_TEMP"
+          name="llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64"
+          wget -q "https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/$name.tar.xz"
+          echo "$LLVM_MINGW_SHA256SUM  $name.tar.xz" | sha256sum -c
+          tar xf "$name.tar.xz"
+          echo "$PWD/$name/bin" >> "$GITHUB_PATH"
+
+      - name: Build
+        run: release/build_windows.sh arm64
+
+      # upload-artifact does not preserve permissions
+      - name: Tar
+        run: |
+            cd release/work/build-winarm64
+            mkdir dist-tar
+            cd dist-tar
+            tar -C .. -cvf dist.tar.gz dist/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-winarm64-intermediate
+          path: release/work/build-winarm64/dist-tar/
+
   build-macos-aarch64:
     runs-on: macos-latest
     steps:
@@ -395,6 +436,42 @@ jobs:
           name: release-win64
           path: release/output
 
+  package-winarm64:
+    needs:
+      - build-scrcpy-server
+      - build-winarm64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download scrcpy-server
+        uses: actions/download-artifact@v8
+        with:
+          name: scrcpy-server
+          path: release/work/build-server/server/
+
+      - name: Download build-winarm64
+        uses: actions/download-artifact@v8
+        with:
+          name: build-winarm64-intermediate
+          path: release/work/build-winarm64/dist-tar/
+
+      # upload-artifact does not preserve permissions
+      - name: Detar
+        run: |
+            cd release/work/build-winarm64
+            tar xf dist-tar/dist.tar.gz
+
+      - name: Package
+        run: release/package_client.sh winarm64 zip
+
+      - name: Upload release
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-winarm64
+          path: release/output
+
   package-macos-aarch64:
     needs:
       - build-scrcpy-server
@@ -473,6 +550,7 @@ jobs:
       - package-linux-x86_64
       - package-win32
       - package-win64
+      - package-winarm64
       - package-macos-aarch64
       - package-macos-x86_64
     runs-on: ubuntu-latest
@@ -502,6 +580,12 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: release-win64
+          path: release/output/
+
+      - name: Download release-winarm64
+        uses: actions/download-artifact@v8
+        with:
+          name: release-winarm64
           path: release/output/
 
       - name: Download release-macos-aarch64
