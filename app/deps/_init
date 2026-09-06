@@ -3,7 +3,7 @@
 process_args() {
     if [[ $# != 3 ]]
     then
-        # <host>: linux, macos, win32 or win64
+        # <host>: linux, macos, win32, win64 or winarm64
         # <build_type>: native or cross
         # <link_type>: static or shared
         echo "Syntax: $0 <host> <build_type> <link_type>" >&2
@@ -35,6 +35,10 @@ process_args() {
         elif [[ "$HOST" = win64 ]]
         then
             HOST_TRIPLET=x86_64-w64-mingw32
+        elif [[ "$HOST" = winarm64 ]]
+        then
+            # Requires llvm-mingw: <https://github.com/mstorsjo/llvm-mingw>
+            HOST_TRIPLET=aarch64-w64-mingw32
         else
             echo "Unsupported cross-build to host: $HOST" >&2
             exit 1

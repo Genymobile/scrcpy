@@ -62,20 +62,34 @@ else
 
     if [[ "$BUILD_TYPE" == cross ]]
     then
-        if [[ "$HOST" = win32 ]]
-        then
-            TOOLCHAIN_FILENAME="cmake-toolchain-mingw64-i686.cmake"
-        elif [[ "$HOST" = win64 ]]
-        then
-            TOOLCHAIN_FILENAME="cmake-toolchain-mingw64-x86_64.cmake"
-        else
-            echo "Unsupported cross-build to host: $HOST" >&2
-            exit 1
-        fi
+        case "$HOST" in
+            win32)
+                conf+=(
+                    -DCMAKE_TOOLCHAIN_FILE="$SOURCES_DIR/$PROJECT_DIR/build-scripts/cmake-toolchain-mingw64-i686.cmake"
+                )
+                ;;
 
-        conf+=(
-            -DCMAKE_TOOLCHAIN_FILE="$SOURCES_DIR/$PROJECT_DIR/build-scripts/$TOOLCHAIN_FILENAME"
-        )
+            win64)
+                conf+=(
+                    -DCMAKE_TOOLCHAIN_FILE="$SOURCES_DIR/$PROJECT_DIR/build-scripts/cmake-toolchain-mingw64-x86_64.cmake"
+                )
+                ;;
+
+            winarm64)
+                # SDL does not provide a toolchain file for aarch64 mingw
+                conf+=(
+                    -DCMAKE_SYSTEM_NAME=Windows
+                    -DCMAKE_SYSTEM_PROCESSOR=aarch64
+                    -DCMAKE_C_COMPILER="$HOST_TRIPLET-gcc"
+                    -DCMAKE_CXX_COMPILER="$HOST_TRIPLET-g++"
+                    -DCMAKE_RC_COMPILER="$HOST_TRIPLET-windres"
+                )
+                ;;
+
+            *)
+                echo "Unsupported cross-build to host: $HOST" >&2
+                exit 1
+        esac
     fi
 
     cmake "$SOURCES_DIR/$PROJECT_DIR" "${conf[@]}"

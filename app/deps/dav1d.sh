@@ -55,6 +55,12 @@ else
                 )
                 ;;
 
+            winarm64)
+                conf+=(
+                    --cross-file="$SOURCES_DIR/$PROJECT_DIR/package/crossfiles/aarch64-w64-mingw32.meson"
+                )
+                ;;
+
             *)
                 echo "Unsupported host: $HOST" >&2
                 exit 1

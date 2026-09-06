@@ -132,6 +132,17 @@ else
                 )
                 ;;
 
+            winarm64)
+                conf+=(
+                    --target-os=mingw32
+                    --arch=aarch64
+                    # llvm-mingw does not provide a pkg-config wrapper
+                    --pkg-config=pkg-config
+                )
+                # Never fall back to host libs
+                export PKG_CONFIG_LIBDIR="$INSTALL_DIR/$DIRNAME/lib/pkgconfig"
+                ;;
+
             *)
                 echo "Unsupported host: $HOST" >&2
                 exit 1
