@@ -1,0 +1,19 @@
+# Requires llvm-mingw: <https://github.com/mstorsjo/llvm-mingw>
+
+[binaries]
+name = 'mingw'
+c = 'aarch64-w64-mingw32-gcc'
+cpp = 'aarch64-w64-mingw32-g++'
+ar = 'aarch64-w64-mingw32-ar'
+strip = 'aarch64-w64-mingw32-strip'
+# llvm-mingw does not provide a pkg-config wrapper
+pkg-config = 'pkg-config'
+# backward compatibility
+pkgconfig = 'pkg-config'
+windres = 'aarch64-w64-mingw32-windres'
+
+[host_machine]
+system = 'windows'
+cpu_family = 'aarch64'
+cpu = 'aarch64'
+endian = 'little'

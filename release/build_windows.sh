@@ -8,8 +8,11 @@ case "$1" in
     64)
         WINXX=win64
         ;;
+    arm64)
+        WINXX=winarm64
+        ;;
     *)
-        echo "ERROR: $0 must be called with one argument: 32 or 64" >&2
+        echo "ERROR: $0 must be called with one argument: 32, 64 or arm64" >&2
         exit 1
         ;;
 esac
@@ -21,6 +24,11 @@ cd .. # root project dir
 WINXX_BUILD_DIR="$WORK_DIR/build-$WINXX"
 
 app/deps/adb_windows.sh
+if [[ "$WINXX" == winarm64 ]]
+then
+    # libz-mingw-w64-dev does not provide zlib for aarch64
+    app/deps/zlib.sh $WINXX cross shared
+fi
 app/deps/sdl.sh $WINXX cross shared
 app/deps/dav1d.sh $WINXX cross shared
 app/deps/ffmpeg.sh $WINXX cross shared

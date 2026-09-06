@@ -97,6 +97,12 @@ From _Debian_, install _mingw_:
 sudo apt install mingw-w64 mingw-w64-tools libz-mingw-w64-dev
 ```
 
+The _mingw_ toolchain from _Debian_ does not support 64-bit ARM. To build the
+`winarm64` release, you also need [llvm-mingw] (its `bin/` directory must be in
+`PATH`).
+
+[llvm-mingw]: https://github.com/mstorsjo/llvm-mingw
+
 You also need the JDK to build the server:
 
 ```bash
@@ -109,7 +115,7 @@ Then generate the releases:
 ./release.sh
 ```
 
-It will generate win32 and win64 releases into `dist/`.
+It will generate win32, win64 and winarm64 releases into `dist/`.
 
 
 #### In MSYS2
