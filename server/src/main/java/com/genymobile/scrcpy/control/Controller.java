@@ -227,9 +227,28 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     private void control() throws IOException {
-        // on start, power on the device
-        if (!camera && powerOn && displayId == 0 && !Device.isScreenOn(displayId)) {
-            Device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, displayId, Device.INJECT_MODE_ASYNC);
+        // on start, power on the device (only for the main display, or for a new virtual display, which is not rendered while the device
+        // is asleep)
+        boolean mayPowerOn = !camera && powerOn && (displayId == 0 || displayId == Device.DISPLAY_ID_NONE);
+        int powerOnDisplayId = Device.DISPLAY_ID_NONE;
+        if (mayPowerOn) {
+            if (displayId != Device.DISPLAY_ID_NONE) {
+                powerOnDisplayId = displayId;
+            } else {
+                try {
+                    // Wait for at most 1 second until the virtual display id is known
+                    DisplayData data = waitDisplayData(1000);
+                    if (data != null) {
+                        powerOnDisplayId = data.virtualDisplayId;
+                    }
+                } catch (InterruptedException e) {
+                    // do nothing
+                }
+            }
+        }
+        // Consistent with pressBackOrTurnScreenOn(): check (and inject POWER on) the virtual display id
+        if (powerOnDisplayId != Device.DISPLAY_ID_NONE && !Device.isScreenOn(powerOnDisplayId)) {
+            Device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, powerOnDisplayId, Device.INJECT_MODE_ASYNC);
 
             // dirty hack
             // After POWER is injected, the device is powered on asynchronously.
