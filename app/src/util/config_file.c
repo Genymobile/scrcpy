@@ -144,6 +144,38 @@ sc_config_strip_inline_comment(char *s) {
 }
 
 static bool
+sc_config_parse_section(char *line, const char *path, size_t line_number,
+                        const char *profile, bool *is_section, bool *selected,
+                        bool *found) {
+    if (*line != '[') {
+        *is_section = false;
+        return true;
+    }
+
+    *is_section = true;
+    sc_config_strip_inline_comment(line);
+    sc_config_trim_right(line);
+
+    size_t len = strlen(line);
+    if (len < 3 || line[len - 1] != ']') {
+        LOGE("Invalid configuration section in %s:%zu", path, line_number);
+        return false;
+    }
+
+    line[len - 1] = '\0';
+    char *name = sc_config_skip_spaces(line + 1);
+    sc_config_trim_right(name);
+    if (!*name) {
+        LOGE("Empty configuration section in %s:%zu", path, line_number);
+        return false;
+    }
+
+    *selected = profile && !strcmp(name, profile);
+    *found |= *selected;
+    return true;
+}
+
+static bool
 sc_config_create_arg(char *line, const char *path, size_t line_number,
                      char **out) {
     char *key = sc_config_skip_spaces(line);
@@ -201,9 +233,12 @@ sc_config_args_destroy(struct sc_config_args *args) {
 }
 
 static bool
-sc_config_parse(FILE *file, const char *path, struct sc_config_args *args) {
+sc_config_parse(FILE *file, const char *path, const char *profile,
+                struct sc_config_args *args) {
     char line[SC_CONFIG_LINE_MAX];
     size_t line_number = 0;
+    bool selected = true;
+    bool profile_found = false;
 
     while (fgets(line, sizeof(line), file)) {
         ++line_number;
@@ -222,6 +257,21 @@ sc_config_parse(FILE *file, const char *path, struct sc_config_args *args) {
         if (line_number == 1 && len >= 3
                 && !memcmp(content, "\xef\xbb\xbf", 3)) {
             content += 3;
+        }
+
+        content = sc_config_skip_spaces(content);
+        if (!*content || *content == '#') {
+            continue;
+        }
+
+        bool is_section;
+        if (!sc_config_parse_section(content, path, line_number, profile,
+                                     &is_section, &selected,
+                                     &profile_found)) {
+            return false;
+        }
+        if (is_section || !selected) {
+            continue;
         }
 
         char *arg;
@@ -245,13 +295,24 @@ sc_config_parse(FILE *file, const char *path, struct sc_config_args *args) {
         return false;
     }
 
+    if (profile && !profile_found) {
+        LOGE("Configuration profile not found in %s: %s", path, profile);
+        return false;
+    }
+
     return true;
 }
 
 bool
 sc_config_argv_init(struct sc_config_argv *ca, int argc, char *argv[],
-                    const char *config_path, bool config_disabled) {
+                    const char *config_path, bool config_disabled,
+                    const char *profile) {
     *ca = (struct sc_config_argv) {0};
+
+    if (config_disabled && profile) {
+        LOGE("A configuration profile cannot be used with --no-config");
+        return false;
+    }
 
     char *path;
     bool required;
@@ -260,6 +321,10 @@ sc_config_argv_init(struct sc_config_argv *ca, int argc, char *argv[],
     }
 
     if (!path) {
+        if (profile) {
+            LOGE("No configuration file available for profile: %s", profile);
+            return false;
+        }
         ca->argv = argv;
         ca->argc = argc;
         return true;
@@ -268,7 +333,8 @@ sc_config_argv_init(struct sc_config_argv *ca, int argc, char *argv[],
     FILE *file = sc_config_open(path);
     if (!file) {
         int error = errno;
-        if (!required && (error == ENOENT || error == ENOTDIR)) {
+        if (!required && !profile
+                && (error == ENOENT || error == ENOTDIR)) {
             free(path);
             ca->argv = argv;
             ca->argc = argc;
@@ -282,7 +348,7 @@ sc_config_argv_init(struct sc_config_argv *ca, int argc, char *argv[],
     }
 
     struct sc_config_args config_args = {0};
-    bool ok = sc_config_parse(file, path, &config_args);
+    bool ok = sc_config_parse(file, path, profile, &config_args);
     fclose(file);
     if (!ok) {
         sc_config_args_destroy(&config_args);

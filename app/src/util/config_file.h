@@ -14,13 +14,15 @@ struct sc_config_argv {
 };
 
 /**
- * Prepend options from the configuration file to the command-line arguments.
+ * Prepend global and selected profile options from the configuration file to
+ * the command-line arguments.
  *
  * The result must be destroyed by sc_config_argv_destroy().
  */
 bool
 sc_config_argv_init(struct sc_config_argv *ca, int argc, char *argv[],
-                    const char *config_path, bool config_disabled);
+                    const char *config_path, bool config_disabled,
+                    const char *profile);
 
 void
 sc_config_argv_destroy(struct sc_config_argv *ca);

@@ -39,6 +39,7 @@ main_scrcpy(int argc, char *argv[]) {
 
     struct scrcpy_cli_args args = {
         .opts = scrcpy_options_default,
+        .profile = NULL,
         .help = false,
         .version = false,
         .pause_on_exit = SC_PAUSE_ON_EXIT_UNDEFINED,
@@ -53,16 +54,15 @@ main_scrcpy(int argc, char *argv[]) {
     bool term_title_saved = false;
     struct sc_config_argv config_argv = {0};
 
-    const char *config_path;
-    bool config_disabled;
-    if (!scrcpy_parse_config_file_options(argc, argv, &config_path,
-                                          &config_disabled)) {
+    struct scrcpy_cli_preparse preparse;
+    if (!scrcpy_preparse_args(argc, argv, &preparse)) {
         ret = SCRCPY_EXIT_FAILURE;
         goto end;
     }
+    args.profile = preparse.profile;
 
-    if (!sc_config_argv_init(&config_argv, argc, argv, config_path,
-                             config_disabled)) {
+    if (!sc_config_argv_init(&config_argv, argc, argv, preparse.config_path,
+                             preparse.config_disabled, preparse.profile)) {
         ret = SCRCPY_EXIT_FAILURE;
         goto end;
     }

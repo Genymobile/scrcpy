@@ -149,20 +149,19 @@ static void test_parse_shortcut_mods(void) {
     assert(!ok);
 }
 
-static void test_config_file_options(void) {
-    const char *path;
-    bool disabled;
-
+static void test_preparse(void) {
     char *argv1[] = {
         "scrcpy",
         "--window-title", "--no-config",
         "--config=one.ini",
+        "phone",
     };
-    bool ok = scrcpy_parse_config_file_options(ARRAY_LEN(argv1), argv1,
-                                                &path, &disabled);
+    struct scrcpy_cli_preparse preparse;
+    bool ok = scrcpy_preparse_args(ARRAY_LEN(argv1), argv1, &preparse);
     assert(ok);
-    assert(!strcmp(path, "one.ini"));
-    assert(!disabled);
+    assert(!strcmp(preparse.config_path, "one.ini"));
+    assert(!strcmp(preparse.profile, "phone"));
+    assert(!preparse.config_disabled);
     assert(!strcmp(argv1[1], "--window-title"));
     assert(!strcmp(argv1[2], "--no-config"));
 
@@ -171,12 +170,30 @@ static void test_config_file_options(void) {
         "--config=one.ini",
         "--config-file", "two.ini",
         "--no-config",
+        "tablet",
     };
-    ok = scrcpy_parse_config_file_options(ARRAY_LEN(argv2), argv2,
-                                           &path, &disabled);
+    ok = scrcpy_preparse_args(ARRAY_LEN(argv2), argv2, &preparse);
     assert(ok);
-    assert(!strcmp(path, "two.ini"));
-    assert(disabled);
+    assert(!strcmp(preparse.config_path, "two.ini"));
+    assert(!strcmp(preparse.profile, "tablet"));
+    assert(preparse.config_disabled);
+
+    char *argv3[] = {"scrcpy", "phone", "tablet"};
+    ok = scrcpy_preparse_args(ARRAY_LEN(argv3), argv3, &preparse);
+    assert(ok);
+    assert(!preparse.profile);
+}
+
+static void test_profile(void) {
+    struct scrcpy_cli_args args = {
+        .opts = scrcpy_options_default,
+        .profile = "phone",
+        .pause_on_exit = SC_PAUSE_ON_EXIT_UNDEFINED,
+    };
+    char *argv[] = {"scrcpy", "phone", "--max-size=1200"};
+    bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+    assert(ok);
+    assert(args.opts.max_size == 1200);
 }
 
 int main(int argc, char *argv[]) {
@@ -188,6 +205,7 @@ int main(int argc, char *argv[]) {
     test_options();
     test_options2();
     test_parse_shortcut_mods();
-    test_config_file_options();
+    test_preparse();
+    test_profile();
     return 0;
 }

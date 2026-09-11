@@ -6,6 +6,7 @@ scrcpy \- Display and control your Android device
 .SH SYNOPSIS
 .B scrcpy
 .RI [ options ]
+.RI [ profile ]
 
 
 .SH DESCRIPTION
@@ -919,13 +920,30 @@ The default path is \fI%APPDATA%\\scrcpy\\config.ini\fR on Windows and \fI$XDG_C
 
 Each non-empty line contains one long option without the leading "--". An option value is separated by "=". Leading and trailing spaces are ignored. A "#" starts a comment when it is the first non-space character or is preceded by whitespace, except when it is the first character of an option value.
 
+Options before the first section apply globally.
+A section defines a named profile, selected by passing its name as the
+positional \fIprofile\fR argument.
+Profile names are case-sensitive.
+Without a profile argument, only global options are loaded.
+
 For example:
 
 .nf
-    # Persistent defaults
-    max-size = 1920
-    no-audio
+    # Global defaults
+    video-bit-rate = 8M
+
+    [phone]
+    serial = 192.168.1.10:5555
+    max-size = 1080
+
+    [tablet]
+    serial = 192.168.1.20:5555
+    max-size = 1600
 .fi
+
+For example, \fBscrcpy phone\fR loads the global options and the
+\fB[phone]\fR section.
+Command-line options are processed last.
 
 Use \fB\-\-config\-file\fR or \fISCRCPY_CONFIG_FILE\fR to select another file.
 

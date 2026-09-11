@@ -1385,8 +1385,8 @@ sc_getopt_adapter_destroy(struct sc_getopt_adapter *adapter) {
 }
 
 bool
-scrcpy_parse_config_file_options(int argc, char *argv[], const char **path,
-                                 bool *disabled) {
+scrcpy_preparse_args(int argc, char *argv[],
+                     struct scrcpy_cli_preparse *preparse) {
     struct sc_getopt_adapter adapter;
     if (!sc_getopt_adapter_init(&adapter)) {
         return false;
@@ -1401,8 +1401,7 @@ scrcpy_parse_config_file_options(int argc, char *argv[], const char **path,
     memcpy(argv_copy, argv, (size_t) argc * sizeof(*argv_copy));
     argv_copy[argc] = NULL;
 
-    *path = NULL;
-    *disabled = false;
+    struct scrcpy_cli_preparse result = {0};
     optind = 0;
     int previous_opterr = opterr;
     opterr = 0;
@@ -1411,15 +1410,20 @@ scrcpy_parse_config_file_options(int argc, char *argv[], const char **path,
     while ((c = getopt_long(argc, argv_copy, adapter.optstring,
                             adapter.longopts, NULL)) != -1) {
         if (c == OPT_CONFIG_FILE) {
-            *path = optarg;
+            result.config_path = optarg;
         } else if (c == OPT_NO_CONFIG) {
-            *disabled = true;
+            result.config_disabled = true;
         }
+    }
+
+    if (argc - optind == 1) {
+        result.profile = argv_copy[optind];
     }
 
     opterr = previous_opterr;
     free(argv_copy);
     sc_getopt_adapter_destroy(&adapter);
+    *preparse = result;
     return true;
 }
 
@@ -1597,7 +1601,8 @@ scrcpy_print_usage(const char *arg0) {
         }
     }
 
-    printf("Usage: %s [options]\n\n"
+    printf("Usage: %s [options] [profile]\n\n"
+            "  profile    Select a named configuration section\n\n"
             "Options:\n", arg0);
     for (size_t i = 0; i < ARRAY_LEN(options); ++i) {
         print_option_usage(&options[i], cols);
@@ -3013,6 +3018,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     int index = optind;
+    if (index < argc && args->profile
+            && !strcmp(argv[index], args->profile)) {
+        ++index;
+    }
     if (index < argc) {
         LOGE("Unexpected additional argument: %s", argv[index]);
         return false;
