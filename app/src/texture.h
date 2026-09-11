@@ -26,7 +26,7 @@ struct sc_texture {
     struct sc_opengl gl;
 
     bool mipmaps;
-    uint32_t texture_id; // only set if mipmaps is enabled
+    uint32_t texture_ids[3]; // only set if mipmaps is enabled
 };
 
 bool
