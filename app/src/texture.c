@@ -123,10 +123,10 @@ sc_texture_create_frame_texture(struct sc_texture *tex,
     if (tex->mipmaps) {
         struct sc_opengl *gl = &tex->gl;
 
+        // The properties are owned by the texture
         SDL_PropertiesID props = SDL_GetTextureProperties(texture);
         if (!props) {
             LOGE("Could not get texture properties: %s", SDL_GetError());
-            SDL_DestroyTexture(texture);
             return NULL;
         }
 
@@ -136,7 +136,6 @@ sc_texture_create_frame_texture(struct sc_texture *tex,
                         : SDL_PROP_TEXTURE_OPENGLES2_TEXTURE_NUMBER;
 
         int64_t texture_id = SDL_GetNumberProperty(props, key, 0);
-        SDL_DestroyProperties(props);
         if (!texture_id) {
             LOGE("Could not get texture id: %s", SDL_GetError());
             SDL_DestroyTexture(texture);
