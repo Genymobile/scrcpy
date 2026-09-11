@@ -6,6 +6,9 @@
 #include <libavutil/channel_layout.h>
 
 #include "packet_merger.h"
+#ifdef HAVE_HWACCEL
+# include "hwaccel.h"
+#endif
 #include "util/binary.h"
 #include "util/log.h"
 
@@ -255,6 +258,13 @@ run_demuxer(void *data) {
         params->height = session_data.video.height;
         params->format = AV_PIX_FMT_YUV420P;
 
+#ifdef HAVE_HWACCEL
+        if (demuxer->hwaccel) {
+            sc_hwaccel_configure_decoder(demuxer->hwaccel, codec_ctx,
+                                         demuxer->hwaccel_buffered_frames);
+        }
+#endif
+
     } else {
         // Hardcoded audio properties
 #ifdef SCRCPY_LAVU_HAS_CHLAYOUT
@@ -358,12 +368,27 @@ sc_demuxer_init(struct sc_demuxer *demuxer, const char *name, sc_socket socket,
     demuxer->name = name; // statically allocated
     demuxer->socket = socket;
     sc_packet_source_init(&demuxer->packet_source);
+#ifdef HAVE_HWACCEL
+    demuxer->hwaccel = NULL;
+    demuxer->hwaccel_buffered_frames = -1;
+#endif
 
     assert(cbs && cbs->on_ended);
 
     demuxer->cbs = cbs;
     demuxer->cbs_userdata = cbs_userdata;
 }
+
+#ifdef HAVE_HWACCEL
+void
+sc_demuxer_enable_hardware_decoding(struct sc_demuxer *demuxer,
+                                    struct sc_hwaccel *hwaccel,
+                                    int buffered_frames) {
+    assert(hwaccel);
+    demuxer->hwaccel = hwaccel;
+    demuxer->hwaccel_buffered_frames = buffered_frames;
+}
+#endif
 
 bool
 sc_demuxer_start(struct sc_demuxer *demuxer) {

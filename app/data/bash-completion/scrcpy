@@ -60,6 +60,7 @@ _scrcpy() {
         --no-cleanup
         --no-clipboard-autosync
         --no-downsize-on-error
+        --no-hardware-decoding
         --no-key-repeat
         --no-mipmaps
         --no-mouse-hover

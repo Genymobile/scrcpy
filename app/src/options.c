@@ -83,6 +83,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .always_on_top = false,
     .control = true,
     .video_playback = true,
+    .hardware_decoding = true,
     .audio_playback = true,
     .turn_screen_off = false,
     .key_inject_mode = SC_KEY_INJECT_MODE_MIXED,

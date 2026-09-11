@@ -66,6 +66,7 @@ arguments=(
     '--no-cleanup[Disable device cleanup actions on exit]'
     '--no-clipboard-autosync[Disable automatic clipboard synchronization]'
     '--no-downsize-on-error[Disable lowering definition on MediaCodec error]'
+    '--no-hardware-decoding[Disable hardware video decoding on the computer]'
     '--no-key-repeat[Do not forward repeated key events when a key is held down]'
     '--no-mipmaps[Disable the generation of mipmaps]'
     '--no-mouse-hover[Do not forward mouse hover events]'

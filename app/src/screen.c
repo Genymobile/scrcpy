@@ -267,6 +267,10 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
         .w = screen->rect.w * scale,
         .h = screen->rect.h * scale,
     };
+    SDL_FRect source = {
+        .w = screen->tex.texture_size.width,
+        .h = screen->tex.texture_size.height,
+    };
     enum sc_orientation orientation = screen->orientation;
 
     bool ok = false;
@@ -274,7 +278,7 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
         // always align to a physical pixel
         geometry.x = (int32_t) geometry.x;
         geometry.y = (int32_t) geometry.y;
-        ok = SDL_RenderTexture(renderer, texture, NULL, &geometry);
+        ok = SDL_RenderTexture(renderer, texture, &source, &geometry);
     } else {
         unsigned cw_rotation = sc_orientation_get_rotation(orientation);
         double angle = 90 * cw_rotation;
@@ -297,8 +301,8 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
         // always align to a physical pixel
         dstrect->x = (int32_t) dstrect->x;
         dstrect->y = (int32_t) dstrect->y;
-        ok = SDL_RenderTextureRotated(renderer, texture, NULL, dstrect, angle,
-                                      NULL, flip);
+        ok = SDL_RenderTextureRotated(renderer, texture, &source, dstrect,
+                                      angle, NULL, flip);
     }
 
     if (!ok) {
@@ -610,7 +614,10 @@ sc_screen_init(struct sc_screen *screen,
 #endif
 
     bool mipmaps = params->video;
-    ok = sc_texture_init(&screen->tex, screen->renderer, mipmaps);
+    // Hardware decoding is only used to feed the video texture
+    bool hardware_decoding = params->video && params->hardware_decoding;
+    ok = sc_texture_init(&screen->tex, screen->renderer, mipmaps,
+                         hardware_decoding);
     if (!ok) {
         goto error_destroy_renderer;
     }

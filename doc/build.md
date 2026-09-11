@@ -55,7 +55,8 @@ sudo apt install ffmpeg libsdl3-0 adb libusb-1.0-0
 # client build dependencies
 sudo apt install gcc git pkg-config meson ninja-build libsdl3-dev \
                  libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev \
-                 libswresample-dev libusb-1.0-0-dev libv4l-dev
+                 libswresample-dev libusb-1.0-0-dev libv4l-dev libegl-dev \
+                 libdrm-dev libva-dev
 
 # server build dependencies
 sudo apt install openjdk-17-jdk
@@ -77,7 +78,8 @@ pip3 install meson
 sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
 
 # client build dependencies
-sudo dnf install SDL3-devel ffms2-devel libusb1-devel libavdevice-free-devel meson gcc make
+sudo dnf install SDL3-devel ffms2-devel libusb1-devel libavdevice-free-devel \
+                 libdrm-devel libglvnd-devel libva-devel meson gcc make
 
 # server build dependencies
 sudo dnf install java-devel

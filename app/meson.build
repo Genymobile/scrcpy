@@ -106,6 +106,75 @@ if v4l2_support
     src += [ 'src/v4l2_sink.c' ]
 endif
 
+cc = meson.get_compiler('c')
+
+static = get_option('static')
+
+avformat_dep = dependency('libavformat', version: '>= 57.33', static: static)
+avcodec_dep = dependency('libavcodec', version: '>= 57.37', static: static)
+avutil_dep = dependency('libavutil', static: static)
+swresample_dep = dependency('libswresample', static: static)
+sdl_dep = dependency('sdl3', version: '>= 3.2.0', static: static)
+
+dependencies = [
+    avformat_dep,
+    avcodec_dep,
+    avutil_dep,
+    swresample_dep,
+    sdl_dep,
+]
+
+hwaccel_opt = get_option('hardware_decoding')
+hwaccel_support = false
+if host_machine.system() == 'linux' and not hwaccel_opt.disabled()
+    has_vaapi_api = cc.has_header_symbol(
+        'libavutil/hwcontext.h', 'AV_HWDEVICE_TYPE_VAAPI',
+        dependencies: avutil_dep)
+    has_vaapi_api = has_vaapi_api and cc.has_header_symbol(
+        'libavutil/pixfmt.h', 'AV_PIX_FMT_DRM_PRIME',
+        dependencies: avutil_dep)
+    libdrm_dep = dependency('libdrm', required: hwaccel_opt)
+    hwaccel_support = has_vaapi_api and libdrm_dep.found()
+    if hwaccel_support
+        conf.set('SC_HAVE_VAAPI', true)
+        src += [ 'src/vaapi.c' ]
+    elif hwaccel_opt.enabled()
+        error('The installed FFmpeg does not provide the required VA-API API')
+    endif
+elif host_machine.system() == 'windows' and not hwaccel_opt.disabled()
+    hwaccel_support = cc.has_header_symbol(
+        'libavutil/hwcontext.h', 'AV_HWDEVICE_TYPE_D3D11VA',
+        dependencies: avutil_dep)
+    hwaccel_support = hwaccel_support and cc.has_header_symbol(
+        'libavutil/pixfmt.h', 'AV_PIX_FMT_D3D11',
+        dependencies: avutil_dep)
+    hwaccel_support = hwaccel_support and cc.has_header(
+        'libavutil/hwcontext_d3d11va.h', dependencies: avutil_dep)
+    if hwaccel_support
+        conf.set('SC_HAVE_D3D11', true)
+    elif hwaccel_opt.enabled()
+        error('The installed FFmpeg does not provide the required D3D11 API')
+    endif
+elif host_machine.system() == 'darwin' and not hwaccel_opt.disabled()
+    hwaccel_support = cc.has_header_symbol(
+        'libavutil/hwcontext.h', 'AV_HWDEVICE_TYPE_VIDEOTOOLBOX',
+        dependencies: avutil_dep)
+    hwaccel_support = hwaccel_support and cc.has_header_symbol(
+        'libavutil/pixfmt.h', 'AV_PIX_FMT_VIDEOTOOLBOX',
+        dependencies: avutil_dep)
+    if hwaccel_support
+        conf.set('SC_HAVE_VIDEOTOOLBOX', true)
+    elif hwaccel_opt.enabled()
+        error('The installed FFmpeg does not provide the required ' +
+              'VideoToolbox API')
+    endif
+elif hwaccel_opt.enabled()
+    error('Hardware decoding is only supported on Linux, Windows, and macOS')
+endif
+if hwaccel_support
+    src += [ 'src/hwaccel.c' ]
+endif
+
 usb_support = get_option('usb')
 if usb_support
     src += [
@@ -118,17 +187,9 @@ if usb_support
     ]
 endif
 
-cc = meson.get_compiler('c')
-
-static = get_option('static')
-
-dependencies = [
-    dependency('libavformat', version: '>= 57.33', static: static),
-    dependency('libavcodec', version: '>= 57.37', static: static),
-    dependency('libavutil', static: static),
-    dependency('libswresample', static: static),
-    dependency('sdl3', version: '>= 3.2.0', static: static),
-]
+if hwaccel_support and host_machine.system() == 'linux'
+    dependencies += [libdrm_dep]
+endif
 
 if v4l2_support
     dependencies += dependency('libavdevice', static: static)
@@ -182,6 +243,9 @@ conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 
 # enable V4L2 support (linux only)
 conf.set('HAVE_V4L2', v4l2_support)
+
+# enable platform hardware video decoding
+conf.set('HAVE_HWACCEL', hwaccel_support)
 
 # enable HID over AOA support (linux only)
 conf.set('HAVE_USB', usb_support)

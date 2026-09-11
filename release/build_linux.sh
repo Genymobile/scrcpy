@@ -21,10 +21,11 @@ app/deps/libusb.sh linux native static
 
 DEPS_INSTALL_DIR="$PWD/app/deps/work/install/linux-native-static"
 ADB_INSTALL_DIR="$PWD/app/deps/work/install/adb-linux"
+SYSTEM_PKG_CONFIG_LIBDIR="$(pkg-config --variable pc_path pkg-config)"
 
-# Never fall back to system libs
+# Prefer the bundled dependencies, but keep system graphics APIs available.
 unset PKG_CONFIG_PATH
-export PKG_CONFIG_LIBDIR="$DEPS_INSTALL_DIR/lib/pkgconfig"
+export PKG_CONFIG_LIBDIR="$DEPS_INSTALL_DIR/lib/pkgconfig:$SYSTEM_PKG_CONFIG_LIBDIR"
 
 rm -rf "$LINUX_BUILD_DIR"
 meson setup "$LINUX_BUILD_DIR" \

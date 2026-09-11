@@ -56,7 +56,6 @@ else
         --disable-network
         --disable-everything
         --disable-vulkan
-        --disable-vaapi
         --disable-vdpau
         --enable-swresample
         --enable-libdav1d
@@ -82,19 +81,47 @@ else
         --enable-muxer=wav
     )
 
-    if [[ "$HOST" == linux ]]
-    then
-        conf+=(
-            --enable-libv4l2
-            --enable-outdev=v4l2
-            --enable-encoder=rawvideo
-        )
-    else
-        # libavdevice is only used for V4L2 on Linux
-        conf+=(
-            --disable-avdevice
-        )
-    fi
+    case "$HOST" in
+        linux)
+            conf+=(
+                --enable-vaapi
+                --enable-libdrm
+                --disable-xlib
+                --enable-hwaccel=h264_vaapi
+                --enable-hwaccel=hevc_vaapi
+                --enable-hwaccel=av1_vaapi
+                --enable-hwaccel=vp8_vaapi
+                --enable-hwaccel=vp9_vaapi
+                --enable-libv4l2
+                --enable-outdev=v4l2
+                --enable-encoder=rawvideo
+            )
+            ;;
+        macos)
+            conf+=(
+                --disable-avdevice
+                --enable-videotoolbox
+                --enable-hwaccel=h264_videotoolbox
+                --enable-hwaccel=hevc_videotoolbox
+                --enable-hwaccel=av1_videotoolbox
+                --enable-hwaccel=vp9_videotoolbox
+            )
+            ;;
+        win*)
+            conf+=(
+                --disable-avdevice
+                --enable-d3d11va
+                --enable-hwaccel=h264_d3d11va
+                --enable-hwaccel=hevc_d3d11va
+                --enable-hwaccel=av1_d3d11va
+                --enable-hwaccel=vp9_d3d11va
+                --enable-hwaccel=h264_d3d11va2
+                --enable-hwaccel=hevc_d3d11va2
+                --enable-hwaccel=av1_d3d11va2
+                --enable-hwaccel=vp9_d3d11va2
+            )
+            ;;
+    esac
 
     if [[ "$LINK_TYPE" == static ]]
     then

@@ -302,6 +302,7 @@ struct scrcpy_options {
     bool always_on_top;
     bool control;
     bool video_playback;
+    bool hardware_decoding;
     bool audio_playback;
     bool turn_screen_off;
     enum sc_key_inject_mode key_inject_mode;

@@ -35,7 +35,7 @@ public class Options {
     private boolean audioDup;
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
-    private float maxFps;
+    private float maxFps = 60;
     private float angle;
     private boolean tunnelForward;
     private Rect crop;
