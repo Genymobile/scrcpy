@@ -6,6 +6,7 @@ scrcpy \- Display and control your Android device
 .SH SYNOPSIS
 .B scrcpy
 .RI [ options ]
+.RI [ profile ]
 
 
 .SH DESCRIPTION
@@ -156,6 +157,12 @@ If a leading '@' is passed (@90) for display capture, then the rotation is locke
 If '@' is passed alone, then the rotation is locked to the initial device orientation.
 
 Default is 0.
+
+.TP
+.BI "\-\-config\-file " path
+Use a custom configuration file instead of the default.
+
+Also see \fB\-\-no\-config\fR.
 
 .TP
 .BI "\-\-crop " width\fR:\fIheight\fR:\fIx\fR:\fIy
@@ -405,6 +412,12 @@ This option disables this cleanup.
 By default, scrcpy automatically synchronizes the computer clipboard to the device clipboard before injecting Ctrl+v, and the device clipboard to the computer clipboard whenever it changes.
 
 This option disables this automatic synchronization.
+
+.TP
+.B \-\-no\-config
+Do not load a configuration file.
+
+Also see \fB\-\-config\-file\fR.
 
 .TP
 .B \-\-no\-downsize\-on\-error
@@ -900,6 +913,41 @@ Zoom camera in (camera mode only)
 Zoom camera out (camera mode only)
 
 
+.SH CONFIGURATION FILE
+Unless \fB\-\-no\-config\fR is passed, scrcpy loads options from a configuration file before processing command-line options.
+
+The default path is \fI%APPDATA%\\scrcpy\\config.ini\fR on Windows and \fI$XDG_CONFIG_HOME/scrcpy/config.ini\fR on other platforms, falling back to \fI$HOME/.config/scrcpy/config.ini\fR when \fIXDG_CONFIG_HOME\fR is unset. Portable builds use \fIconfig.ini\fR next to the scrcpy executable.
+
+Each non-empty line contains one long option without the leading "--". An option value is separated by "=". Leading and trailing spaces are ignored. A "#" starts a comment when it is the first non-space character or is preceded by whitespace, except when it is the first character of an option value.
+
+Options before the first section apply globally.
+A section defines a named profile, selected by passing its name as the
+positional \fIprofile\fR argument.
+Profile names are case-sensitive.
+Without a profile argument, only global options are loaded.
+
+For example:
+
+.nf
+    # Global defaults
+    video-bit-rate = 8M
+
+    [phone]
+    serial = 192.168.1.10:5555
+    max-size = 1080
+
+    [tablet]
+    serial = 192.168.1.20:5555
+    max-size = 1600
+.fi
+
+For example, \fBscrcpy phone\fR loads the global options and the
+\fB[phone]\fR section.
+Command-line options are processed last.
+
+Use \fB\-\-config\-file\fR or \fISCRCPY_CONFIG_FILE\fR to select another file.
+
+
 .SH Environment variables
 
 .TP
@@ -909,6 +957,10 @@ Path to adb.
 .TP
 .B ANDROID_SERIAL
 Device serial to use if no selector (\fB-s\fR, \fB-d\fR, \fB-e\fR or \fB\-\-tcpip=\fIaddr\fR) is specified.
+
+.TP
+.B SCRCPY_CONFIG_FILE
+Path to the configuration file.
 
 .TP
 .B SCRCPY_ICON_DIR

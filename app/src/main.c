@@ -14,6 +14,7 @@
 #ifdef HAVE_USB
 # include "usb/scrcpy_otg.h"
 #endif
+#include "util/config_file.h"
 #include "util/log.h"
 #include "util/net.h"
 #include "util/term.h"
@@ -38,6 +39,7 @@ main_scrcpy(int argc, char *argv[]) {
 
     struct scrcpy_cli_args args = {
         .opts = scrcpy_options_default,
+        .profile = NULL,
         .help = false,
         .version = false,
         .pause_on_exit = SC_PAUSE_ON_EXIT_UNDEFINED,
@@ -50,8 +52,22 @@ main_scrcpy(int argc, char *argv[]) {
     enum scrcpy_exit_code ret;
 
     bool term_title_saved = false;
+    struct sc_config_argv config_argv = {0};
 
-    if (!scrcpy_parse_args(&args, argc, argv)) {
+    struct scrcpy_cli_preparse preparse;
+    if (!scrcpy_preparse_args(argc, argv, &preparse)) {
+        ret = SCRCPY_EXIT_FAILURE;
+        goto end;
+    }
+    args.profile = preparse.profile;
+
+    if (!sc_config_argv_init(&config_argv, argc, argv, preparse.config_path,
+                             preparse.config_disabled, preparse.profile)) {
+        ret = SCRCPY_EXIT_FAILURE;
+        goto end;
+    }
+
+    if (!scrcpy_parse_args(&args, config_argv.argc, config_argv.argv)) {
         ret = SCRCPY_EXIT_FAILURE;
         goto end;
     }
@@ -110,6 +126,8 @@ net_cleanup:
     net_cleanup();
 
 end:
+    sc_config_argv_destroy(&config_argv);
+
     if (args.pause_on_exit == SC_PAUSE_ON_EXIT_TRUE ||
             (args.pause_on_exit == SC_PAUSE_ON_EXIT_IF_ERROR &&
                 ret != SCRCPY_EXIT_SUCCESS)) {

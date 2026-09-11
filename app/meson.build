@@ -48,6 +48,7 @@ src = [
     'src/util/acksync.c',
     'src/util/audiobuf.c',
     'src/util/average.c',
+    'src/util/config_file.c',
     'src/util/env.c',
     'src/util/file.c',
     'src/util/intmap.c',
@@ -223,6 +224,21 @@ endif
 
 # do not build tests in release (assertions would not be executed at all)
 if get_option('buildtype') == 'debug'
+    config_file_test_sources = [
+        'tests/test_config_file.c',
+        'src/util/config_file.c',
+        'src/util/env.c',
+        'src/util/file.c',
+        'src/util/log.c',
+        'src/util/str.c',
+        'src/util/strbuf.c',
+    ]
+    if host_machine.system() == 'windows'
+        config_file_test_sources += 'src/sys/win/file.c'
+    else
+        config_file_test_sources += 'src/sys/unix/file.c'
+    endif
+
     tests = [
         ['test_adb_parser', [
             'tests/test_adb_parser.c',
@@ -249,6 +265,7 @@ if get_option('buildtype') == 'debug'
             'src/util/strbuf.c',
             'src/util/term.c',
         ]],
+        ['test_config_file', config_file_test_sources],
         ['test_command_windows', [
           'tests/test_command_windows.c',
           'src/util/command.c',
