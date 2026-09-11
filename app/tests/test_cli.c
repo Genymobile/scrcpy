@@ -67,6 +67,7 @@ static void test_options(void) {
         "--window-width", "600",
         "--window-height", "0",
         "--window-borderless",
+        "--vsync",
     };
 
     bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
@@ -94,6 +95,7 @@ static void test_options(void) {
     assert(opts->window_width == 600);
     assert(opts->window_height == 0);
     assert(opts->window_borderless);
+    assert(opts->vsync);
 }
 
 static void test_options2(void) {
