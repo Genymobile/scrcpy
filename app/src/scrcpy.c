@@ -780,6 +780,7 @@ aoa_complete:
             .render_fit = options->render_fit,
             .orientation = options->display_orientation,
             .mipmaps = options->mipmaps,
+            .vsync = options->vsync,
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,
         };
