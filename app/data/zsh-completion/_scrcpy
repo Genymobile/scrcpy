@@ -64,6 +64,7 @@ arguments=(
     '--no-audio[Disable audio forwarding]'
     '--no-audio-playback[Disable audio playback]'
     '--no-cleanup[Disable device cleanup actions on exit]'
+    '--no-server-cleanup[Keep the server binary on the device while restoring device state]'
     '--no-clipboard-autosync[Disable automatic clipboard synchronization]'
     '--no-downsize-on-error[Disable lowering definition on MediaCodec error]'
     '--no-key-repeat[Do not forward repeated key events when a key is held down]'

@@ -121,6 +121,26 @@ static void test_options2(void) {
     assert(opts->record_format == SC_RECORD_FORMAT_MP4);
 }
 
+static void test_no_server_cleanup(void) {
+    struct scrcpy_cli_args args = {
+        .opts = scrcpy_options_default,
+        .help = false,
+        .version = false,
+    };
+
+    assert(args.opts.unlink_server);
+
+    char *argv[] = {
+        "scrcpy",
+        "--no-server-cleanup",
+    };
+
+    bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+    assert(ok);
+    assert(!args.opts.unlink_server);
+    assert(args.opts.cleanup);
+}
+
 static void test_parse_shortcut_mods(void) {
     uint8_t mods;
     bool ok;
@@ -157,6 +177,7 @@ int main(int argc, char *argv[]) {
     test_flag_help();
     test_options();
     test_options2();
+    test_no_server_cleanup();
     test_parse_shortcut_mods();
     return 0;
 }
