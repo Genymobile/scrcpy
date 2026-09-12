@@ -42,6 +42,8 @@ process_args() {
     fi
 }
 
+NPROC=$(getconf _NPROCESSORS_ONLN)
+
 DEPS_DIR=$(dirname ${BASH_SOURCE[0]})
 cd "$DEPS_DIR"
 
