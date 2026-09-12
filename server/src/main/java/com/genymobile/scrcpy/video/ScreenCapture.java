@@ -131,7 +131,7 @@ public class ScreenCapture extends SurfaceCapture {
 
         try {
             virtualDisplay = ServiceManager.getDisplayManager()
-                    .createVirtualDisplay("scrcpy", inputSize.getWidth(), inputSize.getHeight(), displayId, surface);
+                    .createVirtualDisplay("scrcpy", inputSize.getWidth(), inputSize.getHeight(), displayId, surface, displayInfo.getRefreshRate());
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
             if (Build.BRAND.equalsIgnoreCase("oculus") && Build.MODEL.toLowerCase(Locale.ROOT).startsWith("quest")) {
