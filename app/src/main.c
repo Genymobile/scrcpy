@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
-#ifdef HAVE_V4L2
+#ifdef HAVE_CLIENT_AUDIO
 # include <libavdevice/avdevice.h>
 #endif
 #include <SDL3/SDL.h>
@@ -18,6 +18,9 @@
 #include "util/net.h"
 #include "util/term.h"
 #include "version.h"
+#ifdef HAVE_CLIENT_AUDIO
+# include "client_audio.h"
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -41,6 +44,7 @@ main_scrcpy(int argc, char *argv[]) {
         .help = false,
         .version = false,
         .pause_on_exit = SC_PAUSE_ON_EXIT_UNDEFINED,
+        .list_audio_sources = false,
     };
 
 #ifndef NDEBUG
@@ -80,9 +84,14 @@ main_scrcpy(int argc, char *argv[]) {
     av_register_all();
 #endif
 
-#ifdef HAVE_V4L2
-    if (args.opts.v4l2_device) {
-        avdevice_register_all();
+#ifdef HAVE_CLIENT_AUDIO
+    //needed for capturing microphone and listing audio sources
+    avdevice_register_all();
+
+    if (args.list_audio_sources) {
+        sc_microphone_list_audio_sources();
+        ret = SCRCPY_EXIT_SUCCESS;
+        goto end;
     }
 #endif
 

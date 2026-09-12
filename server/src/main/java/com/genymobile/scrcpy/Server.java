@@ -1,7 +1,10 @@
 package com.genymobile.scrcpy;
 
+import android.net.LocalSocket;
+
 import com.genymobile.scrcpy.audio.AudioCapture;
 import com.genymobile.scrcpy.audio.AudioCodec;
+import com.genymobile.scrcpy.audio.AudioDecoder;
 import com.genymobile.scrcpy.audio.AudioDirectCapture;
 import com.genymobile.scrcpy.audio.AudioEncoder;
 import com.genymobile.scrcpy.audio.AudioPlaybackCapture;
@@ -29,8 +32,12 @@ import android.os.Build;
 import android.os.Looper;
 import android.system.Os;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -96,13 +103,14 @@ public final class Server {
         boolean control = options.getControl();
         boolean video = options.getVideo();
         boolean audio = options.getAudio();
+        boolean client_audio = options.getClientAudio();
         boolean sendDummyByte = options.getSendDummyByte();
 
         Workarounds.apply();
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
-        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, sendDummyByte);
+        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, client_audio, sendDummyByte);
         try {
             if (options.getSendDeviceMeta()) {
                 connection.sendDeviceMeta(Device.getDeviceName());
@@ -156,6 +164,21 @@ public final class Server {
 
                 if (controller != null) {
                     controller.setSurfaceCapture(surfaceCapture);
+                }
+            }
+
+            if (client_audio) {
+                try {
+                    LocalSocket s = connection.getClientAudioSocket();
+                    InputStream is = s.getInputStream();
+                    BufferedInputStream bis = new BufferedInputStream(is);
+                    PipedOutputStream pos = new PipedOutputStream();
+                    PipedInputStream pis = new PipedInputStream(pos, 500 * 1024);
+                    AudioDecoder decoder = new AudioDecoder();
+                    decoder.start(bis, pos);
+                    AudioInjector.injectAudio(pis);
+                } catch (Exception e) {
+                    Ln.e("Client audio injection error", e);
                 }
             }
 
