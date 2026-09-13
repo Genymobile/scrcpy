@@ -269,8 +269,9 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, 0);
     sc_sdl_render_clear(renderer);
 
-    SDL_Texture *texture = screen->is_icon_active ? screen->icon_tex
-                                                  : screen->tex.texture;
+    SDL_Texture *texture = screen->is_icon_active
+                         ? screen->icon_tex
+                         : sc_texture_get(&screen->tex);
     if (!texture) {
         goto end;
     }
@@ -632,7 +633,8 @@ sc_screen_init(struct sc_screen *screen,
 #endif
 
     bool mipmaps = params->video && params->mipmaps;
-    ok = sc_texture_init(&screen->tex, screen->renderer, mipmaps);
+    ok = sc_texture_init(&screen->tex, screen->renderer, mipmaps,
+                         AV_HWDEVICE_TYPE_NONE);
     if (!ok) {
         goto error_destroy_renderer;
     }
