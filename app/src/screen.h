@@ -102,6 +102,10 @@ struct sc_screen {
     bool disconnect_started;
     struct sc_disconnect disconnect;
 
+    SDL_Texture *icon_tex;
+    // render icon rather than frame?
+    bool is_icon_active;
+
     // Track resize requests caused by frame-size changes
     struct sc_resize_tracker {
         sc_tick time; // 0 means none

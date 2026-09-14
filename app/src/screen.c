@@ -157,6 +157,28 @@ sc_screen_track_resize(struct sc_screen *screen, struct sc_size size) {
     screen->resize_tracker.size = size;
 }
 
+static bool
+sc_screen_set_texture_from_surface(struct sc_screen *screen,
+                                   SDL_Surface *surface) {
+    // The current "frame" texture can be discarded
+    sc_texture_reset(&screen->tex);
+
+    if (screen->icon_tex) {
+        SDL_DestroyTexture(screen->icon_tex);
+    }
+
+    screen->icon_tex = SDL_CreateTextureFromSurface(screen->renderer, surface);
+    if (!screen->icon_tex) {
+        LOGE("Could not create texture from surface: %s", SDL_GetError());
+        return false;
+    }
+
+    // Once is_icon_active is true, it may never become false again
+    screen->is_icon_active = true;
+
+    return true;
+}
+
 static inline bool
 sc_screen_is_relative_mode(struct sc_screen *screen) {
     // screen->im.mp may be NULL if --no-control
@@ -167,6 +189,7 @@ static void
 compute_content_rect(struct sc_size window_size, struct sc_size content_size,
                      bool is_icon, enum sc_render_fit render_fit,
                      SDL_FRect *rect) {
+    // Only upscale video frames, not icon
     if (is_icon) {
         if (content_size.width <= window_size.width
                 && content_size.height <= window_size.height) {
@@ -223,12 +246,10 @@ compute_content_rect(struct sc_size window_size, struct sc_size content_size,
 
 static void
 sc_screen_update_content_rect(struct sc_screen *screen) {
-    // Only upscale video frames, not icon
-    bool is_icon = !screen->video || screen->disconnected;
-
     struct sc_size window_size = sc_sdl_get_window_size(screen->window);
-    compute_content_rect(window_size, screen->content_size, is_icon,
-                         screen->render_fit, &screen->rect);
+    compute_content_rect(window_size, screen->content_size,
+                         screen->is_icon_active, screen->render_fit,
+                         &screen->rect);
 }
 
 // render the texture to the renderer
@@ -248,7 +269,8 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, 0);
     sc_sdl_render_clear(renderer);
 
-    SDL_Texture *texture = screen->tex.texture;
+    SDL_Texture *texture = screen->is_icon_active ? screen->icon_tex
+                                                  : screen->tex.texture;
     if (!texture) {
         goto end;
     }
@@ -621,6 +643,8 @@ sc_screen_init(struct sc_screen *screen,
         goto error_destroy_texture;
     }
 
+    screen->icon_tex = NULL;
+    screen->is_icon_active = false;
     SDL_Surface *icon = sc_icon_load(SC_ICON_FILENAME_SCRCPY);
     if (icon) {
         if (!SDL_SetWindowIcon(screen->window, icon)) {
@@ -630,7 +654,7 @@ sc_screen_init(struct sc_screen *screen,
         if (!params->video) {
             screen->content_size.width = icon->w;
             screen->content_size.height = icon->h;
-            ok = sc_texture_set_from_surface(&screen->tex, icon);
+            ok = sc_screen_set_texture_from_surface(screen, icon);
             if (!ok) {
                 LOGE("Could not set icon: %s", SDL_GetError());
             }
@@ -945,7 +969,7 @@ sc_screen_apply_frame(struct sc_screen *screen, bool can_resize) {
         sc_screen_update_content_rect(screen);
     }
 
-    bool ok = sc_texture_set_from_frame(&screen->tex, frame);
+    bool ok = sc_texture_update(&screen->tex, frame);
     if (!ok) {
         return false;
     }
@@ -1245,8 +1269,8 @@ sc_screen_handle_disconnection(struct sc_screen *screen) {
                 SDL_Surface *icon_disconnected = event.user.data1;
                 assert(icon_disconnected);
 
-                bool ok = sc_texture_set_from_surface(&screen->tex,
-                                                      icon_disconnected);
+                bool ok = sc_screen_set_texture_from_surface(screen,
+                                                             icon_disconnected);
                 if (ok) {
                     screen->content_size.width = icon_disconnected->w;
                     screen->content_size.height = icon_disconnected->h;
