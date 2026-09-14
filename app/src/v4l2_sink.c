@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <libavutil/error.h>
 
 #include "util/log.h"
 #include "util/str.h"
@@ -88,7 +89,7 @@ static bool
 encode_and_write_frame(struct sc_v4l2_sink *vs, const AVFrame *frame) {
     int ret = avcodec_send_frame(vs->encoder_ctx, frame);
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
-        LOGE("Could not send v4l2 video frame: %d", ret);
+        LOGE("Could not send v4l2 video frame: %s", av_err2str(ret));
         return false;
     }
 
@@ -104,7 +105,7 @@ encode_and_write_frame(struct sc_v4l2_sink *vs, const AVFrame *frame) {
             return false;
         }
     } else if (ret != AVERROR(EAGAIN)) {
-        LOGE("Could not receive v4l2 video packet: %d", ret);
+        LOGE("Could not receive v4l2 video packet: %s", av_err2str(ret));
         return false;
     }
 

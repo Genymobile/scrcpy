@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <libavcodec/packet.h>
 #include <libavutil/avutil.h>
+#include <libavutil/error.h>
 
 #include "util/log.h"
 
@@ -80,8 +81,8 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
 
     int ret = avcodec_send_packet(decoder->ctx, packet);
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
-        LOGE("Decoder '%s': could not send video packet: %d",
-             decoder->name, ret);
+        LOGE("Decoder '%s': could not send video packet: %s",
+             decoder->name, av_err2str(ret));
         return false;
     }
 
@@ -92,8 +93,8 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
         }
 
         if (ret) {
-            LOGE("Decoder '%s', could not receive video frame: %d",
-                 decoder->name, ret);
+            LOGE("Decoder '%s', could not receive video frame: %s",
+                 decoder->name, av_err2str(ret));
             return false;
         }
 

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/error.h>
 #include <libavutil/opt.h>
 
 #include "util/log.h"
@@ -184,7 +185,7 @@ sc_audio_regulator_push(struct sc_audio_regulator *ar, const AVFrame *frame) {
     int ret = swr_convert(swr_ctx, &swr_buf, dst_nb_samples,
                           (const uint8_t **) frame->data, frame->nb_samples);
     if (ret < 0) {
-        LOGE("Resampling failed: %d", ret);
+        LOGE("Resampling failed: %s", av_err2str(ret));
         return false;
     }
 
@@ -352,7 +353,7 @@ sc_audio_regulator_push(struct sc_audio_regulator *ar, const AVFrame *frame) {
 
         int ret = swr_set_compensation(swr_ctx, diff, distance);
         if (ret < 0) {
-            LOGW("Resampling compensation failed: %d", ret);
+            LOGW("Resampling compensation failed: %s", av_err2str(ret));
             // not fatal
         } else {
             ar->compensation_active = diff != 0;
