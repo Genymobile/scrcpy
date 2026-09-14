@@ -174,13 +174,12 @@ sc_texture_create_frame_texture(struct sc_texture *tex,
 }
 
 bool
-sc_texture_set_from_frame(struct sc_texture *tex, const AVFrame *frame) {
+sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
 
     struct sc_size size = {frame->width, frame->height};
     assert(size.width && size.height);
 
     if (!tex->texture
-            || tex->texture_type != SC_TEXTURE_TYPE_FRAME
             || tex->texture_size.width != size.width
             || tex->texture_size.height != size.height) {
         // Incompatible texture, recreate it
@@ -198,13 +197,11 @@ sc_texture_set_from_frame(struct sc_texture *tex, const AVFrame *frame) {
         }
 
         tex->texture_size = size;
-        tex->texture_type = SC_TEXTURE_TYPE_FRAME;
 
         LOGI("Texture: %" PRIu16 "x%" PRIu16, size.width, size.height);
     }
 
     assert(tex->texture);
-    assert(tex->texture_type == SC_TEXTURE_TYPE_FRAME);
 
     bool ok = SDL_UpdateYUVTexture(tex->texture, NULL,
                                    frame->data[0], frame->linesize[0],
@@ -225,25 +222,6 @@ sc_texture_set_from_frame(struct sc_texture *tex, const AVFrame *frame) {
         }
         gl->BindTexture(GL_TEXTURE_2D, 0);
     }
-
-    return true;
-}
-
-bool
-sc_texture_set_from_surface(struct sc_texture *tex, SDL_Surface *surface) {
-    if (tex->texture) {
-        SDL_DestroyTexture(tex->texture);
-    }
-
-    tex->texture = SDL_CreateTextureFromSurface(tex->renderer, surface);
-    if (!tex->texture) {
-        LOGE("Could not create texture: %s", SDL_GetError());
-        return false;
-    }
-
-    tex->texture_size.width = surface->w;
-    tex->texture_size.height = surface->h;
-    tex->texture_type = SC_TEXTURE_TYPE_ICON;
 
     return true;
 }
