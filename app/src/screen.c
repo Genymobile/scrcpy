@@ -609,7 +609,7 @@ sc_screen_init(struct sc_screen *screen,
     }
 #endif
 
-    bool mipmaps = params->video;
+    bool mipmaps = params->video && params->mipmaps;
     ok = sc_texture_init(&screen->tex, screen->renderer, mipmaps);
     if (!ok) {
         goto error_destroy_renderer;
