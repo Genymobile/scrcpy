@@ -1,5 +1,5 @@
-#ifndef SC_DISPLAY_H
-#define SC_DISPLAY_H
+#ifndef SC_TEXTURE_H
+#define SC_TEXTURE_H
 
 #include "common.h"
 
