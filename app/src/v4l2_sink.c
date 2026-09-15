@@ -17,16 +17,10 @@ static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
 
 static const AVOutputFormat *
 find_muxer(const char *name) {
-#ifdef SCRCPY_LAVF_HAS_NEW_MUXER_ITERATOR_API
     void *opaque = NULL;
-#endif
     const AVOutputFormat *oformat = NULL;
     do {
-#ifdef SCRCPY_LAVF_HAS_NEW_MUXER_ITERATOR_API
         oformat = av_muxer_iterate(&opaque);
-#else
-        oformat = av_oformat_next(oformat);
-#endif
         // until null or containing the requested name
     } while (oformat && !sc_str_list_contains(oformat->name, ',', name));
     return oformat;
@@ -189,25 +183,12 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs, const AVCodecContext *ctx,
         return false;
     }
 
-    // contrary to the deprecated API (av_oformat_next()), av_muxer_iterate()
-    // returns (on purpose) a pointer-to-const, but AVFormatContext.oformat
-    // still expects a pointer-to-non-const (it has not be updated accordingly)
-    // <https://github.com/FFmpeg/FFmpeg/commit/0694d8702421e7aff1340038559c438b61bb30dd>
-    vs->format_ctx->oformat = (AVOutputFormat *) format;
-#ifdef SCRCPY_LAVF_HAS_AVFORMATCONTEXT_URL
+    vs->format_ctx->oformat = format;
     vs->format_ctx->url = strdup(vs->device_name);
     if (!vs->format_ctx->url) {
         LOG_OOM();
         goto error_avformat_free_context;
     }
-#else
-    size_t n = sc_strncpy(vs->format_ctx->filename, vs->device_name,
-                          sizeof(vs->format_ctx->filename));
-    if (n == sizeof(vs->format_ctx->filename)) {
-        LOGE("Device name too long: %s", vs->device_name);
-        goto error_avformat_free_context;
-    }
-#endif
 
     AVStream *ostream = avformat_new_stream(vs->format_ctx, encoder);
     if (!ostream) {

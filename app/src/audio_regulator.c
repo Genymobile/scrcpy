@@ -373,15 +373,8 @@ sc_audio_regulator_init(struct sc_audio_regulator *ar, size_t sample_size,
     }
     ar->swr_ctx = swr_ctx;
 
-#ifdef SCRCPY_LAVU_HAS_CHLAYOUT
     av_opt_set_chlayout(swr_ctx, "in_chlayout", &ctx->ch_layout, 0);
     av_opt_set_chlayout(swr_ctx, "out_chlayout", &ctx->ch_layout, 0);
-#else
-    av_opt_set_channel_layout(swr_ctx, "in_channel_layout",
-                              ctx->channel_layout, 0);
-    av_opt_set_channel_layout(swr_ctx, "out_channel_layout",
-                              ctx->channel_layout, 0);
-#endif
 
     av_opt_set_int(swr_ctx, "in_sample_rate", ctx->sample_rate, 0);
     av_opt_set_int(swr_ctx, "out_sample_rate", ctx->sample_rate, 0);

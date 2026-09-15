@@ -22,16 +22,10 @@ static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
 
 static const AVOutputFormat *
 find_muxer(const char *name) {
-#ifdef SCRCPY_LAVF_HAS_NEW_MUXER_ITERATOR_API
     void *opaque = NULL;
-#endif
     const AVOutputFormat *oformat = NULL;
     do {
-#ifdef SCRCPY_LAVF_HAS_NEW_MUXER_ITERATOR_API
         oformat = av_muxer_iterate(&opaque);
-#else
-        oformat = av_oformat_next(oformat);
-#endif
         // until null or containing the requested name
     } while (oformat && !sc_str_list_contains(oformat->name, ',', name));
     return oformat;
@@ -160,11 +154,7 @@ sc_recorder_open_output_file(struct sc_recorder *recorder) {
         return false;
     }
 
-    // contrary to the deprecated API (av_oformat_next()), av_muxer_iterate()
-    // returns (on purpose) a pointer-to-const, but AVFormatContext.oformat
-    // still expects a pointer-to-non-const (it has not be updated accordingly)
-    // <https://github.com/FFmpeg/FFmpeg/commit/0694d8702421e7aff1340038559c438b61bb30dd>
-    recorder->ctx->oformat = (AVOutputFormat *) format;
+    recorder->ctx->oformat = format;
 
     av_dict_set(&recorder->ctx->metadata, "comment",
                 "Recorded by scrcpy " SCRCPY_VERSION, 0);

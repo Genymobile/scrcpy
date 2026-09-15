@@ -33,12 +33,7 @@ sc_demuxer_to_avcodec_id(uint32_t codec_id) {
         case SC_CODEC_ID_H265:
             return AV_CODEC_ID_HEVC;
         case SC_CODEC_ID_AV1:
-#ifdef SCRCPY_LAVC_HAS_AV1
             return AV_CODEC_ID_AV1;
-#else
-            LOGE("AV1 not supported by this FFmpeg version");
-            return AV_CODEC_ID_NONE;
-#endif
         case SC_CODEC_ID_VP8:
             return AV_CODEC_ID_VP8;
         case SC_CODEC_ID_VP9:
@@ -257,12 +252,7 @@ run_demuxer(void *data) {
 
     } else {
         // Hardcoded audio properties
-#ifdef SCRCPY_LAVU_HAS_CHLAYOUT
         params->ch_layout = (AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO;
-#else
-        params->channel_layout = AV_CH_LAYOUT_STEREO;
-        params->channels = 2;
-#endif
         params->sample_rate = 48000;
 
         if (raw_codec_id == SC_CODEC_ID_FLAC) {

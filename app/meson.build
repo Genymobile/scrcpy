@@ -123,9 +123,9 @@ cc = meson.get_compiler('c')
 static = get_option('static')
 
 dependencies = [
-    dependency('libavformat', version: '>= 57.33', static: static),
-    dependency('libavcodec', version: '>= 57.37', static: static),
-    dependency('libavutil', static: static),
+    dependency('libavformat', version: '>= 60.3', static: static),
+    dependency('libavcodec', version: '>= 60.3', static: static),
+    dependency('libavutil', version: '>= 58.2', static: static),
     dependency('libswresample', static: static),
     dependency('sdl3', version: '>= 3.2.0', static: static),
 ]
