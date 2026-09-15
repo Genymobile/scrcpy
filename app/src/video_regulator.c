@@ -199,7 +199,7 @@ sc_video_regulator_frame_sink_close(struct sc_frame_sink *sink) {
 
 static bool
 sc_video_regulator_frame_sink_push(struct sc_frame_sink *sink,
-                                const AVFrame *frame) {
+                                   const AVFrame *frame) {
     struct sc_video_regulator *vr = DOWNCAST(sink);
 
     sc_mutex_lock(&vr->mutex);
