@@ -154,6 +154,20 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, const uint8_t *header,
         return false;
     }
 
+    if (demuxer->set_recv_date) {
+        sc_tick recv_date = sc_tick_now();
+
+        // Store the recv date as an opaque ref
+        packet->opaque_ref = av_buffer_alloc(sizeof(sc_tick));
+        if (!packet->opaque_ref) {
+            av_packet_unref(packet);
+            LOG_OOM();
+            return false;
+        }
+
+        *(sc_tick *) packet->opaque_ref->data = recv_date;
+    }
+
     if (pts_flags & SC_PACKET_FLAG_CONFIG) {
         packet->pts = AV_NOPTS_VALUE;
     } else {
@@ -342,12 +356,15 @@ end:
 
 void
 sc_demuxer_init(struct sc_demuxer *demuxer, const char *name, sc_socket socket,
+                bool set_recv_date,
                 const struct sc_demuxer_callbacks *cbs, void *cbs_userdata) {
     assert(socket != SC_SOCKET_NONE);
 
     demuxer->name = name; // statically allocated
     demuxer->socket = socket;
     sc_packet_source_init(&demuxer->packet_source);
+
+    demuxer->set_recv_date = set_recv_date;
 
     assert(cbs && cbs->on_ended);
 
