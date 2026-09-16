@@ -210,8 +210,13 @@ sc_video_regulator_frame_sink_push(struct sc_frame_sink *sink,
         return false;
     }
 
+    assert(frame->opaque_ref);
+    assert(frame->opaque_ref->size == sizeof(sc_tick));
+    // Retrieve the recv date set on the AVPacket by the demuxer
+    sc_tick recv_date = *(const sc_tick *) frame->opaque_ref->data;
+
     sc_tick pts = SC_TICK_FROM_US(frame->pts);
-    sc_clock_update(&vr->clock, sc_tick_now(), pts);
+    sc_clock_update(&vr->clock, recv_date, pts);
     sc_cond_signal(&vr->wait_cond);
 
     if (vr->first_frame_asap && vr->clock.range == 1) {
