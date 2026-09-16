@@ -31,6 +31,11 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec,
 
     decoder->ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
 
+    if (decoder->copy_opaque) {
+        // Propagate AVPacket.opaque_ref (the recv_date) to the decoded AVFrame
+        decoder->ctx->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
+    }
+
     r = avcodec_open2(decoder->ctx, codec, NULL);
     if (r < 0) {
         LOGE("Decoder '%s': could not open codec", decoder->name);
@@ -175,9 +180,11 @@ sc_decoder_packet_sink_push_session(struct sc_packet_sink *sink,
 }
 
 void
-sc_decoder_init(struct sc_decoder *decoder, const char *name) {
+sc_decoder_init(struct sc_decoder *decoder, const char *name, bool copy_opaque) {
     decoder->name = name; // statically allocated
     sc_frame_source_init(&decoder->frame_source);
+
+    decoder->copy_opaque = copy_opaque;
 
     static const struct sc_packet_sink_ops ops = {
         .open = sc_decoder_packet_sink_open,
