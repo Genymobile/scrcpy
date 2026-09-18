@@ -20,6 +20,10 @@ final class AndroidClientValidation {
                 && (appPackage == null || appPackage.isEmpty() || isValidPackageName(appPackage));
     }
 
+    static boolean isValidVideoMaxSize(int maxSize) {
+        return maxSize == 720 || maxSize == 960 || maxSize == 1280 || maxSize == 1440;
+    }
+
     static boolean isValidHost(String host) {
         return host != null && !host.isEmpty() && host.length() <= 253
                 && HOST_NAME.matcher(host).matches();

@@ -413,6 +413,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 case ControlMessage.TYPE_RESIZE_DISPLAY:
                     resizeDisplay(msg.getWidth(), msg.getHeight());
                     return true;
+                case ControlMessage.TYPE_SET_VIDEO_MAX_SIZE:
+                    setVideoMaxSize(msg.getVideoMaxSize());
+                    return true;
                 case ControlMessage.TYPE_SCAN_FILE:
                     scanFile(msg.getText());
                     return true;
@@ -879,6 +882,16 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private void resizeDisplay(int width, int height) {
         NewDisplayCapture newDisplayCapture = (NewDisplayCapture) surfaceCapture;
         newDisplayCapture.requestResize(width, height);
+    }
+
+    private void setVideoMaxSize(int maxSize) {
+        if (maxSize < 480 || maxSize > 4096) {
+            Ln.w("Ignoring invalid video max size: " + maxSize);
+            return;
+        }
+        if (surfaceCapture != null && !surfaceCapture.setMaxSize(maxSize)) {
+            Ln.w("Video source rejected max size: " + maxSize);
+        }
     }
 
     private void scanFile(String path) {

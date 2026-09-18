@@ -13,17 +13,38 @@ import java.io.IOException;
 public abstract class SurfaceCapture {
 
     private CaptureControl captureControl;
+    private VideoConstraints videoConstraints;
 
     /**
      * Called once before the first capture starts.
      */
     public final void init(CaptureControl captureControl, VideoConstraints videoConstraints) throws ConfigurationException, IOException {
         this.captureControl = captureControl;
+        this.videoConstraints = videoConstraints;
         init(videoConstraints);
     }
 
     public CaptureControl getCaptureControl() {
         return captureControl;
+    }
+
+    /**
+     * Update the maximum encoded video size and restart the current capture.
+     *
+     * @param maxSize the new maximum long edge
+     * @return true if the new constraints were accepted
+     */
+    public final synchronized boolean setMaxSize(int maxSize) {
+        if (videoConstraints == null || videoConstraints.getMaxSize() == maxSize) {
+            return videoConstraints != null;
+        }
+        VideoConstraints updated = videoConstraints.withMaxSize(maxSize);
+        if (!applyNewVideoConstraints(updated)) {
+            return false;
+        }
+        videoConstraints = updated;
+        captureControl.reset(CaptureControl.RESET_REASON_CLIENT_RESIZED);
+        return true;
     }
 
     /**

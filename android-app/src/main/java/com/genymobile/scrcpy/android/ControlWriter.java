@@ -30,6 +30,13 @@ final class ControlWriter {
         sendKey(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK, 0, 0);
     }
 
+    synchronized void setVideoMaxSize(int maxSize) throws IOException {
+        byte[] data = new byte[5];
+        data[0] = 23;
+        writeIntBE(data, 1, maxSize);
+        stream.write(data);
+    }
+
     synchronized void wake() throws IOException {
         stream.write(new byte[]{10, 1});
     }

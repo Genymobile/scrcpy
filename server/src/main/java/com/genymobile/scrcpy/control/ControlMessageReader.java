@@ -64,6 +64,8 @@ public class ControlMessageReader {
                 return parseResizeDisplay();
             case ControlMessage.TYPE_SCAN_FILE:
                 return parseScanFile();
+            case ControlMessage.TYPE_SET_VIDEO_MAX_SIZE:
+                return parseSetVideoMaxSize();
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
@@ -183,6 +185,10 @@ public class ControlMessageReader {
         int width = dis.readUnsignedShort();
         int height = dis.readUnsignedShort();
         return ControlMessage.createResizeDisplay(width, height);
+    }
+
+    private ControlMessage parseSetVideoMaxSize() throws IOException {
+        return ControlMessage.createSetVideoMaxSize(dis.readInt());
     }
 
     private ControlMessage parseScanFile() throws IOException {

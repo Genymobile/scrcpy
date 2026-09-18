@@ -3,6 +3,7 @@ package com.genymobile.scrcpy.android;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.os.Build;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.Surface;
 
@@ -26,11 +27,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 final class ScrcpyClient implements Closeable {
     private static final String TAG = "ScrcpyClient";
     private static final long SHELL_COMMAND_TIMEOUT_MS = 10_000L;
-    private static final int VIDEO_MAX_SIZE = 1280;
     private static final int VIDEO_BIT_RATE = 6_000_000;
     private static final int VIDEO_MAX_FPS = 60;
+    private static final int VIDEO_MIN_AUTO_SIZE = 720;
+    private static final int VIDEO_AUTO_STEP = 160;
+    private static final long VIDEO_SLOW_PACKET_MILLIS = 220L;
+    private static final long VIDEO_UPGRADE_STABLE_MILLIS = 15_000L;
     interface Listener {
         void onConnected(int width, int height);
+        void onVideoSizeChanged(int width, int height);
         void onVideoStarted();
         void onStatus(int messageId, Object... arguments);
         void onError(Throwable error);
@@ -51,6 +56,8 @@ final class ScrcpyClient implements Closeable {
     private final InputStream serverAsset;
     private final Listener listener;
     private final AdbAuthKey authKey;
+    private final boolean automaticResolution;
+    private final int configuredMaxSize;
     private final AtomicBoolean stopped = new AtomicBoolean();
     private final Object lifecycleLock = new Object();
     private final ExecutorService controlExecutor = Executors.newSingleThreadExecutor();
@@ -60,9 +67,12 @@ final class ScrcpyClient implements Closeable {
     private volatile AdbTransport.AdbStream control;
     private volatile ControlWriter controlWriter;
 
-    ScrcpyClient(InputStream serverAsset, AdbAuthKey authKey, Listener listener) {
+    ScrcpyClient(InputStream serverAsset, AdbAuthKey authKey, boolean automaticResolution,
+            int configuredMaxSize, Listener listener) {
         this.serverAsset = serverAsset;
         this.authKey = authKey;
+        this.automaticResolution = automaticResolution;
+        this.configuredMaxSize = configuredMaxSize;
         this.listener = listener;
     }
 
@@ -90,7 +100,7 @@ final class ScrcpyClient implements Closeable {
                         + " scid=" + String.format(Locale.US, "%08x", scid)
                         + " tunnel_forward=true"
                         + " video_codec=h264 video_bit_rate=" + VIDEO_BIT_RATE
-                        + " max_size=" + VIDEO_MAX_SIZE + " max_fps=" + VIDEO_MAX_FPS
+                        + " max_size=" + configuredMaxSize + " max_fps=" + VIDEO_MAX_FPS
                         + " audio=false control=true send_dummy_byte=false"
                         + " send_device_meta=false send_stream_meta=true send_frame_meta=true"
                         + " power_on=true power_off_on_close=true cleanup=true";
@@ -240,29 +250,62 @@ final class ScrcpyClient implements Closeable {
         MediaCodec decoder = null;
         boolean firstFrameReported = false;
         Throwable failure = null;
+        int currentMaxSize = configuredMaxSize;
+        int slowPacketCount = 0;
+        long stableSince = SystemClock.uptimeMillis();
         try {
-            MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                format.setInteger(MediaFormat.KEY_OPERATING_RATE, VIDEO_MAX_FPS);
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1);
-            }
-            decoder = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
-            decoder.configure(format, surface, null, 0);
-            decoder.start();
+            decoder = createDecoder(surface, width, height);
             MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
             byte[] header = new byte[12];
             byte[] packet = new byte[0];
             while (!stopped.get()) {
+                long packetStart = SystemClock.uptimeMillis();
                 videoStream.readFully(header, 0, header.length);
                 long ptsAndFlags = readLongBE(header, 0);
                 int length = readIntBE(header, 8);
+
+                if ((ptsAndFlags & Long.MIN_VALUE) != 0) {
+                    int newWidth = (int) ptsAndFlags;
+                    int newHeight = length;
+                    AdbLimits.videoPixels(newWidth, newHeight);
+                    releaseDecoder(decoder);
+                    decoder = createDecoder(surface, newWidth, newHeight);
+                    listener.onVideoSizeChanged(newWidth, newHeight);
+                    slowPacketCount = 0;
+                    stableSince = SystemClock.uptimeMillis();
+                    packet = new byte[0];
+                    continue;
+                }
+
                 AdbLimits.checkVideoPacketLength(length);
                 if (packet.length < length) {
                     packet = new byte[length];
                 }
                 videoStream.readFully(packet, 0, length);
+                long packetReadMillis = SystemClock.uptimeMillis() - packetStart;
+                if (automaticResolution) {
+                    if (packetReadMillis >= VIDEO_SLOW_PACKET_MILLIS) {
+                        ++slowPacketCount;
+                    } else {
+                        slowPacketCount = 0;
+                    }
+                    long now = SystemClock.uptimeMillis();
+                    if (slowPacketCount >= 3 && currentMaxSize > VIDEO_MIN_AUTO_SIZE) {
+                        currentMaxSize = Math.max(VIDEO_MIN_AUTO_SIZE,
+                                currentMaxSize - VIDEO_AUTO_STEP);
+                        requestVideoMaxSize(currentMaxSize);
+                        slowPacketCount = 0;
+                        stableSince = now;
+                    } else if (slowPacketCount == 0
+                            && currentMaxSize < configuredMaxSize
+                            && now - stableSince >= VIDEO_UPGRADE_STABLE_MILLIS) {
+                        currentMaxSize = Math.min(configuredMaxSize,
+                                currentMaxSize + VIDEO_AUTO_STEP);
+                        requestVideoMaxSize(currentMaxSize);
+                        stableSince = now;
+                    }
+                }
+
                 int index;
                 do {
                     index = decoder.dequeueInputBuffer(10000);
@@ -292,18 +335,48 @@ final class ScrcpyClient implements Closeable {
         } catch (Throwable error) {
             failure = error;
         } finally {
-            if (decoder != null) {
-                try {
-                    decoder.stop();
-                } catch (Exception ignored) {
-                }
-                decoder.release();
-            }
+            releaseDecoder(decoder);
             if (failure != null) {
                 fail(failure);
             } else if (!stopped.get()) {
                 fail(new IOException("The scrcpy video stream stopped"));
             }
+        }
+    }
+
+    private static MediaCodec createDecoder(Surface surface, int width, int height)
+            throws IOException {
+        MediaCodec decoder = null;
+        try {
+            MediaFormat format = MediaFormat.createVideoFormat(
+                    MediaFormat.MIMETYPE_VIDEO_AVC, width, height);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                format.setInteger(MediaFormat.KEY_OPERATING_RATE, VIDEO_MAX_FPS);
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1);
+            }
+            decoder = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
+            decoder.configure(format, surface, null, 0);
+            decoder.start();
+            return decoder;
+        } catch (Exception error) {
+            releaseDecoder(decoder);
+            throw new IOException("Could not configure the video decoder", error);
+        }
+    }
+
+    private static void releaseDecoder(MediaCodec decoder) {
+        if (decoder == null) {
+            return;
+        }
+        try {
+            decoder.stop();
+        } catch (Exception ignored) {
+        }
+        try {
+            decoder.release();
+        } catch (Exception ignored) {
         }
     }
 
@@ -343,6 +416,13 @@ final class ScrcpyClient implements Closeable {
             return;
         }
         enqueueControl(writer::wake);
+    }
+
+    private void requestVideoMaxSize(int maxSize) {
+        ControlWriter writer = controlWriter;
+        if (writer != null) {
+            enqueueControl(() -> writer.setVideoMaxSize(maxSize));
+        }
     }
 
     void listInstalledApps(AppListListener listener) {

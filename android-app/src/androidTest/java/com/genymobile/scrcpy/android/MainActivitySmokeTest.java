@@ -29,5 +29,7 @@ public final class MainActivitySmokeTest {
                 .perform(click());
         onView(withText(R.string.add_connection_title)).check(matches(isDisplayed()));
         onView(withHint(R.string.connection_name_hint)).check(matches(isDisplayed()));
+        onView(withText(R.string.automatic_resolution)).check(matches(isDisplayed()));
+        onView(withText(R.string.max_video_size)).check(matches(isDisplayed()));
     }
 }

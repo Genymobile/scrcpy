@@ -16,11 +16,13 @@ import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,6 +44,8 @@ public final class MainActivity extends Activity {
     private static final String PREF_SECURITY_WARNING_ACKNOWLEDGED =
             "plaintext-adb-warning-acknowledged";
     private static final long MIN_LOADING_MILLIS = 300L;
+    private static final int DEFAULT_VIDEO_MAX_SIZE = 1280;
+    private static final int[] VIDEO_MAX_SIZES = {720, 960, 1280, 1440};
 
     private FrameLayout root;
     private ListView connectionList;
@@ -323,6 +327,7 @@ public final class MainActivity extends Activity {
             return;
         }
         ScrcpyClient nextClient = new ScrcpyClient(server, currentAuthKey,
+                profile.automaticResolution, profile.maxSize,
                 new ScrcpyClient.Listener() {
                     private boolean failed;
 
@@ -336,6 +341,15 @@ public final class MainActivity extends Activity {
                             enterFocusedMode();
                             if (!profile.appPackage.isEmpty()) {
                                 launchTargetApp(profile.appPackage);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onVideoSizeChanged(int width, int height) {
+                        runOnUiThread(() -> {
+                            if (isCurrentSession(session)) {
+                                videoView.setVideoSize(width, height);
                             }
                         });
                     }
@@ -668,6 +682,30 @@ public final class MainActivity extends Activity {
         appInput.setText(existing == null ? "" : existing.appPackage);
         fields.addView(appInput, new LinearLayout.LayoutParams(-1, dp(56)));
 
+        CheckBox automaticResolutionInput = new CheckBox(this);
+        automaticResolutionInput.setText(R.string.automatic_resolution);
+        automaticResolutionInput.setTextColor(Color.WHITE);
+        automaticResolutionInput.setChecked(existing == null || existing.automaticResolution);
+        fields.addView(automaticResolutionInput, new LinearLayout.LayoutParams(-1, dp(56)));
+
+        TextView maxResolutionLabel = new TextView(this);
+        maxResolutionLabel.setText(R.string.max_video_size);
+        maxResolutionLabel.setTextColor(Color.LTGRAY);
+        maxResolutionLabel.setTextSize(13);
+        fields.addView(maxResolutionLabel, new LinearLayout.LayoutParams(-1, dp(28)));
+
+        Spinner maxResolutionInput = new Spinner(this);
+        ArrayAdapter<CharSequence> resolutionAdapter = ArrayAdapter.createFromResource(this,
+                R.array.video_size_choices, android.R.layout.simple_spinner_item);
+        resolutionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        maxResolutionInput.setAdapter(resolutionAdapter);
+        int selectedMaxSize = existing == null ? DEFAULT_VIDEO_MAX_SIZE : existing.maxSize;
+        maxResolutionInput.setSelection(videoMaxSizeSelection(selectedMaxSize));
+        maxResolutionInput.setEnabled(!automaticResolutionInput.isChecked());
+        fields.addView(maxResolutionInput, new LinearLayout.LayoutParams(-1, dp(56)));
+        automaticResolutionInput.setOnCheckedChangeListener((button, checked) ->
+                maxResolutionInput.setEnabled(!checked));
+
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         scroll.addView(fields);
@@ -690,17 +728,23 @@ public final class MainActivity extends Activity {
                         return;
                     }
                     String appPackage = appInput.getText().toString().trim();
-                    if (!AndroidClientValidation.isValidProfile(name, host, port, appPackage)) {
+                    boolean automaticResolution = automaticResolutionInput.isChecked();
+                    int maxSize = VIDEO_MAX_SIZES[maxResolutionInput.getSelectedItemPosition()];
+                    if (!AndroidClientValidation.isValidProfile(name, host, port, appPackage)
+                            || !AndroidClientValidation.isValidVideoMaxSize(maxSize)) {
                         showToast(R.string.invalid_connection);
                         return;
                     }
                     if (existing == null) {
-                        profiles.add(new ConnectionProfile(name, host, port, appPackage));
+                        profiles.add(new ConnectionProfile(name, host, port, appPackage,
+                                automaticResolution, maxSize));
                     } else {
                         existing.name = name;
                         existing.host = host;
                         existing.port = port;
                         existing.appPackage = appPackage;
+                        existing.automaticResolution = automaticResolution;
+                        existing.maxSize = maxSize;
                     }
                     saveProfiles();
                     refreshConnectionList();
@@ -754,8 +798,12 @@ public final class MainActivity extends Activity {
                 String host = item.getString("host");
                 int port = item.getInt("port");
                 String appPackage = item.optString("appPackage", "");
-                if (AndroidClientValidation.isValidProfile(name, host, port, appPackage)) {
-                    profiles.add(new ConnectionProfile(name, host, port, appPackage));
+                boolean automaticResolution = item.optBoolean("automaticResolution", true);
+                int maxSize = item.optInt("maxSize", DEFAULT_VIDEO_MAX_SIZE);
+                if (AndroidClientValidation.isValidProfile(name, host, port, appPackage)
+                        && AndroidClientValidation.isValidVideoMaxSize(maxSize)) {
+                    profiles.add(new ConnectionProfile(name, host, port, appPackage,
+                            automaticResolution, maxSize));
                 }
             }
         } catch (Exception ignored) {
@@ -767,7 +815,8 @@ public final class MainActivity extends Activity {
         JSONArray array = new JSONArray();
         for (ConnectionProfile profile : profiles) {
             if (!AndroidClientValidation.isValidProfile(profile.name, profile.host,
-                    profile.port, profile.appPackage)) {
+                    profile.port, profile.appPackage)
+                    || !AndroidClientValidation.isValidVideoMaxSize(profile.maxSize)) {
                 continue;
             }
             JSONObject item = new JSONObject();
@@ -776,6 +825,8 @@ public final class MainActivity extends Activity {
                 item.put("host", profile.host);
                 item.put("port", profile.port);
                 item.put("appPackage", profile.appPackage);
+                item.put("automaticResolution", profile.automaticResolution);
+                item.put("maxSize", profile.maxSize);
                 array.put(item);
             } catch (Exception ignored) {
             }
@@ -850,17 +901,31 @@ public final class MainActivity extends Activity {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
+    private static int videoMaxSizeSelection(int maxSize) {
+        for (int i = 0; i < VIDEO_MAX_SIZES.length; ++i) {
+            if (VIDEO_MAX_SIZES[i] == maxSize) {
+                return i;
+            }
+        }
+        return 2;
+    }
+
     private static final class ConnectionProfile {
         String name;
         String host;
         int port;
         String appPackage;
+        boolean automaticResolution;
+        int maxSize;
 
-        ConnectionProfile(String name, String host, int port, String appPackage) {
+        ConnectionProfile(String name, String host, int port, String appPackage,
+                boolean automaticResolution, int maxSize) {
             this.name = name;
             this.host = host;
             this.port = port;
             this.appPackage = appPackage == null ? "" : appPackage;
+            this.automaticResolution = automaticResolution;
+            this.maxSize = maxSize;
         }
     }
 }

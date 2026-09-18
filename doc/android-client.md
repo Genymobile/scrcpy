@@ -75,6 +75,10 @@ With an emulator already running, run the instrumentation test with:
 5. Approve the controller's RSA key on the target while the target is unlocked.
 6. Optionally enter an Android package name to launch that app automatically
    after connecting.
+7. In the connection editor, enable Automatic resolution for adaptive video.
+   The client keeps the ADB session and control channel alive while it lowers
+   or raises the target video size when packet delivery becomes slow or stable.
+   Disable it to select a fixed maximum video size.
 
 The connection editor explains the network and authorization requirements. Do
 not use an ADB TCP endpoint on a network you do not trust. The target address,

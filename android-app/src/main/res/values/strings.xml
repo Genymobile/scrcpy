@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">scrcpy Android client</string>
     <string name="saved_connections">Saved connections</string>
+    <string name="automatic_resolution">Automatic resolution</string>
+    <string name="max_video_size">Maximum video size</string>
     <string name="add_connection">+ Add connection</string>
     <string name="add_connection_subtitle">Add a trusted ADB-over-Wi-Fi device</string>
     <string name="actions_for">Actions for %1$s</string>
@@ -59,4 +61,10 @@
     <string name="reset_auth_key_confirm">Reset key</string>
     <string name="reset_auth_key_success">A new ADB key was created. Authorize this controller on the target phone the next time you connect.</string>
     <string name="reset_auth_key_failed">Could not reset the ADB authorization key: %1$s</string>
+    <string-array name="video_size_choices">
+        <item>720p</item>
+        <item>960p</item>
+        <item>1280p</item>
+        <item>1440p</item>
+    </string-array>
 </resources>

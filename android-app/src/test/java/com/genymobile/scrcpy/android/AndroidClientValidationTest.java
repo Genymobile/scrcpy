@@ -35,4 +35,11 @@ public final class AndroidClientValidationTest {
         assertFalse(AndroidClientValidation.isValidProfile(
                 "Target", "192.168.1.20", 0, ""));
     }
+
+    @Test
+    public void validatesVideoMaxSizes() {
+        assertTrue(AndroidClientValidation.isValidVideoMaxSize(720));
+        assertTrue(AndroidClientValidation.isValidVideoMaxSize(1280));
+        assertFalse(AndroidClientValidation.isValidVideoMaxSize(600));
+    }
 }
