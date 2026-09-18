@@ -26,6 +26,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 final class ScrcpyClient implements Closeable {
     private static final String TAG = "ScrcpyClient";
     private static final long SHELL_COMMAND_TIMEOUT_MS = 10_000L;
+    private static final int VIDEO_MAX_SIZE = 1280;
+    private static final int VIDEO_BIT_RATE = 6_000_000;
+    private static final int VIDEO_MAX_FPS = 60;
     interface Listener {
         void onConnected(int width, int height);
         void onVideoStarted();
@@ -86,7 +89,8 @@ final class ScrcpyClient implements Closeable {
                         + "com.genymobile.scrcpy.Server 4.1"
                         + " scid=" + String.format(Locale.US, "%08x", scid)
                         + " tunnel_forward=true"
-                        + " video_codec=h264 video_bit_rate=8000000 max_size=1280 max_fps=60"
+                        + " video_codec=h264 video_bit_rate=" + VIDEO_BIT_RATE
+                        + " max_size=" + VIDEO_MAX_SIZE + " max_fps=" + VIDEO_MAX_FPS
                         + " audio=false control=true send_dummy_byte=false"
                         + " send_device_meta=false send_stream_meta=true send_frame_meta=true"
                         + " power_on=true power_off_on_close=true cleanup=true";
@@ -238,6 +242,9 @@ final class ScrcpyClient implements Closeable {
         Throwable failure = null;
         try {
             MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                format.setInteger(MediaFormat.KEY_OPERATING_RATE, VIDEO_MAX_FPS);
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1);
             }
