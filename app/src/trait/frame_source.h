@@ -42,4 +42,7 @@ enum sc_sink_result
 sc_frame_source_sinks_push_session(struct sc_frame_source *source,
                                    const struct sc_stream_session *session);
 
+void
+sc_frame_source_sinks_apply_backpressure(struct sc_frame_source *source);
+
 #endif
