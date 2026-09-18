@@ -91,6 +91,9 @@ sc_decoder_close(struct sc_decoder *decoder) {
 
 static enum sc_sink_result
 sc_decoder_process_packet(struct sc_decoder *decoder, const AVPacket *packet) {
+    // Do not decode more packets before the frame sinks are ready
+    sc_frame_source_sinks_apply_backpressure(&decoder->frame_source);
+
     int ret = avcodec_send_packet(decoder->ctx, packet);
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
         LOGE("Decoder '%s': could not send video packet: %s",
