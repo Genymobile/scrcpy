@@ -624,6 +624,7 @@ sc_recorder_video_packet_sink_push(struct sc_packet_sink *sink,
     if (!ok) {
         LOG_OOM();
         sc_mutex_unlock(&recorder->mutex);
+        av_packet_free(&rec);
         return false;
     }
 
@@ -715,6 +716,7 @@ sc_recorder_audio_packet_sink_push(struct sc_packet_sink *sink,
     if (!ok) {
         LOG_OOM();
         sc_mutex_unlock(&recorder->mutex);
+        av_packet_free(&rec);
         return false;
     }
 
