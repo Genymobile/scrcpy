@@ -27,12 +27,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 final class ScrcpyClient implements Closeable {
     private static final String TAG = "ScrcpyClient";
     private static final long SHELL_COMMAND_TIMEOUT_MS = 10_000L;
-    private static final int VIDEO_BIT_RATE = 6_000_000;
+    private static final int VIDEO_BIT_RATE = 8_000_000;
     private static final int VIDEO_MAX_FPS = 60;
     private static final int VIDEO_MIN_AUTO_SIZE = 720;
     private static final int VIDEO_AUTO_STEP = 160;
-    private static final long VIDEO_SLOW_PACKET_MILLIS = 220L;
-    private static final long VIDEO_UPGRADE_STABLE_MILLIS = 15_000L;
+    private static final long VIDEO_SLOW_PACKET_MILLIS = 350L;
+    private static final long VIDEO_UPGRADE_STABLE_MILLIS = 30_000L;
+    private static final long VIDEO_RESOLUTION_COOLDOWN_MILLIS = 5_000L;
     interface Listener {
         void onConnected(int width, int height);
         void onVideoSizeChanged(int width, int height);
@@ -253,6 +254,7 @@ final class ScrcpyClient implements Closeable {
         int currentMaxSize = configuredMaxSize;
         int slowPacketCount = 0;
         long stableSince = SystemClock.uptimeMillis();
+        long lastResolutionChange = 0L;
         try {
             decoder = createDecoder(surface, width, height);
             MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
@@ -290,19 +292,23 @@ final class ScrcpyClient implements Closeable {
                         slowPacketCount = 0;
                     }
                     long now = SystemClock.uptimeMillis();
-                    if (slowPacketCount >= 3 && currentMaxSize > VIDEO_MIN_AUTO_SIZE) {
+                    if (slowPacketCount >= 5 && currentMaxSize > VIDEO_MIN_AUTO_SIZE
+                            && now - lastResolutionChange >= VIDEO_RESOLUTION_COOLDOWN_MILLIS) {
                         currentMaxSize = Math.max(VIDEO_MIN_AUTO_SIZE,
                                 currentMaxSize - VIDEO_AUTO_STEP);
                         requestVideoMaxSize(currentMaxSize);
                         slowPacketCount = 0;
                         stableSince = now;
+                        lastResolutionChange = now;
                     } else if (slowPacketCount == 0
                             && currentMaxSize < configuredMaxSize
-                            && now - stableSince >= VIDEO_UPGRADE_STABLE_MILLIS) {
+                            && now - stableSince >= VIDEO_UPGRADE_STABLE_MILLIS
+                            && now - lastResolutionChange >= VIDEO_RESOLUTION_COOLDOWN_MILLIS) {
                         currentMaxSize = Math.min(configuredMaxSize,
                                 currentMaxSize + VIDEO_AUTO_STEP);
                         requestVideoMaxSize(currentMaxSize);
                         stableSince = now;
+                        lastResolutionChange = now;
                     }
                 }
 
@@ -350,9 +356,6 @@ final class ScrcpyClient implements Closeable {
         try {
             MediaFormat format = MediaFormat.createVideoFormat(
                     MediaFormat.MIMETYPE_VIDEO_AVC, width, height);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                format.setInteger(MediaFormat.KEY_OPERATING_RATE, VIDEO_MAX_FPS);
-            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1);
             }

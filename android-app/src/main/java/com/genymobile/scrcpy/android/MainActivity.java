@@ -685,7 +685,7 @@ public final class MainActivity extends Activity {
         CheckBox automaticResolutionInput = new CheckBox(this);
         automaticResolutionInput.setText(R.string.automatic_resolution);
         automaticResolutionInput.setTextColor(Color.WHITE);
-        automaticResolutionInput.setChecked(existing == null || existing.automaticResolution);
+        automaticResolutionInput.setChecked(existing != null && existing.automaticResolution);
         fields.addView(automaticResolutionInput, new LinearLayout.LayoutParams(-1, dp(56)));
 
         TextView maxResolutionLabel = new TextView(this);
@@ -798,7 +798,7 @@ public final class MainActivity extends Activity {
                 String host = item.getString("host");
                 int port = item.getInt("port");
                 String appPackage = item.optString("appPackage", "");
-                boolean automaticResolution = item.optBoolean("automaticResolution", true);
+                boolean automaticResolution = item.optBoolean("automaticResolution", false);
                 int maxSize = item.optInt("maxSize", DEFAULT_VIDEO_MAX_SIZE);
                 if (AndroidClientValidation.isValidProfile(name, host, port, appPackage)
                         && AndroidClientValidation.isValidVideoMaxSize(maxSize)) {
