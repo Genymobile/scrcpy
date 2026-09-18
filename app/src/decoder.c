@@ -1,6 +1,7 @@
 #include "decoder.h"
 
 #include <errno.h>
+#include <stdio.h>
 #include <libavcodec/packet.h>
 #include <libavutil/avutil.h>
 #include <libavutil/error.h>
@@ -71,19 +72,25 @@ error_free_context:
 
 static void
 sc_decoder_close(struct sc_decoder *decoder) {
+    sc_mutex_lock(&decoder->mutex);
+    decoder->stopped = true;
+    sc_cond_signal(&decoder->cond);
+
+    // Wait until the decoder thread finished using the ctx, frame and the frame
+    // sinks
+    while (!decoder->ended) {
+        sc_cond_wait(&decoder->cond, &decoder->mutex);
+    }
+
+    sc_mutex_unlock(&decoder->mutex);
+
     sc_frame_source_sinks_close(&decoder->frame_source);
     av_frame_free(&decoder->frame);
     avcodec_free_context(&decoder->ctx);
 }
 
 static enum sc_sink_result
-sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
-    bool is_config = packet->pts == AV_NOPTS_VALUE;
-    if (is_config) {
-        // nothing to do
-        return SC_SINK_OK;
-    }
-
+sc_decoder_process_packet(struct sc_decoder *decoder, const AVPacket *packet) {
     int ret = avcodec_send_packet(decoder->ctx, packet);
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
         LOGE("Decoder '%s': could not send video packet: %s",
@@ -143,11 +150,168 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
     return SC_SINK_OK;
 }
 
+static void
+sc_decoder_queue_clear(struct sc_decoder_queue *queue) {
+    while (!sc_vecdeque_is_empty(queue)) {
+        struct sc_decoder_packet *dp = sc_vecdeque_popref(queue);
+        if (dp->type == SC_DECODER_PACKET_TYPE_AV_PACKET) {
+            av_packet_free(&dp->packet);
+        }
+    }
+}
+
+static bool
+sc_decoder_decode(struct sc_decoder *decoder) {
+    for (;;) {
+        sc_mutex_lock(&decoder->mutex);
+        while (!decoder->stopped && sc_vecdeque_is_empty(&decoder->queue)) {
+            sc_cond_wait(&decoder->cond, &decoder->mutex);
+        }
+        if (decoder->stopped) {
+            sc_mutex_unlock(&decoder->mutex);
+            return true;
+        }
+
+        struct sc_decoder_packet dp = sc_vecdeque_pop(&decoder->queue);
+        sc_mutex_unlock(&decoder->mutex);
+
+        enum sc_sink_result result;
+        if (dp.type == SC_DECODER_PACKET_TYPE_AV_PACKET) {
+            result = sc_decoder_process_packet(decoder, dp.packet);
+            av_packet_free(&dp.packet);
+        } else {
+            assert(dp.type == SC_DECODER_PACKET_TYPE_SESSION);
+            decoder->session = dp.session;
+            enum sc_sink_result push_result =
+                sc_frame_source_sinks_push_session(&decoder->frame_source,
+                                                   &dp.session);
+            // Not a decoder error
+            result = push_result == SC_SINK_OK ? SC_SINK_OK : SC_SINK_STOPPED;
+        }
+
+        if (result == SC_SINK_STOPPED) {
+            // No error
+            return true;
+        }
+
+        if (result == SC_SINK_KO) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static int
+run_decoder(void *data) {
+    struct sc_decoder *decoder = data;
+
+    bool success = sc_decoder_decode(decoder);
+
+    sc_mutex_lock(&decoder->mutex);
+    // Prevent the producer from pushing any new packet
+    decoder->stopped = true;
+    // Discard pending packets
+    sc_decoder_queue_clear(&decoder->queue);
+
+    decoder->ended = true;
+    sc_cond_signal(&decoder->cond);
+
+    sc_mutex_unlock(&decoder->mutex);
+
+    if (!success) {
+        LOGE("Decoding (%s) failed", decoder->name);
+    }
+
+    LOGD("Decoder (%s) thread ended", decoder->name);
+
+    decoder->cbs->on_ended(decoder, success, decoder->cbs_userdata);
+
+    return 0;
+}
+
+static AVPacket *
+sc_decoder_packet_ref(const AVPacket *packet) {
+    AVPacket *p = av_packet_alloc();
+    if (!p) {
+        LOG_OOM();
+        return NULL;
+    }
+
+    if (av_packet_ref(p, packet)) {
+        LOG_OOM();
+        av_packet_free(&p);
+        return NULL;
+    }
+
+    return p;
+}
+
+static enum sc_sink_result
+sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
+    bool is_config = packet->pts == AV_NOPTS_VALUE;
+    if (is_config) {
+        // nothing to do
+        return SC_SINK_OK;
+    }
+
+    sc_mutex_lock(&decoder->mutex);
+
+    if (decoder->stopped) {
+        // reject any new packet
+        sc_mutex_unlock(&decoder->mutex);
+        return SC_SINK_STOPPED;
+    }
+
+    AVPacket *p = sc_decoder_packet_ref(packet);
+    if (!p) {
+        sc_mutex_unlock(&decoder->mutex);
+        return SC_SINK_KO;
+    }
+
+    struct sc_decoder_packet *dp =
+        sc_vecdeque_push_uninitialized(&decoder->queue);
+    if (!dp) {
+        LOG_OOM();
+        sc_mutex_unlock(&decoder->mutex);
+        av_packet_free(&p);
+        return SC_SINK_KO;
+    }
+
+    dp->type = SC_DECODER_PACKET_TYPE_AV_PACKET;
+    dp->packet = p;
+
+    sc_cond_signal(&decoder->cond);
+
+    sc_mutex_unlock(&decoder->mutex);
+    return SC_SINK_OK;
+}
+
 static enum sc_sink_result
 sc_decoder_push_session(struct sc_decoder *decoder,
                         const struct sc_stream_session *session) {
-    decoder->session = *session;
-    return sc_frame_source_sinks_push_session(&decoder->frame_source, session);
+    sc_mutex_lock(&decoder->mutex);
+
+    if (decoder->stopped) {
+        // reject any new packet
+        sc_mutex_unlock(&decoder->mutex);
+        return SC_SINK_STOPPED;
+    }
+
+    struct sc_decoder_packet *dp =
+        sc_vecdeque_push_uninitialized(&decoder->queue);
+    if (!dp) {
+        LOG_OOM();
+        sc_mutex_unlock(&decoder->mutex);
+        return SC_SINK_KO;
+    }
+
+    dp->type = SC_DECODER_PACKET_TYPE_SESSION;
+    dp->session = *session;
+
+    sc_cond_signal(&decoder->cond);
+
+    sc_mutex_unlock(&decoder->mutex);
+    return SC_SINK_OK;
 }
 
 static bool
@@ -178,10 +342,30 @@ sc_decoder_packet_sink_push_session(struct sc_packet_sink *sink,
     return sc_decoder_push_session(decoder, session);
 }
 
-void
-sc_decoder_init(struct sc_decoder *decoder, const char *name, bool copy_opaque) {
+bool
+sc_decoder_init(struct sc_decoder *decoder, const char *name, bool copy_opaque,
+                const struct sc_decoder_callbacks *cbs, void *cbs_userdata) {
+    bool ok = sc_mutex_init(&decoder->mutex);
+    if (!ok) {
+        return false;
+    }
+
+    ok = sc_cond_init(&decoder->cond);
+    if (!ok) {
+        sc_mutex_destroy(&decoder->mutex);
+        return false;
+    }
+
     decoder->name = name; // statically allocated
     sc_frame_source_init(&decoder->frame_source);
+
+    sc_vecdeque_init(&decoder->queue);
+    decoder->stopped = false;
+    decoder->ended = false;
+
+    assert(cbs && cbs->on_ended);
+    decoder->cbs = cbs;
+    decoder->cbs_userdata = cbs_userdata;
 
     static const struct sc_packet_sink_ops ops = {
         .open = sc_decoder_packet_sink_open,
@@ -192,4 +376,42 @@ sc_decoder_init(struct sc_decoder *decoder, const char *name, bool copy_opaque) 
 
     decoder->packet_sink.ops = &ops;
     decoder->copy_opaque = copy_opaque;
+
+    return true;
+}
+
+bool
+sc_decoder_start(struct sc_decoder *decoder) {
+    char thread_name[16];
+    // "scrcpy-vid-dec" or "scrcpy-aud-dec"
+    snprintf(thread_name, sizeof(thread_name), "scrcpy-%.3s-dec",
+             decoder->name);
+    bool ok = sc_thread_create(&decoder->thread, run_decoder, thread_name,
+                               decoder);
+    if (!ok) {
+        LOGE("Could not start decoder (%s) thread", decoder->name);
+        return false;
+    }
+
+    return true;
+}
+
+void
+sc_decoder_stop(struct sc_decoder *decoder) {
+    sc_mutex_lock(&decoder->mutex);
+    decoder->stopped = true;
+    sc_cond_signal(&decoder->cond);
+    sc_mutex_unlock(&decoder->mutex);
+}
+
+void
+sc_decoder_join(struct sc_decoder *decoder) {
+    sc_thread_join(&decoder->thread, NULL);
+}
+
+void
+sc_decoder_destroy(struct sc_decoder *decoder) {
+    sc_vecdeque_destroy(&decoder->queue);
+    sc_cond_destroy(&decoder->cond);
+    sc_mutex_destroy(&decoder->mutex);
 }
