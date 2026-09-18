@@ -48,6 +48,8 @@
 #endif
 #include "video_regulator.h"
 
+#define SC_BACKPRESSURE_THRESHOLD 8 // in-flight frames in video regulator
+
 struct scrcpy {
     struct sc_server server;
     struct sc_screen screen;
@@ -843,8 +845,18 @@ aoa_complete:
         if (options->video_playback) {
             struct sc_frame_source *src = &s->video_decoder.frame_source;
             if (options->video_buffer) {
+                uint32_t backpressure_threshold = SC_BACKPRESSURE_THRESHOLD;
+#ifdef HAVE_V4L2
+                if (options->v4l2_device && options->v4l2_buffer
+                        && options->v4l2_buffer < options->video_buffer) {
+                    // Disable the backpressure threshold for this video
+                    // regulator, it will be handled by the v4l2 video regulator
+                    backpressure_threshold = 0; // disabled
+                }
+#endif
                 if (!sc_video_regulator_init(&s->video_regulator,
-                                             options->video_buffer, true)) {
+                                             options->video_buffer, true,
+                                             backpressure_threshold)) {
                     goto end;
                 }
                 video_regulator_initialized = true;
@@ -871,8 +883,16 @@ aoa_complete:
 
         struct sc_frame_source *src = &s->video_decoder.frame_source;
         if (options->v4l2_buffer) {
+            uint32_t backpressure_threshold = SC_BACKPRESSURE_THRESHOLD;
+            if (options->video_playback && options->video_buffer
+                    && options->video_buffer <= options->v4l2_buffer) {
+                // Disable the backpressure threshold for this video
+                // regulator, it will be handled by the display video regulator
+                backpressure_threshold = 0; // disabled
+            }
             if (!sc_video_regulator_init(&s->v4l2_regulator,
-                                         options->v4l2_buffer, true)) {
+                                         options->v4l2_buffer,
+                                         true, backpressure_threshold)) {
                 goto end;
             }
             v4l2_regulator_initialized = true;
@@ -993,6 +1013,14 @@ end:
     if (audio_decoder_started) {
         sc_decoder_stop(&s->audio_decoder);
     }
+    if (video_regulator_initialized) {
+        sc_video_regulator_stop(&s->video_regulator);
+    }
+#ifdef HAVE_V4L2
+    if (v4l2_regulator_initialized) {
+        sc_video_regulator_stop(&s->v4l2_regulator);
+    }
+#endif
     if (recorder_initialized) {
         sc_recorder_stop(&s->recorder);
     }

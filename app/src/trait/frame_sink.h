@@ -36,6 +36,13 @@ struct sc_frame_sink_ops {
     enum sc_sink_result
     (*push_session)(struct sc_frame_sink *sink,
                     const struct sc_stream_session *session);
+
+    /**
+     * Optional method to wait until the frame sink signals it is ready to
+     * accept more frames.
+     */
+    void
+    (*apply_backpressure)(struct sc_frame_sink *sink);
 };
 
 #endif

@@ -62,6 +62,7 @@ run_buffering(void *data) {
         }
 
         struct sc_delayed_packet dpacket = sc_vecdeque_pop(&vr->queue);
+        sc_cond_signal(&vr->backpressure_cond);
 
         enum sc_sink_result result;
         if (dpacket.type == SC_DELAYED_PACKET_TYPE_FRAME) {
@@ -111,6 +112,7 @@ run_buffering(void *data) {
             sc_mutex_lock(&vr->mutex);
             // Prevent to push any new packet
             vr->stopped = true;
+            sc_cond_signal(&vr->backpressure_cond);
             sc_mutex_unlock(&vr->mutex);
             goto stopped;
         }
@@ -140,7 +142,6 @@ sc_video_regulator_frame_sink_open(struct sc_frame_sink *sink,
 
     sc_clock_init(&vr->clock);
     sc_vecdeque_init(&vr->queue);
-    vr->stopped = false;
 
     if (!sc_frame_source_sinks_open(&vr->frame_source, ctx, session)) {
         return false;
@@ -160,12 +161,7 @@ static void
 sc_video_regulator_frame_sink_close(struct sc_frame_sink *sink) {
     struct sc_video_regulator *vr = DOWNCAST(sink);
 
-    sc_mutex_lock(&vr->mutex);
-    vr->stopped = true;
-    sc_cond_signal(&vr->queue_cond);
-    sc_cond_signal(&vr->wait_cond);
-    sc_mutex_unlock(&vr->mutex);
-
+    sc_video_regulator_stop(vr);
     sc_thread_join(&vr->thread, NULL);
 
     sc_frame_source_sinks_close(&vr->frame_source);
@@ -258,9 +254,29 @@ sc_video_regulator_frame_sink_push_session(struct sc_frame_sink *sink,
     return SC_SINK_OK;
 }
 
+static void
+sc_video_regulator_frame_sink_apply_backpressure(struct sc_frame_sink *sink) {
+    struct sc_video_regulator *vr = DOWNCAST(sink);
+
+    if (!vr->backpressure_threshold) {
+        // Backpressure disabled
+        return;
+    }
+
+    sc_mutex_lock(&vr->mutex);
+    // This not only counts queued frames, but also queued session packets.
+    // But session packets are rare and consumed quickly, so keep it simple.
+    while (!vr->stopped
+            && sc_vecdeque_size(&vr->queue) > vr->backpressure_threshold) {
+        sc_cond_wait(&vr->backpressure_cond, &vr->mutex);
+    }
+    sc_mutex_unlock(&vr->mutex);
+}
+
 bool
 sc_video_regulator_init(struct sc_video_regulator *vr, sc_tick delay,
-                        bool first_frame_asap) {
+                        bool first_frame_asap,
+                        uint32_t backpressure_threshold) {
     assert(delay > 0);
 
     bool ok = sc_mutex_init(&vr->mutex);
@@ -278,8 +294,15 @@ sc_video_regulator_init(struct sc_video_regulator *vr, sc_tick delay,
         goto error_destroy_queue_cond;
     }
 
+    ok = sc_cond_init(&vr->backpressure_cond);
+    if (!ok) {
+        goto error_destroy_wait_cond;
+    }
+
     vr->delay = delay;
     vr->first_frame_asap = first_frame_asap;
+    vr->backpressure_threshold = backpressure_threshold;
+    vr->stopped = false;
 
     sc_frame_source_init(&vr->frame_source);
 
@@ -288,12 +311,15 @@ sc_video_regulator_init(struct sc_video_regulator *vr, sc_tick delay,
         .close = sc_video_regulator_frame_sink_close,
         .push = sc_video_regulator_frame_sink_push,
         .push_session = sc_video_regulator_frame_sink_push_session,
+        .apply_backpressure = sc_video_regulator_frame_sink_apply_backpressure,
     };
 
     vr->frame_sink.ops = &ops;
 
     return true;
 
+error_destroy_wait_cond:
+    sc_cond_destroy(&vr->wait_cond);
 error_destroy_queue_cond:
     sc_cond_destroy(&vr->queue_cond);
 error_destroy_mutex:
@@ -303,7 +329,18 @@ error_destroy_mutex:
 }
 
 void
+sc_video_regulator_stop(struct sc_video_regulator *vr) {
+    sc_mutex_lock(&vr->mutex);
+    vr->stopped = true;
+    sc_cond_signal(&vr->queue_cond);
+    sc_cond_signal(&vr->wait_cond);
+    sc_cond_signal(&vr->backpressure_cond);
+    sc_mutex_unlock(&vr->mutex);
+}
+
+void
 sc_video_regulator_destroy(struct sc_video_regulator *vr) {
+    sc_cond_destroy(&vr->backpressure_cond);
     sc_cond_destroy(&vr->wait_cond);
     sc_cond_destroy(&vr->queue_cond);
     sc_mutex_destroy(&vr->mutex);

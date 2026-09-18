@@ -78,3 +78,14 @@ sc_frame_source_sinks_push_session(struct sc_frame_source *source,
 
     return SC_SINK_OK;
 }
+
+void
+sc_frame_source_sinks_apply_backpressure(struct sc_frame_source *source) {
+    assert(source->sink_count);
+    for (unsigned i = 0; i < source->sink_count; ++i) {
+        struct sc_frame_sink *sink = source->sinks[i];
+        if (sink->ops->apply_backpressure) {
+            sink->ops->apply_backpressure(sink);
+        }
+    }
+}
