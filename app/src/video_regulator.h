@@ -42,11 +42,13 @@ struct sc_video_regulator {
 
     sc_tick delay;
     bool first_frame_asap;
+    uint32_t backpressure_threshold;
 
     sc_thread thread;
     sc_mutex mutex;
     sc_cond queue_cond;
     sc_cond wait_cond;
+    sc_cond backpressure_cond;
 
     struct sc_clock clock;
     struct sc_delayed_packet_queue queue;
@@ -63,11 +65,22 @@ struct sc_video_regulator_callbacks {
  *
  * \param delay a (strictly) positive delay
  * \param first_frame_asap if true, do not delay the first frame (useful for
-                           a video stream).
+ *                         a video stream).
+ * \param backpressure_threshold the max number of queued items to make
+ *                               apply_backpressure() return (0 to disable).
  */
 bool
 sc_video_regulator_init(struct sc_video_regulator *vr, sc_tick delay,
-                        bool first_frame_asap);
+                        bool first_frame_asap, uint32_t backpressure_threshold);
+
+/**
+ * Stop the video regulator.
+ *
+ * Reject any new frame, and interrupt any blocking call to wake up the
+ * producer.
+ */
+void
+sc_video_regulator_stop(struct sc_video_regulator *vr);
 
 void
 sc_video_regulator_destroy(struct sc_video_regulator *vr);
