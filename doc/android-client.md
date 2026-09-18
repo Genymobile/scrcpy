@@ -101,6 +101,17 @@ to the app. A failed connection is closed before the UI returns to the list.
 
 The controller and target must be reachable on the same trusted network. ADB
 TCP is not encrypted and should not be exposed to an untrusted network.
+The controller client is tested with ADB over Wi-Fi, using the target phone's
+ADB TCP endpoint on the same local network.
+
+## Screenshots
+
+The menu and connected-mode controls are shown below. The remote content in the
+connected screenshot is masked so no target apps or notifications are exposed.
+
+![Android controller menu](images/android-client-menu.png)
+
+![Connected mode with redacted remote content](images/android-client-connection-redacted.png)
 
 ## Controls
 
