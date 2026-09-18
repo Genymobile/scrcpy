@@ -26,17 +26,23 @@ struct sc_stream_session {
 };
 
 struct sc_packet_sink_ops {
-    bool (*open)(struct sc_packet_sink *sink, const AVCodec *codec,
-                 const AVCodecParameters *params,
-                 const struct sc_stream_session *session);
-    void (*close)(struct sc_packet_sink *sink);
-    bool (*push)(struct sc_packet_sink *sink, const AVPacket *packet);
+    bool
+    (*open)(struct sc_packet_sink *sink, const AVCodec *codec,
+            const AVCodecParameters *params,
+            const struct sc_stream_session *session);
+
+    void
+    (*close)(struct sc_packet_sink *sink);
+
+    bool
+    (*push)(struct sc_packet_sink *sink, const AVPacket *packet);
 
     /**
      * Optional callback to be notified of a new stream session.
      */
-    bool (*push_session)(struct sc_packet_sink *sink,
-                         const struct sc_stream_session *session);
+    bool
+    (*push_session)(struct sc_packet_sink *sink,
+                    const struct sc_stream_session *session);
 
     /*/
      * Called when the input stream has been disabled at runtime.
@@ -46,7 +52,8 @@ struct sc_packet_sink_ops {
      * It is useful to notify the recorder that the requested audio stream has
      * finally been disabled because the device could not capture it.
      */
-    void (*disable)(struct sc_packet_sink *sink);
+    void
+    (*disable)(struct sc_packet_sink *sink);
 };
 
 #endif

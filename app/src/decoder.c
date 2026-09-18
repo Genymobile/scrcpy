@@ -118,7 +118,8 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
                          frame_size.width, frame_size.height, sw, sh);
 
                     LOGW("The encoder did not respect the requested size, "
-                         "please retry with a lower resolution (-m/--max-size)");
+                         "please retry with a lower resolution "
+                         "(-m/--max-size)");
                 }
             }
 
