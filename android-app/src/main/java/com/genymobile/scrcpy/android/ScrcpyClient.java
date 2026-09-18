@@ -67,6 +67,7 @@ final class ScrcpyClient implements Closeable {
     private TouchEvent pendingMove;
     private boolean moveDrainQueued;
     private volatile AdbTransport adb;
+    private volatile AdbTransport controlAdb;
     private volatile AdbTransport.AdbStream shell;
     private volatile AdbTransport.AdbStream video;
     private volatile AdbTransport.AdbStream control;
@@ -117,7 +118,11 @@ final class ScrcpyClient implements Closeable {
                 listener.onStatus(R.string.status_opening_streams);
                 AdbTransport.AdbStream openedVideo = openLocalSocket(transport, socketName);
                 adoptVideo(openedVideo);
-                AdbTransport.AdbStream openedControl = openLocalSocket(transport, socketName);
+                AdbTransport separateControlTransport = new AdbTransport();
+                adoptControlAdb(separateControlTransport);
+                separateControlTransport.connect(host, port, authKey);
+                AdbTransport.AdbStream openedControl = openLocalSocket(
+                        separateControlTransport, socketName);
                 adoptControl(openedControl);
 
                 int codecId = readIntBE(openedVideo);
@@ -164,6 +169,16 @@ final class ScrcpyClient implements Closeable {
                 throw new IOException("Connection stopped");
             }
             video = stream;
+        }
+    }
+
+    private void adoptControlAdb(AdbTransport transport) throws IOException {
+        synchronized (lifecycleLock) {
+            if (stopped.get()) {
+                transport.close();
+                throw new IOException("Connection stopped");
+            }
+            controlAdb = transport;
         }
     }
 
@@ -603,15 +618,18 @@ final class ScrcpyClient implements Closeable {
         AdbTransport.AdbStream currentVideo;
         AdbTransport.AdbStream currentShell;
         AdbTransport currentAdb;
+        AdbTransport currentControlAdb;
         synchronized (lifecycleLock) {
             currentControl = control;
             currentVideo = video;
             currentShell = shell;
             currentAdb = adb;
+            currentControlAdb = controlAdb;
             control = null;
             video = null;
             shell = null;
             adb = null;
+            controlAdb = null;
             controlWriter = null;
         }
         closeQuietly(currentControl);
@@ -620,6 +638,9 @@ final class ScrcpyClient implements Closeable {
         closeQuietly(serverAsset);
         if (currentAdb != null) {
             currentAdb.close();
+        }
+        if (currentControlAdb != null && currentControlAdb != currentAdb) {
+            currentControlAdb.close();
         }
     }
 
