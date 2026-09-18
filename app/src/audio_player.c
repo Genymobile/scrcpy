@@ -38,12 +38,13 @@ sc_audio_player_stream_callback(void *userdata, SDL_AudioStream *stream,
     }
 }
 
-static bool
+static enum sc_sink_result
 sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
                                 const AVFrame *frame) {
     struct sc_audio_player *ap = DOWNCAST(sink);
 
-    return sc_audio_regulator_push(&ap->audioreg, frame);
+    bool ok = sc_audio_regulator_push(&ap->audioreg, frame);
+    return ok ? SC_SINK_OK : SC_SINK_KO;
 }
 
 static bool

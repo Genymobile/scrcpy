@@ -597,7 +597,7 @@ sc_recorder_video_packet_sink_close(struct sc_packet_sink *sink) {
     sc_mutex_unlock(&recorder->mutex);
 }
 
-static bool
+static enum sc_sink_result
 sc_recorder_video_packet_sink_push(struct sc_packet_sink *sink,
                                    const AVPacket *packet) {
     struct sc_recorder *recorder = DOWNCAST_VIDEO(sink);
@@ -609,13 +609,13 @@ sc_recorder_video_packet_sink_push(struct sc_packet_sink *sink,
     if (recorder->stopped) {
         // reject any new packet
         sc_mutex_unlock(&recorder->mutex);
-        return false;
+        return SC_SINK_STOPPED;
     }
 
     AVPacket *rec = sc_recorder_packet_ref(packet);
     if (!rec) {
         sc_mutex_unlock(&recorder->mutex);
-        return false;
+        return SC_SINK_KO;
     }
 
     rec->stream_index = recorder->video_stream.index;
@@ -625,13 +625,13 @@ sc_recorder_video_packet_sink_push(struct sc_packet_sink *sink,
         LOG_OOM();
         sc_mutex_unlock(&recorder->mutex);
         av_packet_free(&rec);
-        return false;
+        return SC_SINK_KO;
     }
 
     sc_cond_signal(&recorder->cond);
 
     sc_mutex_unlock(&recorder->mutex);
-    return true;
+    return SC_SINK_OK;
 }
 
 static bool
@@ -687,7 +687,7 @@ sc_recorder_audio_packet_sink_close(struct sc_packet_sink *sink) {
     sc_mutex_unlock(&recorder->mutex);
 }
 
-static bool
+static enum sc_sink_result
 sc_recorder_audio_packet_sink_push(struct sc_packet_sink *sink,
                                    const AVPacket *packet) {
     struct sc_recorder *recorder = DOWNCAST_AUDIO(sink);
@@ -700,13 +700,13 @@ sc_recorder_audio_packet_sink_push(struct sc_packet_sink *sink,
     if (recorder->stopped) {
         // reject any new packet
         sc_mutex_unlock(&recorder->mutex);
-        return false;
+        return SC_SINK_STOPPED;
     }
 
     AVPacket *rec = sc_recorder_packet_ref(packet);
     if (!rec) {
         sc_mutex_unlock(&recorder->mutex);
-        return false;
+        return SC_SINK_KO;
     }
 
     rec->stream_index = recorder->audio_stream.index;
@@ -716,13 +716,13 @@ sc_recorder_audio_packet_sink_push(struct sc_packet_sink *sink,
         LOG_OOM();
         sc_mutex_unlock(&recorder->mutex);
         av_packet_free(&rec);
-        return false;
+        return SC_SINK_KO;
     }
 
     sc_cond_signal(&recorder->cond);
 
     sc_mutex_unlock(&recorder->mutex);
-    return true;
+    return SC_SINK_OK;
 }
 
 static void

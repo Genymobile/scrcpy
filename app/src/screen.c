@@ -443,7 +443,7 @@ sc_screen_frame_sink_close(struct sc_frame_sink *sink) {
     // nothing to do, the screen lifecycle is not managed by the frame producer
 }
 
-static bool
+static enum sc_sink_result
 sc_screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
     struct sc_screen *screen = DOWNCAST(sink);
     assert(screen->video);
@@ -454,7 +454,7 @@ sc_screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
     screen->prevent_auto_resize = screen->current_session.video.client_resized;
     sc_mutex_unlock(&screen->mutex);
     if (!ok) {
-        return false;
+        return SC_SINK_KO;
     }
 
     if (previous_skipped) {
@@ -465,19 +465,19 @@ sc_screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
         // Post the event on the UI thread
         bool ok = sc_push_event(SC_EVENT_NEW_FRAME);
         if (!ok) {
-            return false;
+            return SC_SINK_KO;
         }
     }
 
-    return true;
+    return SC_SINK_OK;
 }
 
-static bool
+static enum sc_sink_result
 sc_screen_frame_sink_push_session(struct sc_frame_sink *sink,
                                   const struct sc_stream_session *session) {
     struct sc_screen *screen = DOWNCAST(sink);
     screen->current_session = *session;
-    return true;
+    return SC_SINK_OK;
 }
 
 bool
