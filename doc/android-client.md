@@ -113,6 +113,8 @@ connected screenshot is masked so no target apps or notifications are exposed.
 
 ![Connected mode with redacted remote content](images/android-client-connection-redacted.png)
 
+![Connection settings](images/android-client-settings.png)
+
 ## Controls
 
 The connection list supports multiple saved targets. A normal tap connects to a
