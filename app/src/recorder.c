@@ -40,6 +40,7 @@ sc_recorder_packet_ref(const AVPacket *packet) {
     }
 
     if (av_packet_ref(p, packet)) {
+        LOG_OOM();
         av_packet_free(&p);
         return NULL;
     }
@@ -613,7 +614,6 @@ sc_recorder_video_packet_sink_push(struct sc_packet_sink *sink,
 
     AVPacket *rec = sc_recorder_packet_ref(packet);
     if (!rec) {
-        LOG_OOM();
         sc_mutex_unlock(&recorder->mutex);
         return false;
     }
@@ -705,7 +705,6 @@ sc_recorder_audio_packet_sink_push(struct sc_packet_sink *sink,
 
     AVPacket *rec = sc_recorder_packet_ref(packet);
     if (!rec) {
-        LOG_OOM();
         sc_mutex_unlock(&recorder->mutex);
         return false;
     }
