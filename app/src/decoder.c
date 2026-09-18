@@ -76,19 +76,19 @@ sc_decoder_close(struct sc_decoder *decoder) {
     avcodec_free_context(&decoder->ctx);
 }
 
-static bool
+static enum sc_sink_result
 sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
     bool is_config = packet->pts == AV_NOPTS_VALUE;
     if (is_config) {
         // nothing to do
-        return true;
+        return SC_SINK_OK;
     }
 
     int ret = avcodec_send_packet(decoder->ctx, packet);
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
         LOGE("Decoder '%s': could not send video packet: %s",
              decoder->name, av_err2str(ret));
-        return false;
+        return SC_SINK_KO;
     }
 
     for (;;) {
@@ -100,7 +100,7 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
         if (ret) {
             LOGE("Decoder '%s', could not receive video frame: %s",
                  decoder->name, av_err2str(ret));
-            return false;
+            return SC_SINK_KO;
         }
 
         // a frame was received
@@ -131,19 +131,19 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
             decoder->frame_size = frame_size;
         }
 
-        bool ok = sc_frame_source_sinks_push(&decoder->frame_source,
-                                             decoder->frame);
+        enum sc_sink_result result =
+            sc_frame_source_sinks_push(&decoder->frame_source, decoder->frame);
         av_frame_unref(decoder->frame);
-        if (!ok) {
-            // Error already logged
-            return false;
+        if (result != SC_SINK_OK) {
+            // Not a decoder error
+            return SC_SINK_STOPPED;
         }
     }
 
-    return true;
+    return SC_SINK_OK;
 }
 
-static bool
+static enum sc_sink_result
 sc_decoder_push_session(struct sc_decoder *decoder,
                         const struct sc_stream_session *session) {
     decoder->session = *session;
@@ -164,17 +164,16 @@ sc_decoder_packet_sink_close(struct sc_packet_sink *sink) {
     sc_decoder_close(decoder);
 }
 
-static bool
+static enum sc_sink_result
 sc_decoder_packet_sink_push(struct sc_packet_sink *sink,
                             const AVPacket *packet) {
     struct sc_decoder *decoder = DOWNCAST(sink);
     return sc_decoder_push(decoder, packet);
 }
 
-static bool
+static enum sc_sink_result
 sc_decoder_packet_sink_push_session(struct sc_packet_sink *sink,
                                     const struct sc_stream_session *session) {
-
     struct sc_decoder *decoder = DOWNCAST(sink);
     return sc_decoder_push_session(decoder, session);
 }

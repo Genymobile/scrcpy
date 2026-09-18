@@ -307,10 +307,10 @@ run_demuxer(void *data) {
 
         if (sc_demuxer_is_session(header)) {
             sc_demuxer_parse_session(header, &session_data);
-            ok = sc_packet_source_sinks_push_session(&demuxer->packet_source,
-                                                     &session_data);
-            if (!ok) {
-                // The sink already logged its concrete error
+            enum sc_sink_result result =
+                sc_packet_source_sinks_push_session(&demuxer->packet_source,
+                                                    &session_data);
+            if (result != SC_SINK_OK) {
                 break;
             }
         } else {
@@ -328,10 +328,10 @@ run_demuxer(void *data) {
                 }
             }
 
-            ok = sc_packet_source_sinks_push(&demuxer->packet_source, packet);
+            enum sc_sink_result result =
+                sc_packet_source_sinks_push(&demuxer->packet_source, packet);
             av_packet_unref(packet);
-            if (!ok) {
-                // The sink already logged its concrete error
+            if (result != SC_SINK_OK) {
                 break;
             }
         }

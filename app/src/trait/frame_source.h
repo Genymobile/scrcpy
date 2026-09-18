@@ -34,11 +34,11 @@ sc_frame_source_sinks_open(struct sc_frame_source *source,
 void
 sc_frame_source_sinks_close(struct sc_frame_source *source);
 
-bool
+enum sc_sink_result
 sc_frame_source_sinks_push(struct sc_frame_source *source,
                            const AVFrame *frame);
 
-bool
+enum sc_sink_result
 sc_frame_source_sinks_push_session(struct sc_frame_source *source,
                                    const struct sc_stream_session *session);
 

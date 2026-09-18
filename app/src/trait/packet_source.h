@@ -35,11 +35,11 @@ sc_packet_source_sinks_open(struct sc_packet_source *source,
 void
 sc_packet_source_sinks_close(struct sc_packet_source *source);
 
-bool
+enum sc_sink_result
 sc_packet_source_sinks_push(struct sc_packet_source *source,
                             const AVPacket *packet);
 
-bool
+enum sc_sink_result
 sc_packet_source_sinks_push_session(struct sc_packet_source *source,
                                     const struct sc_stream_session *session);
 

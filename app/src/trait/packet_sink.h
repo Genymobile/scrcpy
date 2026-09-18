@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <libavcodec/avcodec.h>
 
+#include "trait/sink.h"
+
 /**
  * Packet sink trait.
  *
@@ -34,13 +36,13 @@ struct sc_packet_sink_ops {
     void
     (*close)(struct sc_packet_sink *sink);
 
-    bool
+    enum sc_sink_result
     (*push)(struct sc_packet_sink *sink, const AVPacket *packet);
 
     /**
      * Optional callback to be notified of a new stream session.
      */
-    bool
+    enum sc_sink_result
     (*push_session)(struct sc_packet_sink *sink,
                     const struct sc_stream_session *session);
 

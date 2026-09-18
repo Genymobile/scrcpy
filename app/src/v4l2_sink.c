@@ -294,14 +294,20 @@ sc_v4l2_sink_close(struct sc_v4l2_sink *vs) {
     sc_frame_buffer_destroy(&vs->fb);
 }
 
-static bool
+static enum sc_sink_result
 sc_v4l2_sink_push(struct sc_v4l2_sink *vs, const AVFrame *frame) {
     sc_mutex_lock(&vs->mutex);
+
+    if (vs->stopped) {
+        sc_mutex_unlock(&vs->mutex);
+        return SC_SINK_STOPPED;
+    }
+
     bool previous_skipped = sc_frame_buffer_has_frame(&vs->fb);
     bool ok = sc_frame_buffer_push(&vs->fb, frame);
     if (!ok) {
         sc_mutex_unlock(&vs->mutex);
-        return false;
+        return SC_SINK_KO;
     }
 
     if (!previous_skipped) {
@@ -310,7 +316,7 @@ sc_v4l2_sink_push(struct sc_v4l2_sink *vs, const AVFrame *frame) {
     }
 
     sc_mutex_unlock(&vs->mutex);
-    return true;
+    return SC_SINK_OK;
 }
 
 static bool
@@ -326,7 +332,7 @@ sc_v4l2_frame_sink_close(struct sc_frame_sink *sink) {
     sc_v4l2_sink_close(vs);
 }
 
-static bool
+static enum sc_sink_result
 sc_v4l2_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
     struct sc_v4l2_sink *vs = DOWNCAST(sink);
     return sc_v4l2_sink_push(vs, frame);
