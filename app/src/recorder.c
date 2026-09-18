@@ -473,7 +473,7 @@ run_recorder(void *data) {
     bool success = sc_recorder_record(recorder);
 
     sc_mutex_lock(&recorder->mutex);
-    // Prevent the producer to push any new packet
+    // Prevent the producer from pushing any new packet
     recorder->stopped = true;
     // Discard pending packets
     sc_recorder_queue_clear(&recorder->video_queue);
