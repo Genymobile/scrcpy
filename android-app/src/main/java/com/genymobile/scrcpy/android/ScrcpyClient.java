@@ -5,6 +5,7 @@ import android.media.MediaFormat;
 import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.Surface;
 
 import java.io.ByteArrayOutputStream;
@@ -62,6 +63,9 @@ final class ScrcpyClient implements Closeable {
     private final AtomicBoolean stopped = new AtomicBoolean();
     private final Object lifecycleLock = new Object();
     private final ExecutorService controlExecutor = Executors.newSingleThreadExecutor();
+    private final Object touchLock = new Object();
+    private TouchEvent pendingMove;
+    private boolean moveDrainQueued;
     private volatile AdbTransport adb;
     private volatile AdbTransport.AdbStream shell;
     private volatile AdbTransport.AdbStream video;
@@ -402,7 +406,52 @@ final class ScrcpyClient implements Closeable {
         if (writer == null) {
             return;
         }
+        TouchEvent event = new TouchEvent(action, x, y, pressure, width, height);
+        if (action == MotionEvent.ACTION_MOVE) {
+            synchronized (touchLock) {
+                pendingMove = event;
+                if (moveDrainQueued) {
+                    return;
+                }
+                moveDrainQueued = true;
+            }
+            enqueueControl(() -> drainTouchMoves(writer));
+            return;
+        }
         enqueueControl(() -> writer.touch(action, x, y, pressure, width, height));
+    }
+
+    private void drainTouchMoves(ControlWriter writer) throws IOException {
+        for (;;) {
+            TouchEvent event;
+            synchronized (touchLock) {
+                event = pendingMove;
+                pendingMove = null;
+                if (event == null) {
+                    moveDrainQueued = false;
+                    return;
+                }
+            }
+            writer.touch(event.action, event.x, event.y, event.pressure, event.width, event.height);
+        }
+    }
+
+    private static final class TouchEvent {
+        final int action;
+        final float x;
+        final float y;
+        final float pressure;
+        final int width;
+        final int height;
+
+        TouchEvent(int action, float x, float y, float pressure, int width, int height) {
+            this.action = action;
+            this.x = x;
+            this.y = y;
+            this.pressure = pressure;
+            this.width = width;
+            this.height = height;
+        }
     }
 
     void back() {
