@@ -355,7 +355,9 @@ scrcpy(struct scrcpy_options *options) {
     bool recorder_started = false;
 #ifdef HAVE_V4L2
     bool v4l2_sink_initialized = false;
+    bool v4l2_regulator_initialized = false;
 #endif
+    bool video_regulator_initialized = false;
     bool video_demuxer_started = false;
     bool audio_demuxer_started = false;
     bool video_decoder_initialized = false;
@@ -841,8 +843,11 @@ aoa_complete:
         if (options->video_playback) {
             struct sc_frame_source *src = &s->video_decoder.frame_source;
             if (options->video_buffer) {
-                sc_video_regulator_init(&s->video_regulator,
-                                        options->video_buffer, true);
+                if (!sc_video_regulator_init(&s->video_regulator,
+                                             options->video_buffer, true)) {
+                    goto end;
+                }
+                video_regulator_initialized = true;
                 sc_frame_source_add_sink(src, &s->video_regulator.frame_sink);
                 src = &s->video_regulator.frame_source;
             }
@@ -866,8 +871,11 @@ aoa_complete:
 
         struct sc_frame_source *src = &s->video_decoder.frame_source;
         if (options->v4l2_buffer) {
-            sc_video_regulator_init(&s->v4l2_regulator, options->v4l2_buffer,
-                                    true);
+            if (!sc_video_regulator_init(&s->v4l2_regulator,
+                                         options->v4l2_buffer, true)) {
+                goto end;
+            }
+            v4l2_regulator_initialized = true;
             sc_frame_source_add_sink(src, &s->v4l2_regulator.frame_sink);
             src = &s->v4l2_regulator.frame_source;
         }
@@ -1033,7 +1041,14 @@ end:
         sc_demuxer_join(&s->audio_demuxer);
     }
 
+    if (video_regulator_initialized) {
+        sc_video_regulator_destroy(&s->video_regulator);
+    }
+
 #ifdef HAVE_V4L2
+    if (v4l2_regulator_initialized) {
+        sc_video_regulator_destroy(&s->v4l2_regulator);
+    }
     if (v4l2_sink_initialized) {
         sc_v4l2_sink_destroy(&s->v4l2_sink);
     }
