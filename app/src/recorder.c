@@ -853,6 +853,8 @@ sc_recorder_join(struct sc_recorder *recorder) {
 
 void
 sc_recorder_destroy(struct sc_recorder *recorder) {
+    sc_vecdeque_destroy(&recorder->video_queue);
+    sc_vecdeque_destroy(&recorder->audio_queue);
     sc_cond_destroy(&recorder->cond);
     sc_mutex_destroy(&recorder->mutex);
     free(recorder->filename);

@@ -192,6 +192,7 @@ sc_video_regulator_frame_sink_close(struct sc_frame_sink *sink) {
 
     sc_frame_source_sinks_close(&vr->frame_source);
 
+    sc_vecdeque_destroy(&vr->queue);
     sc_cond_destroy(&vr->wait_cond);
     sc_cond_destroy(&vr->queue_cond);
     sc_mutex_destroy(&vr->mutex);
