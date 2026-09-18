@@ -63,7 +63,7 @@ run_buffering(void *data) {
 
         struct sc_delayed_packet dpacket = sc_vecdeque_pop(&vr->queue);
 
-        bool ok;
+        enum sc_sink_result result;
         if (dpacket.type == SC_DELAYED_PACKET_TYPE_FRAME) {
             sc_tick max_deadline = sc_tick_now() + vr->delay;
             // PTS (written by the server) are expressed in microseconds
@@ -94,17 +94,20 @@ run_buffering(void *data) {
                  pts, dframe.push_date, sc_tick_now());
 #endif
 
-            ok = sc_frame_source_sinks_push(&vr->frame_source, dpacket.frame);
+            result = sc_frame_source_sinks_push(&vr->frame_source,
+                                                dpacket.frame);
         } else {
             assert(dpacket.type == SC_DELAYED_PACKET_TYPE_SESSION);
             sc_mutex_unlock(&vr->mutex);
-            ok = sc_frame_source_sinks_push_session(&vr->frame_source,
-                                                    &dpacket.session);
+            result = sc_frame_source_sinks_push_session(&vr->frame_source,
+                                                        &dpacket.session);
         }
 
         sc_delayed_packet_destroy(&dpacket);
-        if (!ok) {
-            LOGE("Delayed packet could not be pushed, stopping");
+        if (result != SC_SINK_OK) {
+            if (result == SC_SINK_KO) {
+                LOGE("Delayed packet could not be pushed, stopping");
+            }
             sc_mutex_lock(&vr->mutex);
             // Prevent to push any new packet
             vr->stopped = true;
@@ -198,7 +201,7 @@ sc_video_regulator_frame_sink_close(struct sc_frame_sink *sink) {
     sc_mutex_destroy(&vr->mutex);
 }
 
-static bool
+static enum sc_sink_result
 sc_video_regulator_frame_sink_push(struct sc_frame_sink *sink,
                                    const AVFrame *frame) {
     struct sc_video_regulator *vr = DOWNCAST(sink);
@@ -207,7 +210,7 @@ sc_video_regulator_frame_sink_push(struct sc_frame_sink *sink,
 
     if (vr->stopped) {
         sc_mutex_unlock(&vr->mutex);
-        return false;
+        return SC_SINK_STOPPED;
     }
 
     assert(frame->opaque_ref);
@@ -229,14 +232,14 @@ sc_video_regulator_frame_sink_push(struct sc_frame_sink *sink,
     if (!dpacket) {
         sc_mutex_unlock(&vr->mutex);
         LOG_OOM();
-        return false;
+        return SC_SINK_KO;
     }
 
     bool ok = sc_delayed_packet_init_frame(dpacket, frame);
     if (!ok) {
         sc_mutex_unlock(&vr->mutex);
         LOG_OOM();
-        return false;
+        return SC_SINK_KO;
     }
 
 #ifdef SC_BUFFERING_DEBUG
@@ -247,10 +250,10 @@ sc_video_regulator_frame_sink_push(struct sc_frame_sink *sink,
 
     sc_mutex_unlock(&vr->mutex);
 
-    return true;
+    return SC_SINK_OK;
 }
 
-static bool
+static enum sc_sink_result
 sc_video_regulator_frame_sink_push_session(struct sc_frame_sink *sink,
                                       const struct sc_stream_session *session) {
     struct sc_video_regulator *vr = DOWNCAST(sink);
@@ -259,7 +262,7 @@ sc_video_regulator_frame_sink_push_session(struct sc_frame_sink *sink,
 
     if (vr->stopped) {
         sc_mutex_unlock(&vr->mutex);
-        return false;
+        return SC_SINK_STOPPED;
     }
 
     struct sc_delayed_packet *dpacket =
@@ -267,7 +270,7 @@ sc_video_regulator_frame_sink_push_session(struct sc_frame_sink *sink,
     if (!dpacket) {
         sc_mutex_unlock(&vr->mutex);
         LOG_OOM();
-        return false;
+        return SC_SINK_KO;
     }
 
     sc_delayed_packet_init_session(dpacket, session);
@@ -280,7 +283,7 @@ sc_video_regulator_frame_sink_push_session(struct sc_frame_sink *sink,
 
     sc_mutex_unlock(&vr->mutex);
 
-    return true;
+    return SC_SINK_OK;
 }
 
 void
