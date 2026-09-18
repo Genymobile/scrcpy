@@ -138,47 +138,22 @@ sc_video_regulator_frame_sink_open(struct sc_frame_sink *sink,
     (void) ctx;
     (void) session;
 
-    bool ok = sc_mutex_init(&vr->mutex);
-    if (!ok) {
-        return false;
-    }
-
-    ok = sc_cond_init(&vr->queue_cond);
-    if (!ok) {
-        goto error_destroy_mutex;
-    }
-
-    ok = sc_cond_init(&vr->wait_cond);
-    if (!ok) {
-        goto error_destroy_queue_cond;
-    }
-
     sc_clock_init(&vr->clock);
     sc_vecdeque_init(&vr->queue);
     vr->stopped = false;
 
     if (!sc_frame_source_sinks_open(&vr->frame_source, ctx, session)) {
-        goto error_destroy_wait_cond;
+        return false;
     }
 
-    ok = sc_thread_create(&vr->thread, run_buffering, "scrcpy-vruf", vr);
+    bool ok = sc_thread_create(&vr->thread, run_buffering, "scrcpy-vruf", vr);
     if (!ok) {
         LOGE("Could not start buffering thread");
-        goto error_close_sinks;
+        sc_frame_source_sinks_close(&vr->frame_source);
+        return false;
     }
 
     return true;
-
-error_close_sinks:
-    sc_frame_source_sinks_close(&vr->frame_source);
-error_destroy_wait_cond:
-    sc_cond_destroy(&vr->wait_cond);
-error_destroy_queue_cond:
-    sc_cond_destroy(&vr->queue_cond);
-error_destroy_mutex:
-    sc_mutex_destroy(&vr->mutex);
-
-    return false;
 }
 
 static void
@@ -196,9 +171,6 @@ sc_video_regulator_frame_sink_close(struct sc_frame_sink *sink) {
     sc_frame_source_sinks_close(&vr->frame_source);
 
     sc_vecdeque_destroy(&vr->queue);
-    sc_cond_destroy(&vr->wait_cond);
-    sc_cond_destroy(&vr->queue_cond);
-    sc_mutex_destroy(&vr->mutex);
 }
 
 static enum sc_sink_result
@@ -286,10 +258,25 @@ sc_video_regulator_frame_sink_push_session(struct sc_frame_sink *sink,
     return SC_SINK_OK;
 }
 
-void
+bool
 sc_video_regulator_init(struct sc_video_regulator *vr, sc_tick delay,
                         bool first_frame_asap) {
     assert(delay > 0);
+
+    bool ok = sc_mutex_init(&vr->mutex);
+    if (!ok) {
+        return false;
+    }
+
+    ok = sc_cond_init(&vr->queue_cond);
+    if (!ok) {
+        goto error_destroy_mutex;
+    }
+
+    ok = sc_cond_init(&vr->wait_cond);
+    if (!ok) {
+        goto error_destroy_queue_cond;
+    }
 
     vr->delay = delay;
     vr->first_frame_asap = first_frame_asap;
@@ -304,4 +291,20 @@ sc_video_regulator_init(struct sc_video_regulator *vr, sc_tick delay,
     };
 
     vr->frame_sink.ops = &ops;
+
+    return true;
+
+error_destroy_queue_cond:
+    sc_cond_destroy(&vr->queue_cond);
+error_destroy_mutex:
+    sc_mutex_destroy(&vr->mutex);
+
+    return false;
+}
+
+void
+sc_video_regulator_destroy(struct sc_video_regulator *vr) {
+    sc_cond_destroy(&vr->wait_cond);
+    sc_cond_destroy(&vr->queue_cond);
+    sc_mutex_destroy(&vr->mutex);
 }

@@ -65,8 +65,11 @@ struct sc_video_regulator_callbacks {
  * \param first_frame_asap if true, do not delay the first frame (useful for
                            a video stream).
  */
-void
+bool
 sc_video_regulator_init(struct sc_video_regulator *vr, sc_tick delay,
                         bool first_frame_asap);
+
+void
+sc_video_regulator_destroy(struct sc_video_regulator *vr);
 
 #endif
