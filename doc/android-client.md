@@ -7,7 +7,9 @@ are both phones and a desktop computer is not available.
 The controller app does not require the desktop `adb` executable at runtime. It
 implements the ADB TCP transport, stores its RSA authentication key encrypted
 with Android Keystore in private app storage, pushes the matching scrcpy server
-to the target, and renders the target video with Android `MediaCodec`.
+to the target, and renders the target video with Android `MediaCodec`. It uses
+one authenticated ADB connection for the shell and video stream, and a second
+one for control input so video traffic does not delay touch events.
 
 ## Build
 
@@ -76,9 +78,12 @@ With an emulator already running, run the instrumentation test with:
 6. Optionally enter an Android package name to launch that app automatically
    after connecting.
 7. In the connection editor, enable Automatic resolution for adaptive video.
-   The client keeps the ADB session and control channel alive while it lowers
-   or raises the target video size when packet delivery becomes slow or stable.
-   Disable it to select a fixed maximum video size.
+   Set the maximum to 1280p or 1440p. The client lowers or raises the target
+   video size between that maximum and a 720p floor when packet delivery
+   becomes slow or stable. The maximum remains editable while Automatic
+   resolution is enabled. Choosing 720p leaves no range for adaptation, so it
+   behaves like a fixed 720p stream. Disable Automatic resolution to select a
+   fixed maximum video size.
 
 The connection editor explains the network and authorization requirements. Do
 not use an ADB TCP endpoint on a network you do not trust. The target address,

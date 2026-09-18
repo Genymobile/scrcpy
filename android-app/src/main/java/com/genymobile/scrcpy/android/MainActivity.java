@@ -701,10 +701,7 @@ public final class MainActivity extends Activity {
         maxResolutionInput.setAdapter(resolutionAdapter);
         int selectedMaxSize = existing == null ? DEFAULT_VIDEO_MAX_SIZE : existing.maxSize;
         maxResolutionInput.setSelection(videoMaxSizeSelection(selectedMaxSize));
-        maxResolutionInput.setEnabled(!automaticResolutionInput.isChecked());
         fields.addView(maxResolutionInput, new LinearLayout.LayoutParams(-1, dp(56)));
-        automaticResolutionInput.setOnCheckedChangeListener((button, checked) ->
-                maxResolutionInput.setEnabled(!checked));
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);

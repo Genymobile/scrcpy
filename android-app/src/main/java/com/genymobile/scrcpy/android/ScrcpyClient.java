@@ -67,6 +67,7 @@ final class ScrcpyClient implements Closeable {
     private TouchEvent pendingMove;
     private boolean moveDrainQueued;
     private volatile AdbTransport adb;
+    // Keep control traffic independent from the high-volume video transport.
     private volatile AdbTransport controlAdb;
     private volatile AdbTransport.AdbStream shell;
     private volatile AdbTransport.AdbStream video;
@@ -423,6 +424,7 @@ final class ScrcpyClient implements Closeable {
         }
         TouchEvent event = new TouchEvent(action, x, y, pressure, width, height);
         if (action == MotionEvent.ACTION_MOVE) {
+            // Do not let delayed ADB acknowledgements build a stale move backlog.
             synchronized (touchLock) {
                 pendingMove = event;
                 if (moveDrainQueued) {
