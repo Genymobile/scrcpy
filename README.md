@@ -18,6 +18,8 @@ installed on the device. It works on _Linux_, _Windows_, and _macOS_.
 [![Windows](https://img.shields.io/badge/Windows-download-blue?style=for-the-badge&logo=windows)](doc/windows.md)&nbsp;
 [![macOS](https://img.shields.io/badge/macOS-download-brightgreen?style=for-the-badge&logo=apple)](doc/macos.md)&nbsp;
 
+[Android controller](doc/android-client.md)
+
 ![screenshot](assets/screenshot-debian-600.jpg)
 
 It focuses on:

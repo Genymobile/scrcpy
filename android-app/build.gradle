@@ -1,0 +1,50 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace = 'com.genymobile.scrcpy.android'
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = 'com.genymobile.scrcpy.android'
+        minSdk = 23
+        targetSdk = 36
+        versionCode = 40100
+        versionName = '4.1'
+        testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
+                    'proguard-rules.pro'
+        }
+    }
+
+    sourceSets {
+        main {
+            assets.srcDir "$buildDir/generated/scrcpy-server"
+        }
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test:runner:1.7.0'
+    androidTestImplementation 'androidx.test:rules:1.7.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
+}
+
+def copyScrcpyServer = tasks.register('copyScrcpyServer', Copy) {
+    dependsOn ':server:assembleRelease'
+    from project(':server').layout.buildDirectory.dir('outputs/apk/release')
+    include 'server-release-unsigned.apk'
+    into layout.buildDirectory.dir('generated/scrcpy-server')
+    rename 'server-release-unsigned.apk', 'scrcpy-server.jar'
+}
+
+tasks.named('preBuild').configure {
+    dependsOn copyScrcpyServer
+}

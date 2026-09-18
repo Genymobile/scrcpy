@@ -1,0 +1,88 @@
+name: Android controller
+
+on:
+  push:
+    paths:
+      - 'android-app/**'
+      - 'server/**'
+      - 'doc/android-client.md'
+      - 'settings.gradle'
+      - 'build.gradle'
+      - 'gradle.properties'
+      - 'gradle/**'
+      - 'config/**'
+      - 'buildSrc/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - '.github/workflows/android.yml'
+  pull_request:
+    paths:
+      - 'android-app/**'
+      - 'server/**'
+      - 'doc/android-client.md'
+      - 'settings.gradle'
+      - 'build.gradle'
+      - 'gradle.properties'
+      - 'gradle/**'
+      - 'config/**'
+      - 'buildSrc/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - '.github/workflows/android.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Run Android unit tests, lint, and release build
+        run: ./gradlew :android-app:testDebugUnitTest :android-app:lintDebug :android-app:assembleRelease
+
+  instrumentation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Run Android instrumentation smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: Pixel_2
+          cores: 2
+          ram-size: 2048M
+          heap-size: 512M
+          disable-animations: true
+          script: ./gradlew :android-app:connectedDebugAndroidTest
