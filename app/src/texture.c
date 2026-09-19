@@ -63,6 +63,12 @@ sc_texture_get(struct sc_texture *tex) {
     return tex->interop->texture;
 }
 
+struct sc_size
+sc_texture_get_frame_size(struct sc_texture *tex) {
+    assert(tex->interop && tex->interop->texture);
+    return tex->interop->frame_size;
+}
+
 bool
 sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
     struct sc_interop *interop = tex->interop;
