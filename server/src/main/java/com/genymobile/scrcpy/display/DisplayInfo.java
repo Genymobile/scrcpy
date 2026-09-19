@@ -10,10 +10,12 @@ public final class DisplayInfo {
     private final int flags;
     private final int dpi;
     private final String uniqueId;
+    private final float refreshRate;
 
     public static final int FLAG_SUPPORTS_PROTECTED_BUFFERS = 0x00000001;
 
-    public DisplayInfo(int displayId, Size size, int rotation, int layerStack, int flags, int dpi, String uniqueId) {
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    public DisplayInfo(int displayId, Size size, int rotation, int layerStack, int flags, int dpi, String uniqueId, float refreshRate) {
         this.displayId = displayId;
         this.size = size;
         this.rotation = rotation;
@@ -21,6 +23,7 @@ public final class DisplayInfo {
         this.flags = flags;
         this.dpi = dpi;
         this.uniqueId = uniqueId;
+        this.refreshRate = refreshRate;
     }
 
     public int getDisplayId() {
@@ -49,5 +52,9 @@ public final class DisplayInfo {
 
     public String getUniqueId() {
         return uniqueId;
+    }
+
+    public float getRefreshRate() {
+        return refreshRate;
     }
 }

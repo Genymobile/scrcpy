@@ -11,6 +11,8 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.hardware.display.VirtualDisplay;
+import android.hardware.display.VirtualDisplayConfig;
+import android.os.Build;
 import android.os.Handler;
 import android.view.Display;
 import android.view.Surface;
@@ -82,7 +84,7 @@ public final class DisplayManager {
         int density = Integer.parseInt(m.group(5));
         int layerStack = Integer.parseInt(m.group(6));
 
-        return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, density, null);
+        return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, density, null, 0);
     }
 
     private static DisplayInfo getDisplayInfoFromDumpsysDisplay(int displayId) {
@@ -139,6 +141,12 @@ public final class DisplayManager {
             int layerStack = cls.getDeclaredField("layerStack").getInt(displayInfo);
             int flags = cls.getDeclaredField("flags").getInt(displayInfo);
             int dpi = cls.getDeclaredField("logicalDensityDpi").getInt(displayInfo);
+            float refreshRate;
+            try {
+                refreshRate = (float) cls.getMethod("getRefreshRate").invoke(displayInfo);
+            } catch (ReflectiveOperationException e) {
+                refreshRate = 0;
+            }
             String uniqueId;
             try {
                 uniqueId = (String) cls.getDeclaredField("uniqueId").get(displayInfo);
@@ -146,7 +154,7 @@ public final class DisplayManager {
                 // This field might not exist: <https://github.com/Genymobile/scrcpy/issues/6461>
                 uniqueId = null;
             }
-            return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, dpi, uniqueId);
+            return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, dpi, uniqueId, refreshRate);
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
@@ -168,7 +176,24 @@ public final class DisplayManager {
         return createVirtualDisplayMethod;
     }
 
-    public VirtualDisplay createVirtualDisplay(String name, int width, int height, int displayIdToMirror, Surface surface) throws Exception {
+    public VirtualDisplay createVirtualDisplay(String name, int width, int height, int displayIdToMirror, Surface surface, float sourceRefreshRate)
+            throws Exception {
+        // High-refresh mirrored virtual displays default to 60Hz if no refresh rate is requested.
+        if (Math.round(sourceRefreshRate) > 60 && Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14) {
+            Constructor<android.hardware.display.DisplayManager> ctor = android.hardware.display.DisplayManager.class.getDeclaredConstructor(
+                    Context.class);
+            ctor.setAccessible(true);
+            android.hardware.display.DisplayManager dm = ctor.newInstance(FakeContext.get());
+
+            VirtualDisplayConfig.Builder builder = new VirtualDisplayConfig.Builder(name, width, height, 1)
+                    .setFlags(android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR)
+                    .setSurface(surface)
+                    .setRequestedRefreshRate(sourceRefreshRate);
+            Method setDisplayIdToMirror = builder.getClass().getMethod("setDisplayIdToMirror", int.class);
+            setDisplayIdToMirror.invoke(builder, displayIdToMirror);
+            return dm.createVirtualDisplay(builder.build());
+        }
+
         Method method = getCreateVirtualDisplayMethod();
         return (VirtualDisplay) method.invoke(null, name, width, height, displayIdToMirror, surface);
     }
