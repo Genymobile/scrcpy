@@ -292,12 +292,23 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     };
     enum sc_orientation orientation = screen->orientation;
 
+    const SDL_FRect *srcrect = NULL;
+    SDL_FRect frame_rect;
+    if (!screen->is_icon_active) {
+        struct sc_size frame_size = sc_texture_get_frame_size(&screen->tex);
+        frame_rect.x = 0;
+        frame_rect.y = 0;
+        frame_rect.w = frame_size.width;
+        frame_rect.h = frame_size.height;
+        srcrect = &frame_rect;
+    }
+
     bool ok = false;
     if (orientation == SC_ORIENTATION_0) {
         // always align to a physical pixel
         geometry.x = (int32_t) geometry.x;
         geometry.y = (int32_t) geometry.y;
-        ok = SDL_RenderTexture(renderer, texture, NULL, &geometry);
+        ok = SDL_RenderTexture(renderer, texture, srcrect, &geometry);
     } else {
         unsigned cw_rotation = sc_orientation_get_rotation(orientation);
         double angle = 90 * cw_rotation;
@@ -320,8 +331,8 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
         // always align to a physical pixel
         dstrect->x = (int32_t) dstrect->x;
         dstrect->y = (int32_t) dstrect->y;
-        ok = SDL_RenderTextureRotated(renderer, texture, NULL, dstrect, angle,
-                                      NULL, flip);
+        ok = SDL_RenderTextureRotated(renderer, texture, srcrect, dstrect,
+                                      angle, NULL, flip);
     }
 
     if (!ok) {
