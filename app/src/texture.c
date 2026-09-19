@@ -159,15 +159,9 @@ sc_texture_create_frame_texture(struct sc_texture *tex,
 
             assert(!(texture_id & ~0xFFFFFFFF)); // fits in uint32_t
             tex->texture_ids[i] = texture_id;
-            gl->BindTexture(GL_TEXTURE_2D, tex->texture_ids[i]);
-
-            // Enable trilinear filtering for downscaling
-            gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                              GL_LINEAR_MIPMAP_LINEAR);
-            gl->TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.f);
-
-            gl->BindTexture(GL_TEXTURE_2D, 0);
         }
+
+        sc_opengl_enable_mipmaps(gl, tex->texture_ids, 3);
     }
 
     return texture;
@@ -213,14 +207,7 @@ sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
     }
 
     if (tex->mipmaps) {
-        struct sc_opengl *gl = &tex->gl;
-
-        for (unsigned i = 0; i < 3; ++i) {
-            assert(tex->texture_ids[i]);
-            gl->BindTexture(GL_TEXTURE_2D, tex->texture_ids[i]);
-            gl->GenerateMipmap(GL_TEXTURE_2D);
-        }
-        gl->BindTexture(GL_TEXTURE_2D, 0);
+        sc_opengl_generate_mipmaps(&tex->gl, tex->texture_ids, 3);
     }
 
     return true;
