@@ -585,6 +585,10 @@ sc_screen_init(struct sc_screen *screen,
         goto error_destroy_window;
     }
 
+    if (params->vsync && !SDL_SetRenderVSync(screen->renderer, 1)) {
+        LOGW("Could not enable VSync: %s", SDL_GetError());
+    }
+
 #ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
     screen->gl_context = NULL;
 

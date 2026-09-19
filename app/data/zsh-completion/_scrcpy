@@ -111,6 +111,7 @@ arguments=(
     '--video-codec-options=[Set a list of comma-separated key\:type=value options for the device video encoder]'
     '--video-encoder=[Use a specific MediaCodec video encoder]'
     '--video-source=[Select the video source]:source:(display camera)'
+    '--vsync[Enable vertical synchronization for the display renderer]'
     {-w,--stay-awake}'[Keep the device on while scrcpy is running, when the device is plugged in]'
     '--window-borderless[Disable window decorations \(display borderless window\)]'
     '--window-title=[Set a custom window title]'

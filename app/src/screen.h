@@ -141,6 +141,7 @@ struct sc_screen_params {
     enum sc_render_fit render_fit;
     enum sc_orientation orientation;
     bool mipmaps;
+    bool vsync;
 
     bool fullscreen;
     bool start_fps_counter;
