@@ -98,7 +98,7 @@ sc_texture_create_frame_texture(struct sc_texture *tex,
         SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER,
                               SDL_PIXELFORMAT_YV12);
     ok &= SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER,
-                                SDL_TEXTUREACCESS_STREAMING);
+                                SDL_TEXTUREACCESS_STATIC);
     ok &= SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER,
                                 size.width);
     ok &= SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER,
