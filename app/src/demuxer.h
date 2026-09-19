@@ -13,6 +13,7 @@ struct sc_demuxer {
     struct sc_packet_source packet_source; // packet source trait
 
     const char *name; // must be statically allocated (e.g. a string literal)
+    bool set_recv_date;
 
     sc_socket socket;
     sc_thread thread;
@@ -35,6 +36,7 @@ struct sc_demuxer_callbacks {
 // The name must be statically allocated (e.g. a string literal)
 void
 sc_demuxer_init(struct sc_demuxer *demuxer, const char *name, sc_socket socket,
+                bool set_recv_date,
                 const struct sc_demuxer_callbacks *cbs, void *cbs_userdata);
 
 bool
