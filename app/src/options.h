@@ -71,6 +71,11 @@ enum sc_audio_source {
     SC_AUDIO_SOURCE_VOICE_PERFORMANCE,
 };
 
+enum sc_hwdec_mode {
+    SC_HWDEC_MODE_AUTO,
+    SC_HWDEC_MODE_DISABLED,
+};
+
 enum sc_camera_facing {
     SC_CAMERA_FACING_ANY,
     SC_CAMERA_FACING_FRONT,
@@ -257,6 +262,7 @@ struct scrcpy_options {
     enum sc_codec audio_codec;
     enum sc_video_source video_source;
     enum sc_audio_source audio_source;
+    enum sc_hwdec_mode hwdec_mode;
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
     enum sc_mouse_input_mode mouse_input_mode;

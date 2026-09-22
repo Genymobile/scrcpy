@@ -34,6 +34,7 @@ _scrcpy() {
         -G
         --gamepad=
         -h --help
+        --hwdec=
         --ignore-video-encoder-constraints
         -K
         --keep-active
@@ -203,6 +204,10 @@ _scrcpy() {
             ;;
         --min-size-alignment)
             COMPREPLY=($(compgen -W '1 2 4 8 16' -- "$cur"))
+            return
+            ;;
+        --hwdec)
+            COMPREPLY=($(compgen -W 'auto disabled' -- "$cur"))
             return
             ;;
         --audio-bit-rate \
