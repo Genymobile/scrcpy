@@ -111,6 +111,7 @@ enum {
     OPT_RENDER_FIT,
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
     OPT_NO_TERMINAL_TITLE,
+    OPT_HWDEC,
 };
 
 struct sc_option {
@@ -429,6 +430,16 @@ static const struct sc_option options[] = {
         .shortopt = 'h',
         .longopt = "help",
         .text = "Print this help.",
+    },
+    {
+        .longopt_id = OPT_HWDEC,
+        .longopt = "hwdec",
+        .argdesc = "mode",
+        .text = "Configure hardware video decoding on the computer.\n"
+                "Possible values are \"auto\" (the first available hardware "
+                "decoder, software decoding otherwise) and \"disabled\" "
+                "(always use software decoding).\n"
+                "Default is \"auto\".",
     },
     {
         .longopt_id = OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
@@ -2488,6 +2499,22 @@ parse_render_fit(const char *optarg, enum sc_render_fit *mode) {
 }
 
 static bool
+parse_hwdec_mode(const char *optarg, enum sc_hwdec_mode *mode) {
+    if (!strcmp(optarg, "auto")) {
+        *mode = SC_HWDEC_MODE_AUTO;
+        return true;
+    }
+
+    if (!strcmp(optarg, "disabled")) {
+        *mode = SC_HWDEC_MODE_DISABLED;
+        return true;
+    }
+
+    LOGE("Unsupported hwdec mode: %s (expected auto or disabled)", optarg);
+    return false;
+}
+
+static bool
 parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                        const char *optstring, const struct option *longopts) {
     struct scrcpy_options *opts = &args->opts;
@@ -2945,6 +2972,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_TERMINAL_TITLE:
                 opts->update_terminal_title = false;
                 break;
+            case OPT_HWDEC:
+                if (!parse_hwdec_mode(optarg, &opts->hwdec_mode)) {
+                    return false;
+                }
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -3030,6 +3062,23 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             opts->audio_buffer = SC_TICK_FROM_MS(120);
         } else {
             opts->audio_buffer = SC_TICK_FROM_MS(50);
+        }
+    }
+
+    if (opts->hwdec_mode != SC_HWDEC_MODE_DISABLED) {
+        if (!opts->video_playback) {
+            if (opts->hwdec_mode != SC_HWDEC_MODE_AUTO) {
+                LOGE("Hardware decoding requires video playback");
+                return false;
+            }
+            opts->hwdec_mode = SC_HWDEC_MODE_DISABLED;
+        } else if (v4l2) {
+            if (opts->hwdec_mode != SC_HWDEC_MODE_AUTO) {
+                LOGE("Hardware decoding is not compatible with V4L2");
+                return false;
+            }
+            LOGI("V4L2 sink enabled, hardware decoding disabled");
+            opts->hwdec_mode = SC_HWDEC_MODE_DISABLED;
         }
     }
 
