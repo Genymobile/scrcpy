@@ -130,6 +130,9 @@ event_loop(struct scrcpy *s, bool has_screen) {
             case SC_EVENT_CONTROLLER_ERROR:
                 LOGE("Controller error");
                 return SCRCPY_EXIT_FAILURE;
+            case SC_EVENT_DECODER_ERROR:
+                LOGE("Decoder error");
+                return SCRCPY_EXIT_FAILURE;
             case SC_EVENT_RECORDER_ERROR:
                 LOGE("Recorder error");
                 return SCRCPY_EXIT_FAILURE;
@@ -177,6 +180,16 @@ await_for_server(bool *connected) {
 
     LOGE("SDL_WaitEvent() error: %s", SDL_GetError());
     return false;
+}
+
+static void
+sc_decoder_on_ended(struct sc_decoder *decoder, bool success, void *userdata) {
+    (void) decoder;
+    (void) userdata;
+
+    if (!success) {
+        sc_push_event(SC_EVENT_DECODER_ERROR);
+    }
 }
 
 static void
@@ -345,6 +358,10 @@ scrcpy(struct scrcpy_options *options) {
 #endif
     bool video_demuxer_started = false;
     bool audio_demuxer_started = false;
+    bool video_decoder_initialized = false;
+    bool video_decoder_started = false;
+    bool audio_decoder_initialized = false;
+    bool audio_decoder_started = false;
 #ifdef HAVE_USB
     bool aoa_hid_initialized = false;
     bool keyboard_aoa_initialized = false;
@@ -549,6 +566,10 @@ scrcpy(struct scrcpy_options *options) {
                         false, &audio_demuxer_cbs, options);
     }
 
+    static const struct sc_decoder_callbacks decoder_cbs = {
+        .on_ended = sc_decoder_on_ended,
+    };
+
     bool needs_video_decoder = options->video_playback;
     bool needs_audio_decoder = options->audio_playback;
 #ifdef HAVE_V4L2
@@ -558,14 +579,35 @@ scrcpy(struct scrcpy_options *options) {
         // If a video buffer is present, then the recv date must be forwarded
         // from the AVPacket to the AVFrame
         bool copy_opaque = has_video_buffer;
-        sc_decoder_init(&s->video_decoder, "video", copy_opaque);
+        if (!sc_decoder_init(&s->video_decoder, "video", copy_opaque,
+                             &decoder_cbs, NULL)) {
+            goto end;
+        }
+        video_decoder_initialized = true;
+
         sc_packet_source_add_sink(&s->video_demuxer.packet_source,
                                   &s->video_decoder.packet_sink);
+
+        if (!sc_decoder_start(&s->video_decoder)) {
+            goto end;
+        }
+        video_decoder_started = true;
     }
+
     if (needs_audio_decoder) {
-        sc_decoder_init(&s->audio_decoder, "audio", false);
+        if (!sc_decoder_init(&s->audio_decoder, "audio", false,
+                             &decoder_cbs, NULL)) {
+            goto end;
+        }
+        audio_decoder_initialized = true;
+
         sc_packet_source_add_sink(&s->audio_demuxer.packet_source,
                                   &s->audio_decoder.packet_sink);
+
+        if (!sc_decoder_start(&s->audio_decoder)) {
+            goto end;
+        }
+        audio_decoder_started = true;
     }
 
     if (options->record_filename) {
@@ -937,6 +979,12 @@ end:
     if (file_pusher_initialized) {
         sc_file_pusher_stop(&s->file_pusher);
     }
+    if (video_decoder_started) {
+        sc_decoder_stop(&s->video_decoder);
+    }
+    if (audio_decoder_started) {
+        sc_decoder_stop(&s->audio_decoder);
+    }
     if (recorder_initialized) {
         sc_recorder_stop(&s->recorder);
     }
@@ -956,8 +1004,16 @@ end:
         LOGD("Quit...");
 
         // Close the window immediately, because sc_screen_destroy() may only be
-        // called once the video demuxer thread is joined (it may take time)
+        // called once the video decoder thread is joined (it may take time)
         sc_screen_hide_window(&s->screen);
+    }
+
+    if (video_decoder_started) {
+        sc_decoder_join(&s->video_decoder);
+    }
+
+    if (audio_decoder_started) {
+        sc_decoder_join(&s->audio_decoder);
     }
 
     if (timeout_started) {
@@ -1005,6 +1061,14 @@ end:
         sc_acksync_destroy(acksync);
     }
 #endif
+
+    if (video_decoder_initialized) {
+        sc_decoder_destroy(&s->video_decoder);
+    }
+
+    if (audio_decoder_initialized) {
+        sc_decoder_destroy(&s->audio_decoder);
+    }
 
     // Destroy the screen only after the video demuxer is guaranteed to be
     // finished, because otherwise the screen could receive new frames after
