@@ -103,8 +103,15 @@ bool
 sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
     assert(tex->interop);
 
+    enum AVPixelFormat format = frame->format;
+    if (format == AV_PIX_FMT_YUVJ420P) {
+        // Deprecated full-range alias of YUV420P, with the same layout (the
+        // color range is read from the frame)
+        format = AV_PIX_FMT_YUV420P;
+    }
+
     if (tex->interop->hw_type != AV_HWDEVICE_TYPE_NONE
-            && tex->interop->pix_fmt != frame->format) {
+            && tex->interop->pix_fmt != format) {
         LOGI("Incompatible frame, switching to software interop");
         if (!sc_texture_disable_hwdec(tex)) {
             return false;
@@ -113,8 +120,8 @@ sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
 
     struct sc_interop *interop = tex->interop;
 
-    if (interop->pix_fmt != frame->format) {
-        const char *name = av_get_pix_fmt_name(frame->format);
+    if (interop->pix_fmt != format) {
+        const char *name = av_get_pix_fmt_name(format);
         LOGE("Unsupported frames format: %s", name ? name : "(unknown)");
         return false;
     }
