@@ -12,10 +12,12 @@
 
 #include "coords.h"
 #include "opengl.h"
+#include "options.h"
 
 struct sc_interop {
     const char *name;
 
+    enum AVHWDeviceType hw_type;
     enum AVPixelFormat pix_fmt;
 
     SDL_Texture *texture;
@@ -37,7 +39,7 @@ struct sc_interop_ops {
 };
 
 struct sc_interop *
-sc_interop_new(enum AVHWDeviceType hw_type, SDL_Renderer *renderer,
+sc_interop_new(enum sc_hwdec_mode hwdec_mode, SDL_Renderer *renderer,
                struct sc_opengl *gl, bool mipmaps);
 
 void

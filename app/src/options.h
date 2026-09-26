@@ -76,6 +76,18 @@ enum sc_hwdec_mode {
     SC_HWDEC_MODE_DISABLED,
 };
 
+static inline const char *
+sc_hwdec_mode_get_name(enum sc_hwdec_mode mode) {
+    switch (mode) {
+        case SC_HWDEC_MODE_AUTO:
+            return "auto";
+        case SC_HWDEC_MODE_DISABLED:
+            return "disabled";
+        default:
+            return "(unknown)";
+    }
+}
+
 enum sc_camera_facing {
     SC_CAMERA_FACING_ANY,
     SC_CAMERA_FACING_FRONT,
