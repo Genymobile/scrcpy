@@ -169,6 +169,7 @@ sc_interop_software_new(SDL_Renderer *renderer, struct sc_opengl *gl,
     };
 
     sw->interop.name = "software";
+    sw->interop.hw_type = AV_HWDEVICE_TYPE_NONE;
     sw->interop.pix_fmt = AV_PIX_FMT_YUV420P;
     sw->interop.texture = NULL;
     sw->interop.ops = &ops;

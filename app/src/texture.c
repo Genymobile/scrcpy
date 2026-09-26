@@ -3,11 +3,13 @@
 #include <assert.h>
 #include <string.h>
 
+#include <libavutil/pixdesc.h>
+
 #include "util/log.h"
 
 bool
 sc_texture_init(struct sc_texture *tex, SDL_Renderer *renderer, bool mipmaps,
-                enum AVHWDeviceType hw_type) {
+                enum sc_hwdec_mode hwdec_mode) {
     const char *renderer_name = SDL_GetRendererName(renderer);
     LOGI("Renderer: %s", renderer_name ? renderer_name : "(unknown)");
 
@@ -44,10 +46,12 @@ sc_texture_init(struct sc_texture *tex, SDL_Renderer *renderer, bool mipmaps,
     }
 
     tex->renderer = renderer;
-    tex->interop = sc_interop_new(hw_type, tex->renderer, gl, tex->mipmaps);
+    tex->interop = sc_interop_new(hwdec_mode, tex->renderer, gl, tex->mipmaps);
     if (!tex->interop) {
         return false;
     }
+
+    LOGI("Interop: %s", tex->interop->name);
 
     return true;
 }
@@ -63,6 +67,11 @@ sc_texture_get(struct sc_texture *tex) {
     return tex->interop->texture;
 }
 
+enum AVHWDeviceType
+sc_texture_get_hw_type(struct sc_texture *tex) {
+    return tex->interop->hw_type;
+}
+
 struct sc_size
 sc_texture_get_frame_size(struct sc_texture *tex) {
     assert(tex->interop && tex->interop->texture);
@@ -70,9 +79,43 @@ sc_texture_get_frame_size(struct sc_texture *tex) {
 }
 
 bool
-sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
-    struct sc_interop *interop = tex->interop;
+sc_texture_disable_hwdec(struct sc_texture *tex) {
+    assert(tex->interop);
+    assert(tex->interop->hw_type != AV_HWDEVICE_TYPE_NONE);
+
+    struct sc_opengl *gl = tex->has_gl ? &tex->gl : NULL;
+    struct sc_interop *interop =
+        sc_interop_new(SC_HWDEC_MODE_DISABLED, tex->renderer, gl, tex->mipmaps);
     if (!interop) {
+        return false;
+    }
+
+    LOGD("Interop: %s dropped", tex->interop->name);
+    sc_interop_delete(tex->interop);
+
+    tex->interop = interop;
+
+    LOGI("Interop: %s", tex->interop->name);
+    return true;
+}
+
+bool
+sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
+    assert(tex->interop);
+
+    if (tex->interop->hw_type != AV_HWDEVICE_TYPE_NONE
+            && tex->interop->pix_fmt != frame->format) {
+        LOGI("Incompatible frame, switching to software interop");
+        if (!sc_texture_disable_hwdec(tex)) {
+            return false;
+        }
+    }
+
+    struct sc_interop *interop = tex->interop;
+
+    if (interop->pix_fmt != frame->format) {
+        const char *name = av_get_pix_fmt_name(frame->format);
+        LOGE("Unsupported frames format: %s", name ? name : "(unknown)");
         return false;
     }
 
