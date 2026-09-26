@@ -6,6 +6,7 @@
 #include <libavcodec/avcodec.h>
 
 #include "coords.h"
+#include "hwdec.h"
 #include "trait/frame_source.h"
 #include "trait/packet_sink.h"
 #include "util/thread.h"
@@ -33,6 +34,8 @@ struct sc_decoder {
     const char *name; // must be statically allocated (e.g. a string literal)
     bool copy_opaque;
 
+    struct sc_hwdec *hwdec; // optional, only for video
+
     sc_thread thread;
     sc_mutex mutex;
     sc_cond cond;
@@ -59,8 +62,11 @@ struct sc_decoder_callbacks {
 // The name must be statically allocated (e.g. a string literal)
 //
 // copy_opaque: Set to true to forward the AVPacket.opaque_ref to the AVFrame
+// hwdec: The video decoder backend (NULL for audio), owned by the caller (must
+//        outlive the decoder)
 bool
-sc_decoder_init(struct sc_decoder *decoder, const char *name, bool copy_opaque,
+sc_decoder_init(struct sc_decoder *decoder, const char *name,
+                struct sc_hwdec *hwdec, bool copy_opaque,
                 const struct sc_decoder_callbacks *cbs, void *cbs_userdata);
 
 bool

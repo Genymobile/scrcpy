@@ -645,7 +645,7 @@ sc_screen_init(struct sc_screen *screen,
 
     bool mipmaps = params->video && params->mipmaps;
     ok = sc_texture_init(&screen->tex, screen->renderer, mipmaps,
-                         AV_HWDEVICE_TYPE_NONE);
+                         params->hwdec_mode);
     if (!ok) {
         goto error_destroy_renderer;
     }
