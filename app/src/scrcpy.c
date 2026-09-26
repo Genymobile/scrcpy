@@ -20,6 +20,7 @@
 #include "demuxer.h"
 #include "events.h"
 #include "file_pusher.h"
+#include "hwdec.h"
 #include "keyboard_sdk.h"
 #include "mouse_sdk.h"
 #include "recorder.h"
@@ -58,6 +59,7 @@ struct scrcpy {
     struct sc_demuxer audio_demuxer;
     struct sc_decoder video_decoder;
     struct sc_decoder audio_decoder;
+    struct sc_hwdec hwdec;
     struct sc_recorder recorder;
     struct sc_video_regulator video_regulator;
 #ifdef HAVE_V4L2
@@ -332,6 +334,41 @@ set_terminal_title_with_prefix(const char *value) {
     sc_term_set_title(title);
 }
 
+static bool
+sc_init_video_hwdec(struct sc_hwdec *hwdec, enum sc_hwdec_mode mode,
+                    struct sc_screen *screen) {
+    enum AVHWDeviceType hw_type = AV_HWDEVICE_TYPE_NONE;
+    SDL_Renderer *renderer = NULL;
+    if (screen) {
+        hw_type = sc_screen_get_hw_type(screen);
+        renderer = screen->renderer;
+    }
+    if (sc_hwdec_init(hwdec, hw_type, renderer)) {
+        return true;
+    }
+
+    // The software decoder cannot fail
+    assert(hw_type != AV_HWDEVICE_TYPE_NONE);
+
+    if (mode != SC_HWDEC_MODE_AUTO) {
+        LOGE("Hardware decoder %s unavailable",
+             av_hwdevice_get_type_name(hw_type));
+        return false;
+    }
+
+    // The screen created its interop according to the requested hardware
+    // decoder mode, but in the end the hardware decoder is unavailable, fall
+    // back to software decoding and replace the screen interop with a software
+    // interop.
+    LOGI("Hardware decoding unavailable; using software decoding");
+    if (!sc_screen_disable_hwdec(screen)) {
+        return false;
+    }
+
+    // Initialize software decoder
+    return sc_hwdec_init(hwdec, AV_HWDEVICE_TYPE_NONE, NULL);
+}
+
 enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
@@ -362,6 +399,7 @@ scrcpy(struct scrcpy_options *options) {
     bool video_regulator_initialized = false;
     bool video_demuxer_started = false;
     bool audio_demuxer_started = false;
+    bool hwdec_initialized = false;
     bool video_decoder_initialized = false;
     bool video_decoder_started = false;
     bool audio_decoder_initialized = false;
@@ -796,6 +834,7 @@ aoa_complete:
             .render_fit = options->render_fit,
             .orientation = options->display_orientation,
             .mipmaps = options->mipmaps,
+            .hwdec_mode = options->hwdec_mode,
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,
         };
@@ -812,10 +851,18 @@ aoa_complete:
     needs_video_decoder |= !!options->v4l2_device;
 #endif
     if (needs_video_decoder) {
+        struct sc_screen *screen = options->video_playback ? &s->screen : NULL;
+        assert(!screen || screen_initialized);
+
+        if (!sc_init_video_hwdec(&s->hwdec, options->hwdec_mode, screen)) {
+            goto end;
+        }
+        hwdec_initialized = true;
+
         // If a video buffer is present, then the recv date must be forwarded
         // from the AVPacket to the AVFrame
         bool copy_opaque = has_video_buffer;
-        if (!sc_decoder_init(&s->video_decoder, "video", copy_opaque,
+        if (!sc_decoder_init(&s->video_decoder, "video", &s->hwdec, copy_opaque,
                              &decoder_cbs, NULL)) {
             goto end;
         }
@@ -831,7 +878,7 @@ aoa_complete:
     }
 
     if (needs_audio_decoder) {
-        if (!sc_decoder_init(&s->audio_decoder, "audio", false,
+        if (!sc_decoder_init(&s->audio_decoder, "audio", NULL, false,
                              &decoder_cbs, NULL)) {
             goto end;
         }
@@ -1112,6 +1159,11 @@ end:
 
     if (video_decoder_initialized) {
         sc_decoder_destroy(&s->video_decoder);
+    }
+
+    // The hwdec must outlive the video decoder
+    if (hwdec_initialized) {
+        sc_hwdec_destroy(&s->hwdec);
     }
 
     if (audio_decoder_initialized) {

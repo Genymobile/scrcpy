@@ -6,20 +6,20 @@
 #include "util/log.h"
 
 struct sc_interop *
-sc_interop_new(enum AVHWDeviceType hw_type, SDL_Renderer *renderer,
+sc_interop_new(enum sc_hwdec_mode hwdec_mode, SDL_Renderer *renderer,
                struct sc_opengl *gl, bool mipmaps) {
-    switch (hw_type) {
-        case AV_HWDEVICE_TYPE_NONE: {
-            struct sc_interop_software *sw =
-                sc_interop_software_new(renderer, gl, mipmaps);
-            if (!sw) {
-                return NULL;
-            }
+    bool any = hwdec_mode == SC_HWDEC_MODE_AUTO;
+
+    if (any || hwdec_mode == SC_HWDEC_MODE_DISABLED) {
+        struct sc_interop_software *sw =
+            sc_interop_software_new(renderer, gl, mipmaps);
+        if (sw) {
             return &sw->interop;
         }
-        default:
-            LOGE("hw_type not supported: %s", av_hwdevice_get_type_name(hw_type));
+        LOGI("Software interop failed");
     }
+
+    LOGE("No compatible interop");
     return NULL;
 }
 

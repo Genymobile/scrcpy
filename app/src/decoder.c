@@ -37,6 +37,12 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec,
         decoder->ctx->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
     }
 
+    if (decoder->hwdec && !sc_hwdec_configure(decoder->hwdec, decoder->ctx)) {
+        // Use software decoding (the codec context is left untouched)
+        LOGW("Decoder '%s': hardware decoding unavailable, using software "
+             "decoding", decoder->name);
+    }
+
     r = avcodec_open2(decoder->ctx, codec, NULL);
     if (r < 0) {
         LOGE("Decoder '%s': could not open codec", decoder->name);
@@ -346,7 +352,8 @@ sc_decoder_packet_sink_push_session(struct sc_packet_sink *sink,
 }
 
 bool
-sc_decoder_init(struct sc_decoder *decoder, const char *name, bool copy_opaque,
+sc_decoder_init(struct sc_decoder *decoder, const char *name,
+                struct sc_hwdec *hwdec, bool copy_opaque,
                 const struct sc_decoder_callbacks *cbs, void *cbs_userdata) {
     bool ok = sc_mutex_init(&decoder->mutex);
     if (!ok) {
@@ -362,6 +369,7 @@ sc_decoder_init(struct sc_decoder *decoder, const char *name, bool copy_opaque,
     decoder->name = name; // statically allocated
     sc_frame_source_init(&decoder->frame_source);
 
+    decoder->hwdec = hwdec;
     decoder->copy_opaque = copy_opaque;
 
     sc_vecdeque_init(&decoder->queue);
