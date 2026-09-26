@@ -11,6 +11,9 @@ sc_opengl_init(struct sc_opengl *gl) {
                     SDL_GL_GetProcAddress("glGetString");
     assert(gl->GetString);
 
+    gl->GetError = (GLenum (*)(void)) SDL_GL_GetProcAddress("glGetError");
+    assert(gl->GetError);
+
     gl->BindTexture = (void (*)(GLenum, GLuint))
                       SDL_GL_GetProcAddress("glBindTexture");
     assert(gl->BindTexture);
