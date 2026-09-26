@@ -38,6 +38,11 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec,
     }
 
     if (decoder->hwdec && !sc_hwdec_configure(decoder->hwdec, decoder->ctx)) {
+        if (decoder->hwdec->hw_forced) {
+            LOGE("Decoder '%s': hardware decoding unavailable", decoder->name);
+            goto error_free_context;
+        }
+
         // Use software decoding (the codec context is left untouched)
         LOGW("Decoder '%s': hardware decoding unavailable, using software "
              "decoding", decoder->name);
