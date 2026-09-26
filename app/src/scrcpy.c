@@ -577,46 +577,6 @@ scrcpy(struct scrcpy_options *options) {
         .on_ended = sc_decoder_on_ended,
     };
 
-    bool needs_video_decoder = options->video_playback;
-    bool needs_audio_decoder = options->audio_playback;
-#ifdef HAVE_V4L2
-    needs_video_decoder |= !!options->v4l2_device;
-#endif
-    if (needs_video_decoder) {
-        // If a video buffer is present, then the recv date must be forwarded
-        // from the AVPacket to the AVFrame
-        bool copy_opaque = has_video_buffer;
-        if (!sc_decoder_init(&s->video_decoder, "video", copy_opaque,
-                             &decoder_cbs, NULL)) {
-            goto end;
-        }
-        video_decoder_initialized = true;
-
-        sc_packet_source_add_sink(&s->video_demuxer.packet_source,
-                                  &s->video_decoder.packet_sink);
-
-        if (!sc_decoder_start(&s->video_decoder)) {
-            goto end;
-        }
-        video_decoder_started = true;
-    }
-
-    if (needs_audio_decoder) {
-        if (!sc_decoder_init(&s->audio_decoder, "audio", false,
-                             &decoder_cbs, NULL)) {
-            goto end;
-        }
-        audio_decoder_initialized = true;
-
-        sc_packet_source_add_sink(&s->audio_demuxer.packet_source,
-                                  &s->audio_decoder.packet_sink);
-
-        if (!sc_decoder_start(&s->audio_decoder)) {
-            goto end;
-        }
-        audio_decoder_started = true;
-    }
-
     if (options->record_filename) {
         static const struct sc_recorder_callbacks recorder_cbs = {
             .on_ended = sc_recorder_on_ended,
@@ -844,31 +804,73 @@ aoa_complete:
             goto end;
         }
         screen_initialized = true;
+    }
 
-        if (options->video_playback) {
-            struct sc_frame_source *src = &s->video_decoder.frame_source;
-            if (options->video_buffer) {
-                uint32_t backpressure_threshold = SC_BACKPRESSURE_THRESHOLD;
+    bool needs_video_decoder = options->video_playback;
+    bool needs_audio_decoder = options->audio_playback;
 #ifdef HAVE_V4L2
-                if (options->v4l2_device && options->v4l2_buffer
-                        && options->v4l2_buffer < options->video_buffer) {
-                    // Disable the backpressure threshold for this video
-                    // regulator, it will be handled by the v4l2 video regulator
-                    backpressure_threshold = 0; // disabled
-                }
+    needs_video_decoder |= !!options->v4l2_device;
 #endif
-                if (!sc_video_regulator_init(&s->video_regulator,
-                                             options->video_buffer, true,
-                                             backpressure_threshold)) {
-                    goto end;
-                }
-                video_regulator_initialized = true;
-                sc_frame_source_add_sink(src, &s->video_regulator.frame_sink);
-                src = &s->video_regulator.frame_source;
-            }
-
-            sc_frame_source_add_sink(src, &s->screen.frame_sink);
+    if (needs_video_decoder) {
+        // If a video buffer is present, then the recv date must be forwarded
+        // from the AVPacket to the AVFrame
+        bool copy_opaque = has_video_buffer;
+        if (!sc_decoder_init(&s->video_decoder, "video", copy_opaque,
+                             &decoder_cbs, NULL)) {
+            goto end;
         }
+        video_decoder_initialized = true;
+
+        sc_packet_source_add_sink(&s->video_demuxer.packet_source,
+                                  &s->video_decoder.packet_sink);
+
+        if (!sc_decoder_start(&s->video_decoder)) {
+            goto end;
+        }
+        video_decoder_started = true;
+    }
+
+    if (needs_audio_decoder) {
+        if (!sc_decoder_init(&s->audio_decoder, "audio", false,
+                             &decoder_cbs, NULL)) {
+            goto end;
+        }
+        audio_decoder_initialized = true;
+
+        sc_packet_source_add_sink(&s->audio_demuxer.packet_source,
+                                  &s->audio_decoder.packet_sink);
+
+        if (!sc_decoder_start(&s->audio_decoder)) {
+            goto end;
+        }
+        audio_decoder_started = true;
+    }
+
+    if (options->video_playback) {
+        assert(options->window);
+        assert(screen_initialized);
+        struct sc_frame_source *src = &s->video_decoder.frame_source;
+        if (options->video_buffer) {
+            uint32_t backpressure_threshold = SC_BACKPRESSURE_THRESHOLD;
+#ifdef HAVE_V4L2
+            if (options->v4l2_device && options->v4l2_buffer
+                    && options->v4l2_buffer < options->video_buffer) {
+                // Disable the backpressure threshold for this video regulator,
+                // it will be handled by the v4l2 video regulator
+                backpressure_threshold = 0; // disabled
+            }
+#endif
+            if (!sc_video_regulator_init(&s->video_regulator,
+                                         options->video_buffer, true,
+                                         backpressure_threshold)) {
+                goto end;
+            }
+            video_regulator_initialized = true;
+            sc_frame_source_add_sink(src, &s->video_regulator.frame_sink);
+            src = &s->video_regulator.frame_source;
+        }
+
+        sc_frame_source_add_sink(src, &s->screen.frame_sink);
     }
 
     if (options->audio_playback) {
