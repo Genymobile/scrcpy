@@ -2,14 +2,17 @@
 
 #include <assert.h>
 
+#include <libavutil/pixdesc.h>
+
 #include "util/log.h"
 
 bool
 sc_hwdec_init(struct sc_hwdec *hwdec, enum AVHWDeviceType hw_type,
-              SDL_Renderer *renderer) {
+              bool hw_forced, SDL_Renderer *renderer) {
     (void) renderer; // only used by some hardware decoders
 
     hwdec->hw_type = hw_type;
+    hwdec->hw_forced = hw_forced;
     switch (hw_type) {
         case AV_HWDEVICE_TYPE_NONE:
             hwdec->name = "software";
@@ -42,6 +45,20 @@ sc_hwdec_is_supported_by_codec(const AVCodec *codec,
     }
 }
 
+static enum AVPixelFormat
+sc_hwdec_get_format_forced(AVCodecContext *ctx,
+                           const enum AVPixelFormat *formats) {
+    enum AVPixelFormat format = avcodec_default_get_format(ctx, formats);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
+    if (!desc || !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
+        struct sc_hwdec *hwdec = ctx->opaque;
+        assert(hwdec);
+        LOGE("%s cannot decode this stream", hwdec->name);
+        return AV_PIX_FMT_NONE;
+    }
+    return format;
+}
+
 bool
 sc_hwdec_configure(struct sc_hwdec *hwdec, AVCodecContext *ctx) {
     assert(ctx->codec_type == AVMEDIA_TYPE_VIDEO);
@@ -69,6 +86,13 @@ sc_hwdec_configure(struct sc_hwdec *hwdec, AVCodecContext *ctx) {
     // Some backends do not expose plain Baseline (only Constrained Baseline).
     // Hardware supporting Main/High can still decode Baseline.
     ctx->hwaccel_flags |= AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH;
+
+    if (hwdec->hw_forced) {
+        // By default, FFmpeg falls back to a software format if the hardware
+        // decoder cannot decode the stream: refuse it
+        ctx->opaque = hwdec;
+        ctx->get_format = sc_hwdec_get_format_forced;
+    }
 
     return true;
 }
