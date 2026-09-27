@@ -1032,6 +1032,22 @@ sc_screen_toggle_fullscreen(struct sc_screen *screen) {
 }
 
 void
+sc_screen_toggle_always_on_top(struct sc_screen *screen) {
+    assert(screen->video);
+
+    bool req_always_on_top =
+        !(SDL_GetWindowFlags(screen->window) & SDL_WINDOW_ALWAYS_ON_TOP);
+
+    bool ok = SDL_SetWindowAlwaysOnTop(screen->window, req_always_on_top);
+    if (!ok) {
+        LOGW("Could not switch always-on-top mode: %s", SDL_GetError());
+        return;
+    }
+
+    LOGD("Always on top: %s", req_always_on_top ? "on" : "off");
+}
+
+void
 sc_screen_resize_to_fit(struct sc_screen *screen) {
     assert(screen->video);
 
