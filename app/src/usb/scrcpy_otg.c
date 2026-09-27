@@ -77,6 +77,13 @@ scrcpy_otg(struct scrcpy_options *options) {
     struct scrcpy_otg *s = &scrcpy_otg;
 
     const char *serial = options->serial;
+    if (!serial) {
+        // No explicit selection, check $ANDROID_SERIAL
+        serial = getenv("ANDROID_SERIAL");
+        if (serial) {
+            LOGI("Using ANDROID_SERIAL: %s", serial);
+        }
+    }
 
     sc_sdl_set_hints(options->render_driver, options->disable_screensaver);
 
