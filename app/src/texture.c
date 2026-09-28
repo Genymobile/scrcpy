@@ -1,24 +1,27 @@
 #include "texture.h"
 
 #include <assert.h>
-#include <inttypes.h>
 #include <string.h>
-#include <libavutil/pixfmt.h>
 
 #include "util/log.h"
 
 bool
-sc_texture_init(struct sc_texture *tex, SDL_Renderer *renderer, bool mipmaps) {
+sc_texture_init(struct sc_texture *tex, SDL_Renderer *renderer, bool mipmaps,
+                enum AVHWDeviceType hw_type) {
     const char *renderer_name = SDL_GetRendererName(renderer);
     LOGI("Renderer: %s", renderer_name ? renderer_name : "(unknown)");
 
+    tex->has_gl = false;
     tex->mipmaps = false;
+
+    struct sc_opengl *gl = NULL;
 
     // starts with "opengl"
     bool use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
     if (use_opengl) {
-        struct sc_opengl *gl = &tex->gl;
+        gl = &tex->gl;
         sc_opengl_init(gl);
+        tex->has_gl = true;
 
         LOGI("OpenGL version: %s", gl->version);
 
@@ -41,182 +44,41 @@ sc_texture_init(struct sc_texture *tex, SDL_Renderer *renderer, bool mipmaps) {
     }
 
     tex->renderer = renderer;
-    tex->texture = NULL;
+    tex->interop = sc_interop_new(hw_type, tex->renderer, gl, tex->mipmaps);
+    if (!tex->interop) {
+        return false;
+    }
+
     return true;
 }
 
 void
 sc_texture_destroy(struct sc_texture *tex) {
-    if (tex->texture) {
-        SDL_DestroyTexture(tex->texture);
-    }
+    sc_interop_delete(tex->interop);
 }
 
-static enum SDL_Colorspace
-sc_texture_to_sdl_color_space(enum AVColorSpace color_space,
-                              enum AVColorRange color_range) {
-    bool full_range = color_range == AVCOL_RANGE_JPEG;
-
-    switch (color_space) {
-        case AVCOL_SPC_BT709:
-        case AVCOL_SPC_RGB:
-        case AVCOL_SPC_UNSPECIFIED:
-        case AVCOL_SPC_YCGCO:
-            return full_range ? SDL_COLORSPACE_BT709_FULL
-                              : SDL_COLORSPACE_BT709_LIMITED;
-        case AVCOL_SPC_BT470BG:
-        case AVCOL_SPC_SMPTE170M:
-            return full_range ? SDL_COLORSPACE_BT601_FULL
-                              : SDL_COLORSPACE_BT601_LIMITED;
-        case AVCOL_SPC_BT2020_NCL:
-        case AVCOL_SPC_BT2020_CL:
-            return full_range ? SDL_COLORSPACE_BT2020_FULL
-                              : SDL_COLORSPACE_BT2020_LIMITED;
-        default:
-            return SDL_COLORSPACE_JPEG;
-    }
-}
-
-static SDL_Texture *
-sc_texture_create_frame_texture(struct sc_texture *tex,
-                                struct sc_size size,
-                                enum AVColorSpace color_space,
-                                enum AVColorRange color_range) {
-    LOGV("Creating new texture: size=%" PRIu16 "x%" PRIu16 " color_space=%d "
-         "color_range=%d", size.width, size.height, color_space, color_range);
-
-    SDL_PropertiesID props = SDL_CreateProperties();
-    if (!props) {
-        LOG_OOM();
-        return NULL;
-    }
-
-    enum SDL_Colorspace sdl_color_space =
-        sc_texture_to_sdl_color_space(color_space, color_range);
-
-    bool ok =
-        SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER,
-                              SDL_PIXELFORMAT_YV12);
-    ok &= SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER,
-                                SDL_TEXTUREACCESS_STATIC);
-    ok &= SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER,
-                                size.width);
-    ok &= SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER,
-                                size.height);
-    ok &= SDL_SetNumberProperty(props,
-                                SDL_PROP_TEXTURE_CREATE_COLORSPACE_NUMBER,
-                                sdl_color_space);
-
-    if (!ok) {
-        LOGE("Could not set texture properties");
-        SDL_DestroyProperties(props);
-        return NULL;
-    }
-
-    SDL_Renderer *renderer = tex->renderer;
-    SDL_Texture *texture = SDL_CreateTextureWithProperties(renderer, props);
-    SDL_DestroyProperties(props);
-    if (!texture) {
-        LOGD("Could not create texture: %s", SDL_GetError());
-        return NULL;
-    }
-
-    if (tex->mipmaps) {
-        struct sc_opengl *gl = &tex->gl;
-
-        // The properties are owned by the texture
-        SDL_PropertiesID props = SDL_GetTextureProperties(texture);
-        if (!props) {
-            LOGE("Could not get texture properties: %s", SDL_GetError());
-            SDL_DestroyTexture(texture);
-            return NULL;
-        }
-
-        // A YV12 texture is backed by one OpenGL texture per plane
-        static const char *const opengl_keys[3] = {
-            SDL_PROP_TEXTURE_OPENGL_TEXTURE_NUMBER,
-            SDL_PROP_TEXTURE_OPENGL_TEXTURE_U_NUMBER,
-            SDL_PROP_TEXTURE_OPENGL_TEXTURE_V_NUMBER,
-        };
-        static const char *const opengles2_keys[3] = {
-            SDL_PROP_TEXTURE_OPENGLES2_TEXTURE_NUMBER,
-            SDL_PROP_TEXTURE_OPENGLES2_TEXTURE_U_NUMBER,
-            SDL_PROP_TEXTURE_OPENGLES2_TEXTURE_V_NUMBER,
-        };
-
-        const char *renderer_name = SDL_GetRendererName(tex->renderer);
-        const char *const *keys = !renderer_name
-                               || !strcmp(renderer_name, "opengl")
-                                ? opengl_keys : opengles2_keys;
-
-        for (unsigned i = 0; i < 3; ++i) {
-            int64_t texture_id = SDL_GetNumberProperty(props, keys[i], 0);
-            if (!texture_id) {
-                LOGE("Could not get texture id: %s", SDL_GetError());
-                SDL_DestroyTexture(texture);
-                return NULL;
-            }
-
-            assert(!(texture_id & ~0xFFFFFFFF)); // fits in uint32_t
-            tex->texture_ids[i] = texture_id;
-        }
-
-        sc_opengl_enable_mipmaps(gl, tex->texture_ids, 3);
-    }
-
-    return texture;
+SDL_Texture *
+sc_texture_get(struct sc_texture *tex) {
+    assert(tex->interop);
+    return tex->interop->texture;
 }
 
 bool
 sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
-
-    struct sc_size size = {frame->width, frame->height};
-    assert(size.width && size.height);
-
-    if (!tex->texture
-            || tex->texture_size.width != size.width
-            || tex->texture_size.height != size.height) {
-        // Incompatible texture, recreate it
-        enum AVColorSpace color_space = frame->colorspace;
-        enum AVColorRange color_range = frame->color_range;
-
-        if (tex->texture) {
-            SDL_DestroyTexture(tex->texture);
-        }
-
-        tex->texture = sc_texture_create_frame_texture(tex, size, color_space,
-                                                       color_range);
-        if (!tex->texture) {
-            return false;
-        }
-
-        tex->texture_size = size;
-
-        LOGI("Texture: %" PRIu16 "x%" PRIu16, size.width, size.height);
-    }
-
-    assert(tex->texture);
-
-    bool ok = SDL_UpdateYUVTexture(tex->texture, NULL,
-                                   frame->data[0], frame->linesize[0],
-                                   frame->data[1], frame->linesize[1],
-                                   frame->data[2], frame->linesize[2]);
-    if (!ok) {
-        LOGD("Could not update texture: %s", SDL_GetError());
+    struct sc_interop *interop = tex->interop;
+    if (!interop) {
         return false;
     }
 
-    if (tex->mipmaps) {
-        sc_opengl_generate_mipmaps(&tex->gl, tex->texture_ids, 3);
-    }
-
-    return true;
+    assert(interop->ops && interop->ops->import);
+    return interop->ops->import(interop, frame);
 }
 
 void
 sc_texture_reset(struct sc_texture *tex) {
-    if (tex->texture) {
-        SDL_DestroyTexture(tex->texture);
-        tex->texture = NULL;
+    struct sc_interop *interop = tex->interop;
+    if (interop) {
+        assert(interop->ops && interop->ops->reset);
+        interop->ops->reset(interop);
     }
 }
