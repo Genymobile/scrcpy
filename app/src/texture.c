@@ -87,6 +87,7 @@ sc_texture_create_frame_texture(struct sc_texture *tex,
 
     SDL_PropertiesID props = SDL_CreateProperties();
     if (!props) {
+        LOG_OOM();
         return NULL;
     }
 
