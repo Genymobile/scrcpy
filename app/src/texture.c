@@ -127,6 +127,7 @@ sc_texture_create_frame_texture(struct sc_texture *tex,
         SDL_PropertiesID props = SDL_GetTextureProperties(texture);
         if (!props) {
             LOGE("Could not get texture properties: %s", SDL_GetError());
+            SDL_DestroyTexture(texture);
             return NULL;
         }
 
