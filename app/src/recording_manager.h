@@ -45,8 +45,10 @@ struct sc_recording_manager {
     bool audio_available;
     bool streams_closed;
 
-    AVCodecContext *video_ctx;
-    AVCodecContext *audio_ctx;
+    const AVCodec *video_codec;
+    AVCodecParameters *video_params;
+    const AVCodec *audio_codec;
+    AVCodecParameters *audio_params;
     AVPacket *video_config;
     AVPacket *audio_config;
     AVPacket *pending_video_keyframe;

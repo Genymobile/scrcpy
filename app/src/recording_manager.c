@@ -98,24 +98,18 @@ sc_recording_packet_clone(const AVPacket *packet) {
     return copy;
 }
 
-static AVCodecContext *
-sc_recording_codec_context_clone(const AVCodecContext *ctx) {
-    AVCodecContext *copy = avcodec_alloc_context3(ctx->codec);
-    AVCodecParameters *params = avcodec_parameters_alloc();
-    if (!copy || !params) {
-        avcodec_free_context(&copy);
-        avcodec_parameters_free(&params);
+static AVCodecParameters *
+sc_recording_codec_parameters_clone(const AVCodecParameters *params) {
+    AVCodecParameters *copy = avcodec_parameters_alloc();
+    if (!copy) {
         return NULL;
     }
-    if (avcodec_parameters_from_context(params, ctx) < 0
-            || avcodec_parameters_to_context(copy, params) < 0) {
-        avcodec_free_context(&copy);
-        avcodec_parameters_free(&params);
+
+    if (avcodec_parameters_copy(copy, params) < 0) {
+        avcodec_parameters_free(&copy);
         return NULL;
     }
-    copy->time_base = ctx->time_base;
-    copy->framerate = ctx->framerate;
-    avcodec_parameters_free(&params);
+
     return copy;
 }
 
@@ -136,7 +130,7 @@ sc_recording_manager_create_session_locked(
     sc_mutex_assert(&manager->mutex);
     assert(!manager->session);
     assert(manager->pending_filename);
-    assert(!manager->video_requested || manager->video_ctx);
+    assert(!manager->video_requested || manager->video_params);
 
     struct sc_recording_session *session = calloc(1, sizeof(*session));
     if (!session) {
@@ -149,9 +143,9 @@ sc_recording_manager_create_session_locked(
     static const struct sc_recorder_callbacks recorder_cbs = {
         .on_ended = sc_recording_session_on_ended,
     };
-    bool video = manager->video_requested && manager->video_ctx;
+    bool video = manager->video_requested && manager->video_params;
     bool audio = manager->audio_requested && manager->audio_available
-              && manager->audio_ctx;
+              && manager->audio_params;
     if (!sc_recorder_init(&session->recorder, manager->pending_filename,
                           manager->pending_format, video, audio,
                           manager->orientation, &recorder_cbs, session)) {
@@ -167,11 +161,13 @@ sc_recording_manager_create_session_locked(
     session->recorder_started = true;
 
     if (video && !session->recorder.video_packet_sink.ops->open(
-            &session->recorder.video_packet_sink, manager->video_ctx, NULL)) {
+            &session->recorder.video_packet_sink, manager->video_codec,
+            manager->video_params, NULL)) {
         goto error_stop_session;
     }
     if (audio && !session->recorder.audio_packet_sink.ops->open(
-            &session->recorder.audio_packet_sink, manager->audio_ctx, NULL)) {
+            &session->recorder.audio_packet_sink, manager->audio_codec,
+            manager->audio_params, NULL)) {
         goto error_stop_session;
     }
 
@@ -306,18 +302,21 @@ sc_recording_create_temp_path(void) {
 
 static bool
 sc_recording_manager_video_open(struct sc_packet_sink *sink,
-                                AVCodecContext *ctx,
+                                const AVCodec *codec,
+                                const AVCodecParameters *params,
                                 const struct sc_stream_session *session) {
     (void) session;
     struct sc_recording_manager *manager = DOWNCAST_VIDEO(sink);
-    AVCodecContext *copy = sc_recording_codec_context_clone(ctx);
+    AVCodecParameters *copy =
+        sc_recording_codec_parameters_clone(params);
     if (!copy) {
         LOG_OOM();
         return false;
     }
     sc_mutex_lock(&manager->mutex);
-    avcodec_free_context(&manager->video_ctx);
-    manager->video_ctx = copy;
+    avcodec_parameters_free(&manager->video_params);
+    manager->video_codec = codec;
+    manager->video_params = copy;
     manager->video_ready = true;
     bool ok = sc_recording_manager_maybe_create_session_locked(manager);
     sc_mutex_unlock(&manager->mutex);
@@ -327,18 +326,21 @@ sc_recording_manager_video_open(struct sc_packet_sink *sink,
 
 static bool
 sc_recording_manager_audio_open(struct sc_packet_sink *sink,
-                                AVCodecContext *ctx,
+                                const AVCodec *codec,
+                                const AVCodecParameters *params,
                                 const struct sc_stream_session *session) {
     (void) session;
     struct sc_recording_manager *manager = DOWNCAST_AUDIO(sink);
-    AVCodecContext *copy = sc_recording_codec_context_clone(ctx);
+    AVCodecParameters *copy =
+        sc_recording_codec_parameters_clone(params);
     if (!copy) {
         LOG_OOM();
         return false;
     }
     sc_mutex_lock(&manager->mutex);
-    avcodec_free_context(&manager->audio_ctx);
-    manager->audio_ctx = copy;
+    avcodec_parameters_free(&manager->audio_params);
+    manager->audio_codec = codec;
+    manager->audio_params = copy;
     manager->audio_ready = true;
     manager->audio_available = true;
     bool ok = sc_recording_manager_maybe_create_session_locked(manager);
@@ -713,8 +715,8 @@ sc_recording_manager_destroy(struct sc_recording_manager *manager) {
         sc_recorder_destroy(&manager->session->recorder);
         free(manager->session);
     }
-    avcodec_free_context(&manager->video_ctx);
-    avcodec_free_context(&manager->audio_ctx);
+    avcodec_parameters_free(&manager->video_params);
+    avcodec_parameters_free(&manager->audio_params);
     av_packet_free(&manager->video_config);
     av_packet_free(&manager->audio_config);
     av_packet_free(&manager->pending_video_keyframe);
