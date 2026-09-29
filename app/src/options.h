@@ -335,6 +335,7 @@ struct scrcpy_options {
 #define SC_OPTION_LIST_APPS 0x10
     uint8_t list;
     bool window;
+    bool toolbar;
     bool mouse_hover;
     bool audio_dup;
     const char *new_display; // [<width>x<height>][/<dpi>] parsed by the server

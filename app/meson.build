@@ -7,14 +7,17 @@ src = [
     'src/audio_player.c',
     'src/audio_regulator.c',
     'src/cli.c',
+    'src/clipboard.c',
     'src/clock.c',
     'src/compat.c',
     'src/control_msg.c',
     'src/controller.c',
     'src/decoder.c',
     'src/demuxer.c',
+    'src/device_info.c',
     'src/device_msg.c',
     'src/disconnect.c',
+    'src/emulator_ui.c',
     'src/events.c',
     'src/file_pusher.c',
     'src/fps_counter.c',
@@ -29,11 +32,14 @@ src = [
     'src/packet_merger.c',
     'src/receiver.c',
     'src/recorder.c',
+    'src/recording_manager.c',
+    'src/recording_save.c',
     'src/scrcpy.c',
     'src/screen.c',
     'src/sdl_hints.c',
     'src/server.c',
     'src/texture.c',
+    'src/toolbar.c',
     'src/version.c',
     'src/video_regulator.c',
     'src/hid/hid_gamepad.c',
@@ -67,6 +73,12 @@ src = [
     'src/util/tick.c',
     'src/util/timeout.c',
 ]
+
+if host_machine.system() == 'darwin'
+    src += 'src/sys/macos/window_ui.m'
+else
+    src += 'src/window_ui.c'
+endif
 
 feature_test_macros = [
     '-D_GNU_SOURCE',
@@ -127,8 +139,12 @@ dependencies = [
     dependency('libavcodec', version: '>= 60.3', static: static),
     dependency('libavutil', version: '>= 58.2', static: static),
     dependency('libswresample', static: static),
-    dependency('sdl3', version: '>= 3.2.0', static: static),
+    dependency('sdl3', version: '>= 3.4.0', static: static),
 ]
+
+if host_machine.system() == 'darwin'
+    dependencies += dependency('appleframeworks', modules: ['AppKit'])
+endif
 
 if v4l2_support
     dependencies += dependency('libavdevice', static: static)
@@ -204,6 +220,21 @@ install_data('data/scrcpy.png',
              install_dir: datadir / 'icons/hicolor/256x256/apps')
 install_data('data/disconnected.png',
              install_dir: datadir / 'icons/hicolor/256x256/apps')
+toolbar_icon_dir = datadir / 'icons/hicolor/256x256/apps/toolbar-icons'
+install_data(
+    'data/toolbar-icons/home-20.png',
+    'data/toolbar-icons/home-40.png',
+    'data/toolbar-icons/home-60.png',
+    'data/toolbar-icons/back-20.png',
+    'data/toolbar-icons/back-40.png',
+    'data/toolbar-icons/back-60.png',
+    'data/toolbar-icons/screenshot-20.png',
+    'data/toolbar-icons/screenshot-40.png',
+    'data/toolbar-icons/screenshot-60.png',
+    'data/toolbar-icons/record-20.png',
+    'data/toolbar-icons/record-40.png',
+    'data/toolbar-icons/record-60.png',
+    install_dir: toolbar_icon_dir)
 install_data('data/zsh-completion/_scrcpy',
              install_dir: datadir / 'zsh/site-functions')
 install_data('data/bash-completion/scrcpy',
@@ -261,6 +292,10 @@ if get_option('buildtype') == 'debug'
             'src/util/str.c',
             'src/util/strbuf.c',
         ]],
+        ['test_device_info', [
+            'tests/test_device_info.c',
+            'src/device_info.c',
+        ]],
         ['test_device_msg_deserialize', [
             'tests/test_device_msg_deserialize.c',
             'src/device_msg.c',
@@ -277,6 +312,10 @@ if get_option('buildtype') == 'debug'
             'tests/test_str.c',
             'src/util/str.c',
             'src/util/strbuf.c',
+        ]],
+        ['test_toolbar', [
+            'tests/test_toolbar.c',
+            'src/toolbar.c',
         ]],
         ['test_vecdeque', [
             'tests/test_vecdeque.c',
