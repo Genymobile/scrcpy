@@ -46,7 +46,10 @@ struct sc_decoder {
     struct sc_decoder_queue queue;
 
     AVCodecContext *ctx;
+    AVCodecContext *previous_ctx; // kept alive after switching to libdav1d
     AVFrame *frame;
+    bool waiting_for_keyframe;
+    bool software_resume_pending;
 
     struct sc_stream_session session; // only initialized for video stream
     struct sc_size frame_size;

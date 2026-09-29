@@ -2,6 +2,8 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
+#include <libavcodec/codec_par.h>
 #include <libavcodec/packet.h>
 #include <libavutil/avutil.h>
 #include <libavutil/error.h>
@@ -11,12 +13,44 @@
 /** Downcast packet_sink to decoder */
 #define DOWNCAST(SINK) container_of(SINK, struct sc_decoder, packet_sink)
 
+static const AVCodec *
+sc_decoder_select_codec(const struct sc_decoder *decoder, const AVCodec *codec) {
+    if (codec->id != AV_CODEC_ID_AV1 || !decoder->hwdec
+            || decoder->hwdec->hw_type == AV_HWDEVICE_TYPE_NONE) {
+        return codec;
+    }
+
+    // libdav1d is often the default AV1 decoder, but it cannot expose
+    // hardware surfaces. Prefer FFmpeg's native decoder only when it supports
+    // the active hardware backend.
+    const AVCodec *native = avcodec_find_decoder_by_name("av1");
+    if (!native) {
+        return codec;
+    }
+    for (int i = 0;; ++i) {
+        const AVCodecHWConfig *config = avcodec_get_hw_config(native, i);
+        if (!config) {
+            break;
+        }
+        if ((config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX)
+                && config->device_type == decoder->hwdec->hw_type) {
+            return native;
+        }
+    }
+    return codec;
+}
+
 static bool
 sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec,
                 const AVCodecParameters *params,
                 const struct sc_stream_session *session) {
     // A video stream must have a session
     assert(session || codec->type != AVMEDIA_TYPE_VIDEO);
+
+    decoder->previous_ctx = NULL;
+    decoder->waiting_for_keyframe = false;
+    decoder->software_resume_pending = false;
+    codec = sc_decoder_select_codec(decoder, codec);
 
     decoder->ctx = avcodec_alloc_context3(codec);
     if (!decoder->ctx) {
@@ -98,10 +132,77 @@ sc_decoder_close(struct sc_decoder *decoder) {
     sc_frame_source_sinks_close(&decoder->frame_source);
     av_frame_free(&decoder->frame);
     avcodec_free_context(&decoder->ctx);
+    avcodec_free_context(&decoder->previous_ctx);
+}
+
+static bool
+sc_decoder_fallback_to_software(struct sc_decoder *decoder) {
+    // An explicit hardware backend must not silently switch to software.
+    if (!decoder->hwdec || decoder->hwdec->hw_forced
+            || decoder->hwdec->hw_type == AV_HWDEVICE_TYPE_NONE
+            || decoder->previous_ctx
+            || decoder->ctx->codec_id != AV_CODEC_ID_AV1
+            || strcmp(decoder->ctx->codec->name, "av1")) {
+        return false;
+    }
+
+    const AVCodec *codec = avcodec_find_decoder_by_name("libdav1d");
+    if (!codec) {
+        LOGE("AV1 software fallback unavailable: libdav1d is missing");
+        return false;
+    }
+
+    AVCodecParameters *params = avcodec_parameters_alloc();
+    AVCodecContext *ctx = avcodec_alloc_context3(codec);
+    if (!params || !ctx) {
+        LOG_OOM();
+        avcodec_parameters_free(&params);
+        avcodec_free_context(&ctx);
+        return false;
+    }
+
+    int ret = avcodec_parameters_from_context(params, decoder->ctx);
+    if (ret >= 0) {
+        ret = avcodec_parameters_to_context(ctx, params);
+    }
+    avcodec_parameters_free(&params);
+    if (ret < 0) {
+        LOGE("Could not copy AV1 decoder parameters: %s", av_err2str(ret));
+        avcodec_free_context(&ctx);
+        return false;
+    }
+
+    ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+    ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
+    if (decoder->copy_opaque) {
+        ctx->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
+    }
+    ret = avcodec_open2(ctx, codec, NULL);
+    if (ret < 0) {
+        LOGE("Could not open AV1 software decoder: %s", av_err2str(ret));
+        avcodec_free_context(&ctx);
+        return false;
+    }
+
+    av_frame_unref(decoder->frame);
+    decoder->previous_ctx = decoder->ctx;
+    decoder->ctx = ctx;
+    decoder->waiting_for_keyframe = true;
+    LOGW("Native AV1 decoding failed; switched to libdav1d. "
+         "Waiting for a keyframe");
+    return true;
 }
 
 static enum sc_sink_result
 sc_decoder_process_packet(struct sc_decoder *decoder, const AVPacket *packet) {
+    if (decoder->waiting_for_keyframe) {
+        if (!(packet->flags & AV_PKT_FLAG_KEY)) {
+            return SC_SINK_OK;
+        }
+        decoder->waiting_for_keyframe = false;
+        decoder->software_resume_pending = true;
+    }
+
     // Do not decode more packets before the frame sinks are ready
     sc_frame_source_sinks_apply_backpressure(&decoder->frame_source);
 
@@ -109,6 +210,9 @@ sc_decoder_process_packet(struct sc_decoder *decoder, const AVPacket *packet) {
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
         LOGE("Decoder '%s': could not send video packet: %s",
              decoder->name, av_err2str(ret));
+        if (sc_decoder_fallback_to_software(decoder)) {
+            return sc_decoder_process_packet(decoder, packet);
+        }
         return SC_SINK_KO;
     }
 
@@ -121,6 +225,9 @@ sc_decoder_process_packet(struct sc_decoder *decoder, const AVPacket *packet) {
         if (ret) {
             LOGE("Decoder '%s', could not receive video frame: %s",
                  decoder->name, av_err2str(ret));
+            if (sc_decoder_fallback_to_software(decoder)) {
+                return sc_decoder_process_packet(decoder, packet);
+            }
             return SC_SINK_KO;
         }
 
@@ -158,6 +265,10 @@ sc_decoder_process_packet(struct sc_decoder *decoder, const AVPacket *packet) {
         if (result != SC_SINK_OK) {
             // Not a decoder error
             return SC_SINK_STOPPED;
+        }
+        if (decoder->software_resume_pending) {
+            decoder->software_resume_pending = false;
+            LOGI("AV1 software decoding resumed at a keyframe");
         }
     }
 
