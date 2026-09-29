@@ -78,6 +78,11 @@ if host_machine.system() == 'darwin'
     src += 'src/sys/macos/window_ui.m'
 else
     src += 'src/window_ui.c'
+    if host_machine.system() == 'windows'
+        src += 'src/sys/win/window_ui_menu.c'
+    else
+        src += 'src/sys/unix/window_ui_menu.c'
+    endif
 endif
 
 feature_test_macros = [
@@ -156,6 +161,7 @@ endif
 
 if host_machine.system() == 'windows'
     dependencies += cc.find_library('mingw32')
+    dependencies += cc.find_library('user32')
     dependencies += cc.find_library('ws2_32')
 endif
 

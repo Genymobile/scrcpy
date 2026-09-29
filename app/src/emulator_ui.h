@@ -30,7 +30,7 @@ struct sc_emulator_ui {
 
 void
 sc_emulator_ui_init(struct sc_emulator_ui *ui, SDL_Window *parent,
-                    bool enabled, bool always_on_top,
+                    bool enabled, bool always_on_top, bool shortcut_enabled,
                     const char *title_primary, const char *title_secondary,
                     const struct sc_emulator_ui_callbacks *callbacks,
                     void *callbacks_userdata);

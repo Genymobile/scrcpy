@@ -282,6 +282,7 @@ sc_window_ui_set_toolbar_menu_visible(struct sc_window_ui *window_ui,
 void
 sc_window_ui_configure_toolbar_menu(struct sc_window_ui *window_ui,
                                     bool visible,
+                                    bool shortcut_enabled,
                                     sc_window_ui_toolbar_toggle_cb on_toggle,
                                     void *userdata) {
     NSWindow *window = sc_window_ui_get_native_window(window_ui);
@@ -305,7 +306,23 @@ sc_window_ui_configure_toolbar_menu(struct sc_window_ui *window_ui,
         ui.toolbarMenuItem.target = ui;
         [viewMenu addItem:ui.toolbarMenuItem];
     }
+    if (shortcut_enabled) {
+        ui.toolbarMenuItem.keyEquivalent = @"t";
+        ui.toolbarMenuItem.keyEquivalentModifierMask =
+            NSEventModifierFlagCommand | NSEventModifierFlagShift;
+    } else {
+        ui.toolbarMenuItem.keyEquivalent = @"";
+    }
     sc_window_ui_set_toolbar_menu_visible(window_ui, visible);
+}
+
+bool
+sc_window_ui_handle_event(struct sc_window_ui *window_ui,
+                          const SDL_Event *event) {
+    (void) window_ui;
+    (void) event;
+    // Native menu commands are dispatched by AppKit.
+    return false;
 }
 
 void

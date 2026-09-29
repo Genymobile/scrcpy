@@ -59,6 +59,7 @@ _<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
  | Tilt horizontally (slide with 2 fingers)    | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+_click-and-move_
  | Drag & drop APK file                        | Install APK from computer
  | Drag & drop non-APK file                    | [Push file to device](control.md#push-file-to-device)
+ | Show or hide emulator toolbar               | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>t</kbd> _(Windows/Linux)_ \| <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>t</kbd> _(macOS)_ \| <kbd>F10</kbd> _(Linux: open View menu)_
  | Turn on the camera torch (camera mode only) | <kbd>MOD</kbd>+<kbd>t</kbd>
  | Turn off the camera torch (camera mode only)| <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>t</kbd>
  | Zoom camera in (camera mode only)           | <kbd>MOD</kbd>+<kbd>↑</kbd> _(up)_
@@ -70,6 +71,9 @@ _³4th and 5th mouse buttons, if your mouse has them._
 _⁴For react-native apps in development, `MENU` triggers development menu._  
 _⁵Only on Android >= 7._
 
+_The direct toolbar shortcut is disabled in camera mode to preserve the camera
+torch shortcuts; use the View menu instead._
+
 Shortcuts with repeated keys are executed by releasing and pressing the key a
 second time. For example, to execute "Expand settings panel":
 
@@ -77,5 +81,5 @@ second time. For example, to execute "Expand settings panel":
  2. Then double-press <kbd>n</kbd>.
  3. Finally, release <kbd>MOD</kbd>.
 
-All <kbd>Ctrl</kbd>+_key_ shortcuts are forwarded to the device, so they are
-handled by the active application.
+Except for the shortcuts listed above, all <kbd>Ctrl</kbd>+_key_ shortcuts are
+forwarded to the device, so they are handled by the active application.

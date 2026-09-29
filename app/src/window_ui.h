@@ -23,11 +23,16 @@ sc_window_ui_show_toast(struct sc_window_ui *ui, const char *message);
 
 void
 sc_window_ui_configure_toolbar_menu(struct sc_window_ui *ui, bool visible,
+                                    bool shortcut_enabled,
                                     sc_window_ui_toolbar_toggle_cb on_toggle,
                                     void *userdata);
 
 void
 sc_window_ui_set_toolbar_menu_visible(struct sc_window_ui *ui, bool visible);
+
+// Return true if the event belongs to the window UI and was consumed.
+bool
+sc_window_ui_handle_event(struct sc_window_ui *ui, const SDL_Event *event);
 
 void
 sc_window_ui_destroy(struct sc_window_ui *ui);

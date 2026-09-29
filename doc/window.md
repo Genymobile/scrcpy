@@ -19,6 +19,23 @@ scrcpy --window-title='My device'
 
 It also updates the terminal title, unless `--no-terminal-title` is set.
 
+## Emulator toolbar
+
+By default, a floating toolbar provides Home, Back, Recent Apps, Screenshot and
+Record actions without covering or resizing the mirrored content.
+
+The toolbar can be shown or hidden from the **View** menu on Windows and macOS.
+On Linux, press <kbd>F10</kbd> to open the SDL **View** menu. It can also be
+toggled directly with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>t</kbd> on Windows
+and Linux, or <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>t</kbd> on macOS. The direct
+shortcut is disabled in camera mode to preserve the camera torch shortcuts.
+
+To disable the toolbar entirely and restore the legacy window behavior:
+
+```bash
+scrcpy --no-toolbar
+```
+
 ## Position and size
 
 The initial window position and size may be specified:

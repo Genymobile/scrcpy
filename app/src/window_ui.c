@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "window_ui_menu.h"
+
 #define SC_TOAST_WIDTH 184
 #define SC_TOAST_HEIGHT 38
 #define SC_TOAST_RADIUS 12.f
@@ -12,6 +14,7 @@ struct sc_window_ui_data {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_TimerID timer;
+    struct sc_window_ui_menu menu;
 };
 
 static void
@@ -112,6 +115,10 @@ void
 sc_window_ui_init(struct sc_window_ui *ui, SDL_Window *window) {
     ui->window = window;
     ui->data = calloc(1, sizeof(struct sc_window_ui_data));
+    if (ui->data) {
+        struct sc_window_ui_data *data = ui->data;
+        sc_window_ui_menu_init(&data->menu, window);
+    }
 }
 
 void
@@ -170,18 +177,28 @@ sc_window_ui_show_toast(struct sc_window_ui *ui, const char *message) {
 
 void
 sc_window_ui_configure_toolbar_menu(struct sc_window_ui *ui, bool visible,
+                                    bool shortcut_enabled,
                                     sc_window_ui_toolbar_toggle_cb on_toggle,
                                     void *userdata) {
-    (void) ui;
-    (void) visible;
-    (void) on_toggle;
-    (void) userdata;
+    struct sc_window_ui_data *data = ui->data;
+    if (data) {
+        sc_window_ui_menu_configure(&data->menu, visible, shortcut_enabled,
+                                    on_toggle, userdata);
+    }
 }
 
 void
 sc_window_ui_set_toolbar_menu_visible(struct sc_window_ui *ui, bool visible) {
-    (void) ui;
-    (void) visible;
+    struct sc_window_ui_data *data = ui->data;
+    if (data) {
+        sc_window_ui_menu_set_toolbar_visible(&data->menu, visible);
+    }
+}
+
+bool
+sc_window_ui_handle_event(struct sc_window_ui *ui, const SDL_Event *event) {
+    struct sc_window_ui_data *data = ui->data;
+    return data && sc_window_ui_menu_handle_event(&data->menu, event);
 }
 
 void
@@ -193,6 +210,7 @@ sc_window_ui_destroy(struct sc_window_ui *ui) {
     if (data->timer) {
         SDL_RemoveTimer(data->timer);
     }
+    sc_window_ui_menu_destroy(&data->menu);
     if (data->renderer) {
         SDL_DestroyRenderer(data->renderer);
     }

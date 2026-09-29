@@ -634,7 +634,7 @@ sc_screen_init(struct sc_screen *screen,
         .on_action = sc_screen_on_emulator_action,
     };
     sc_emulator_ui_init(&screen->emulator_ui, screen->window,
-                        params->toolbar, params->always_on_top,
+                        params->toolbar, params->always_on_top, !params->camera,
                         params->window_title_primary,
                         params->window_title_secondary,
                         &emulator_ui_cbs, screen);

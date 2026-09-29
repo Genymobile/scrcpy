@@ -1219,6 +1219,15 @@ static const struct sc_shortcut shortcuts[] = {
         .text = "Push file to device (see --push-target)",
     },
     {
+        .shortcuts = {
+            "Ctrl+Shift+t (Windows/Linux)",
+            "Cmd+Shift+t (macOS)",
+            "F10 (Linux: open View menu)",
+        },
+        .text = "Show or hide the emulator toolbar (Ctrl/Cmd shortcut "
+                "disabled in camera mode)",
+    },
+    {
         .shortcuts = { "MOD+t" },
         .text = "Turn on the camera torch (camera mode only)",
     },

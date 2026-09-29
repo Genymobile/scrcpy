@@ -51,7 +51,7 @@ sc_emulator_ui_toggle_toolbar(void *userdata) {
 
 void
 sc_emulator_ui_init(struct sc_emulator_ui *ui, SDL_Window *parent,
-                    bool enabled, bool always_on_top,
+                    bool enabled, bool always_on_top, bool shortcut_enabled,
                     const char *title_primary, const char *title_secondary,
                     const struct sc_emulator_ui_callbacks *callbacks,
                     void *callbacks_userdata) {
@@ -76,7 +76,7 @@ sc_emulator_ui_init(struct sc_emulator_ui *ui, SDL_Window *parent,
     }
 
     sc_window_ui_configure_toolbar_menu(
-        &ui->window_ui, ui->toolbar.user_visible,
+        &ui->window_ui, ui->toolbar.user_visible, shortcut_enabled,
         sc_emulator_ui_toggle_toolbar, ui);
 }
 
@@ -216,6 +216,10 @@ sc_emulator_ui_handle_toolbar_event(struct sc_emulator_ui *ui,
 bool
 sc_emulator_ui_handle_event(struct sc_emulator_ui *ui,
                             const SDL_Event *event) {
+    if (sc_window_ui_handle_event(&ui->window_ui, event)) {
+        return true;
+    }
+
     if (sc_emulator_ui_handle_toolbar_event(ui, event)) {
         return true;
     }
