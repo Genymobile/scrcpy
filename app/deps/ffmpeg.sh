@@ -56,7 +56,6 @@ else
         --disable-network
         --disable-everything
         --disable-vulkan
-        --disable-vaapi
         --disable-vdpau
         --enable-swresample
         --enable-libdav1d
@@ -88,11 +87,18 @@ else
             --enable-libv4l2
             --enable-outdev=v4l2
             --enable-encoder=rawvideo
+            --enable-vaapi
+            --enable-libdrm
+            --disable-xlib
+            --enable-hwaccel=h264_vaapi
+            --enable-hwaccel=hevc_vaapi
+            --enable-hwaccel=av1_vaapi
         )
     else
-        # libavdevice is only used for V4L2 on Linux
         conf+=(
+            # libavdevice is only used for V4L2 on Linux
             --disable-avdevice
+            --disable-vaapi
         )
     fi
 
