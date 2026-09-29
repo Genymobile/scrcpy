@@ -22,12 +22,21 @@ app/deps/libusb.sh linux native static
 DEPS_INSTALL_DIR="$PWD/app/deps/work/install/linux-native-static"
 ADB_INSTALL_DIR="$PWD/app/deps/work/install/adb-linux"
 
+# Only the headers of the system libdrm and libva are used (the libraries are
+# loaded at runtime), expose only their pkg-config files
+SYSTEM_PC_DIR="$WORK_DIR/system-pkgconfig-linux-$ARCH"
+mkdir -p "$SYSTEM_PC_DIR"
+for pc in libdrm libva libva-drm
+do
+    pc_dir="$(pkg-config --variable=pcfiledir "$pc")"
+    ln -sf "$pc_dir/$pc.pc" "$SYSTEM_PC_DIR/"
+done
+
 # Never fall back to system libs
 unset PKG_CONFIG_PATH
-export PKG_CONFIG_LIBDIR="$DEPS_INSTALL_DIR/lib/pkgconfig"
+export PKG_CONFIG_LIBDIR="$DEPS_INSTALL_DIR/lib/pkgconfig:$SYSTEM_PC_DIR"
 
 rm -rf "$LINUX_BUILD_DIR"
-# VA-API is not available in the static build (it requires libva and libdrm)
 meson setup "$LINUX_BUILD_DIR" \
     -Dc_args="-I$DEPS_INSTALL_DIR/include" \
     -Dc_link_args="-L$DEPS_INSTALL_DIR/lib" \
@@ -36,9 +45,18 @@ meson setup "$LINUX_BUILD_DIR" \
     -Db_lto=true \
     -Dcompile_server=false \
     -Dportable=true \
-    -Dstatic=true \
-    -Dvaapi=false
+    -Dstatic=true
 ninja -C "$LINUX_BUILD_DIR"
+
+# libva is loaded at runtime, so that scrcpy also runs where it is not installed
+if readelf -d "$LINUX_BUILD_DIR/app/scrcpy" | grep -qE 'NEEDED.*libva'
+then
+    echo "The scrcpy binary must not depend on libva," \
+         "functions missing from app/src/vaapi_shim.c:" >&2
+    nm -D --undefined-only "$LINUX_BUILD_DIR/app/scrcpy" \
+        | awk '{print $2}' | grep -E '^(va|drm)[A-Z]' >&2
+    exit 1
+fi
 
 # Group intermediate outputs into a 'dist' directory
 mkdir -p "$LINUX_BUILD_DIR/dist"
