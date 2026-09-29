@@ -58,6 +58,27 @@ sc_decoder_create_context(const char *decoder_name, const AVCodec *codec,
 }
 
 static bool
+sc_decoder_fallback_to_software(struct sc_decoder *decoder) {
+    const AVCodec *codec = avcodec_find_decoder(decoder->params->codec_id);
+    if (!codec) {
+        LOGE("Decoder '%s': no software decoder", decoder->name);
+        return false;
+    }
+
+    // Pass NULL as hwdec
+    AVCodecContext *ctx =
+        sc_decoder_create_context(decoder->name, codec, decoder->params, NULL,
+                                  decoder->copy_opaque);
+    if (!ctx) {
+        return false;
+    }
+
+    avcodec_free_context(&decoder->ctx);
+    decoder->ctx = ctx;
+    return true;
+}
+
+static bool
 sc_decoder_open(struct sc_decoder *decoder, const AVCodecParameters *params,
                 const struct sc_stream_session *session) {
     // A video stream must have a session
@@ -83,11 +104,23 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodecParameters *params,
 
     LOGD("Decoder '%s': %s", decoder->name, codec->name);
 
+    decoder->params = avcodec_parameters_alloc();
+    if (!decoder->params) {
+        LOG_OOM();
+        return false;
+    }
+
+    int r = avcodec_parameters_copy(decoder->params, params);
+    if (r < 0) {
+        LOG_OOM();
+        goto error_free_params;
+    }
+
     decoder->ctx = sc_decoder_create_context(decoder->name, codec, params,
                                              decoder->hwdec,
                                              decoder->copy_opaque);
     if (!decoder->ctx) {
-        return false;
+        goto error_free_params;
     }
 
     decoder->frame = av_frame_alloc();
@@ -106,6 +139,7 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodecParameters *params,
     }
 
     memset(&decoder->frame_size, 0, sizeof(decoder->frame_size));
+    decoder->frame_decoded = false;
 
     return true;
 
@@ -113,6 +147,8 @@ error_free_frame:
     av_frame_free(&decoder->frame);
 error_free_context:
     avcodec_free_context(&decoder->ctx);
+error_free_params:
+    avcodec_parameters_free(&decoder->params);
 
     return false;
 }
@@ -134,6 +170,7 @@ sc_decoder_close(struct sc_decoder *decoder) {
     sc_frame_source_sinks_close(&decoder->frame_source);
     av_frame_free(&decoder->frame);
     avcodec_free_context(&decoder->ctx);
+    avcodec_parameters_free(&decoder->params);
 }
 
 static enum sc_sink_result
@@ -142,6 +179,23 @@ sc_decoder_process_packet(struct sc_decoder *decoder, const AVPacket *packet) {
     sc_frame_source_sinks_apply_backpressure(&decoder->frame_source);
 
     int ret = avcodec_send_packet(decoder->ctx, packet);
+
+    if (ret < 0 && ret != AVERROR(EAGAIN)) {
+        bool fallback_to_software = decoder->ctx->hw_device_ctx
+                                 && !decoder->hwdec->hw_forced
+                                 && !decoder->frame_decoded;
+        if (fallback_to_software) {
+            LOGW("Decoder '%s': hardware decoding failed (%s), falling back "
+                 "to software decoding", decoder->name, av_err2str(ret));
+            if (!sc_decoder_fallback_to_software(decoder)) {
+                return SC_SINK_KO;
+            }
+
+            // Send the packet to the new decoder
+            ret = avcodec_send_packet(decoder->ctx, packet);
+        }
+    }
+
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
         LOGE("Decoder '%s': could not send video packet: %s",
              decoder->name, av_err2str(ret));
@@ -161,6 +215,7 @@ sc_decoder_process_packet(struct sc_decoder *decoder, const AVPacket *packet) {
         }
 
         // a frame was received
+        decoder->frame_decoded = true;
 
         if (decoder->ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
             assert(decoder->frame->width >= 0);
