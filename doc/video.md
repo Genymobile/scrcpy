@@ -133,8 +133,9 @@ The available hardware decoders are:
    the case on Wayland, and scrcpy also requests EGL on X11 (where SDL uses GLX
    by default). Set `SDL_VIDEO_FORCE_EGL=0` to force GLX (hardware decoding is
    then unavailable). The VA-API driver for the GPU must be installed
-   (`va-driver-all` on Debian/Ubuntu). Trilinear filtering (mipmaps) is not
-   available for hardware frames.
+   (`va-driver-all` on Debian/Ubuntu). The prebuilt binary uses the libva
+   installed on the system. Trilinear filtering (mipmaps) is not available for
+   hardware frames.
 
 With `--hwdec=auto`, if the hardware decoder cannot decode the stream, FFmpeg
 falls back to software decoding. It fails instead if a specific hardware decoder

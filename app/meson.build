@@ -146,7 +146,17 @@ endif
 if vaapi_support
     libdrm_dep = dependency('libdrm')
     dependencies += libdrm_dep.partial_dependency(compile_args: true,
-                                                 includes: true)
+                                                  includes: true)
+    if static
+        # libva and libdrm are loaded at runtime by a shim (which only needs
+        # their headers), so that the static binary does not depend on them
+        libva_drm_dep = dependency('libva-drm')
+        dependencies += libva_drm_dep.partial_dependency(compile_args: true,
+                                                         includes: true)
+        # "required: false" because dlopen() may be provided by libc itself
+        dependencies += cc.find_library('dl', required: false)
+        src += [ 'src/vaapi_shim.c' ]
+    endif
 endif
 
 if usb_support
