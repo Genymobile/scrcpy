@@ -40,6 +40,7 @@ src = [
     'src/server.c',
     'src/texture.c',
     'src/toolbar.c',
+    'src/toolbar_preferences.c',
     'src/version.c',
     'src/video_regulator.c',
     'src/hid/hid_gamepad.c',

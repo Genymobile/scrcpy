@@ -2,6 +2,7 @@
 
 #include <string.h>
 
+#include "toolbar_preferences.h"
 #include "util/log.h"
 
 static bool
@@ -46,6 +47,7 @@ sc_emulator_ui_toggle_toolbar(void *userdata) {
          ui->toolbar.user_visible ? "Showing" : "Hiding");
     sc_window_ui_set_toolbar_menu_visible(&ui->window_ui,
                                           ui->toolbar.user_visible);
+    sc_toolbar_preferences_save_visible(ui->toolbar.user_visible);
     sc_emulator_ui_sync(ui);
 }
 
@@ -60,7 +62,9 @@ sc_emulator_ui_init(struct sc_emulator_ui *ui, SDL_Window *parent,
     ui->parent_id = SDL_GetWindowID(parent);
     ui->callbacks = callbacks;
     ui->callbacks_userdata = callbacks_userdata;
-    sc_toolbar_init(&ui->toolbar, enabled);
+    bool initially_visible = enabled
+        && sc_toolbar_preferences_load_visible();
+    sc_toolbar_init(&ui->toolbar, enabled, initially_visible);
     sc_window_ui_init(&ui->window_ui, parent);
 
     if (!enabled) {

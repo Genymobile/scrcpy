@@ -169,9 +169,10 @@ point_in_rounded_rect(float x, float y, const SDL_FRect *rect, float radius) {
 }
 
 void
-sc_toolbar_init(struct sc_toolbar *toolbar, bool enabled) {
+sc_toolbar_init(struct sc_toolbar *toolbar, bool enabled,
+                bool initially_visible) {
     toolbar->enabled = enabled;
-    toolbar->user_visible = true;
+    toolbar->user_visible = enabled && initially_visible;
     toolbar->window = NULL;
     toolbar->renderer = NULL;
     for (size_t i = 0; i < SC_TOOLBAR_ACTION_COUNT; ++i) {

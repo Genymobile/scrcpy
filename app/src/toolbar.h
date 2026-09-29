@@ -60,7 +60,8 @@ struct sc_toolbar_view_state {
 };
 
 void
-sc_toolbar_init(struct sc_toolbar *toolbar, bool enabled);
+sc_toolbar_init(struct sc_toolbar *toolbar, bool enabled,
+                bool initially_visible);
 
 bool
 sc_toolbar_create(struct sc_toolbar *toolbar, SDL_Window *parent,

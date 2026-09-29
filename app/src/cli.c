@@ -677,8 +677,8 @@ static const struct sc_option options[] = {
     {
         .longopt_id = OPT_NO_TOOLBAR,
         .longopt = "no-toolbar",
-        .text = "Disable the emulator toolbar and restore the legacy window "
-                "layout.",
+        .text = "Disable emulator toolbar support and runtime menu controls. "
+                "This does not change the saved visibility.",
     },
     {
         .longopt_id = OPT_NO_VD_DESTROY_CONTENT,

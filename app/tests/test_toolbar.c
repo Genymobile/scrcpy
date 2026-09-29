@@ -18,10 +18,10 @@ sc_icon_destroy(SDL_Surface *icon) {
 static void
 test_toolbar_layout_and_hit_test(void) {
     struct sc_toolbar toolbar;
-    sc_toolbar_init(&toolbar, true);
+    sc_toolbar_init(&toolbar, true, false);
     sc_toolbar_layout(&toolbar);
 
-    assert(toolbar.user_visible);
+    assert(!toolbar.user_visible);
     assert(toolbar.panel.w == SC_TOOLBAR_PANEL_WIDTH);
     assert(toolbar.panel.h == SC_TOOLBAR_PANEL_HEIGHT);
     assert(SC_TOOLBAR_PANEL_WIDTH == 48);
@@ -58,9 +58,23 @@ test_toolbar_layout_and_hit_test(void) {
 }
 
 static void
+test_toolbar_initial_visibility(void) {
+    struct sc_toolbar toolbar;
+
+    sc_toolbar_init(&toolbar, true, false);
+    assert(!toolbar.user_visible);
+
+    sc_toolbar_init(&toolbar, true, true);
+    assert(toolbar.user_visible);
+
+    sc_toolbar_init(&toolbar, false, true);
+    assert(!toolbar.user_visible);
+}
+
+static void
 test_disabled_toolbar(void) {
     struct sc_toolbar toolbar;
-    sc_toolbar_init(&toolbar, false);
+    sc_toolbar_init(&toolbar, false, false);
     sc_toolbar_layout(&toolbar);
 
     assert(!sc_toolbar_contains(&toolbar, 10.f, 10.f));
@@ -75,6 +89,7 @@ main(int argc, char *argv[]) {
     (void) argv;
 
     test_toolbar_layout_and_hit_test();
+    test_toolbar_initial_visibility();
     test_disabled_toolbar();
     return 0;
 }
