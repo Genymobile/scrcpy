@@ -146,6 +146,22 @@ sc_hwdec_is_supported_by_codec(const AVCodec *codec,
     }
 }
 
+const AVCodec *
+sc_hwdec_find_decoder(struct sc_hwdec *hwdec, enum AVCodecID codec_id) {
+    assert(hwdec->hw_type != AV_HWDEVICE_TYPE_NONE);
+
+    void *iter = NULL;
+    const AVCodec *codec;
+    while ((codec = av_codec_iterate(&iter))) {
+        if (codec->id == codec_id && av_codec_is_decoder(codec)
+                && sc_hwdec_is_supported_by_codec(codec, hwdec->hw_type)) {
+            return codec;
+        }
+    }
+
+    return NULL;
+}
+
 static enum AVPixelFormat
 sc_hwdec_get_format_forced(AVCodecContext *ctx,
                            const enum AVPixelFormat *formats) {
