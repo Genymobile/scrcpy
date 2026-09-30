@@ -17,12 +17,25 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodecParameters *params,
     // A video stream must have a session
     assert(session || params->codec_type != AVMEDIA_TYPE_VIDEO);
 
-    const AVCodec *codec = avcodec_find_decoder(params->codec_id);
-    if (!codec) {
-        LOGE("Decoder '%s': no decoder for %s", decoder->name,
-             avcodec_get_name(params->codec_id));
-        return false;
+    const AVCodec *codec = NULL;
+
+    if (decoder->hwdec && decoder->hwdec->hw_type != AV_HWDEVICE_TYPE_NONE) {
+        // The default decoder may not support hardware decoding (for example,
+        // libdav1d is preferred for AV1, but only the native av1 decoder
+        // supports the hardware devices)
+        codec = sc_hwdec_find_decoder(decoder->hwdec, params->codec_id);
     }
+
+    if (!codec) {
+        codec = avcodec_find_decoder(params->codec_id);
+        if (!codec) {
+            LOGE("Decoder '%s': no decoder for %s", decoder->name,
+                 avcodec_get_name(params->codec_id));
+            return false;
+        }
+    }
+
+    LOGD("Decoder '%s': %s", decoder->name, codec->name);
 
     decoder->ctx = avcodec_alloc_context3(codec);
     if (!decoder->ctx) {

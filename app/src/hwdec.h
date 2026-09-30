@@ -24,6 +24,9 @@ bool
 sc_hwdec_init(struct sc_hwdec *hwdec, enum AVHWDeviceType hw_type,
               bool hw_forced, SDL_Renderer *renderer);
 
+const AVCodec *
+sc_hwdec_find_decoder(struct sc_hwdec *hwdec, enum AVCodecID codec_id);
+
 bool
 sc_hwdec_configure(struct sc_hwdec *hwdec, AVCodecContext *ctx);
 
