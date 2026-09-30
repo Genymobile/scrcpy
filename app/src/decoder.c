@@ -11,6 +11,52 @@
 /** Downcast packet_sink to decoder */
 #define DOWNCAST(SINK) container_of(SINK, struct sc_decoder, packet_sink)
 
+static AVCodecContext *
+sc_decoder_create_context(const char *decoder_name, const AVCodec *codec,
+                          const AVCodecParameters *params,
+                          struct sc_hwdec *hwdec, bool copy_opaque) {
+    AVCodecContext *ctx = avcodec_alloc_context3(codec);
+    if (!ctx) {
+        LOG_OOM();
+        return NULL;
+    }
+
+    int r = avcodec_parameters_to_context(ctx, params);
+    if (r < 0) {
+        LOGE("Decoder '%s': could not set codec parameters", decoder_name);
+        avcodec_free_context(&ctx);
+        return NULL;
+    }
+
+    ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
+
+    if (copy_opaque) {
+        // Propagate AVPacket.opaque_ref (the recv_date) to the decoded AVFrame
+        ctx->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
+    }
+
+    if (hwdec && !sc_hwdec_configure(hwdec, ctx)) {
+        if (hwdec->hw_forced) {
+            LOGE("Decoder '%s': hardware decoding unavailable", decoder_name);
+            avcodec_free_context(&ctx);
+            return NULL;
+        }
+
+        // Use software decoding (the codec context is left untouched)
+        LOGW("Decoder '%s': hardware decoding unavailable, using software "
+             "decoding", decoder_name);
+    }
+
+    r = avcodec_open2(ctx, codec, NULL);
+    if (r < 0) {
+        LOGE("Decoder '%s': could not open codec", decoder_name);
+        avcodec_free_context(&ctx);
+        return NULL;
+    }
+
+    return ctx;
+}
+
 static bool
 sc_decoder_open(struct sc_decoder *decoder, const AVCodecParameters *params,
                 const struct sc_stream_session *session) {
@@ -37,40 +83,11 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodecParameters *params,
 
     LOGD("Decoder '%s': %s", decoder->name, codec->name);
 
-    decoder->ctx = avcodec_alloc_context3(codec);
+    decoder->ctx = sc_decoder_create_context(decoder->name, codec, params,
+                                             decoder->hwdec,
+                                             decoder->copy_opaque);
     if (!decoder->ctx) {
-        LOG_OOM();
         return false;
-    }
-
-    int r = avcodec_parameters_to_context(decoder->ctx, params);
-    if (r < 0) {
-        LOGE("Decoder '%s': could not set codec parameters", decoder->name);
-        goto error_free_context;
-    }
-
-    decoder->ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
-
-    if (decoder->copy_opaque) {
-        // Propagate AVPacket.opaque_ref (the recv_date) to the decoded AVFrame
-        decoder->ctx->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
-    }
-
-    if (decoder->hwdec && !sc_hwdec_configure(decoder->hwdec, decoder->ctx)) {
-        if (decoder->hwdec->hw_forced) {
-            LOGE("Decoder '%s': hardware decoding unavailable", decoder->name);
-            goto error_free_context;
-        }
-
-        // Use software decoding (the codec context is left untouched)
-        LOGW("Decoder '%s': hardware decoding unavailable, using software "
-             "decoding", decoder->name);
-    }
-
-    r = avcodec_open2(decoder->ctx, codec, NULL);
-    if (r < 0) {
-        LOGE("Decoder '%s': could not open codec", decoder->name);
-        goto error_free_context;
     }
 
     decoder->frame = av_frame_alloc();
