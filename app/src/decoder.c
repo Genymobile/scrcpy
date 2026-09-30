@@ -12,11 +12,17 @@
 #define DOWNCAST(SINK) container_of(SINK, struct sc_decoder, packet_sink)
 
 static bool
-sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec,
-                const AVCodecParameters *params,
+sc_decoder_open(struct sc_decoder *decoder, const AVCodecParameters *params,
                 const struct sc_stream_session *session) {
     // A video stream must have a session
-    assert(session || codec->type != AVMEDIA_TYPE_VIDEO);
+    assert(session || params->codec_type != AVMEDIA_TYPE_VIDEO);
+
+    const AVCodec *codec = avcodec_find_decoder(params->codec_id);
+    if (!codec) {
+        LOGE("Decoder '%s': no decoder for %s", decoder->name,
+             avcodec_get_name(params->codec_id));
+        return false;
+    }
 
     decoder->ctx = avcodec_alloc_context3(codec);
     if (!decoder->ctx) {
@@ -329,11 +335,11 @@ sc_decoder_push_session(struct sc_decoder *decoder,
 }
 
 static bool
-sc_decoder_packet_sink_open(struct sc_packet_sink *sink, const AVCodec *codec,
+sc_decoder_packet_sink_open(struct sc_packet_sink *sink,
                             const AVCodecParameters *params,
                             const struct sc_stream_session *session) {
     struct sc_decoder *decoder = DOWNCAST(sink);
-    return sc_decoder_open(decoder, codec, params, session);
+    return sc_decoder_open(decoder, params, session);
 }
 
 static void

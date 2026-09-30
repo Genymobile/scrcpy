@@ -29,8 +29,7 @@ struct sc_stream_session {
 
 struct sc_packet_sink_ops {
     bool
-    (*open)(struct sc_packet_sink *sink, const AVCodec *codec,
-            const AVCodecParameters *params,
+    (*open)(struct sc_packet_sink *sink, const AVCodecParameters *params,
             const struct sc_stream_session *session);
 
     void

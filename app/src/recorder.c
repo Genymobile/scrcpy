@@ -534,7 +534,6 @@ sc_recorder_set_orientation(AVStream *stream, enum sc_orientation orientation) {
 
 static bool
 sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
-                                   const AVCodec *codec,
                                    const AVCodecParameters *params,
                                    const struct sc_stream_session *session) {
     (void) session;
@@ -549,7 +548,7 @@ sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
         return false;
     }
 
-    AVStream *stream = avformat_new_stream(recorder->ctx, codec);
+    AVStream *stream = avformat_new_stream(recorder->ctx, NULL);
     if (!stream) {
         sc_mutex_unlock(&recorder->mutex);
         return false;
@@ -573,9 +572,11 @@ sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
              sc_orientation_get_name(recorder->orientation));
     }
 
+    enum AVCodecID codec_id = params->codec_id;
+
     // A config packet is provided for all supported formats except VPx
-    recorder->video_expects_config_packet = codec->id != AV_CODEC_ID_VP8
-                                         && codec->id != AV_CODEC_ID_VP9;
+    recorder->video_expects_config_packet = codec_id != AV_CODEC_ID_VP8
+                                         && codec_id != AV_CODEC_ID_VP9;
 
     recorder->video_init = true;
     sc_cond_signal(&recorder->cond);
@@ -636,7 +637,6 @@ sc_recorder_video_packet_sink_push(struct sc_packet_sink *sink,
 
 static bool
 sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
-                                   const AVCodec *codec,
                                    const AVCodecParameters *params,
                                    const struct sc_stream_session *session) {
     (void) session;
@@ -648,7 +648,7 @@ sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
 
     sc_mutex_lock(&recorder->mutex);
 
-    AVStream *stream = avformat_new_stream(recorder->ctx, codec);
+    AVStream *stream = avformat_new_stream(recorder->ctx, NULL);
     if (!stream) {
         sc_mutex_unlock(&recorder->mutex);
         return false;
@@ -664,7 +664,7 @@ sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
 
     // A config packet is provided for all supported formats except raw audio
     recorder->audio_expects_config_packet =
-        codec->id != AV_CODEC_ID_PCM_S16LE;
+        params->codec_id != AV_CODEC_ID_PCM_S16LE;
 
     recorder->audio_init = true;
     sc_cond_signal(&recorder->cond);
