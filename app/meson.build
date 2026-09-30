@@ -76,9 +76,15 @@ src = [
 ]
 
 if host_machine.system() == 'darwin'
-    src += 'src/sys/macos/window_ui.m'
+    src += [
+        'src/sys/macos/clipboard_writer.m',
+        'src/sys/macos/window_ui.m',
+    ]
 else
-    src += 'src/window_ui.c'
+    src += [
+        'src/clipboard_writer.c',
+        'src/window_ui.c',
+    ]
     if host_machine.system() == 'windows'
         src += 'src/sys/win/window_ui_menu.c'
     else

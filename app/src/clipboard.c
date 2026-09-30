@@ -1,32 +1,7 @@
 #include "clipboard.h"
 
-#include <string.h>
-
+#include "clipboard_writer.h"
 #include "util/log.h"
-
-struct sc_clipboard_png {
-    void *data;
-    size_t size;
-};
-
-static const void * SDLCALL
-sc_clipboard_get_png(void *userdata, const char *mime_type, size_t *size) {
-    struct sc_clipboard_png *png = userdata;
-    if (!mime_type || strcmp(mime_type, "image/png")) {
-        *size = 0;
-        return NULL;
-    }
-
-    *size = png->size;
-    return png->data;
-}
-
-static void SDLCALL
-sc_clipboard_cleanup_png(void *userdata) {
-    struct sc_clipboard_png *png = userdata;
-    SDL_free(png->data);
-    SDL_free(png);
-}
 
 bool
 sc_clipboard_set_png(SDL_Surface *surface) {
@@ -63,22 +38,9 @@ sc_clipboard_set_png(SDL_Surface *surface) {
         return false;
     }
 
-    struct sc_clipboard_png *png = SDL_malloc(sizeof(*png));
-    if (!png) {
-        SDL_free(png_data);
-        LOG_OOM();
-        return false;
-    }
-    png->data = png_data;
-    png->size = png_size;
-
-    static const char *const mime_types[] = {"image/png"};
-    ok = SDL_SetClipboardData(sc_clipboard_get_png,
-                              sc_clipboard_cleanup_png, png,
-                              mime_types, ARRAY_LEN(mime_types));
+    ok = sc_clipboard_write_png(png_data, (size_t) png_size);
     if (!ok) {
         LOGE("Could not copy screenshot to clipboard: %s", SDL_GetError());
-        sc_clipboard_cleanup_png(png);
         return false;
     }
     return true;
