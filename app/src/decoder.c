@@ -79,6 +79,23 @@ sc_decoder_fallback_to_software(struct sc_decoder *decoder) {
 }
 
 static bool
+sc_decoder_reopen(struct sc_decoder *decoder) {
+    assert(decoder->ctx->hw_device_ctx);
+
+    AVCodecContext *ctx =
+        sc_decoder_create_context(decoder->name, decoder->ctx->codec,
+                                  decoder->params, decoder->hwdec,
+                                  decoder->copy_opaque);
+    if (!ctx) {
+        return false;
+    }
+
+    avcodec_free_context(&decoder->ctx);
+    decoder->ctx = ctx;
+    return true;
+}
+
+static bool
 sc_decoder_open(struct sc_decoder *decoder, const AVCodecParameters *params,
                 const struct sc_stream_session *session) {
     // A video stream must have a session
@@ -287,6 +304,16 @@ sc_decoder_decode(struct sc_decoder *decoder) {
         } else {
             assert(dp.type == SC_DECODER_PACKET_TYPE_SESSION);
             decoder->session = dp.session;
+
+            // A new session starts a new stream possibly with a different size.
+            // The FFmpeg av1 decoder does not reinitialize its hardware decoder
+            // in that case, so recreate the codec context.
+            bool av1_hw = decoder->ctx->codec_id == AV_CODEC_ID_AV1
+                       && decoder->ctx->hw_device_ctx;
+            if (av1_hw && !sc_decoder_reopen(decoder)) {
+                return false;
+            }
+
             enum sc_sink_result push_result =
                 sc_frame_source_sinks_push_session(&decoder->frame_source,
                                                    &dp.session);
