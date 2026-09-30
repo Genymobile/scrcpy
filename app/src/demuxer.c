@@ -219,13 +219,7 @@ run_demuxer(void *data) {
         goto end;
     }
 
-    const AVCodec *codec = avcodec_find_decoder(codec_id);
-    if (!codec) {
-        LOGE("Demuxer '%s': stream disabled due to missing decoder",
-             demuxer->name);
-        sc_packet_source_sinks_disable(&demuxer->packet_source);
-        goto end;
-    }
+    enum AVMediaType codec_type = avcodec_get_type(codec_id);
 
     AVCodecParameters *params = avcodec_parameters_alloc();
     if (!params) {
@@ -233,14 +227,14 @@ run_demuxer(void *data) {
         goto end;
     }
 
-    params->codec_type = codec->type;
-    params->codec_id = codec->id;
+    params->codec_type = codec_type;
+    params->codec_id = codec_id;
 
     uint8_t header[SC_PACKET_HEADER_SIZE];
     struct sc_stream_session session_data;
 
     struct sc_stream_session *session = NULL;
-    if (codec->type == AVMEDIA_TYPE_VIDEO) {
+    if (codec_type == AVMEDIA_TYPE_VIDEO) {
         bool ok = sc_demuxer_recv_header(demuxer, header);
         if (!ok) {
             goto finally_free_params;
@@ -275,7 +269,7 @@ run_demuxer(void *data) {
         }
     }
 
-    if (!sc_packet_source_sinks_open(&demuxer->packet_source, codec, params,
+    if (!sc_packet_source_sinks_open(&demuxer->packet_source, params,
                                      session)) {
         goto finally_free_params;
     }
