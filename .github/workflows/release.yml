@@ -222,13 +222,11 @@ jobs:
             autoconf
             automake
             libtool
-            make
             mingw-w64-clang-aarch64-toolchain
             mingw-w64-clang-aarch64-gcc-compat
             mingw-w64-clang-aarch64-meson
             mingw-w64-clang-aarch64-ninja
             mingw-w64-clang-aarch64-cmake
-            mingw-w64-clang-aarch64-pkgconf
             mingw-w64-clang-aarch64-zlib
 
       - name: Build
