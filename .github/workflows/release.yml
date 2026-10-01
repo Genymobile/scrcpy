@@ -229,6 +229,18 @@ jobs:
             mingw-w64-clang-aarch64-cmake
             mingw-w64-clang-aarch64-zlib
 
+      - name: Check architecture
+        run: |
+            # The MSYS2 tools run under x64 emulation on Windows ARM64, so
+            # "uname -m" reports x86_64, but "uname -s" is suffixed with the
+            # host machine
+            sysname=$(uname -s)
+            if [[ "$sysname" != *-ARM64 ]]
+            then
+                echo "Unexpected architecture: $sysname" >&2
+                exit 1
+            fi
+
       - name: Build
         run: release/build_windows.sh arm64
 
