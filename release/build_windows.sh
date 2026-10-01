@@ -11,6 +11,9 @@ case "$1" in
         BUILD_TYPE=cross
         ;;
     arm64)
+        # Contrary to x86 builds that are cross-compiled from Linux, the Windows
+        # ARM release is built natively on Windows (for simplicity)
+        # See <https://github.com/Genymobile/scrcpy/pull/6857>
         WINXX=winarm64
         BUILD_TYPE=native
         ;;
