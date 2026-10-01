@@ -244,6 +244,23 @@ jobs:
       - name: Build
         run: release/build_windows.sh arm64
 
+      - name: Check DLL dependencies
+        run: |
+            cd release/work/build-winarm64/dist
+            imports=$(llvm-objdump -p scrcpy.exe *.dll | sed -n 's/^ *DLL Name: //p' | sort -u)
+            echo "$imports"
+            # The binaries must not depend on DLLs provided by the MSYS2 toolchain,
+            # which are not part of the release
+            for dll in "$MINGW_PREFIX"/bin/*.dll
+            do
+                name=$(basename "$dll")
+                if grep -qix "$name" <<< "$imports"
+                then
+                    echo "Unexpected dependency on toolchain DLL: $name" >&2
+                    exit 1
+                fi
+            done
+
       # upload-artifact does not preserve permissions
       - name: Tar
         run: |
