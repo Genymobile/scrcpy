@@ -1,9 +1,11 @@
 #include "screen.h"
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 #include <SDL3/SDL.h>
 
+#include "clipboard.h"
 #include "events.h"
 #include "icon.h"
 #include "options.h"
@@ -13,6 +15,10 @@
 #define DISPLAY_MARGINS 96
 
 #define DOWNCAST(SINK) container_of(SINK, struct sc_screen, frame_sink)
+
+static void
+sc_screen_on_emulator_action(struct sc_emulator_ui *ui,
+                             enum sc_toolbar_action action, void *userdata);
 
 static void
 set_aspect_ratio(struct sc_screen *screen, struct sc_size content_size) {
@@ -231,42 +237,10 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
                          screen->render_fit, &screen->rect);
 }
 
-// render the texture to the renderer
-//
-// Set the update_content_rect flag if the window or content size may have
-// changed, so that the content rectangle is recomputed
-static void
-sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
-    assert(screen->window_shown);
-
-    if (update_content_rect) {
-        sc_screen_update_content_rect(screen);
-    }
-
+static bool
+sc_screen_render_texture(struct sc_screen *screen, SDL_Texture *texture,
+                         SDL_FRect geometry) {
     SDL_Renderer *renderer = screen->renderer;
-    struct sc_screen_bg_color bg = screen->bg;
-    SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, 0);
-    sc_sdl_render_clear(renderer);
-
-    SDL_Texture *texture = screen->tex.texture;
-    if (!texture) {
-        goto end;
-    }
-
-    float scale = SDL_GetWindowPixelDensity(screen->window);
-    if (scale == 0) {
-        // Just in case, but in practice the function can only fail when window
-        // is invalid
-        LOGE("Cannot get scale value: %s", SDL_GetError());
-        scale = 1;
-    }
-
-    SDL_FRect geometry = {
-        .x = screen->rect.x * scale,
-        .y = screen->rect.y * scale,
-        .w = screen->rect.w * scale,
-        .h = screen->rect.h * scale,
-    };
     enum sc_orientation orientation = screen->orientation;
 
     bool ok = false;
@@ -301,12 +275,74 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
                                       NULL, flip);
     }
 
-    if (!ok) {
-        LOGE("Could not render texture: %s", SDL_GetError());
+    return ok;
+}
+
+static void
+sc_screen_update_emulator_ui(struct sc_screen *screen) {
+    bool navigation_enabled = screen->controller && screen->im.kp
+                           && !screen->camera && !screen->paused
+                           && !screen->disconnected;
+    bool screenshot_enabled = screen->tex.texture && !screen->disconnected;
+    enum sc_recording_state recording_state = SC_RECORDING_STATE_IDLE;
+    bool record_enabled = false;
+    if (screen->recording_manager) {
+        recording_state = sc_recording_manager_get_state(
+            screen->recording_manager);
+        record_enabled = sc_recording_manager_is_available(
+            screen->recording_manager) && !screen->disconnected;
+    }
+    struct sc_toolbar_view_state state = {
+        .navigation_enabled = navigation_enabled,
+        .screenshot_enabled = screenshot_enabled,
+        .record_enabled = record_enabled,
+        .recording = recording_state == SC_RECORDING_STATE_RECORDING,
+    };
+    sc_emulator_ui_set_state(&screen->emulator_ui, &state);
+}
+
+// render the texture to the renderer
+//
+// Set the update_content_rect flag if the window or content size may have
+// changed, so that the content rectangle is recomputed
+static void
+sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
+    assert(screen->window_shown);
+
+    if (update_content_rect) {
+        sc_screen_update_content_rect(screen);
     }
 
-end:
+    SDL_Renderer *renderer = screen->renderer;
+    struct sc_screen_bg_color bg = screen->bg;
+    SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, 0);
+    sc_sdl_render_clear(renderer);
+
+    float scale = SDL_GetWindowPixelDensity(screen->window);
+    if (scale == 0) {
+        // Just in case, but in practice the function can only fail when window
+        // is invalid
+        LOGE("Cannot get scale value: %s", SDL_GetError());
+        scale = 1;
+    }
+
+    SDL_Texture *texture = screen->tex.texture;
+    if (texture) {
+        SDL_FRect geometry = {
+            .x = screen->rect.x * scale,
+            .y = screen->rect.y * scale,
+            .w = screen->rect.w * scale,
+            .h = screen->rect.h * scale,
+        };
+        bool ok = sc_screen_render_texture(screen, texture, geometry);
+        if (!ok) {
+            LOGE("Could not render texture: %s", SDL_GetError());
+        }
+    }
+
     sc_sdl_render_present(renderer);
+
+    sc_screen_update_emulator_ui(screen);
 }
 
 static void
@@ -338,8 +374,9 @@ sc_screen_on_resize(struct sc_screen *screen, const SDL_WindowEvent *event) {
         if (screen->flex_display) {
             assert(!(event->data1 & ~0xFFFF));
             assert(!(event->data2 & ~0xFFFF));
-            uint16_t width = event->data1;
-            uint16_t height = event->data2;
+            struct sc_size resized_window = {event->data1, event->data2};
+            uint16_t width = resized_window.width;
+            uint16_t height = resized_window.height;
 
             struct sc_resize_tracker *tracker = &screen->resize_tracker;
             if (tracker->time
@@ -376,12 +413,19 @@ event_watcher(void *data, SDL_Event *event) {
     struct sc_screen *screen = data;
     assert(screen->video);
 
+    if (event->type >= SDL_EVENT_WINDOW_FIRST
+            && event->type <= SDL_EVENT_WINDOW_LAST
+            && event->window.windowID != SDL_GetWindowID(screen->window)) {
+        return true;
+    }
+
     if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
             || event->type == SDL_EVENT_WINDOW_RESIZED) {
         // In practice, it seems to always be called from the same thread in
         // that specific case. Anyway, it's just a workaround.
         sc_screen_on_resize(screen, &event->window);
     }
+    sc_emulator_ui_handle_event(&screen->emulator_ui, event);
 
     return true;
 }
@@ -484,6 +528,7 @@ bool
 sc_screen_init(struct sc_screen *screen,
                const struct sc_screen_params *params) {
     screen->controller = params->controller;
+    screen->recording_manager = params->recording_manager;
 
     screen->resize_pending = false;
     screen->window_shown = false;
@@ -584,6 +629,15 @@ sc_screen_init(struct sc_screen *screen,
         LOGE("Could not create renderer: %s", SDL_GetError());
         goto error_destroy_window;
     }
+
+    static const struct sc_emulator_ui_callbacks emulator_ui_cbs = {
+        .on_action = sc_screen_on_emulator_action,
+    };
+    sc_emulator_ui_init(&screen->emulator_ui, screen->window,
+                        params->toolbar, params->always_on_top, !params->camera,
+                        params->window_title_primary,
+                        params->window_title_secondary,
+                        &emulator_ui_cbs, screen);
 
 #ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
     screen->gl_context = NULL;
@@ -707,6 +761,9 @@ sc_screen_init(struct sc_screen *screen,
             // Capture mouse immediately if video mirroring is disabled
             sc_mouse_capture_set_active(&screen->mc, true);
         }
+
+        sc_emulator_ui_set_parent_visible(&screen->emulator_ui, true);
+        sc_screen_update_emulator_ui(screen);
     }
 
     return true;
@@ -714,6 +771,7 @@ sc_screen_init(struct sc_screen *screen,
 error_destroy_texture:
     sc_texture_destroy(&screen->tex);
 error_destroy_renderer:
+    sc_emulator_ui_destroy(&screen->emulator_ui);
 #ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
     if (screen->gl_context) {
         SDL_GL_DestroyContext(screen->gl_context);
@@ -771,10 +829,13 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
     screen->window_shown = true;
     sc_sdl_show_window(screen->window);
     sc_screen_update_content_rect(screen);
+    sc_emulator_ui_set_parent_visible(&screen->emulator_ui, true);
+    sc_screen_update_emulator_ui(screen);
 }
 
 void
 sc_screen_hide_window(struct sc_screen *screen) {
+    sc_emulator_ui_set_parent_visible(&screen->emulator_ui, false);
     sc_sdl_hide_window(screen->window);
     screen->window_shown = false;
 }
@@ -807,6 +868,7 @@ sc_screen_destroy(struct sc_screen *screen) {
     if (screen->disconnect_started) {
         sc_disconnect_destroy(&screen->disconnect);
     }
+    sc_emulator_ui_destroy(&screen->emulator_ui);
     sc_texture_destroy(&screen->tex);
     av_frame_free(&screen->frame);
 #ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
@@ -1013,6 +1075,7 @@ sc_screen_set_paused(struct sc_screen *screen, bool paused) {
     }
 
     screen->paused = paused;
+    sc_screen_update_emulator_ui(screen);
 }
 
 void
@@ -1027,6 +1090,9 @@ sc_screen_toggle_fullscreen(struct sc_screen *screen) {
         LOGW("Could not switch fullscreen mode: %s", SDL_GetError());
         return;
     }
+
+    sc_emulator_ui_set_parent_fullscreen(&screen->emulator_ui,
+                                         req_fullscreen);
 
     LOGD("Requested %s mode", req_fullscreen ? "fullscreen" : "windowed");
 }
@@ -1131,9 +1197,174 @@ sc_disconnect_on_timeout(struct sc_disconnect *d, void *userdata) {
     (void) ok; // ignore failure
 }
 
+static SDL_Surface *
+sc_screen_capture_frame(struct sc_screen *screen) {
+    SDL_Texture *texture = screen->tex.texture;
+    if (!texture || screen->disconnected) {
+        return NULL;
+    }
+
+    SDL_Renderer *renderer = screen->renderer;
+    SDL_Texture *previous_target = SDL_GetRenderTarget(renderer);
+    SDL_Texture *target =
+        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
+                          SDL_TEXTUREACCESS_TARGET,
+                          screen->content_size.width,
+                          screen->content_size.height);
+    if (!target) {
+        LOGE("Could not create screenshot render target: %s", SDL_GetError());
+        return NULL;
+    }
+
+    bool ok = SDL_SetRenderTarget(renderer, target);
+    if (!ok) {
+        LOGE("Could not select screenshot render target: %s", SDL_GetError());
+        SDL_DestroyTexture(target);
+        return NULL;
+    }
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    sc_sdl_render_clear(renderer);
+    SDL_FRect geometry = {
+        .x = 0.f,
+        .y = 0.f,
+        .w = screen->content_size.width,
+        .h = screen->content_size.height,
+    };
+    ok = sc_screen_render_texture(screen, texture, geometry);
+    if (!ok) {
+        LOGE("Could not render screenshot: %s", SDL_GetError());
+    }
+
+    SDL_Surface *surface = ok ? SDL_RenderReadPixels(renderer, NULL) : NULL;
+    if (!surface && ok) {
+        LOGE("Could not read screenshot pixels: %s", SDL_GetError());
+        ok = false;
+    }
+
+    bool restored = SDL_SetRenderTarget(renderer, previous_target);
+    if (!restored) {
+        LOGE("Could not restore render target: %s", SDL_GetError());
+    }
+    SDL_DestroyTexture(target);
+
+    if (!ok || !restored) {
+        SDL_DestroySurface(surface);
+        return NULL;
+    }
+    return surface;
+}
+
+static void
+sc_screen_toolbar_notify_copy(struct sc_screen *screen) {
+    sc_emulator_ui_show_toast(&screen->emulator_ui,
+                              "Screenshot copied to clipboard");
+}
+
+static void
+sc_screen_recording_notify(struct sc_screen *screen) {
+    if (!screen->recording_manager) {
+        return;
+    }
+    enum sc_recording_notification notification =
+        sc_recording_manager_take_notification(screen->recording_manager);
+    const char *message = NULL;
+    switch (notification) {
+        case SC_RECORDING_NOTIFICATION_STARTED:
+            message = "Recording started";
+            break;
+        case SC_RECORDING_NOTIFICATION_SAVED:
+            message = "Recording saved";
+            break;
+        case SC_RECORDING_NOTIFICATION_FAILED:
+            message = "Recording failed";
+            break;
+        default:
+            break;
+    }
+    if (message) {
+        sc_emulator_ui_show_toast(&screen->emulator_ui, message);
+    }
+}
+
+static void
+sc_screen_toggle_recording(struct sc_screen *screen) {
+    if (!screen->recording_manager) {
+        return;
+    }
+    enum sc_recording_state state = sc_recording_manager_get_state(
+        screen->recording_manager);
+    if (state == SC_RECORDING_STATE_IDLE) {
+        if (!sc_recording_manager_start(screen->recording_manager)) {
+            sc_emulator_ui_show_toast(&screen->emulator_ui,
+                                      "Recording failed");
+            return;
+        }
+        if (screen->controller) {
+            struct sc_control_msg msg = {
+                .type = SC_CONTROL_MSG_TYPE_RESET_VIDEO,
+            };
+            if (!sc_controller_push_msg(screen->controller, &msg)) {
+                LOGW("Could not request a recording keyframe");
+            }
+        }
+    } else if (state == SC_RECORDING_STATE_PREPARING
+            || state == SC_RECORDING_STATE_RECORDING) {
+        sc_recording_manager_stop(screen->recording_manager);
+    }
+}
+
+static void
+sc_screen_on_emulator_action(struct sc_emulator_ui *ui,
+                             enum sc_toolbar_action action, void *userdata) {
+    (void) ui;
+    struct sc_screen *screen = userdata;
+    switch (action) {
+        case SC_TOOLBAR_ACTION_HOME:
+            sc_input_manager_press_home(&screen->im);
+            break;
+        case SC_TOOLBAR_ACTION_BACK:
+            sc_input_manager_press_back(&screen->im);
+            break;
+        case SC_TOOLBAR_ACTION_RECENTS:
+            sc_input_manager_press_app_switch(&screen->im);
+            break;
+        case SC_TOOLBAR_ACTION_SCREENSHOT: {
+            SDL_Surface *surface = sc_screen_capture_frame(screen);
+            if (surface) {
+                bool ok = sc_clipboard_set_png(surface);
+                SDL_DestroySurface(surface);
+                if (ok) {
+                    LOGI("Copied current frame to clipboard (%ux%u PNG)",
+                         screen->content_size.width,
+                         screen->content_size.height);
+                    sc_screen_toolbar_notify_copy(screen);
+                }
+            }
+            break;
+        }
+        case SC_TOOLBAR_ACTION_RECORD:
+            sc_screen_toggle_recording(screen);
+            break;
+        default:
+            break;
+    }
+    sc_screen_update_emulator_ui(screen);
+}
+
 void
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
+    if (sc_emulator_ui_handle_event(&screen->emulator_ui, event)) {
+        return;
+    }
+
     switch (event->type) {
+        case SC_EVENT_RECORDING_STATE_CHANGED:
+            if (event->user.data1 == screen->recording_manager) {
+                sc_screen_update_emulator_ui(screen);
+                sc_screen_recording_notify(screen);
+            }
+            break;
         case SC_EVENT_OPEN_WINDOW: {
             struct sc_size *size = event->user.data1;
             assert(size);
@@ -1160,29 +1391,50 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
             return;
         }
         case SDL_EVENT_WINDOW_EXPOSED:
-            sc_screen_render(screen, true);
+            if (event->window.windowID == SDL_GetWindowID(screen->window)) {
+                sc_screen_render(screen, true);
+            }
+            return;
+        case SDL_EVENT_WINDOW_MOVED:
+        case SDL_EVENT_WINDOW_MOUSE_LEAVE:
             return;
 // If defined, then the actions are already performed by the event watcher
 #ifndef CONTINUOUS_RESIZING_WORKAROUND
         case SDL_EVENT_WINDOW_RESIZED:
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-            sc_screen_on_resize(screen, &event->window);
+            if (event->window.windowID == SDL_GetWindowID(screen->window)) {
+                sc_screen_on_resize(screen, &event->window);
+            }
             return;
 #endif
         case SDL_EVENT_WINDOW_RESTORED:
-            if (screen->video && is_windowed(screen)) {
-                apply_pending_resize(screen);
-                sc_screen_render(screen, true);
+            if (event->window.windowID == SDL_GetWindowID(screen->window)) {
+                if (screen->video && is_windowed(screen)) {
+                    apply_pending_resize(screen);
+                    sc_screen_render(screen, true);
+                }
             }
             return;
+        case SDL_EVENT_WINDOW_MINIMIZED:
+        case SDL_EVENT_WINDOW_HIDDEN:
+        case SDL_EVENT_WINDOW_SHOWN:
+            return;
         case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
+            if (event->window.windowID != SDL_GetWindowID(screen->window)) {
+                return;
+            }
             LOGD("Switched to fullscreen mode");
             assert(screen->video);
+            sc_screen_render(screen, true);
             return;
         case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+            if (event->window.windowID != SDL_GetWindowID(screen->window)) {
+                return;
+            }
             LOGD("Switched to windowed mode");
             assert(screen->video);
             if (is_windowed(screen)) {
+                set_aspect_ratio(screen, screen->content_size);
                 apply_pending_resize(screen);
                 sc_screen_render(screen, true);
             }
@@ -1198,6 +1450,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
             sc_input_manager_handle_event(&screen->im, event);
 
             sc_texture_reset(&screen->tex);
+            sc_screen_update_emulator_ui(screen);
             sc_screen_render(screen, true);
 
             sc_tick deadline = sc_tick_now() + SC_TICK_FROM_SEC(2);

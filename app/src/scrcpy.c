@@ -18,11 +18,12 @@
 #include "controller.h"
 #include "decoder.h"
 #include "demuxer.h"
+#include "device_info.h"
 #include "events.h"
 #include "file_pusher.h"
 #include "keyboard_sdk.h"
 #include "mouse_sdk.h"
-#include "recorder.h"
+#include "recording_manager.h"
 #include "screen.h"
 #include "sdl_hints.h"
 #include "server.h"
@@ -56,7 +57,7 @@ struct scrcpy {
     struct sc_demuxer audio_demuxer;
     struct sc_decoder video_decoder;
     struct sc_decoder audio_decoder;
-    struct sc_recorder recorder;
+    struct sc_recording_manager recording_manager;
     struct sc_video_regulator video_regulator;
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
@@ -114,7 +115,9 @@ sdl_configure_ctrl_c_windows(void) {
 #endif // _WIN32
 
 static enum scrcpy_exit_code
-event_loop(struct scrcpy *s, bool has_screen) {
+event_loop(struct scrcpy *s, bool has_screen, bool has_recording_manager) {
+    bool quit_pending = false;
+    enum scrcpy_exit_code pending_exit = SCRCPY_EXIT_SUCCESS;
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
@@ -123,9 +126,25 @@ event_loop(struct scrcpy *s, bool has_screen) {
                 if (has_screen) {
                     sc_screen_handle_event(&s->screen, &event);
                 }
+                if (has_recording_manager
+                        && sc_recording_manager_is_busy(
+                            &s->recording_manager)) {
+                    sc_recording_manager_stop(&s->recording_manager);
+                    quit_pending = true;
+                    pending_exit = SCRCPY_EXIT_DISCONNECTED;
+                    break;
+                }
                 return SCRCPY_EXIT_DISCONNECTED;
             case SC_EVENT_DEMUXER_ERROR:
                 LOGE("Demuxer error");
+                if (has_recording_manager
+                        && sc_recording_manager_is_busy(
+                            &s->recording_manager)) {
+                    sc_recording_manager_stop(&s->recording_manager);
+                    quit_pending = true;
+                    pending_exit = SCRCPY_EXIT_FAILURE;
+                    break;
+                }
                 return SCRCPY_EXIT_FAILURE;
             case SC_EVENT_CONTROLLER_ERROR:
                 LOGE("Controller error");
@@ -133,20 +152,53 @@ event_loop(struct scrcpy *s, bool has_screen) {
             case SC_EVENT_RECORDER_ERROR:
                 LOGE("Recorder error");
                 return SCRCPY_EXIT_FAILURE;
+            case SC_EVENT_RECORDING_SESSION_ENDED:
+                if (has_recording_manager) {
+                    sc_recording_manager_handle_session_ended(
+                        &s->recording_manager, event.user.data1,
+                        has_screen ? s->screen.window : NULL);
+                }
+                break;
+            case SC_EVENT_RECORDING_SAVE_DIALOG:
+                sc_recording_save_handle_dialog(event.user.data1);
+                break;
+            case SC_EVENT_RECORDING_SAVE_COMPLETE:
+                sc_recording_save_handle_complete(event.user.data1);
+                break;
             case SC_EVENT_AOA_OPEN_ERROR:
                 LOGE("AOA open error");
                 return SCRCPY_EXIT_FAILURE;
             case SC_EVENT_TIME_LIMIT_REACHED:
                 LOGI("Time limit reached");
+                if (has_recording_manager
+                        && sc_recording_manager_is_busy(
+                            &s->recording_manager)) {
+                    sc_recording_manager_stop(&s->recording_manager);
+                    quit_pending = true;
+                    pending_exit = SCRCPY_EXIT_SUCCESS;
+                    break;
+                }
                 return SCRCPY_EXIT_SUCCESS;
             case SDL_EVENT_QUIT:
                 LOGD("User requested to quit");
+                if (has_recording_manager
+                        && sc_recording_manager_is_busy(
+                            &s->recording_manager)) {
+                    sc_recording_manager_stop(&s->recording_manager);
+                    quit_pending = true;
+                    pending_exit = SCRCPY_EXIT_SUCCESS;
+                    break;
+                }
                 return SCRCPY_EXIT_SUCCESS;
             default:
                 if (has_screen) {
                     sc_screen_handle_event(&s->screen, &event);
                 }
                 break;
+        }
+        if (quit_pending && (!has_recording_manager
+                || !sc_recording_manager_is_busy(&s->recording_manager))) {
+            return pending_exit;
         }
     }
     return SCRCPY_EXIT_FAILURE;
@@ -177,17 +229,6 @@ await_for_server(bool *connected) {
 
     LOGE("SDL_WaitEvent() error: %s", SDL_GetError());
     return false;
-}
-
-static void
-sc_recorder_on_ended(struct sc_recorder *recorder, bool success,
-                     void *userdata) {
-    (void) recorder;
-    (void) userdata;
-
-    if (!success) {
-        sc_push_event(SC_EVENT_RECORDER_ERROR);
-    }
 }
 
 static void
@@ -338,8 +379,7 @@ scrcpy(struct scrcpy_options *options) {
 
     bool server_started = false;
     bool file_pusher_initialized = false;
-    bool recorder_initialized = false;
-    bool recorder_started = false;
+    bool recording_manager_initialized = false;
 #ifdef HAVE_V4L2
     bool v4l2_sink_initialized = false;
 #endif
@@ -357,6 +397,10 @@ scrcpy(struct scrcpy_options *options) {
     bool timeout_initialized = false;
     bool timeout_started = false;
     bool disconnected = false;
+    char *device_window_title = NULL;
+    char *device_window_subtitle = NULL;
+    struct sc_device_info device_info;
+    sc_device_info_init(&device_info);
 
     struct sc_acksync *acksync = NULL;
 
@@ -507,16 +551,32 @@ scrcpy(struct scrcpy_options *options) {
     // It is necessarily initialized here, since the device is connected
     struct sc_server_info *info = &s->server.info;
 
-    const char *window_title =
+    const char *base_window_title =
         options->window_title ? options->window_title : info->device_name;
+    const char *window_title = base_window_title;
+    const char *window_title_subtitle = NULL;
     assert(window_title);
+
+    const char *serial = s->server.serial;
+    assert(serial);
+
+    if (options->window && options->toolbar) {
+        sc_device_info_load(&device_info, &s->server.intr, serial);
+        device_window_title =
+            sc_device_info_build_window_title(&device_info,
+                                              base_window_title);
+        device_window_subtitle = sc_device_info_build_subtitle(&device_info);
+        if (device_window_title) {
+            window_title = device_window_title;
+        } else {
+            LOG_OOM();
+        }
+        window_title_subtitle = device_window_subtitle;
+    }
 
     if (options->update_terminal_title) {
         set_terminal_title_with_prefix(window_title);
     }
-
-    const char *serial = s->server.serial;
-    assert(serial);
 
     struct sc_file_pusher *fp = NULL;
 
@@ -561,30 +621,31 @@ scrcpy(struct scrcpy_options *options) {
                                   &s->audio_decoder.packet_sink);
     }
 
-    if (options->record_filename) {
-        static const struct sc_recorder_callbacks recorder_cbs = {
-            .on_ended = sc_recorder_on_ended,
-        };
-        if (!sc_recorder_init(&s->recorder, options->record_filename,
-                              options->record_format, options->video,
-                              options->audio, options->record_orientation,
-                              &recorder_cbs, NULL)) {
+    bool dynamic_recording = options->window && options->toolbar
+                          && options->video;
+    if (options->record_filename || dynamic_recording) {
+        if (!sc_recording_manager_init(
+                &s->recording_manager, dynamic_recording, options->control,
+                options->video, options->audio,
+                options->record_orientation)) {
             goto end;
         }
-        recorder_initialized = true;
+        recording_manager_initialized = true;
 
-        if (!sc_recorder_start(&s->recorder)) {
+        if (options->record_filename
+                && !sc_recording_manager_start_initial(
+                    &s->recording_manager, options->record_filename,
+                    options->record_format)) {
             goto end;
         }
-        recorder_started = true;
 
         if (options->video) {
             sc_packet_source_add_sink(&s->video_demuxer.packet_source,
-                                      &s->recorder.video_packet_sink);
+                                      &s->recording_manager.video_packet_sink);
         }
         if (options->audio) {
             sc_packet_source_add_sink(&s->audio_demuxer.packet_source,
-                                      &s->recorder.audio_packet_sink);
+                                      &s->recording_manager.audio_packet_sink);
         }
     }
 
@@ -760,6 +821,8 @@ aoa_complete:
             .camera = options->video_source == SC_VIDEO_SOURCE_CAMERA,
             .flex_display = options->flex_display,
             .controller = controller,
+            .recording_manager = recording_manager_initialized
+                               ? &s->recording_manager : NULL,
             .fp = fp,
             .kp = kp,
             .mp = mp,
@@ -769,6 +832,9 @@ aoa_complete:
             .clipboard_autosync = options->clipboard_autosync,
             .shortcut_mods = options->shortcut_mods,
             .window_title = window_title,
+            .window_title_primary = base_window_title,
+            .window_title_secondary = window_title_subtitle,
+            .toolbar = options->toolbar,
             .always_on_top = options->always_on_top,
             .window_x = options->window_x,
             .window_y = options->window_y,
@@ -903,7 +969,7 @@ aoa_complete:
         }
     }
 
-    ret = event_loop(s, options->window);
+    ret = event_loop(s, options->window, recording_manager_initialized);
 
     // Reject all new runnables, and execute the pending ones now
     // (they could access memory that will be cleaned up below)
@@ -930,8 +996,8 @@ end:
     if (file_pusher_initialized) {
         sc_file_pusher_stop(&s->file_pusher);
     }
-    if (recorder_initialized) {
-        sc_recorder_stop(&s->recorder);
+    if (recording_manager_initialized) {
+        sc_recording_manager_stop(&s->recording_manager);
     }
     if (screen_initialized) {
         sc_screen_interrupt(&s->screen);
@@ -1014,11 +1080,8 @@ end:
         sc_controller_destroy(&s->controller);
     }
 
-    if (recorder_started) {
-        sc_recorder_join(&s->recorder);
-    }
-    if (recorder_initialized) {
-        sc_recorder_destroy(&s->recorder);
+    if (recording_manager_initialized) {
+        sc_recording_manager_destroy(&s->recording_manager);
     }
 
     if (file_pusher_initialized) {
@@ -1031,6 +1094,9 @@ end:
     }
 
     sc_server_destroy(&s->server);
+    sc_device_info_destroy(&device_info);
+    free(device_window_title);
+    free(device_window_subtitle);
 
     return ret;
 }

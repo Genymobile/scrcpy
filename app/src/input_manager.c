@@ -81,9 +81,48 @@ action_back(struct sc_input_manager *im, enum sc_action action) {
     send_keycode(im, AKEYCODE_BACK, action, "BACK");
 }
 
+static bool
+can_navigate_from_toolbar(const struct sc_input_manager *im) {
+    return im->controller && im->kp && !im->camera
+        && !im->screen->paused && !im->disconnected;
+}
+
+bool
+sc_input_manager_press_home(struct sc_input_manager *im) {
+    if (!can_navigate_from_toolbar(im)) {
+        return false;
+    }
+
+    action_home(im, SC_ACTION_DOWN);
+    action_home(im, SC_ACTION_UP);
+    return true;
+}
+
+bool
+sc_input_manager_press_back(struct sc_input_manager *im) {
+    if (!can_navigate_from_toolbar(im)) {
+        return false;
+    }
+
+    action_back(im, SC_ACTION_DOWN);
+    action_back(im, SC_ACTION_UP);
+    return true;
+}
+
 static inline void
 action_app_switch(struct sc_input_manager *im, enum sc_action action) {
     send_keycode(im, AKEYCODE_APP_SWITCH, action, "APP_SWITCH");
+}
+
+bool
+sc_input_manager_press_app_switch(struct sc_input_manager *im) {
+    if (!can_navigate_from_toolbar(im)) {
+        return false;
+    }
+
+    action_app_switch(im, SC_ACTION_DOWN);
+    action_app_switch(im, SC_ACTION_UP);
+    return true;
 }
 
 static inline void

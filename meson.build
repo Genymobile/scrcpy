@@ -7,6 +7,11 @@ project('scrcpy', 'c',
             'b_ndebug=if-release',
         ])
 
+if host_machine.system() == 'darwin'
+    add_languages('objc')
+    add_project_arguments('-fobjc-arc', language: 'objc')
+endif
+
 add_project_arguments('-Wmissing-prototypes', language: 'c')
 
 if get_option('compile_app')

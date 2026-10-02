@@ -73,4 +73,13 @@ void
 sc_input_manager_handle_event(struct sc_input_manager *im,
                               const SDL_Event *event);
 
+bool
+sc_input_manager_press_home(struct sc_input_manager *im);
+
+bool
+sc_input_manager_press_back(struct sc_input_manager *im);
+
+bool
+sc_input_manager_press_app_switch(struct sc_input_manager *im);
+
 #endif

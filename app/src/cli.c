@@ -111,6 +111,7 @@ enum {
     OPT_RENDER_FIT,
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
     OPT_NO_TERMINAL_TITLE,
+    OPT_NO_TOOLBAR,
 };
 
 struct sc_option {
@@ -674,6 +675,12 @@ static const struct sc_option options[] = {
         .text = "Disable terminal title updates.",
     },
     {
+        .longopt_id = OPT_NO_TOOLBAR,
+        .longopt = "no-toolbar",
+        .text = "Disable emulator toolbar support and runtime menu controls. "
+                "This does not change the saved visibility.",
+    },
+    {
         .longopt_id = OPT_NO_VD_DESTROY_CONTENT,
         .longopt = "no-vd-destroy-content",
         .text = "Disable virtual display \"destroy content on removal\" "
@@ -1210,6 +1217,15 @@ static const struct sc_shortcut shortcuts[] = {
     {
         .shortcuts = { "Drag & drop non-APK file" },
         .text = "Push file to device (see --push-target)",
+    },
+    {
+        .shortcuts = {
+            "Ctrl+Shift+t (Windows/Linux)",
+            "Cmd+Shift+t (macOS)",
+            "F10 (Linux: open View menu)",
+        },
+        .text = "Show or hide the emulator toolbar (Ctrl/Cmd shortcut "
+                "disabled in camera mode)",
     },
     {
         .shortcuts = { "MOD+t" },
@@ -2944,6 +2960,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_TERMINAL_TITLE:
                 opts->update_terminal_title = false;
+                break;
+            case OPT_NO_TOOLBAR:
+                opts->toolbar = false;
                 break;
             default:
                 // getopt prints the error message on stderr

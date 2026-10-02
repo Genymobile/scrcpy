@@ -13,11 +13,13 @@
 #include "controller.h"
 #include "coords.h"
 #include "disconnect.h"
+#include "emulator_ui.h"
 #include "fps_counter.h"
 #include "frame_buffer.h"
 #include "input_manager.h"
 #include "mouse_capture.h"
 #include "options.h"
+#include "recording_manager.h"
 #include "texture.h"
 #include "trait/key_processor.h"
 #include "trait/frame_sink.h"
@@ -39,8 +41,10 @@ struct sc_screen {
     bool camera;
     bool window_aspect_ratio_lock;
     bool flex_display;
+    struct sc_emulator_ui emulator_ui;
 
     struct sc_controller *controller;
+    struct sc_recording_manager *recording_manager;
 
     struct sc_screen_bg_color {
         uint8_t r;
@@ -115,6 +119,7 @@ struct sc_screen_params {
     bool flex_display;
 
     struct sc_controller *controller;
+    struct sc_recording_manager *recording_manager;
     struct sc_file_pusher *fp;
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;
@@ -126,6 +131,9 @@ struct sc_screen_params {
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
 
     const char *window_title;
+    const char *window_title_primary;
+    const char *window_title_secondary;
+    bool toolbar;
     bool always_on_top;
 
     int16_t window_x; // accepts SC_WINDOW_POSITION_UNDEFINED
