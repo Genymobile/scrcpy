@@ -54,6 +54,7 @@ enum {
     OPT_NO_DOWNSIZE_ON_ERROR,
     OPT_OTG,
     OPT_NO_CLEANUP,
+    OPT_NO_SERVER_CLEANUP,
     OPT_PRINT_FPS,
     OPT_NO_POWER_ON,
     OPT_VIDEO_CODEC,
@@ -628,6 +629,13 @@ static const struct sc_option options[] = {
                 "and restores the device state (show touches, stay awake and "
                 "power mode) on exit.\n"
                 "This option disables this cleanup."
+    },
+    {
+        .longopt_id = OPT_NO_SERVER_CLEANUP,
+        .longopt = "no-server-cleanup",
+        .text = "Keep the server binary on the device while still restoring "
+                "the device state (show touches, stay awake and power mode) "
+                "on exit.",
     },
     {
         .longopt_id = OPT_NO_CLIPBOARD_AUTOSYNC,
@@ -2748,6 +2756,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_CLEANUP:
                 opts->cleanup = false;
+                break;
+            case OPT_NO_SERVER_CLEANUP:
+                opts->unlink_server = false;
                 break;
             case OPT_NO_POWER_ON:
                 opts->power_on = false;

@@ -321,6 +321,7 @@ struct scrcpy_options {
     bool select_usb;
     bool select_tcpip;
     bool cleanup;
+    bool unlink_server;
     bool start_fps_counter;
     bool power_on;
     bool video;
