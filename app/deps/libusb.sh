@@ -62,5 +62,5 @@ else
     "$SOURCES_DIR/$PROJECT_DIR"/configure "${conf[@]}"
 fi
 
-make -j
+make -j"$NPROC"
 make install-strip
