@@ -1,0 +1,408 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 27664cc..5c5bec0 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -9,8 +9,10 @@ include(GNUInstallDirs)
+ # This helps to build vendor projects with or without any patching. Also if any
+ # files are changed in vendor projects those can be retained with this option.
+ option(ANDROID_TOOLS_PATCH_VENDOR "Patch vendor projects using patches directory" ON)
++option(ANDROID_TOOLS_USE_BUNDLED_CORROSION "Use bundled corrosion instead of system provided one" OFF)
+ option(ANDROID_TOOLS_USE_BUNDLED_FMT "Use bundled fmt library instead of system provided one" OFF)
+ option(ANDROID_TOOLS_USE_BUNDLED_LIBUSB "Use bundled libusb library instead of system provided one" OFF)
++option(ANDROID_TOOLS_ADB_ENABLE_MDNS "Enable ADB mDNS support" OFF)
+ option(ANDROID_TOOLS_LIBUSB_ENABLE_UDEV "Enable udev for device enumeration and hotplug support" OFF)
+ 
+ # Install bash/zsh completion files.
+@@ -47,6 +49,7 @@ set(CPACK_SOURCE_GENERATOR "TXZ")
+ set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${ANDROID_VERSION}")
+ set(CPACK_SOURCE_IGNORE_FILES "/patches/" "/build/" "/.git/" "/.github/" "/tests/"
+ 	"/test/" "/testdata/" "/extras/simpleperf/scripts/" "/extras/simpleperf/demo/"
++	"/adb/client/adbmdns/.cargo" "/adb/client/adbmdns/vendor"
+ 	"aes_128_gcm.txt" "aes_256_gcm.txt"
+ 	"/fuzz/"
+ 	"/wycheproof_testvectors/"
+@@ -56,6 +59,7 @@ set(CPACK_SOURCE_IGNORE_FILES "/patches/" "/build/" "/.git/" "/.github/" "/tests
+ 	"\\\\.data$"
+ 	"\\\\.git$"
+ 	"\\\\.html$"
++	"\\\\.lock$"
+ 	"\\\\.orig$"
+ 	"\\\\.pdf$"
+ 	"\\\\.pem$"
+@@ -68,3 +72,17 @@ set(CPACK_SOURCE_IGNORE_FILES "/patches/" "/build/" "/.git/" "/.github/" "/tests
+ 	"\\\\.zip$"
+ )
+ include(CPack)
++
++# Create a custom target to for vendor source tarball.
++add_custom_command(
++	OUTPUT ${CMAKE_BINARY_DIR}/${ANDROID_VENDOR}-${ANDROID_VERSION}-vendor.tar.xz
++	COMMAND ${CMAKE_COMMAND} -E tar
++			cJf ${CMAKE_BINARY_DIR}/${ANDROID_VENDOR}-${ANDROID_VERSION}-vendor.tar.xz
++			vendor/adb/client/adbmdns/.cargo
++			vendor/adb/client/adbmdns/vendor
++	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
++)
++
++add_custom_target(vendor_source
++	DEPENDS ${CMAKE_BINARY_DIR}/${ANDROID_VENDOR}-${ANDROID_VERSION}-vendor.tar.xz
++)
+diff --git a/vendor/CMakeLists.adb.txt b/vendor/CMakeLists.adb.txt
+index b2afaba..8f766fc 100644
+--- a/vendor/CMakeLists.adb.txt
++++ b/vendor/CMakeLists.adb.txt
+@@ -9,6 +9,20 @@ protobuf_generate_cpp(ADB_KNOWN_HOSTS_PROTO_SRCS ADB_KNOWN_HOSTS_PROTO_HDRS
+ protobuf_generate_cpp(ADB_PAIRING_PROTO_SRCS ADB_PAIRING_PROTO_HDRS
+ 	adb/proto/pairing.proto)
+ 
++if(ANDROID_TOOLS_ADB_ENABLE_MDNS)
++	if(ANDROID_TOOLS_USE_BUNDLED_CORROSION)
++		add_subdirectory(corrosion)
++	else()
++		find_package(Corrosion CONFIG REQUIRED)
++		message(STATUS "Found Corrosion: ${Corrosion_DIR} (version ${Corrosion_VERSION})")
++	endif()
++
++	corrosion_import_crate(
++		MANIFEST_PATH adb/client/adbmdns/Cargo.toml
++		PROFILE release
++	)
++endif()
++
+ # No fastdeploy because it requires deployagent.inc
+ set(libadb_SOURCES
+ 	adb/client/adb_client.cpp
+@@ -60,6 +74,12 @@ else()
+ 		adb/client/usb_linux_netlink.cpp)
+ endif()
+ 
++if(ANDROID_TOOLS_ADB_ENABLE_MDNS)
++	list(APPEND libadb_SOURCES
++		adb/client/adbmdns/adbmdns.cpp
++		adb/adb_mdns.cpp)
++endif()
++
+ add_library(libadb STATIC ${libadb_SOURCES})
+ target_compile_definitions(libadb PRIVATE -D_GNU_SOURCE)
+ target_compile_definitions(libadb PUBLIC -DADB_HOST=1)
+@@ -81,6 +101,11 @@ if(ANDROID_TOOLS_USE_BUNDLED_LIBUSB)
+ 	target_include_directories(libadb PUBLIC libusb)
+ endif()
+ 
++if(ANDROID_TOOLS_ADB_ENABLE_MDNS)
++	target_compile_definitions(libadb PUBLIC -DADB_MDNS=1)
++	target_link_libraries(libadb PUBLIC adbmdns_bridge)
++endif()
++
+ target_link_libraries(libadb PUBLIC fmt::fmt)
+ 
+ add_library(libadb_crypto_defaults STATIC
+diff --git a/vendor/adb/adb.cpp b/vendor/adb/adb.cpp
+index f134288..1197bdd 100644
+--- a/vendor/adb/adb.cpp
++++ b/vendor/adb/adb.cpp
+@@ -1257,6 +1257,23 @@ bool is_usb_enabled() {
+ }
+ 
+ static bool handle_mdns_request(std::string_view service, int reply_fd) {
++#if ADB_MDNS
++    if (!android::base::ConsumePrefix(&service, "mdns:")) {
++        return false;
++    }
++
++    if (service == "check") {
++        std::string check = mdns_check();
++        SendOkay(reply_fd, check);
++        return true;
++    }
++    if (service == "services") {
++        std::string services_list = mdns_list_discovered_services();
++        SendOkay(reply_fd, services_list);
++        return true;
++    }
++#endif
++
+     return false;
+ }
+ 
+@@ -1354,11 +1371,7 @@ HostRequestResult handle_host_request(std::string_view service, TransportType ty
+         status.set_usb_backend_forced(getenv("ADB_LIBUSB") != nullptr);
+ 
+         if (mdns::is_enabled()) {
+-            if (mdns::should_use_openscreen()) {
+-                status.set_mdns_backend(adb::proto::AdbServerStatus::OPENSCREEN);
+-            } else {
+-                status.set_mdns_backend(adb::proto::AdbServerStatus::LIBADBMDNS);
+-            }
++            status.set_mdns_backend(adb::proto::AdbServerStatus::LIBADBMDNS);
+         } else {
+             status.set_mdns_backend(adb::proto::AdbServerStatus::MDNS_DISABLED);
+         }
+diff --git a/vendor/adb/adb_mdns.cpp b/vendor/adb/adb_mdns.cpp
+index dde08d7..312ea3c 100644
+--- a/vendor/adb/adb_mdns.cpp
++++ b/vendor/adb/adb_mdns.cpp
+@@ -19,6 +19,7 @@
+ #include "adb_mdns.h"
+ 
+ #include <algorithm>
++#include <atomic>
+ #include <set>
+ 
+ #include <android-base/stringprintf.h>
+diff --git a/vendor/adb/client/adb_wifi.cpp b/vendor/adb/client/adb_wifi.cpp
+index 33762f3..8a00f8d 100644
+--- a/vendor/adb/client/adb_wifi.cpp
++++ b/vendor/adb/client/adb_wifi.cpp
+@@ -177,7 +177,13 @@ bool KnownWifiHostsFile::IsKnownHost(const std::string& host) {
+ 
+ void adb_wifi_pair_device(const std::string& host, const std::string& password,
+                           std::string& response) {
+-    if (true) {
++#if ADB_MDNS
++    auto mdns_info = mdns_get_pairing_service_info(host);
++#else
++    auto mdns_info = std::optional<ServiceInfo>{};
++#endif
++
++    if (!mdns_info.has_value()) {
+         // Check the address for a valid address and port.
+         std::string parsed_host;
+         std::string err;
+@@ -221,7 +227,9 @@ void adb_wifi_pair_device(const std::string& host, const std::string& password,
+ 
+     PairingResultWaiter waiter;
+     std::unique_lock<std::mutex> lock(waiter.mutex_);
+-    if (!client->Start(host,
++    if (!client->Start(mdns_info.has_value() ? fmt::format("{}:{}", mdns_info->v4_address_string(),
++                                                           mdns_info->port)
++                                             : host,
+                        waiter.OnResult, &waiter)) {
+         response = "Failed: Unable to start pairing client.";
+         return;
+@@ -245,4 +253,7 @@ void adb_wifi_pair_device(const std::string& host, const std::string& password,
+     known_wifi_hosts_file.AddKnownHost(device_guid);
+ 
+     // Try to auto-connect.
++#if ADB_MDNS
++    adb_secure_connect_by_service_name(device_guid);
++#endif
+ }
+diff --git a/vendor/adb/client/adbmdns/Cargo.toml b/vendor/adb/client/adbmdns/Cargo.toml
+index 63e08e6..80fe13a 100644
+--- a/vendor/adb/client/adbmdns/Cargo.toml
++++ b/vendor/adb/client/adbmdns/Cargo.toml
+@@ -1,11 +1,12 @@
+ [package]
+ name = "adb_mdns"
+ version = "0.1.0"
+-edition = "2024"
++edition = "2021"
+ 
+ [lib]
+-name = "zeroconf"
++name = "adbmdns_bridge"
+ path = "adbmdns_bridge.rs"
++crate-type = ["staticlib"]
+ 
+ [dependencies]
+ socket2 = { version = "0.4.0", features = ["all"] }
+@@ -14,11 +15,11 @@ simple-dns = "0.11.0"
+ zerocopy = { version = "0.8.26", features = ["derive"] }
+ libc = "0.2.174"
+ anyhow = "1.0.99"
+-nix = { version = "0.29.0", features = ["socket", "uio"] }
++nix = { version = "0.29.0", features = ["net", "socket", "uio"] }
+ if-addrs = "0.14.0"
+ mio = { version = "1.1.0", features = ["net", "os-poll"] }
+ 
+-[dependencies.windows-sys]
++[target.'cfg(windows)'.dependencies.windows-sys]
+ version = "0.61.1"
+ features = [
+     "Win32_Foundation",
+diff --git a/vendor/adb/client/adbmdns/adbmdns.cpp b/vendor/adb/client/adbmdns/adbmdns.cpp
+index dd88283..ee0005e 100644
+--- a/vendor/adb/client/adbmdns/adbmdns.cpp
++++ b/vendor/adb/client/adbmdns/adbmdns.cpp
+@@ -17,6 +17,8 @@
+ #include "adbmdns.h"
+ #include "adbmdns_bridge.h"
+ 
++#include <fmt/format.h>
++
+ #include <stdint.h>
+ 
+ #include "adb_trace.h"
+@@ -25,9 +27,9 @@
+ 
+ template <typename E>
+     requires std::is_enum_v<E>
+-struct std::formatter<E> : std::formatter<std::string> {
++struct fmt::formatter<E> : fmt::formatter<std::string> {
+     constexpr auto format(const E& e, auto& ctx) const {
+-        using Base = std::formatter<std::string>;
++        using Base = fmt::formatter<std::string>;
+         return Base::format("Enum(" + std::to_string(e) + ")", ctx);
+     }
+ };
+@@ -78,7 +80,7 @@ static std::vector<std::vector<uint8_t>> parseTxt(const uint32_t num_txt_kv,
+     for (uint32_t kv_index = 0; kv_index < num_txt_kv; kv_index++) {
+         std::string key(txt_kvs[kv_index].key, txt_kvs[kv_index].key_size);
+         std::string value(txt_kvs[kv_index].value, txt_kvs[kv_index].value_size);
+-        std::string entry = std::format("{}={}", key, value);
++        std::string entry = fmt::format("{}={}", key, value);
+ 
+         // Convert string into vector<uint8_t>
+         std::vector<uint8_t> u8_vec;
+diff --git a/vendor/adb/client/adbmdns/adbmdns_bridge.rs b/vendor/adb/client/adbmdns/adbmdns_bridge.rs
+index 507b94a..52514fb 100644
+--- a/vendor/adb/client/adbmdns/adbmdns_bridge.rs
++++ b/vendor/adb/client/adbmdns/adbmdns_bridge.rs
+@@ -297,7 +297,7 @@ impl log::Log for AdbLogger {
+ /// 3. Accept NUL-terminated strings for all const char* parameters
+ /// 4. Accept a buffer of `num_ipv4s` 32-bit values in `ipv4s` (expected to be network order octets)
+ /// 5. Accept a buffer of bytes in `ipv6s` which is the size of `num_ipv6s` * 16 (expected to be a sequence of sequences of octets, flattened).
+-#[unsafe(no_mangle)]
++#[no_mangle]
+ pub unsafe extern "C" fn adbmdns_start(
+     log_callback: AdbLoggerCallback,
+     event_callback: EventCallback,
+diff --git a/vendor/adb/client/adbmdns/netwatch/netwatch_linux.rs b/vendor/adb/client/adbmdns/netwatch/netwatch_linux.rs
+index 18e1bdb..05ab96c 100644
+--- a/vendor/adb/client/adbmdns/netwatch/netwatch_linux.rs
++++ b/vendor/adb/client/adbmdns/netwatch/netwatch_linux.rs
+@@ -37,6 +37,7 @@ use nix::sys::socket::SockProtocol;
+ use nix::sys::socket::SockType;
+ use std::collections::HashMap;
+ use std::fmt;
++use std::mem::size_of;
+ use std::os::fd::AsRawFd;
+ use std::path::PathBuf;
+ use std::thread;
+diff --git a/vendor/adb/client/commandline.cpp b/vendor/adb/client/commandline.cpp
+index abe38dc..0e77793 100644
+--- a/vendor/adb/client/commandline.cpp
++++ b/vendor/adb/client/commandline.cpp
+@@ -1950,7 +1950,9 @@ int adb_commandline(int argc, const char** argv) {
+         ReadOrderlyShutdown(fd);
+         return 0;
+     } else if (!strcmp(argv[0], "mdns")) {
++#if !ADB_MDNS
+         error_exit("mdns is not supported by this version of adb.");
++#endif
+ 
+         --argc;
+         if (argc < 1) error_exit("mdns requires an argument");
+diff --git a/vendor/adb/client/main.cpp b/vendor/adb/client/main.cpp
+index 50a53b0..efde06c 100644
+--- a/vendor/adb/client/main.cpp
++++ b/vendor/adb/client/main.cpp
+@@ -133,6 +133,12 @@ int adb_server_main(int is_daemon, const std::string& socket_spec, const char* o
+ 
+     init_reconnect_handler();
+ 
++#if ADB_MDNS
++    if (mdns::is_enabled()) {
++        init_mdns_transport_discovery();
++    }
++#endif
++
+     if (is_usb_enabled()) {
+         if (is_libusb_enabled()) {
+             libusb::usb_init();
+diff --git a/vendor/adb/client/mdns_utils.cpp b/vendor/adb/client/mdns_utils.cpp
+index e578c1a..74a9036 100644
+--- a/vendor/adb/client/mdns_utils.cpp
++++ b/vendor/adb/client/mdns_utils.cpp
+@@ -78,14 +78,4 @@ bool is_enabled() {
+     return !getenv("ADB_MDNS") || strcmp(getenv("ADB_MDNS"), "0") != 0;
+ }
+ 
+-// Historically, this env variable was a boolean used to disable openscreen.
+-// It has evolved into an enum to select the mdns backend
+-// 0 = Bonjour (deprecated)
+-// 1 = Openscreen
+-// 2 = Adbmdns
+-bool should_use_openscreen() {
+-    const char* mdns_osp = getenv("ADB_MDNS_OPENSCREEN");
+-    return mdns_osp != nullptr && strcmp(mdns_osp, "1") == 0;
+-}
+-
+ }  // namespace mdns
+diff --git a/vendor/adb/client/mdns_utils.h b/vendor/adb/client/mdns_utils.h
+index d106133..86b8fe9 100644
+--- a/vendor/adb/client/mdns_utils.h
++++ b/vendor/adb/client/mdns_utils.h
+@@ -53,6 +53,4 @@ std::optional<MdnsInstance> mdns_parse_instance_name(std::string_view name);
+ 
+ // Return true if mdns backend is enabled
+ bool is_enabled();
+-
+-bool should_use_openscreen();
+ }  // namespace mdns
+diff --git a/vendor/adb/client/transport_mdns.cpp b/vendor/adb/client/transport_mdns.cpp
+index 930c695..809f156 100644
+--- a/vendor/adb/client/transport_mdns.cpp
++++ b/vendor/adb/client/transport_mdns.cpp
+@@ -132,11 +132,7 @@ void OnServiceReceiverResult(const ServiceInfo& info, ServiceInfoState state) {
+ /////////////////////////////////////////////////////////////////////////////////
+ 
+ void init_mdns_transport_discovery() {
+-    if (mdns::should_use_openscreen()) {
+-        StartOpenScreenDiscovery();
+-    } else {
+-        StartAdbMdnsDiscovery();
+-    }
++    StartAdbMdnsDiscovery();
+ }
+ 
+ bool adb_secure_connect_by_service_name(const std::string& instance_name) {
+@@ -152,10 +148,6 @@ std::string mdns_check() {
+         return "ERROR: mdns discovery disabled";
+     }
+ 
+-    if (mdns::should_use_openscreen()) {
+-        return "mdns daemon version [Openscreen discovery 0.0.0]";
+-    }
+-
+     return "mdns daemon version [adb discovery 0.0.0]";
+ }
+ 
+diff --git a/vendor/adb/socket_spec.cpp b/vendor/adb/socket_spec.cpp
+index 3c0e2d0..e298dc3 100644
+--- a/vendor/adb/socket_spec.cpp
++++ b/vendor/adb/socket_spec.cpp
+@@ -228,7 +228,32 @@ bool socket_spec_connect(unique_fd* fd, std::string_view address, int* port,
+         if (tcp_host_is_local(hostname)) {
+             fd->reset(network_loopback_client(port_value, SOCK_STREAM, error));
+         } else {
++#if !ADB_MDNS
+             fd->reset(network_connect(hostname, port_value, SOCK_STREAM, 0, error));
++#elif ADB_HOST
++            // Check if the address is an mdns service we can connect to.
++            if (auto mdns_info = mdns_get_connect_service_info(std::string(address.substr(4)));
++                mdns_info != std::nullopt) {
++                fd->reset(network_connect(mdns_info->v4_address_string(), mdns_info->port,
++                                          SOCK_STREAM, 0, error));
++                if (fd->get() != -1) {
++                    // TODO(joshuaduong): We still show the ip address for the serial. Change it to
++                    // use the mdns instance name, so we can adjust to address changes on
++                    // reconnects.
++                    port_value = mdns_info->port;
++                    if (transport_name) {
++                        *transport_name =
++                                fmt::format("{}.{}", mdns_info->instance, mdns_info->service);
++                    }
++                }
++            } else {
++                fd->reset(network_connect(hostname, port_value, SOCK_STREAM, 0, error));
++            }
++#else
++            // Disallow arbitrary connections in adbd.
++            *error = "adbd does not support arbitrary tcp connections";
++            return false;
++#endif
+         }
+ 
+         if (fd->get() > 0) {
