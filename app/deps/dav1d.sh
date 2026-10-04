@@ -4,11 +4,11 @@ set -ex
 process_args "$@"
 
 VERSION=1.5.4
-URL="https://code.videolan.org/videolan/dav1d/-/archive/$VERSION/dav1d-$VERSION.tar.gz"
-SHA256SUM=a1d5b63d2d38ec9bd03acf643caa51fa22edd1e89c5a109c4807717216bbec07
+URL="https://downloads.videolan.org/pub/videolan/dav1d/$VERSION/dav1d-$VERSION.tar.xz"
+SHA256SUM=686616b7c69eb88d44459391ab25cac13b6647a3b288835c5784e71c1514a5c5
 
 PROJECT_DIR="dav1d-$VERSION"
-FILENAME="$PROJECT_DIR.tar.gz"
+FILENAME="$PROJECT_DIR.tar.xz"
 
 cd "$SOURCES_DIR"
 
