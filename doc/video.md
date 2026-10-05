@@ -79,12 +79,14 @@ your device, you should not get more than 24 frames per second in scrcpy.
 ## Codec
 
 The video codec can be selected. The possible values are `h264` (default),
-`h265` and `av1`:
+`h265`, `av1`, `vp8` and `vp9`:
 
 ```bash
 scrcpy --video-codec=h264  # default
 scrcpy --video-codec=h265
 scrcpy --video-codec=av1
+scrcpy --video-codec=vp8
+scrcpy --video-codec=vp9
 ```
 
 H265 may provide better quality, but H264 should provide lower latency.
