@@ -200,9 +200,11 @@ sc_hwdec_configure(struct sc_hwdec *hwdec, AVCodecContext *ctx) {
         return false;
     }
 
-    // Some backends do not expose plain Baseline (only Constrained Baseline).
-    // Hardware supporting Main/High can still decode Baseline.
-    ctx->hwaccel_flags |= AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH;
+    if (ctx->codec_id == AV_CODEC_ID_H264) {
+        // Some backends do not expose plain Baseline (only Constrained
+        // Baseline). Hardware supporting Main/High can still decode Baseline.
+        ctx->hwaccel_flags |= AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH;
+    }
 
     if (hwdec->hw_forced) {
         // By default, FFmpeg falls back to a software format if the hardware
