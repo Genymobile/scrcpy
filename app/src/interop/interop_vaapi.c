@@ -61,7 +61,8 @@ sc_interop_vaapi_check_nv12_layout(const AVDRMFrameDescriptor *desc) {
     return desc->nb_layers == 2
         && desc->layers[0].format == DRM_FORMAT_R8
         && desc->layers[0].nb_planes == 1
-        && desc->layers[1].format == DRM_FORMAT_GR88
+        && (desc->layers[1].format == DRM_FORMAT_GR88
+            || desc->layers[1].format == DRM_FORMAT_RG88)
         && desc->layers[1].nb_planes == 1;
 }
 
