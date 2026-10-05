@@ -7,6 +7,7 @@
 #include <libavcodec/avcodec.h>
 
 #include "trait/packet_sink.h"
+#include "trait/sink.h"
 
 /**
  * Frame sink trait.
@@ -19,16 +20,29 @@ struct sc_frame_sink {
 
 struct sc_frame_sink_ops {
     /* The codec context is valid until the sink is closed */
-    bool (*open)(struct sc_frame_sink *sink, const AVCodecContext *ctx,
-                 const struct sc_stream_session *session);
-    void (*close)(struct sc_frame_sink *sink);
-    bool (*push)(struct sc_frame_sink *sink, const AVFrame *frame);
+    bool
+    (*open)(struct sc_frame_sink *sink, const AVCodecContext *ctx,
+            const struct sc_stream_session *session);
+
+    void
+    (*close)(struct sc_frame_sink *sink);
+
+    enum sc_sink_result
+    (*push)(struct sc_frame_sink *sink, const AVFrame *frame);
 
     /**
      * Optional callback to be notified of a new stream session.
      */
-    bool (*push_session)(struct sc_frame_sink *sink,
-                         const struct sc_stream_session *session);
+    enum sc_sink_result
+    (*push_session)(struct sc_frame_sink *sink,
+                    const struct sc_stream_session *session);
+
+    /**
+     * Optional method to wait until the frame sink signals it is ready to
+     * accept more frames.
+     */
+    void
+    (*apply_backpressure)(struct sc_frame_sink *sink);
 };
 
 #endif

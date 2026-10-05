@@ -74,6 +74,7 @@ sc_file_pusher_destroy(struct sc_file_pusher *fp) {
         assert(req);
         sc_file_pusher_request_destroy(req);
     }
+    sc_vecdeque_destroy(&fp->queue);
 }
 
 bool

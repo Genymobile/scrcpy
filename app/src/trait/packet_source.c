@@ -27,12 +27,12 @@ sc_packet_source_sinks_close_firsts(struct sc_packet_source *source,
 
 bool
 sc_packet_source_sinks_open(struct sc_packet_source *source,
-                            AVCodecContext *ctx,
+                            const AVCodecParameters *params,
                             const struct sc_stream_session *session) {
     assert(source->sink_count);
     for (unsigned i = 0; i < source->sink_count; ++i) {
         struct sc_packet_sink *sink = source->sinks[i];
-        if (!sink->ops->open(sink, ctx, session)) {
+        if (!sink->ops->open(sink, params, session)) {
             sc_packet_source_sinks_close_firsts(source, i);
             return false;
         }
@@ -47,33 +47,36 @@ sc_packet_source_sinks_close(struct sc_packet_source *source) {
     sc_packet_source_sinks_close_firsts(source, source->sink_count);
 }
 
-bool
+enum sc_sink_result
 sc_packet_source_sinks_push(struct sc_packet_source *source,
                             const AVPacket *packet) {
     assert(source->sink_count);
     for (unsigned i = 0; i < source->sink_count; ++i) {
         struct sc_packet_sink *sink = source->sinks[i];
-        if (!sink->ops->push(sink, packet)) {
-            return false;
+        enum sc_sink_result result = sink->ops->push(sink, packet);
+        if (result != SC_SINK_OK) {
+            return result;
         }
     }
 
-    return true;
+    return SC_SINK_OK;
 }
 
-bool
+enum sc_sink_result
 sc_packet_source_sinks_push_session(struct sc_packet_source *source,
                                     const struct sc_stream_session *session) {
     assert(source->sink_count);
     for (unsigned i = 0; i < source->sink_count; ++i) {
         struct sc_packet_sink *sink = source->sinks[i];
-        if (sink->ops->push_session
-                && !sink->ops->push_session(sink, session)) {
-            return false;
+        if (sink->ops->push_session) {
+            enum sc_sink_result result = sink->ops->push_session(sink, session);
+            if (result != SC_SINK_OK) {
+                return result;
+            }
         }
     }
 
-    return true;
+    return SC_SINK_OK;
 }
 
 void

@@ -15,11 +15,13 @@ src = [
     'src/demuxer.c',
     'src/device_msg.c',
     'src/disconnect.c',
+    'src/egl.c',
     'src/events.c',
-    'src/icon.c',
     'src/file_pusher.c',
     'src/fps_counter.c',
     'src/frame_buffer.c',
+    'src/hwdec.c',
+    'src/icon.c',
     'src/input_manager.c',
     'src/keyboard_sdk.c',
     'src/mouse_capture.c',
@@ -39,6 +41,8 @@ src = [
     'src/hid/hid_gamepad.c',
     'src/hid/hid_keyboard.c',
     'src/hid/hid_mouse.c',
+    'src/interop/interop.c',
+    'src/interop/interop_software.c',
     'src/trait/frame_source.c',
     'src/trait/packet_source.c',
     'src/uhid/gamepad_uhid.c',
@@ -106,6 +110,22 @@ if v4l2_support
     src += [ 'src/v4l2_sink.c' ]
 endif
 
+vaapi_support = get_option('vaapi') and host_machine.system() == 'linux'
+if vaapi_support
+    src += [ 'src/interop/interop_vaapi.c' ]
+endif
+
+d3d11va_support = get_option('d3d11va') and host_machine.system() == 'windows'
+if d3d11va_support
+    src += [ 'src/interop/interop_d3d11va.c' ]
+endif
+
+videotoolbox_support = get_option('videotoolbox') \
+                       and host_machine.system() == 'darwin'
+if videotoolbox_support
+    src += [ 'src/interop/interop_videotoolbox.c' ]
+endif
+
 usb_support = get_option('usb')
 if usb_support
     src += [
@@ -123,15 +143,31 @@ cc = meson.get_compiler('c')
 static = get_option('static')
 
 dependencies = [
-    dependency('libavformat', version: '>= 57.33', static: static),
-    dependency('libavcodec', version: '>= 57.37', static: static),
-    dependency('libavutil', static: static),
+    dependency('libavformat', version: '>= 60.3', static: static),
+    dependency('libavcodec', version: '>= 60.3', static: static),
+    dependency('libavutil', version: '>= 58.2', static: static),
     dependency('libswresample', static: static),
     dependency('sdl3', version: '>= 3.2.0', static: static),
 ]
 
 if v4l2_support
     dependencies += dependency('libavdevice', static: static)
+endif
+
+if vaapi_support
+    libdrm_dep = dependency('libdrm')
+    dependencies += libdrm_dep.partial_dependency(compile_args: true,
+                                                  includes: true)
+    if static
+        # libva and libdrm are loaded at runtime by a shim (which only needs
+        # their headers), so that the static binary does not depend on them
+        libva_drm_dep = dependency('libva-drm')
+        dependencies += libva_drm_dep.partial_dependency(compile_args: true,
+                                                         includes: true)
+        # "required: false" because dlopen() may be provided by libc itself
+        dependencies += cc.find_library('dl', required: false)
+        src += [ 'src/vaapi_shim.c' ]
+    endif
 endif
 
 if usb_support
@@ -182,6 +218,15 @@ conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 
 # enable V4L2 support (linux only)
 conf.set('HAVE_V4L2', v4l2_support)
+
+# enable VA-API hardware decoding (linux only)
+conf.set('HAVE_VAAPI', vaapi_support)
+
+# enable D3D11 hardware decoding (windows only)
+conf.set('HAVE_D3D11VA', d3d11va_support)
+
+# enable VideoToolbox hardware decoding (macOS only)
+conf.set('HAVE_VIDEOTOOLBOX', videotoolbox_support)
 
 # enable HID over AOA support (linux only)
 conf.set('HAVE_USB', usb_support)

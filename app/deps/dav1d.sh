@@ -3,12 +3,12 @@ set -ex
 . $(dirname ${BASH_SOURCE[0]})/_init
 process_args "$@"
 
-VERSION=1.5.3
-URL="https://code.videolan.org/videolan/dav1d/-/archive/$VERSION/dav1d-$VERSION.tar.gz"
-SHA256SUM=cbe212b02faf8c6eed5b6d55ef8a6e363aaab83f15112e960701a9c3df813686
+VERSION=1.5.4
+URL="https://downloads.videolan.org/pub/videolan/dav1d/$VERSION/dav1d-$VERSION.tar.xz"
+SHA256SUM=686616b7c69eb88d44459391ab25cac13b6647a3b288835c5784e71c1514a5c5
 
 PROJECT_DIR="dav1d-$VERSION"
-FILENAME="$PROJECT_DIR.tar.gz"
+FILENAME="$PROJECT_DIR.tar.xz"
 
 cd "$SOURCES_DIR"
 

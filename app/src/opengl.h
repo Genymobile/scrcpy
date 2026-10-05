@@ -15,6 +15,9 @@ struct sc_opengl {
     const GLubyte *
     (*GetString)(GLenum name);
 
+    GLenum
+    (*GetError)(void);
+
     void
     (*BindTexture)(GLenum target, GLuint texture);
 
@@ -35,5 +38,11 @@ bool
 sc_opengl_version_at_least(struct sc_opengl *gl,
                            int minver_major, int minver_minor,
                            int minver_es_major, int minver_es_minor);
+
+void
+sc_opengl_enable_mipmaps(struct sc_opengl *gl, uint32_t *tex_ids, size_t n);
+
+void
+sc_opengl_generate_mipmaps(struct sc_opengl *gl, uint32_t *tex_ids, size_t n);
 
 #endif

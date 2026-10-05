@@ -20,6 +20,7 @@
 #include "demuxer.h"
 #include "events.h"
 #include "file_pusher.h"
+#include "hwdec.h"
 #include "keyboard_sdk.h"
 #include "mouse_sdk.h"
 #include "recorder.h"
@@ -48,6 +49,8 @@
 #endif
 #include "video_regulator.h"
 
+#define SC_BACKPRESSURE_THRESHOLD 8 // in-flight frames in video regulator
+
 struct scrcpy {
     struct sc_server server;
     struct sc_screen screen;
@@ -56,6 +59,7 @@ struct scrcpy {
     struct sc_demuxer audio_demuxer;
     struct sc_decoder video_decoder;
     struct sc_decoder audio_decoder;
+    struct sc_hwdec hwdec;
     struct sc_recorder recorder;
     struct sc_video_regulator video_regulator;
 #ifdef HAVE_V4L2
@@ -130,6 +134,9 @@ event_loop(struct scrcpy *s, bool has_screen) {
             case SC_EVENT_CONTROLLER_ERROR:
                 LOGE("Controller error");
                 return SCRCPY_EXIT_FAILURE;
+            case SC_EVENT_DECODER_ERROR:
+                LOGE("Decoder error");
+                return SCRCPY_EXIT_FAILURE;
             case SC_EVENT_RECORDER_ERROR:
                 LOGE("Recorder error");
                 return SCRCPY_EXIT_FAILURE;
@@ -177,6 +184,16 @@ await_for_server(bool *connected) {
 
     LOGE("SDL_WaitEvent() error: %s", SDL_GetError());
     return false;
+}
+
+static void
+sc_decoder_on_ended(struct sc_decoder *decoder, bool success, void *userdata) {
+    (void) decoder;
+    (void) userdata;
+
+    if (!success) {
+        sc_push_event(SC_EVENT_DECODER_ERROR);
+    }
 }
 
 static void
@@ -317,6 +334,43 @@ set_terminal_title_with_prefix(const char *value) {
     sc_term_set_title(title);
 }
 
+static bool
+sc_init_video_hwdec(struct sc_hwdec *hwdec, enum sc_hwdec_mode mode,
+                    struct sc_screen *screen) {
+    enum AVHWDeviceType hw_type = AV_HWDEVICE_TYPE_NONE;
+    SDL_Renderer *renderer = NULL;
+    if (screen) {
+        hw_type = sc_screen_get_hw_type(screen);
+        renderer = screen->renderer;
+    }
+    bool hw_forced = hw_type != AV_HWDEVICE_TYPE_NONE
+                  && mode != SC_HWDEC_MODE_AUTO;
+    if (sc_hwdec_init(hwdec, hw_type, hw_forced, renderer)) {
+        return true;
+    }
+
+    // The software decoder cannot fail
+    assert(hw_type != AV_HWDEVICE_TYPE_NONE);
+
+    if (mode != SC_HWDEC_MODE_AUTO) {
+        LOGE("Hardware decoder %s unavailable",
+             av_hwdevice_get_type_name(hw_type));
+        return false;
+    }
+
+    // The screen created its interop according to the requested hardware
+    // decoder mode, but in the end the hardware decoder is unavailable, fall
+    // back to software decoding and replace the screen interop with a software
+    // interop.
+    LOGI("Hardware decoding unavailable; using software decoding");
+    if (!sc_screen_disable_hwdec(screen)) {
+        return false;
+    }
+
+    // Initialize software decoder
+    return sc_hwdec_init(hwdec, AV_HWDEVICE_TYPE_NONE, false, NULL);
+}
+
 enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
@@ -342,9 +396,16 @@ scrcpy(struct scrcpy_options *options) {
     bool recorder_started = false;
 #ifdef HAVE_V4L2
     bool v4l2_sink_initialized = false;
+    bool v4l2_regulator_initialized = false;
 #endif
+    bool video_regulator_initialized = false;
     bool video_demuxer_started = false;
     bool audio_demuxer_started = false;
+    bool hwdec_initialized = false;
+    bool video_decoder_initialized = false;
+    bool video_decoder_started = false;
+    bool audio_decoder_initialized = false;
+    bool audio_decoder_started = false;
 #ifdef HAVE_USB
     bool aoa_hid_initialized = false;
     bool keyboard_aoa_initialized = false;
@@ -529,12 +590,19 @@ scrcpy(struct scrcpy_options *options) {
         file_pusher_initialized = true;
     }
 
+    bool has_video_buffer = options->video_buffer;
+#ifdef HAVE_V4L2
+    has_video_buffer |= options->v4l2_buffer;
+#endif
+
     if (options->video) {
         static const struct sc_demuxer_callbacks video_demuxer_cbs = {
             .on_ended = sc_video_demuxer_on_ended,
         };
+        // If a video buffer is present, then the recv date must be set
+        bool set_recv_date = has_video_buffer;
         sc_demuxer_init(&s->video_demuxer, "video", s->server.video_socket,
-                        &video_demuxer_cbs, NULL);
+                        set_recv_date, &video_demuxer_cbs, NULL);
     }
 
     if (options->audio) {
@@ -542,24 +610,12 @@ scrcpy(struct scrcpy_options *options) {
             .on_ended = sc_audio_demuxer_on_ended,
         };
         sc_demuxer_init(&s->audio_demuxer, "audio", s->server.audio_socket,
-                        &audio_demuxer_cbs, options);
+                        false, &audio_demuxer_cbs, options);
     }
 
-    bool needs_video_decoder = options->video_playback;
-    bool needs_audio_decoder = options->audio_playback;
-#ifdef HAVE_V4L2
-    needs_video_decoder |= !!options->v4l2_device;
-#endif
-    if (needs_video_decoder) {
-        sc_decoder_init(&s->video_decoder, "video");
-        sc_packet_source_add_sink(&s->video_demuxer.packet_source,
-                                  &s->video_decoder.packet_sink);
-    }
-    if (needs_audio_decoder) {
-        sc_decoder_init(&s->audio_decoder, "audio");
-        sc_packet_source_add_sink(&s->audio_demuxer.packet_source,
-                                  &s->audio_decoder.packet_sink);
-    }
+    static const struct sc_decoder_callbacks decoder_cbs = {
+        .on_ended = sc_decoder_on_ended,
+    };
 
     if (options->record_filename) {
         static const struct sc_recorder_callbacks recorder_cbs = {
@@ -780,6 +836,7 @@ aoa_complete:
             .render_fit = options->render_fit,
             .orientation = options->display_orientation,
             .mipmaps = options->mipmaps,
+            .hwdec_mode = options->hwdec_mode,
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,
         };
@@ -788,18 +845,81 @@ aoa_complete:
             goto end;
         }
         screen_initialized = true;
+    }
 
-        if (options->video_playback) {
-            struct sc_frame_source *src = &s->video_decoder.frame_source;
-            if (options->video_buffer) {
-                sc_video_regulator_init(&s->video_regulator,
-                                        options->video_buffer, true);
-                sc_frame_source_add_sink(src, &s->video_regulator.frame_sink);
-                src = &s->video_regulator.frame_source;
-            }
+    bool needs_video_decoder = options->video_playback;
+    bool needs_audio_decoder = options->audio_playback;
+#ifdef HAVE_V4L2
+    needs_video_decoder |= !!options->v4l2_device;
+#endif
+    if (needs_video_decoder) {
+        struct sc_screen *screen = options->video_playback ? &s->screen : NULL;
+        assert(!screen || screen_initialized);
 
-            sc_frame_source_add_sink(src, &s->screen.frame_sink);
+        if (!sc_init_video_hwdec(&s->hwdec, options->hwdec_mode, screen)) {
+            goto end;
         }
+        hwdec_initialized = true;
+
+        // If a video buffer is present, then the recv date must be forwarded
+        // from the AVPacket to the AVFrame
+        bool copy_opaque = has_video_buffer;
+        if (!sc_decoder_init(&s->video_decoder, "video", &s->hwdec, copy_opaque,
+                             &decoder_cbs, NULL)) {
+            goto end;
+        }
+        video_decoder_initialized = true;
+
+        sc_packet_source_add_sink(&s->video_demuxer.packet_source,
+                                  &s->video_decoder.packet_sink);
+
+        if (!sc_decoder_start(&s->video_decoder)) {
+            goto end;
+        }
+        video_decoder_started = true;
+    }
+
+    if (needs_audio_decoder) {
+        if (!sc_decoder_init(&s->audio_decoder, "audio", NULL, false,
+                             &decoder_cbs, NULL)) {
+            goto end;
+        }
+        audio_decoder_initialized = true;
+
+        sc_packet_source_add_sink(&s->audio_demuxer.packet_source,
+                                  &s->audio_decoder.packet_sink);
+
+        if (!sc_decoder_start(&s->audio_decoder)) {
+            goto end;
+        }
+        audio_decoder_started = true;
+    }
+
+    if (options->video_playback) {
+        assert(options->window);
+        assert(screen_initialized);
+        struct sc_frame_source *src = &s->video_decoder.frame_source;
+        if (options->video_buffer) {
+            uint32_t backpressure_threshold = SC_BACKPRESSURE_THRESHOLD;
+#ifdef HAVE_V4L2
+            if (options->v4l2_device && options->v4l2_buffer
+                    && options->v4l2_buffer < options->video_buffer) {
+                // Disable the backpressure threshold for this video regulator,
+                // it will be handled by the v4l2 video regulator
+                backpressure_threshold = 0; // disabled
+            }
+#endif
+            if (!sc_video_regulator_init(&s->video_regulator,
+                                         options->video_buffer, true,
+                                         backpressure_threshold)) {
+                goto end;
+            }
+            video_regulator_initialized = true;
+            sc_frame_source_add_sink(src, &s->video_regulator.frame_sink);
+            src = &s->video_regulator.frame_source;
+        }
+
+        sc_frame_source_add_sink(src, &s->screen.frame_sink);
     }
 
     if (options->audio_playback) {
@@ -817,8 +937,19 @@ aoa_complete:
 
         struct sc_frame_source *src = &s->video_decoder.frame_source;
         if (options->v4l2_buffer) {
-            sc_video_regulator_init(&s->v4l2_regulator, options->v4l2_buffer,
-                                    true);
+            uint32_t backpressure_threshold = SC_BACKPRESSURE_THRESHOLD;
+            if (options->video_playback && options->video_buffer
+                    && options->video_buffer <= options->v4l2_buffer) {
+                // Disable the backpressure threshold for this video
+                // regulator, it will be handled by the display video regulator
+                backpressure_threshold = 0; // disabled
+            }
+            if (!sc_video_regulator_init(&s->v4l2_regulator,
+                                         options->v4l2_buffer,
+                                         true, backpressure_threshold)) {
+                goto end;
+            }
+            v4l2_regulator_initialized = true;
             sc_frame_source_add_sink(src, &s->v4l2_regulator.frame_sink);
             src = &s->v4l2_regulator.frame_source;
         }
@@ -930,6 +1061,20 @@ end:
     if (file_pusher_initialized) {
         sc_file_pusher_stop(&s->file_pusher);
     }
+    if (video_decoder_started) {
+        sc_decoder_stop(&s->video_decoder);
+    }
+    if (audio_decoder_started) {
+        sc_decoder_stop(&s->audio_decoder);
+    }
+    if (video_regulator_initialized) {
+        sc_video_regulator_stop(&s->video_regulator);
+    }
+#ifdef HAVE_V4L2
+    if (v4l2_regulator_initialized) {
+        sc_video_regulator_stop(&s->v4l2_regulator);
+    }
+#endif
     if (recorder_initialized) {
         sc_recorder_stop(&s->recorder);
     }
@@ -949,8 +1094,16 @@ end:
         LOGD("Quit...");
 
         // Close the window immediately, because sc_screen_destroy() may only be
-        // called once the video demuxer thread is joined (it may take time)
+        // called once the video decoder thread is joined (it may take time)
         sc_screen_hide_window(&s->screen);
+    }
+
+    if (video_decoder_started) {
+        sc_decoder_join(&s->video_decoder);
+    }
+
+    if (audio_decoder_started) {
+        sc_decoder_join(&s->audio_decoder);
     }
 
     if (timeout_started) {
@@ -970,7 +1123,14 @@ end:
         sc_demuxer_join(&s->audio_demuxer);
     }
 
+    if (video_regulator_initialized) {
+        sc_video_regulator_destroy(&s->video_regulator);
+    }
+
 #ifdef HAVE_V4L2
+    if (v4l2_regulator_initialized) {
+        sc_video_regulator_destroy(&s->v4l2_regulator);
+    }
     if (v4l2_sink_initialized) {
         sc_v4l2_sink_destroy(&s->v4l2_sink);
     }
@@ -998,6 +1158,19 @@ end:
         sc_acksync_destroy(acksync);
     }
 #endif
+
+    if (video_decoder_initialized) {
+        sc_decoder_destroy(&s->video_decoder);
+    }
+
+    // The hwdec must outlive the video decoder
+    if (hwdec_initialized) {
+        sc_hwdec_destroy(&s->hwdec);
+    }
+
+    if (audio_decoder_initialized) {
+        sc_decoder_destroy(&s->audio_decoder);
+    }
 
     // Destroy the screen only after the video demuxer is guaranteed to be
     // finished, because otherwise the screen could receive new frames after

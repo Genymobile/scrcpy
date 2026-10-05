@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <libavutil/error.h>
 
 #include "util/log.h"
 #include "util/str.h"
@@ -16,16 +17,10 @@ static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
 
 static const AVOutputFormat *
 find_muxer(const char *name) {
-#ifdef SCRCPY_LAVF_HAS_NEW_MUXER_ITERATOR_API
     void *opaque = NULL;
-#endif
     const AVOutputFormat *oformat = NULL;
     do {
-#ifdef SCRCPY_LAVF_HAS_NEW_MUXER_ITERATOR_API
         oformat = av_muxer_iterate(&opaque);
-#else
-        oformat = av_oformat_next(oformat);
-#endif
         // until null or containing the requested name
     } while (oformat && !sc_str_list_contains(oformat->name, ',', name));
     return oformat;
@@ -88,7 +83,7 @@ static bool
 encode_and_write_frame(struct sc_v4l2_sink *vs, const AVFrame *frame) {
     int ret = avcodec_send_frame(vs->encoder_ctx, frame);
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
-        LOGE("Could not send v4l2 video frame: %d", ret);
+        LOGE("Could not send v4l2 video frame: %s", av_err2str(ret));
         return false;
     }
 
@@ -104,7 +99,7 @@ encode_and_write_frame(struct sc_v4l2_sink *vs, const AVFrame *frame) {
             return false;
         }
     } else if (ret != AVERROR(EAGAIN)) {
-        LOGE("Could not receive v4l2 video packet: %d", ret);
+        LOGE("Could not receive v4l2 video packet: %s", av_err2str(ret));
         return false;
     }
 
@@ -188,21 +183,12 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs, const AVCodecContext *ctx,
         return false;
     }
 
-    // contrary to the deprecated API (av_oformat_next()), av_muxer_iterate()
-    // returns (on purpose) a pointer-to-const, but AVFormatContext.oformat
-    // still expects a pointer-to-non-const (it has not be updated accordingly)
-    // <https://github.com/FFmpeg/FFmpeg/commit/0694d8702421e7aff1340038559c438b61bb30dd>
-    vs->format_ctx->oformat = (AVOutputFormat *) format;
-#ifdef SCRCPY_LAVF_HAS_AVFORMATCONTEXT_URL
+    vs->format_ctx->oformat = format;
     vs->format_ctx->url = strdup(vs->device_name);
     if (!vs->format_ctx->url) {
         LOG_OOM();
         goto error_avformat_free_context;
     }
-#else
-    strncpy(vs->format_ctx->filename, vs->device_name,
-            sizeof(vs->format_ctx->filename));
-#endif
 
     AVStream *ostream = avformat_new_stream(vs->format_ctx, encoder);
     if (!ostream) {
@@ -308,14 +294,20 @@ sc_v4l2_sink_close(struct sc_v4l2_sink *vs) {
     sc_frame_buffer_destroy(&vs->fb);
 }
 
-static bool
+static enum sc_sink_result
 sc_v4l2_sink_push(struct sc_v4l2_sink *vs, const AVFrame *frame) {
     sc_mutex_lock(&vs->mutex);
+
+    if (vs->stopped) {
+        sc_mutex_unlock(&vs->mutex);
+        return SC_SINK_STOPPED;
+    }
+
     bool previous_skipped = sc_frame_buffer_has_frame(&vs->fb);
     bool ok = sc_frame_buffer_push(&vs->fb, frame);
     if (!ok) {
         sc_mutex_unlock(&vs->mutex);
-        return false;
+        return SC_SINK_KO;
     }
 
     if (!previous_skipped) {
@@ -324,7 +316,7 @@ sc_v4l2_sink_push(struct sc_v4l2_sink *vs, const AVFrame *frame) {
     }
 
     sc_mutex_unlock(&vs->mutex);
-    return true;
+    return SC_SINK_OK;
 }
 
 static bool
@@ -340,7 +332,7 @@ sc_v4l2_frame_sink_close(struct sc_frame_sink *sink) {
     sc_v4l2_sink_close(vs);
 }
 
-static bool
+static enum sc_sink_result
 sc_v4l2_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
     struct sc_v4l2_sink *vs = DOWNCAST(sink);
     return sc_v4l2_sink_push(vs, frame);

@@ -480,10 +480,10 @@ sc_adb_accept_device(const struct sc_adb_device *device,
             return true;
         case SC_ADB_DEVICE_SELECT_SERIAL:
             assert(selector->serial);
-            char *device_serial_colon = strchr(device->serial, ':');
+            const char *device_serial_colon = strchr(device->serial, ':');
             if (device_serial_colon) {
                 // The device serial is an IP:port...
-                char *serial_colon = strchr(selector->serial, ':');
+                const char *serial_colon = strchr(selector->serial, ':');
                 if (!serial_colon) {
                     // But the requested serial has no ':', so only consider
                     // the IP part of the device serial. This allows to use

@@ -10,6 +10,7 @@
 #include <libavutil/avutil.h>
 #include <libavutil/pixdesc.h>
 #include <libavutil/pixfmt.h>
+#include <libavutil/error.h>
 #include <SDL3/SDL.h>
 
 #include "config.h"
@@ -75,17 +76,7 @@ decode_image(const char *path) {
         goto close_input;
     }
 
-
-// In ffmpeg/doc/APIchanges:
-// 2021-04-27 - 46dac8cf3d - lavf 59.0.100 - avformat.h
-//   av_find_best_stream now uses a const AVCodec ** parameter
-//   for the returned decoder.
-#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(59, 0, 100)
     const AVCodec *codec;
-#else
-    AVCodec *codec;
-#endif
-
     int stream =
         av_find_best_stream(ctx, AVMEDIA_TYPE_VIDEO, -1, -1, &codec, 0);
     if (stream < 0 ) {
@@ -133,14 +124,14 @@ decode_image(const char *path) {
 
     int ret;
     if ((ret = avcodec_send_packet(codec_ctx, packet)) < 0) {
-        LOGE("Could not send icon packet: %d", ret);
+        LOGE("Could not send icon packet: %s", av_err2str(ret));
         av_packet_free(&packet);
         av_frame_free(&frame);
         goto free_codec_ctx;
     }
 
     if ((ret = avcodec_receive_frame(codec_ctx, frame)) != 0) {
-        LOGE("Could not receive icon frame: %d", ret);
+        LOGE("Could not receive icon frame: %s", av_err2str(ret));
         av_packet_free(&packet);
         av_frame_free(&frame);
         goto free_codec_ctx;

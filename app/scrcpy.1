@@ -236,6 +236,14 @@ Also see \fB\-\-keyboard\fR and R\fB\-\-mouse\fR.
 Print this help.
 
 .TP
+.BI "\-\-hwdec " mode
+Configure hardware video decoding on the computer.
+
+Possible values are "auto" (the first available hardware decoder, software decoding otherwise), "disabled" (always use software decoding), "vaapi" (Linux only), "d3d11va" (Windows only) and "videotoolbox" (macOS only).
+
+Default is "auto".
+
+.TP
 .B \-\-ignore\-video\-encoder\-constraints
 Do not consider video encoder capabilities.
 

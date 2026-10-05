@@ -361,8 +361,8 @@ sc_input_manager_process_text_input(struct sc_input_manager *im,
         return;
     }
 
-    if (sc_shortcut_mods_is_shortcut_mod(im->sdl_shortcut_mods,
-                                         SDL_GetModState())) {
+    uint16_t mod = sc_sdl_mod_normalize(SDL_GetModState());
+    if (sc_shortcut_mods_is_shortcut_mod(im->sdl_shortcut_mods, mod)) {
         // A shortcut must never generate text events
         return;
     }
@@ -423,10 +423,10 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     bool disconnected = im->disconnected;
 
     SDL_Keycode sdl_keycode = event->key;
-    uint16_t mod = event->mod;
+    uint16_t mod = sc_sdl_mod_normalize(event->mod);
     bool down = event->type == SDL_EVENT_KEY_DOWN;
-    bool ctrl = event->mod & SDL_KMOD_CTRL;
-    bool shift = event->mod & SDL_KMOD_SHIFT;
+    bool ctrl = mod & SDL_KMOD_CTRL;
+    bool shift = mod & SDL_KMOD_SHIFT;
     bool repeat = event->repeat;
 
     // Either the modifier includes a shortcut modifier, or the key
@@ -451,8 +451,8 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     switch (sdl_keycode) {
         case SDLK_F11:
             if (video && !repeat && down) {
-                bool alt = event->mod & SDL_KMOD_ALT;
-                bool super = event->mod & SDL_KMOD_GUI;
+                bool alt = mod & SDL_KMOD_ALT;
+                bool super = mod & SDL_KMOD_GUI;
                 if (!ctrl && !shift && !alt && !super) {
                     sc_screen_toggle_fullscreen(im->screen);
                 }
@@ -707,9 +707,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     }
 
     enum sc_keycode keycode = sc_keycode_from_sdl(sdl_keycode);
-    if (keycode == SC_KEYCODE_UNKNOWN) {
-        return;
-    }
+    // Accept SC_KEYCODE_UNKNOWN, as long as the physical scancode is known
 
     enum sc_scancode scancode = sc_scancode_from_sdl(event->scancode);
     if (scancode == SC_SCANCODE_UNKNOWN) {
@@ -721,7 +719,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         .keycode = keycode,
         .scancode = scancode,
         .repeat = event->repeat,
-        .mods_state = sc_mods_state_from_sdl(event->mod),
+        .mods_state = sc_mods_state_from_sdl(mod),
     };
 
     assert(im->kp->ops->process_key);

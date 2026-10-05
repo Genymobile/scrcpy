@@ -12,6 +12,17 @@
 
 #define SC_SDL_SHORTCUT_MODS_MASK (SDL_KMOD_CTRL | SDL_KMOD_ALT | SDL_KMOD_GUI)
 
+// On some platforms, depending on the keyboard layout, SDL reports AltGr as
+// SDLK_MODE with the modifier SDL_KMOD_MODE instead of SDLK_RALT/SDL_KMOD_RALT
+// (the scancode is still SDL_SCANCODE_RALT). Treat AltGr as Right-Alt.
+static inline uint16_t
+sc_sdl_mod_normalize(uint16_t sdl_mod) {
+    if (sdl_mod & SDL_KMOD_MODE) {
+        sdl_mod |= SDL_KMOD_RALT;
+    }
+    return sdl_mod;
+}
+
 // input: OR of enum sc_shortcut_mod
 // output: OR of SDL_Keymod
 static inline uint16_t
@@ -53,7 +64,8 @@ sc_shortcut_mods_is_shortcut_key(uint16_t sdl_shortcut_mods,
     return (sdl_shortcut_mods & SDL_KMOD_LCTRL && keycode == SDLK_LCTRL)
         || (sdl_shortcut_mods & SDL_KMOD_RCTRL && keycode == SDLK_RCTRL)
         || (sdl_shortcut_mods & SDL_KMOD_LALT  && keycode == SDLK_LALT)
-        || (sdl_shortcut_mods & SDL_KMOD_RALT  && keycode == SDLK_RALT)
+        || (sdl_shortcut_mods & SDL_KMOD_RALT  && (keycode == SDLK_RALT
+                                                || keycode == SDLK_MODE))
         || (sdl_shortcut_mods & SDL_KMOD_LGUI  && keycode == SDLK_LGUI)
         || (sdl_shortcut_mods & SDL_KMOD_RGUI  && keycode == SDLK_RGUI);
 }

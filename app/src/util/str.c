@@ -154,7 +154,7 @@ sc_str_parse_integer_with_suffix(const char *s, long *out) {
 
 bool
 sc_str_list_contains(const char *list, char sep, const char *s) {
-    char *p;
+    const char *p;
     do {
         p = strchr(list, sep);
 
