@@ -1,9 +1,12 @@
 #include "hwdec.h"
 
 #include <assert.h>
+#include <stdlib.h>
 
 #include <libavutil/error.h>
 #include <libavutil/pixdesc.h>
+
+#include "util/env.h"
 
 #ifdef HAVE_D3D11VA
 // Define the GUIDs (IID_ID3D10Multithread)
@@ -85,8 +88,17 @@ sc_hwdec_init(struct sc_hwdec *hwdec, enum AVHWDeviceType hw_type,
             break;
 #ifdef HAVE_VAAPI
         case AV_HWDEVICE_TYPE_VAAPI: {
+            // FFmpeg selects the first available DRM render node, which may
+            // differ from the GPU used by the renderer on hybrid graphics
+            // systems. Allow explicit selection of the VA-API device.
+            char *device = sc_get_env("SCRCPY_VAAPI_DEVICE");
+            if (device) {
+                LOGI("VA-API: using device %s (from SCRCPY_VAAPI_DEVICE)",
+                     device);
+            }
             int ret = av_hwdevice_ctx_create(&hwdec->hw_device_ctx, hw_type,
-                                             NULL, NULL, 0);
+                                             device, NULL, 0);
+            free(device);
             if (ret < 0) {
                 LOGE("Could not create VA-API device: %s", av_err2str(ret));
                 return false;
