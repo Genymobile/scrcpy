@@ -140,6 +140,20 @@ The available hardware decoders are:
    (`va-driver-all` on Debian/Ubuntu). The prebuilt binary uses the libva
    installed on the system. Trilinear filtering (mipmaps) is not available for
    hardware frames.
+
+   For zero-copy import, the decoding GPU must be the same as the rendering
+   GPU. In particular, on hybrid graphics systems (e.g. NVIDIA + AMD/Intel
+   iGPU), libavcodec selects the first available DRM render node
+   (`/dev/dri/renderD128`), which may be another GPU than the renderer
+   (typically the case when the display is plugged to the iGPU), causing
+   `EGL_BAD_MATCH` errors on each frame.
+
+   Use the `SCRCPY_VAAPI_DEVICE` environment variable to explicitly select
+   the VA-API DRM render node (use the same GPU as the renderer):
+
+   ```bash
+   export SCRCPY_VAAPI_DEVICE=/dev/dri/renderD129
+   ```
  - `d3d11va` (Windows only).
  - `videotoolbox` (macOS only).
 
