@@ -18,10 +18,6 @@
 // Detect platform-specific audio input format
 static const char *detect_audio_format(void) {
 #ifdef _WIN32
-    // Try WASAPI first (more modern), fallback to dshow
-    if (av_find_input_format("wasapi")) {
-        return "wasapi";
-    }
     return "dshow";
 #elif defined(__APPLE__)
     return "avfoundation";
@@ -163,7 +159,7 @@ send_packet(sc_socket socket, const AVPacket *packet) {
 static int
 run_client_audio(void *data) {
     struct sc_client_audio *ca = data;
-    sc_socket mic_socket = ca->socket;
+    sc_socket socket = ca->socket;
     const char *audio_source = ca->source;
 
     int ret = 1;
@@ -380,7 +376,7 @@ run_client_audio(void *data) {
                     continue;
 
                 while (avcodec_receive_packet(opus_ctx, out_pkt) >= 0) {
-                    bool ok = send_packet(mic_socket, out_pkt);
+                    bool ok = send_packet(socket, out_pkt);
                     av_packet_unref(out_pkt);
                     if (!ok) {
                         LOGD("Could not send client audio packet, socket closed");
@@ -437,7 +433,7 @@ run_client_audio(void *data) {
 
             if (avcodec_send_frame(opus_ctx, out_frame) >= 0) {
                 while (avcodec_receive_packet(opus_ctx, out_pkt) >= 0) {
-                    bool ok = send_packet(mic_socket, out_pkt);
+                    bool ok = send_packet(socket, out_pkt);
                     av_packet_unref(out_pkt);
                     if (!ok) {
                         break;  // Socket closed, skip remaining flush
@@ -449,7 +445,7 @@ run_client_audio(void *data) {
         // Flush the Opus encoder
         avcodec_send_frame(opus_ctx, NULL);
         while (avcodec_receive_packet(opus_ctx, out_pkt) >= 0) {
-            bool ok = send_packet(mic_socket, out_pkt);
+            bool ok = send_packet(socket, out_pkt);
             av_packet_unref(out_pkt);
             if (!ok) {
                 break;  // Socket closed, skip remaining flush

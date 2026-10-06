@@ -222,7 +222,7 @@ scrcpy --list-client-audio-sources
 ```
 
 Audio capture uses the FFmpeg device backend of the platform (ALSA on Linux,
-AVFoundation on macOS, WASAPI or DirectShow on Windows), so it requires a client
+AVFoundation on macOS, DirectShow on Windows), so it requires a client
 built with libavdevice. Injection requires Android 13 or newer.
 
 If injection fails on the device (for example, if the audio policy is rejected),

@@ -11,7 +11,6 @@
 #include "util/env.h"
 #include "util/file.h"
 #include "util/log.h"
-#include "util/net.h"
 #include "util/net_intr.h"
 #include "util/process.h"
 #include "util/str.h"
