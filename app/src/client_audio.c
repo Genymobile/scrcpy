@@ -500,14 +500,7 @@ cleanup:
         avformat_close_input(&fmt_ctx);
     }
 
-    // Close the socket
-    if (mic_socket != SC_SOCKET_NONE) {
-        if (!net_close(mic_socket)) {
-            LOGW("Could not close microphone socket");
-        } else {
-            LOGD("Microphone socket closed");
-        }
-    }
+    // The socket is owned by sc_server and closed by sc_server_destroy()
 
     return ret;
 }
