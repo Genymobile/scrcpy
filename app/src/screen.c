@@ -6,6 +6,9 @@
 
 #include "events.h"
 #include "icon.h"
+#ifdef HAVE_D3D11VA
+# include "interop/interop_d3d11va.h"
+#endif
 #include "options.h"
 #include "util/log.h"
 #include "util/sdl.h"
@@ -1196,6 +1199,35 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
             }
             return;
         }
+#ifdef HAVE_D3D11VA
+        case SDL_EVENT_RENDER_DEVICE_RESET:
+        case SDL_EVENT_RENDER_DEVICE_LOST: {
+            LOGE("Render device %s",
+                 event->type == SDL_EVENT_RENDER_DEVICE_RESET ? "reset"
+                                                              : "lost");
+            struct sc_interop *interop = screen->tex.interop;
+            if (interop->hw_type == AV_HWDEVICE_TYPE_D3D11VA) {
+                // The device used by the interop is the removed one
+                struct sc_interop_d3d11va *d3d11va =
+                    container_of(interop, struct sc_interop_d3d11va, interop);
+                ID3D11Device *device = NULL;
+                ID3D11DeviceContext_GetDevice(d3d11va->device_ctx, &device);
+                if (device) {
+                    HRESULT reason =
+                        ID3D11Device_GetDeviceRemovedReason(device);
+                    ID3D11Device_Release(device);
+                    // 0x887a0001: DXGI_ERROR_INVALID_CALL
+                    // 0x887a0005: DXGI_ERROR_DEVICE_REMOVED
+                    // 0x887a0006: DXGI_ERROR_DEVICE_HUNG
+                    // 0x887a0007: DXGI_ERROR_DEVICE_RESET
+                    // 0x887a0020: DXGI_ERROR_DRIVER_INTERNAL_ERROR
+                    LOGE("D3D11 device removed reason: %#lx",
+                         (unsigned long) reason);
+                }
+            }
+            return;
+        }
+#endif
         case SDL_EVENT_WINDOW_EXPOSED:
             sc_screen_render(screen, true);
             return;
