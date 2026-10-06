@@ -28,6 +28,10 @@ struct sc_egl {
     PFNEGLCREATEIMAGEKHRPROC CreateImageKHR;
     PFNEGLDESTROYIMAGEKHRPROC DestroyImageKHR;
 
+    // EGL_EXT_device_query (NULL if unsupported)
+    PFNEGLQUERYDISPLAYATTRIBEXTPROC QueryDisplayAttribEXT;
+    PFNEGLQUERYDEVICESTRINGEXTPROC QueryDeviceStringEXT;
+
     // GL_OES_EGL_image, the OpenGL side of EGLImage (NULL if unsupported)
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC EGLImageTargetTexture2DOES;
 
@@ -53,6 +57,15 @@ struct sc_egl_dma_buf_plane {
 
 bool
 sc_egl_init(struct sc_egl *egl);
+
+/**
+ * Return the DRM render node of the device used by the EGL display (for example
+ * "/dev/dri/renderD128")
+ *
+ * The string is owned by EGL. Return NULL if it is unknown.
+ */
+const char *
+sc_egl_get_drm_render_node(struct sc_egl *egl);
 
 /**
  * Import a single-plane DMA-BUF as an EGLImage

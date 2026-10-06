@@ -144,6 +144,7 @@ sc_interop_videotoolbox_new(SDL_Renderer *renderer) {
 
     vt->interop.name = "videotoolbox";
     vt->interop.hw_type = AV_HWDEVICE_TYPE_VIDEOTOOLBOX;
+    vt->interop.hw_device = NULL;
     vt->interop.pix_fmt = AV_PIX_FMT_VIDEOTOOLBOX;
     vt->interop.texture = NULL;
     vt->interop.ops = &ops;

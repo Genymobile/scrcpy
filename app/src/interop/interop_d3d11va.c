@@ -188,6 +188,7 @@ sc_interop_d3d11va_new(SDL_Renderer *renderer) {
 
     d3d11va->interop.name = "d3d11va";
     d3d11va->interop.hw_type = AV_HWDEVICE_TYPE_D3D11VA;
+    d3d11va->interop.hw_device = NULL;
     d3d11va->interop.pix_fmt = AV_PIX_FMT_D3D11;
     d3d11va->interop.texture = NULL;
     d3d11va->interop.ops = &ops;

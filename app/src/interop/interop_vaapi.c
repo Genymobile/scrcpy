@@ -340,6 +340,8 @@ sc_interop_vaapi_new(SDL_Renderer *renderer, struct sc_opengl *gl,
 
     vaapi->interop.name = "vaapi";
     vaapi->interop.hw_type = AV_HWDEVICE_TYPE_VAAPI;
+    // Decode on the GPU used by the renderer
+    vaapi->interop.hw_device = sc_egl_get_drm_render_node(&vaapi->egl);
     vaapi->interop.pix_fmt = AV_PIX_FMT_VAAPI;
     vaapi->interop.texture = NULL;
     vaapi->interop.ops = &ops;

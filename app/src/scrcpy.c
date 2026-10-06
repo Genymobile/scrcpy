@@ -338,14 +338,16 @@ static bool
 sc_init_video_hwdec(struct sc_hwdec *hwdec, enum sc_hwdec_mode mode,
                     struct sc_screen *screen) {
     enum AVHWDeviceType hw_type = AV_HWDEVICE_TYPE_NONE;
+    const char *hw_device = NULL;
     SDL_Renderer *renderer = NULL;
     if (screen) {
         hw_type = sc_screen_get_hw_type(screen);
+        hw_device = sc_screen_get_hw_device(screen);
         renderer = screen->renderer;
     }
     bool hw_forced = hw_type != AV_HWDEVICE_TYPE_NONE
                   && mode != SC_HWDEC_MODE_AUTO;
-    if (sc_hwdec_init(hwdec, hw_type, hw_forced, renderer)) {
+    if (sc_hwdec_init(hwdec, hw_type, hw_device, hw_forced, renderer)) {
         return true;
     }
 
@@ -368,7 +370,7 @@ sc_init_video_hwdec(struct sc_hwdec *hwdec, enum sc_hwdec_mode mode,
     }
 
     // Initialize software decoder
-    return sc_hwdec_init(hwdec, AV_HWDEVICE_TYPE_NONE, false, NULL);
+    return sc_hwdec_init(hwdec, AV_HWDEVICE_TYPE_NONE, NULL, false, NULL);
 }
 
 enum scrcpy_exit_code

@@ -72,6 +72,11 @@ sc_texture_get_hw_type(struct sc_texture *tex) {
     return tex->interop->hw_type;
 }
 
+const char *
+sc_texture_get_hw_device(struct sc_texture *tex) {
+    return tex->interop->hw_device;
+}
+
 struct sc_size
 sc_texture_get_frame_size(struct sc_texture *tex) {
     assert(tex->interop && tex->interop->texture);
