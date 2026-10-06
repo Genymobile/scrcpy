@@ -12,9 +12,14 @@ import java.nio.ByteOrder;
 
 public class AudioDecoder {
     private MediaCodec decoder;
-    private boolean running = false;
+    private volatile boolean running;
 
-    public void start(BufferedInputStream bis, LatestAudioBuffer pcmOutput) throws IOException {
+    /**
+     * Start decoding in a new thread.
+     *
+     * @return the decoding thread, which terminates on end of stream or on error
+     */
+    public Thread start(BufferedInputStream bis, LatestAudioBuffer pcmOutput) throws IOException {
         // Initialize Opus decoder
         decoder = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_OPUS);
         MediaFormat format = MediaFormat.createAudioFormat(
@@ -56,7 +61,7 @@ public class AudioDecoder {
         running = true;
 
         // Decoding loop
-        new Thread(() -> {
+        Thread thread = new Thread(() -> {
             try {
                 decode(bis, pcmOutput);
             } catch (Exception e) {
@@ -67,7 +72,9 @@ public class AudioDecoder {
                 // so it can release its AudioTrack and unregister the policy.
                 pcmOutput.close();
             }
-        }, "opus-decoder").start();
+        }, "opus-decoder");
+        thread.start();
+        return thread;
     }
 
     private void decode(BufferedInputStream bis, LatestAudioBuffer pcmOutput) throws IOException {

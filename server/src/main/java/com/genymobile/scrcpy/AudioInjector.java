@@ -67,9 +67,11 @@ public final class AudioInjector {
      * Injects audio from a bounded latest-sample buffer into the device's microphone.
      *
      * @param pcm The PCM audio data to inject
+     * @param onFailure Called from the injection thread on runtime failure
+     * @return the injection thread, which terminates when {@code pcm} is closed or on failure
      * @throws Exception if audio injection setup fails
      */
-    public static void injectAudio(LatestAudioBuffer pcm, Runnable onFailure) throws Exception {
+    public static Thread injectAudio(LatestAudioBuffer pcm, Runnable onFailure) throws Exception {
         if (Build.VERSION.SDK_INT < AndroidVersions.API_33_ANDROID_13) {
             throw new UnsupportedOperationException("Client audio injection requires Android 13 or newer");
         }
@@ -181,7 +183,7 @@ public final class AudioInjector {
             throw e;
         }
 
-        new Thread(() -> {
+        Thread thread = new Thread(() -> {
             byte[] audioBuffer = new byte[4096];
             try {
                 while (true) {
@@ -209,6 +211,8 @@ public final class AudioInjector {
                 audioTrack.release();
                 unregisterAudioPolicy(audioManager, audioPolicy);
             }
-        }, "client-audio-injector").start();
+        }, "client-audio-injector");
+        thread.start();
+        return thread;
     }
 }

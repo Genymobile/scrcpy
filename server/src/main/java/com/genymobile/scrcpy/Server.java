@@ -2,13 +2,11 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.audio.AudioCapture;
 import com.genymobile.scrcpy.audio.AudioCodec;
-import com.genymobile.scrcpy.audio.AudioDecoder;
 import com.genymobile.scrcpy.audio.AudioDirectCapture;
 import com.genymobile.scrcpy.audio.AudioEncoder;
 import com.genymobile.scrcpy.audio.AudioPlaybackCapture;
 import com.genymobile.scrcpy.audio.AudioRawRecorder;
 import com.genymobile.scrcpy.audio.AudioSource;
-import com.genymobile.scrcpy.audio.LatestAudioBuffer;
 import com.genymobile.scrcpy.control.ControlChannel;
 import com.genymobile.scrcpy.control.Controller;
 import com.genymobile.scrcpy.device.DesktopConnection;
@@ -27,15 +25,12 @@ import com.genymobile.scrcpy.video.SurfaceEncoder;
 import com.genymobile.scrcpy.video.VideoSource;
 
 import android.annotation.SuppressLint;
-import android.net.LocalSocket;
 import android.os.Build;
 import android.os.Looper;
 import android.system.Os;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -166,25 +161,8 @@ public final class Server {
             }
 
             if (clientAudio) {
-                LocalSocket s = connection.getClientAudioSocket();
-                try {
-                    InputStream is = s.getInputStream();
-                    BufferedInputStream bis = new BufferedInputStream(is);
-                    // Four stereo PCM frames (about 80 ms). If Android consumes
-                    // more slowly, retain the newest speech instead of building
-                    // the old 500 KiB / 2.7-second latency queue.
-                    LatestAudioBuffer pcm = new LatestAudioBuffer(4 * 4096);
-                    AudioDecoder decoder = new AudioDecoder();
-                    decoder.start(bis, pcm);
-                    AudioInjector.injectAudio(pcm, () -> closeClientAudioSocket(connection));
-                } catch (Exception e) {
-                    Ln.e("Client audio injection error", e);
-                    // Socket four is the only failure signal Viewport can observe.
-                    // Leaving it open makes a rejected AudioPolicy look healthy:
-                    // the browser stays green and Viewport keeps writing audio
-                    // which Android will never apply.
-                    closeClientAudioSocket(connection);
-                }
+                ClientAudioInjector clientAudioInjector = new ClientAudioInjector(connection);
+                asyncProcessors.add(clientAudioInjector);
             }
 
             Completion completion = new Completion(asyncProcessors.size());
@@ -219,14 +197,6 @@ public final class Server {
             }
 
             connection.close();
-        }
-    }
-
-    private static void closeClientAudioSocket(DesktopConnection connection) {
-        try {
-            connection.closeClientAudio();
-        } catch (IOException e) {
-            Ln.w("Could not close failed client audio socket", e);
         }
     }
 
