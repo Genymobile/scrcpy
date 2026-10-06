@@ -72,8 +72,7 @@ struct scrcpy {
     struct sc_controller controller;
     struct sc_file_pusher file_pusher;
 #ifdef HAVE_CLIENT_AUDIO
-    struct sc_microphone_params microphone_params;
-    sc_thread microphone_thread;
+    struct sc_client_audio client_audio;
 #endif
 #ifdef HAVE_USB
     struct sc_usb usb;
@@ -409,7 +408,7 @@ scrcpy(struct scrcpy_options *options) {
     bool video_demuxer_started = false;
     bool audio_demuxer_started = false;
 #ifdef HAVE_CLIENT_AUDIO
-    bool microphone_started = false;
+    bool client_audio_started = false;
 #endif
     bool hwdec_initialized = false;
     bool video_decoder_initialized = false;
@@ -994,14 +993,12 @@ aoa_complete:
 
 #ifdef HAVE_CLIENT_AUDIO
     if (options->client_audio_source) {
-        s->microphone_params.socket = s->server.client_mic_socket;
-        s->microphone_params.audio_source = options->client_audio_source;
-
-        bool ok = sc_thread_create(&s->microphone_thread, sc_microphone_run, "scrcpy-clnt-mic", &s->microphone_params);
-        if (!ok) {
+        sc_client_audio_init(&s->client_audio, s->server.client_mic_socket,
+                             options->client_audio_source);
+        if (!sc_client_audio_start(&s->client_audio)) {
             goto end;
         }
-        microphone_started = true;
+        client_audio_started = true;
     }
 #endif
 
@@ -1115,6 +1112,12 @@ end:
         sc_server_stop(&s->server);
     }
 
+#ifdef HAVE_CLIENT_AUDIO
+    if (client_audio_started) {
+        sc_client_audio_stop(&s->client_audio);
+    }
+#endif
+
     if (screen_initialized) {
         if (disconnected) {
             sc_screen_handle_disconnection(&s->screen);
@@ -1152,8 +1155,8 @@ end:
     }
 
 #ifdef HAVE_CLIENT_AUDIO
-    if (microphone_started) {
-        sc_thread_join(&s->microphone_thread, NULL);
+    if (client_audio_started) {
+        sc_client_audio_join(&s->client_audio);
     }
 #endif
 

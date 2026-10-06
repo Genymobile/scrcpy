@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
-#ifdef HAVE_CLIENT_AUDIO
+#if defined(HAVE_V4L2) || defined(HAVE_CLIENT_AUDIO)
 # include <libavdevice/avdevice.h>
 #endif
 #include <SDL3/SDL.h>
@@ -96,7 +96,7 @@ main_scrcpy(int argc, char *argv[]) {
 
 #ifdef HAVE_CLIENT_AUDIO
     if (args.list_audio_sources) {
-        sc_microphone_list_audio_sources();
+        sc_client_audio_list_sources();
         ret = SCRCPY_EXIT_SUCCESS;
         goto end;
     }
