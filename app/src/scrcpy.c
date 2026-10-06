@@ -408,6 +408,9 @@ scrcpy(struct scrcpy_options *options) {
     bool video_regulator_initialized = false;
     bool video_demuxer_started = false;
     bool audio_demuxer_started = false;
+#ifdef HAVE_CLIENT_AUDIO
+    bool microphone_started = false;
+#endif
     bool hwdec_initialized = false;
     bool video_decoder_initialized = false;
     bool video_decoder_started = false;
@@ -990,7 +993,6 @@ aoa_complete:
     }
 
 #ifdef HAVE_CLIENT_AUDIO
-    bool microphone_started = false;
     if (options->client_audio_source) {
         s->microphone_params.socket = s->server.client_mic_socket;
         s->microphone_params.audio_source = options->client_audio_source;
