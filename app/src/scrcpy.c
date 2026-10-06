@@ -993,7 +993,7 @@ aoa_complete:
 
 #ifdef HAVE_CLIENT_AUDIO
     if (options->client_audio_source) {
-        sc_client_audio_init(&s->client_audio, s->server.client_mic_socket,
+        sc_client_audio_init(&s->client_audio, s->server.client_audio_socket,
                              options->client_audio_source);
         if (!sc_client_audio_start(&s->client_audio)) {
             goto end;

@@ -98,7 +98,7 @@ struct sc_server {
 
     sc_socket video_socket;
     sc_socket audio_socket;
-    sc_socket client_mic_socket;
+    sc_socket client_audio_socket;
     sc_socket control_socket;
 
     const struct sc_server_callbacks *cbs;

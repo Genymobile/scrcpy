@@ -582,7 +582,7 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
     server->video_socket = SC_SOCKET_NONE;
     server->audio_socket = SC_SOCKET_NONE;
     server->control_socket = SC_SOCKET_NONE;
-    server->client_mic_socket = SC_SOCKET_NONE;
+    server->client_audio_socket = SC_SOCKET_NONE;
 
     sc_adb_tunnel_init(&server->tunnel);
 
@@ -735,15 +735,16 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
         }
     }
 
-    // Disable Nagle's algorithm for the control socket
-    // (it only impacts the sending side, so it is useless to set it
-    // for the other sockets)
     if (control_socket != SC_SOCKET_NONE) {
+        // Disable Nagle's algorithm for the control socket
+        // (it only impacts the sending side, so it is useless to set it
+        // for the other sockets)
         bool ok = net_set_tcp_nodelay(control_socket, true);
         (void) ok; // error already logged
     }
 
     if (client_audio_socket != SC_SOCKET_NONE) {
+        // The client also sends on this socket
         bool ok = net_set_tcp_nodelay(client_audio_socket, true);
         (void) ok; // error already logged
     }
@@ -771,7 +772,7 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
     server->video_socket = video_socket;
     server->audio_socket = audio_socket;
     server->control_socket = control_socket;
-    server->client_mic_socket = client_audio_socket;
+    server->client_audio_socket = client_audio_socket;
 
     return true;
 
@@ -796,7 +797,7 @@ fail:
 
     if (client_audio_socket != SC_SOCKET_NONE) {
         if (!net_close(client_audio_socket)) {
-            LOGW("Could not close microphone socket");
+            LOGW("Could not close client audio socket");
         }
     }
 
@@ -1189,9 +1190,9 @@ run_server(void *data) {
         net_interrupt(server->control_socket);
     }
 
-    if (server->client_mic_socket != SC_SOCKET_NONE) {
-        // There is no control_socket if --no-microphone is set
-        net_interrupt(server->client_mic_socket);
+    if (server->client_audio_socket != SC_SOCKET_NONE) {
+        // There is no client_audio_socket if --client-audio-source is not set
+        net_interrupt(server->client_audio_socket);
     }
 
     // Give some delay for the server to terminate properly
@@ -1262,8 +1263,8 @@ sc_server_destroy(struct sc_server *server) {
     if (server->control_socket != SC_SOCKET_NONE) {
         net_close(server->control_socket);
     }
-    if (server->client_mic_socket != SC_SOCKET_NONE) {
-        net_close(server->client_mic_socket);
+    if (server->client_audio_socket != SC_SOCKET_NONE) {
+        net_close(server->client_audio_socket);
     }
 
     free(server->serial);

@@ -44,7 +44,7 @@ main_scrcpy(int argc, char *argv[]) {
         .help = false,
         .version = false,
         .pause_on_exit = SC_PAUSE_ON_EXIT_UNDEFINED,
-        .list_audio_sources = false,
+        .list_client_audio_sources = false,
     };
 
 #ifndef NDEBUG
@@ -87,7 +87,8 @@ main_scrcpy(int argc, char *argv[]) {
 #endif
 #ifdef HAVE_CLIENT_AUDIO
     // needed for capturing microphone and listing audio sources
-    register_devices |= !!args.opts.client_audio_source || args.list_audio_sources;
+    register_devices |= !!args.opts.client_audio_source
+                     || args.list_client_audio_sources;
 #endif
     if (register_devices) {
         avdevice_register_all();
@@ -95,7 +96,7 @@ main_scrcpy(int argc, char *argv[]) {
 #endif
 
 #ifdef HAVE_CLIENT_AUDIO
-    if (args.list_audio_sources) {
+    if (args.list_client_audio_sources) {
         sc_client_audio_list_sources();
         ret = SCRCPY_EXIT_SUCCESS;
         goto end;

@@ -113,7 +113,7 @@ enum {
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
     OPT_NO_TERMINAL_TITLE,
     OPT_HWDEC,
-    OPT_LIST_AUDIO_SOURCES,
+    OPT_LIST_CLIENT_AUDIO_SOURCES,
 };
 
 struct sc_option {
@@ -343,6 +343,18 @@ static const struct sc_option options[] = {
                 "Default is 0.",
     },
     {
+        .longopt_id = OPT_CLIENT_AUDIO_SOURCE,
+        .longopt = "client-audio-source",
+        .argdesc = "source",
+        .text = "Inject audio captured on the computer into the device "
+                "microphone.\n"
+                "The source is either an audio input device name (for example "
+                "\"default\"), or a file path prefixed by \"file://\" (for "
+                "example \"file:///path/to/audio.mp3\"), played in a loop.\n"
+                "Use --list-client-audio-sources to list the available "
+                "devices.",
+    },
+    {
         .longopt_id = OPT_CROP,
         .longopt = "crop",
         .argdesc = "width:height:x:y",
@@ -399,16 +411,6 @@ static const struct sc_option options[] = {
         .longopt = "select-tcpip",
         .text = "Use TCP/IP device (if there is exactly one, like adb -e).\n"
                 "Also see -d (--select-usb).",
-    },
-    {
-        .longopt_id = OPT_CLIENT_AUDIO_SOURCE,
-        .longopt = "client-audio-source",
-        .argdesc = "source",
-        .text = "Inject audio into the device microphone from a device or file.\n"
-                "The source can be:\n"
-                "  - A device name (e.g., \"Microphone\", \"default\")\n"
-                "  - A file path prefixed with \"file://\" (e.g., \"file:///path/to/audio.mp3\")\n"
-                "Supported file formats: MP3, OGG, WAV, FLAC, etc.",
     },
     {
         .shortopt = 'f',
@@ -524,6 +526,11 @@ static const struct sc_option options[] = {
         .text = "List the valid camera capture sizes.",
     },
     {
+        .longopt_id = OPT_LIST_CLIENT_AUDIO_SOURCES,
+        .longopt = "list-client-audio-sources",
+        .text = "List audio input sources available on the computer.",
+    },
+    {
         .longopt_id = OPT_LIST_DISPLAYS,
         .longopt = "list-displays",
         .text = "List device displays.",
@@ -532,11 +539,6 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_LIST_ENCODERS,
         .longopt = "list-encoders",
         .text = "List video and audio encoders available on the device.",
-    },
-    {
-        .longopt_id = OPT_LIST_AUDIO_SOURCES,
-        .longopt = "list-client-audio-sources",
-        .text = "List available audio input sources on the client computer.",
     },
     {
         .shortopt = 'm',
@@ -2893,9 +2895,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_LIST_APPS:
                 opts->list |= SC_OPTION_LIST_APPS;
                 break;
-            case OPT_LIST_AUDIO_SOURCES:
+            case OPT_LIST_CLIENT_AUDIO_SOURCES:
 #ifdef HAVE_CLIENT_AUDIO
-                args->list_audio_sources = true;
+                args->list_client_audio_sources = true;
                 break;
 #else
                 LOGE("Client audio (--list-client-audio-sources) is disabled in this build");

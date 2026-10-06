@@ -11,7 +11,7 @@ static void test_flag_version(void) {
         .opts = scrcpy_options_default,
         .help = false,
         .version = false,
-        .list_audio_sources = false,
+        .list_client_audio_sources = false,
     };
 
     char *argv[] = {"scrcpy", "-v"};
@@ -27,7 +27,7 @@ static void test_flag_help(void) {
         .opts = scrcpy_options_default,
         .help = false,
         .version = false,
-        .list_audio_sources = false,
+        .list_client_audio_sources = false,
     };
 
     char *argv[] = {"scrcpy", "-v"};
@@ -43,7 +43,7 @@ static void test_options(void) {
         .opts = scrcpy_options_default,
         .help = false,
         .version = false,
-        .list_audio_sources = false,
+        .list_client_audio_sources = false,
     };
 
     char *argv[] = {
@@ -104,7 +104,7 @@ static void test_options2(void) {
         .opts = scrcpy_options_default,
         .help = false,
         .version = false,
-        .list_audio_sources = false,
+        .list_client_audio_sources = false,
     };
 
     char *argv[] = {
