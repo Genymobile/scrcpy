@@ -1107,16 +1107,17 @@ end:
         sc_screen_interrupt(&s->screen);
     }
 
+#ifdef HAVE_CLIENT_AUDIO
+    if (client_audio_started) {
+        // Request stop before the socket is shut down, to stop sending early
+        sc_client_audio_stop(&s->client_audio);
+    }
+#endif
+
     if (server_started) {
         // shutdown the sockets and kill the server
         sc_server_stop(&s->server);
     }
-
-#ifdef HAVE_CLIENT_AUDIO
-    if (client_audio_started) {
-        sc_client_audio_stop(&s->client_audio);
-    }
-#endif
 
     if (screen_initialized) {
         if (disconnected) {
