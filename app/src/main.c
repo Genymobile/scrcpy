@@ -80,10 +80,21 @@ main_scrcpy(int argc, char *argv[]) {
         goto end;
     }
 
+#if defined(HAVE_V4L2) || defined(HAVE_CLIENT_AUDIO)
+    bool register_devices = false;
+#ifdef HAVE_V4L2
+    register_devices |= !!args.opts.v4l2_device;
+#endif
 #ifdef HAVE_CLIENT_AUDIO
-    //needed for capturing microphone and listing audio sources
-    avdevice_register_all();
+    // needed for capturing microphone and listing audio sources
+    register_devices |= !!args.opts.client_audio_source || args.list_audio_sources;
+#endif
+    if (register_devices) {
+        avdevice_register_all();
+    }
+#endif
 
+#ifdef HAVE_CLIENT_AUDIO
     if (args.list_audio_sources) {
         sc_microphone_list_audio_sources();
         ret = SCRCPY_EXIT_SUCCESS;
