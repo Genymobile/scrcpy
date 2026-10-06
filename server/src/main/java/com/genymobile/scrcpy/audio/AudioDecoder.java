@@ -55,8 +55,14 @@ public class AudioDecoder {
         csd2.flip();
         format.setByteBuffer("csd-2", csd2);
 
-        decoder.configure(format, null, null, 0);
-        decoder.start();
+        try {
+            decoder.configure(format, null, null, 0);
+            decoder.start();
+        } catch (RuntimeException e) {
+            decoder.release();
+            decoder = null;
+            throw e;
+        }
 
         running = true;
 
@@ -148,7 +154,9 @@ public class AudioDecoder {
             try {
                 decoder.stop();
                 decoder.release();
-            } catch (Exception e) { }
+            } catch (Exception e) {
+                // The codec may already be in an error state
+            }
             decoder = null;
         }
     }
