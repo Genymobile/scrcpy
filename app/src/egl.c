@@ -6,6 +6,25 @@
 
 #include "util/log.h"
 
+static bool
+sc_egl_has_extension(const char *extensions, const char *extension) {
+    assert(extensions);
+    assert(extension);
+    assert(!strchr(extension, ' '));
+
+    size_t len = strlen(extension);
+    const char *p = extensions;
+    while ((p = strstr(p, extension))) {
+        if ((p == extensions || p[-1] == ' ')
+                && (p[len] == '\0' || p[len] == ' ')) {
+            return true;
+        }
+        p += len;
+    }
+
+    return false;
+}
+
 bool
 sc_egl_init(struct sc_egl *egl) {
     egl->display = (EGLDisplay) SDL_EGL_GetCurrentDisplay();
@@ -22,8 +41,8 @@ sc_egl_init(struct sc_egl *egl) {
         SDL_EGL_GetProcAddress("eglGetError");
     assert(egl->GetError);
 
-    egl->extensions = egl->QueryString(egl->display, EGL_EXTENSIONS);
-    if (!egl->extensions) {
+    const char *extensions = egl->QueryString(egl->display, EGL_EXTENSIONS);
+    if (!extensions) {
         LOGE("EGL error: Could not get EGL extensions");
         return false;
     }
@@ -32,8 +51,8 @@ sc_egl_init(struct sc_egl *egl) {
     // so only resolve the entry points of advertised extensions
     egl->CreateImageKHR = NULL;
     egl->DestroyImageKHR = NULL;
-    if (sc_egl_has_extension(egl, "EGL_KHR_image_base")
-            || sc_egl_has_extension(egl, "EGL_KHR_image")) {
+    if (sc_egl_has_extension(extensions, "EGL_KHR_image_base")
+            || sc_egl_has_extension(extensions, "EGL_KHR_image")) {
         egl->CreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)
             SDL_EGL_GetProcAddress("eglCreateImageKHR");
         assert(egl->CreateImageKHR);
@@ -50,30 +69,12 @@ sc_egl_init(struct sc_egl *egl) {
     }
 
     egl->has_dma_buf_import =
-        sc_egl_has_extension(egl, "EGL_EXT_image_dma_buf_import");
+        sc_egl_has_extension(extensions, "EGL_EXT_image_dma_buf_import");
     egl->has_dma_buf_import_modifiers =
-        sc_egl_has_extension(egl, "EGL_EXT_image_dma_buf_import_modifiers");
+        sc_egl_has_extension(extensions,
+                             "EGL_EXT_image_dma_buf_import_modifiers");
 
     return true;
-}
-
-bool
-sc_egl_has_extension(struct sc_egl *egl, const char *extension) {
-    assert(egl->extensions);
-    assert(extension);
-    assert(!strchr(extension, ' '));
-
-    size_t len = strlen(extension);
-    const char *p = egl->extensions;
-    while ((p = strstr(p, extension))) {
-        if ((p == egl->extensions || p[-1] == ' ')
-                && (p[len] == '\0' || p[len] == ' ')) {
-            return true;
-        }
-        p += len;
-    }
-
-    return false;
 }
 
 EGLImageKHR

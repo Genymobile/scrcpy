@@ -54,9 +54,6 @@ struct sc_egl_dma_buf_plane {
 bool
 sc_egl_init(struct sc_egl *egl);
 
-bool
-sc_egl_has_extension(struct sc_egl *egl, const char *extension);
-
 /**
  * Import a single-plane DMA-BUF as an EGLImage
  *
