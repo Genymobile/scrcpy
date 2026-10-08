@@ -71,6 +71,9 @@ struct sc_server_params {
     bool kill_adb_on_close;
     bool camera_high_speed;
     bool camera_torch;
+    uint32_t camera_iso;
+    uint64_t camera_exposure;
+    bool camera_awb_lock;
     bool vd_destroy_content;
     bool vd_system_decorations;
     bool keep_active;

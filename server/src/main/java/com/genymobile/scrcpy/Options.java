@@ -49,6 +49,9 @@ public class Options {
     private int cameraFps;
     private boolean cameraHighSpeed;
     private boolean cameraTorch;
+    private int cameraIso = 0; // 0 = Auto / Unset
+    private long cameraExposure = 0L; // 0 = Auto / Unset (in nanoseconds)
+    private boolean cameraAwbLock = false;
     private boolean showTouches;
     private boolean stayAwake;
     private int screenOffTimeout = -1;
@@ -193,6 +196,18 @@ public class Options {
 
     public boolean getCameraTorch() {
         return cameraTorch;
+    }
+
+    public int getCameraIso() {
+        return cameraIso;
+    }
+
+    public long getCameraExposure() {
+        return cameraExposure;
+    }
+
+    public boolean isCameraAwbLock() {
+        return cameraAwbLock;
     }
 
     public boolean getShowTouches() {
@@ -520,6 +535,15 @@ public class Options {
                     break;
                 case "camera_torch":
                     options.cameraTorch = Boolean.parseBoolean(value);
+                    break;
+                case "camera_iso":
+                    options.cameraIso = Integer.parseInt(value);
+                    break;
+                case "camera_exposure":
+                    options.cameraExposure = Long.parseLong(value);
+                    break;
+                case "camera_awb_lock":
+                    options.cameraAwbLock = Boolean.parseBoolean(value);
                     break;
                 case "new_display":
                     options.newDisplay = parseNewDisplay(value);
