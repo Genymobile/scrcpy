@@ -40,6 +40,8 @@ _<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
  | Click on `MENU` (unlock screen)⁴            | <kbd>MOD</kbd>+<kbd>m</kbd>
  | Click on `VOLUME_UP`                        | <kbd>MOD</kbd>+<kbd>↑</kbd> _(up)_
  | Click on `VOLUME_DOWN`                      | <kbd>MOD</kbd>+<kbd>↓</kbd> _(down)_
+ | Scroll up                                   | <kbd>MOD</kbd>+<kbd>PageUp</kbd>
+ | Scroll down                                 | <kbd>MOD</kbd>+<kbd>PageDown</kbd>
  | Click on `POWER`                            | <kbd>MOD</kbd>+<kbd>p</kbd>
  | Power on                                    | _Right-click²_
  | Turn device screen off (keep mirroring)     | <kbd>MOD</kbd>+<kbd>o</kbd>
