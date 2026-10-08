@@ -41,6 +41,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.ArrayList;
 
 public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
@@ -779,6 +780,8 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         DeviceApp app;
         boolean searchByName = name.startsWith("?");
+        boolean fuzzySearch = name.startsWith("%");
+
         if (searchByName) {
             name = name.substring(1);
 
@@ -796,6 +799,81 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             }
 
             app = apps.get(0);
+
+        } else if (fuzzySearch) {
+            name = name.substring(1);
+
+            Ln.i("Performing fuzzy search for \"" + name + "\"...");
+            List<DeviceApp> allApps = Device.listApps();
+
+            if (allApps.isEmpty()) {
+                Ln.w("No apps found on device");
+                return;
+            }
+
+            String lowerSearchName = name.toLowerCase();
+
+            class Match {
+                final DeviceApp app;
+                final double score;
+
+                Match(DeviceApp app, double score) {
+                    this.app = app;
+                    this.score = score;
+                }
+            }
+
+            List<Match> matches = new ArrayList<>();
+
+            for (DeviceApp deviceApp : allApps) {
+                double similarity = calculateSmartSimilarity(
+                        lowerSearchName,
+                        deviceApp.getName().toLowerCase()
+                );
+
+                matches.add(new Match(deviceApp, similarity));
+            }
+
+            if (matches.isEmpty()) {
+                Ln.w("No app found matching \"" + name + "\"");
+                return;
+            }
+
+            matches.sort((a, b) -> Double.compare(b.score, a.score));
+
+            StringBuilder sb = new StringBuilder();
+            int topN = 10;
+            int count = Math.min(topN, matches.size());
+            int countW = (int) Math.log10(count) + 1;
+            sb.append("Top ").append(String.format("%d", count)).append(" fuzzy matches for \"").append(name).append("\":");
+
+
+            for (int i = 0; i < count; i++) {
+                Match match = matches.get(i);
+                int lpad = countW - ((int) Math.log10(i+1) + 1);
+                sb.append("\n")
+                    .append(" ".repeat(lpad))
+                    .append(i + 1)
+                    .append(". ")
+                    .append(match.app.getName())
+                    .append(" [")
+                    .append(match.app.getPackageName())
+                    .append("] - ")
+                    .append(String.format("%.1f", match.score * 100))
+                    .append("%");
+            }
+
+            Ln.i(sb.toString());
+
+            Match best = matches.get(0);
+
+            Ln.i("Starting best fuzzy match: \"" + best.app.getName()
+                    + "\" [" + best.app.getPackageName()
+                    + "] with "
+                    + String.format("%.1f", best.score * 100)
+                    + "% similarity");
+            app = best.app;
+
         } else {
             app = Device.findByPackageName(name);
             if (app == null) {
@@ -812,6 +890,123 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         Ln.i("Starting app \"" + app.getName() + "\" [" + app.getPackageName() + "] on display " + startAppDisplayId + "...");
         Device.startApp(app.getPackageName(), startAppDisplayId, forceStopBeforeStart);
+    }
+
+    /**
+     * Smart similarity scoring that prioritizes substring matches and word boundaries.
+     * Returns a value between 0.0 and 1.0.
+     */
+    private double calculateSmartSimilarity(String search, String target) {
+        if (search == null || target == null) {
+            return 0.0;
+        }
+        
+        if (search.isEmpty() || target.isEmpty()) {
+            return 0.0;
+        }
+        
+        // Exact match
+        if (target.equals(search)) {
+            return 1.0;
+        }
+        double score = calculateLevenshteinSimilarity(search, target);
+
+        String targetNormalized = target.replace(" ", "");
+        String searchNormalized = search.replace(" ", "");
+
+        if (targetNormalized.contains(searchNormalized)) {
+            // Check if search is a substring of target
+            score = applyBonus(score, search, target);
+        } else if (searchNormalized.contains(targetNormalized)) {
+            // Check if target is a substring of search (e.g., search "Gmail" matches target "Gmail" in "Gmail - email")
+            score = applyBonus(score, target, search);
+        }
+        return score;
+    }
+
+    private double applyBonus(double score, String search, String target) {
+        int index = target.indexOf(search);
+        if (index != -1) {
+            // Check if it's a word boundary (start of string or preceded by space)
+            boolean isWordBoundary = (index == 0) || (" !@#$%^&*()_+{}:\"<>?[];',./|\\\n\t".indexOf(target.charAt(index - 1)) != -1);
+
+            // Check if it's a complete word (end of string or followed by space)
+            int endIndex = index + search.length();
+            boolean isCompleteWord = (endIndex == target.length()) || (" !@#$%^&*()_+{}:\"<>?[];',./|\\\n\t".indexOf(target.charAt(endIndex)) != -1);
+
+            // Bonus for word boundary (starts with the word)
+            if (isWordBoundary) {
+                score += 0.3;
+            }
+            
+            // Bonus for complete word match
+            if (isCompleteWord) {
+                score += 0.3;
+            }
+        }
+        // Bonus if it's a prefix match (excluding spaces)
+        if (target.replace(" ", "").startsWith(search.replace(" ", ""))) {
+            score += 0.2;
+        }
+        
+        // Cap at 0.99 (leaving room for exact match at 1.0)
+        return Math.min(score, 0.99);
+    }
+
+    /**
+     * Calculates similarity between two strings using Levenshtein distance.
+     * Returns a value between 0.0 and 1.0, where 1.0 means identical.
+     */
+    private double calculateLevenshteinSimilarity(String s1, String s2) {
+        if (s1 == null || s2 == null) {
+            return 0.0;
+        }
+        
+        if (s1.isEmpty() && s2.isEmpty()) {
+            return 1.0;
+        }
+        
+        if (s1.isEmpty() || s2.isEmpty()) {
+            return 0.0;
+        }
+        
+        int maxLength = Math.max(s1.length(), s2.length());
+        int distance = levenshteinDistance(s1, s2);
+        return 1.0 - ((double) distance / maxLength);
+    }
+
+    /**
+     * Calculates Levenshtein distance between two strings.
+     */
+    private int levenshteinDistance(String s1, String s2) {
+        int m = s1.length();
+        int n = s2.length();
+        
+        int[][] dp = new int[m + 1][n + 1];
+        
+        for (int i = 0; i <= m; i++) {
+            dp[i][0] = i;
+        }
+        
+        for (int j = 0; j <= n; j++) {
+            dp[0][j] = j;
+        }
+        
+        for (int i = 1; i <= m; i++) {
+            for (int j = 1; j <= n; j++) {
+                if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
+                    dp[i][j] = dp[i - 1][j - 1];
+                } else {
+                    dp[i][j] = 1 + Math.min(
+                        dp[i - 1][j - 1], // substitution
+                        Math.min(dp[i - 1][j], // deletion
+                                dp[i][j - 1]) // insertion
+                    );
+                }
+            }
+        }
+        
+        return dp[m][n];
     }
 
     private int getStartAppDisplayId() {
