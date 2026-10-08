@@ -115,6 +115,8 @@ sc_server_get_codec_name(enum sc_codec codec) {
             return "vp8";
         case SC_CODEC_VP9:
             return "vp9";
+        case SC_CODEC_MJPEG:
+            return "mjpeg";
         case SC_CODEC_OPUS:
             return "opus";
         case SC_CODEC_AAC:
