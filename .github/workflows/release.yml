@@ -143,6 +143,54 @@ jobs:
           name: build-linux-x86_64-intermediate
           path: release/work/build-linux-x86_64/dist-tar/
 
+  build-linux-aarch64:
+    runs-on: ubuntu-22.04-arm
+    steps:
+      - name: Check architecture
+        run: |
+            arch=$(uname -m)
+            if [[ "$arch" != aarch64 ]]
+            then
+                echo "Unexpected architecture: $arch" >&2
+                exit 1
+            fi
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+        # Same as build-linux-x86_64, plus libgtest-dev (headers required to
+        # build adb)
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y meson ninja-build nasm ffmpeg libavcodec-dev \
+             libavdevice-dev libavformat-dev libavutil-dev libswresample-dev \
+             libusb-1.0-0 libusb-1.0-0-dev libv4l-dev \
+             libasound2-dev libpulse-dev \
+             libaudio-dev libfribidi-dev libjack-dev libsndio-dev libx11-dev libxext-dev \
+             libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
+             libxkbcommon-dev libdrm-dev libva-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev \
+             libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev libudev-dev libthai-dev \
+             libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev \
+             libgtest-dev
+
+      - name: Build
+        run: release/build_linux.sh aarch64
+
+      # upload-artifact does not preserve permissions
+      - name: Tar
+        run: |
+            cd release/work/build-linux-aarch64
+            mkdir dist-tar
+            cd dist-tar
+            tar -C .. -cvf dist.tar.gz dist/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-linux-aarch64-intermediate
+          path: release/work/build-linux-aarch64/dist-tar/
+
   build-win32:
     runs-on: ubuntu-latest
     steps:
@@ -397,6 +445,42 @@ jobs:
           name: release-linux-x86_64
           path: release/output/
 
+  package-linux-aarch64:
+    needs:
+      - build-scrcpy-server
+      - build-linux-aarch64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download scrcpy-server
+        uses: actions/download-artifact@v8
+        with:
+          name: scrcpy-server
+          path: release/work/build-server/server/
+
+      - name: Download build-linux-aarch64
+        uses: actions/download-artifact@v8
+        with:
+          name: build-linux-aarch64-intermediate
+          path: release/work/build-linux-aarch64/dist-tar/
+
+      # upload-artifact does not preserve permissions
+      - name: Detar
+        run: |
+            cd release/work/build-linux-aarch64
+            tar xf dist-tar/dist.tar.gz
+
+      - name: Package
+        run: release/package_client.sh linux-aarch64 tar.gz
+
+      - name: Upload release
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-linux-aarch64
+          path: release/output/
+
   package-win32:
     needs:
       - build-scrcpy-server
@@ -581,6 +665,7 @@ jobs:
     needs:
       - build-scrcpy-server
       - package-linux-x86_64
+      - package-linux-aarch64
       - package-win32
       - package-win64
       - package-winarm64
@@ -601,6 +686,12 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: release-linux-x86_64
+          path: release/output/
+
+      - name: Download release-linux-aarch64
+        uses: actions/download-artifact@v8
+        with:
+          name: release-linux-aarch64
           path: release/output/
 
       - name: Download release-win32
