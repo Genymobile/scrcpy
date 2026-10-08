@@ -216,6 +216,11 @@ sc_screen_get_hw_type(struct sc_screen *screen) {
     return sc_texture_get_hw_type(&screen->tex);
 }
 
+static inline const char *
+sc_screen_get_hw_device(struct sc_screen *screen) {
+    return sc_texture_get_hw_device(&screen->tex);
+}
+
 static inline bool
 sc_screen_disable_hwdec(struct sc_screen *screen) {
     return sc_texture_disable_hwdec(&screen->tex);

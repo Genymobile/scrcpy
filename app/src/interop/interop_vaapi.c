@@ -61,7 +61,8 @@ sc_interop_vaapi_check_nv12_layout(const AVDRMFrameDescriptor *desc) {
     return desc->nb_layers == 2
         && desc->layers[0].format == DRM_FORMAT_R8
         && desc->layers[0].nb_planes == 1
-        && desc->layers[1].format == DRM_FORMAT_GR88
+        && (desc->layers[1].format == DRM_FORMAT_GR88
+            || desc->layers[1].format == DRM_FORMAT_RG88)
         && desc->layers[1].nb_planes == 1;
 }
 
@@ -339,6 +340,8 @@ sc_interop_vaapi_new(SDL_Renderer *renderer, struct sc_opengl *gl,
 
     vaapi->interop.name = "vaapi";
     vaapi->interop.hw_type = AV_HWDEVICE_TYPE_VAAPI;
+    // Decode on the GPU used by the renderer
+    vaapi->interop.hw_device = sc_egl_get_drm_render_node(&vaapi->egl);
     vaapi->interop.pix_fmt = AV_PIX_FMT_VAAPI;
     vaapi->interop.texture = NULL;
     vaapi->interop.ops = &ops;

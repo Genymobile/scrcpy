@@ -18,6 +18,7 @@ struct sc_interop {
     const char *name;
 
     enum AVHWDeviceType hw_type;
+    const char *hw_device;
     enum AVPixelFormat pix_fmt;
 
     SDL_Texture *texture;

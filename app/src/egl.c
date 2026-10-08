@@ -6,6 +6,25 @@
 
 #include "util/log.h"
 
+static bool
+sc_egl_has_extension(const char *extensions, const char *extension) {
+    assert(extensions);
+    assert(extension);
+    assert(!strchr(extension, ' '));
+
+    size_t len = strlen(extension);
+    const char *p = extensions;
+    while ((p = strstr(p, extension))) {
+        if ((p == extensions || p[-1] == ' ')
+                && (p[len] == '\0' || p[len] == ' ')) {
+            return true;
+        }
+        p += len;
+    }
+
+    return false;
+}
+
 bool
 sc_egl_init(struct sc_egl *egl) {
     egl->display = (EGLDisplay) SDL_EGL_GetCurrentDisplay();
@@ -22,8 +41,8 @@ sc_egl_init(struct sc_egl *egl) {
         SDL_EGL_GetProcAddress("eglGetError");
     assert(egl->GetError);
 
-    egl->extensions = egl->QueryString(egl->display, EGL_EXTENSIONS);
-    if (!egl->extensions) {
+    const char *extensions = egl->QueryString(egl->display, EGL_EXTENSIONS);
+    if (!extensions) {
         LOGE("EGL error: Could not get EGL extensions");
         return false;
     }
@@ -32,8 +51,8 @@ sc_egl_init(struct sc_egl *egl) {
     // so only resolve the entry points of advertised extensions
     egl->CreateImageKHR = NULL;
     egl->DestroyImageKHR = NULL;
-    if (sc_egl_has_extension(egl, "EGL_KHR_image_base")
-            || sc_egl_has_extension(egl, "EGL_KHR_image")) {
+    if (sc_egl_has_extension(extensions, "EGL_KHR_image_base")
+            || sc_egl_has_extension(extensions, "EGL_KHR_image")) {
         egl->CreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)
             SDL_EGL_GetProcAddress("eglCreateImageKHR");
         assert(egl->CreateImageKHR);
@@ -49,31 +68,57 @@ sc_egl_init(struct sc_egl *egl) {
             SDL_GL_GetProcAddress("glEGLImageTargetTexture2DOES");
     }
 
+    // EGL_EXT_device_query is a client extension (not specific to a display)
+    const char *client_extensions =
+        egl->QueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+
+    egl->QueryDisplayAttribEXT = NULL;
+    egl->QueryDeviceStringEXT = NULL;
+    if (client_extensions && sc_egl_has_extension(client_extensions,
+                                                  "EGL_EXT_device_query")) {
+        egl->QueryDisplayAttribEXT = (PFNEGLQUERYDISPLAYATTRIBEXTPROC)
+            SDL_EGL_GetProcAddress("eglQueryDisplayAttribEXT");
+        assert(egl->QueryDisplayAttribEXT);
+
+        egl->QueryDeviceStringEXT = (PFNEGLQUERYDEVICESTRINGEXTPROC)
+            SDL_EGL_GetProcAddress("eglQueryDeviceStringEXT");
+        assert(egl->QueryDeviceStringEXT);
+    }
+
     egl->has_dma_buf_import =
-        sc_egl_has_extension(egl, "EGL_EXT_image_dma_buf_import");
+        sc_egl_has_extension(extensions, "EGL_EXT_image_dma_buf_import");
     egl->has_dma_buf_import_modifiers =
-        sc_egl_has_extension(egl, "EGL_EXT_image_dma_buf_import_modifiers");
+        sc_egl_has_extension(extensions,
+                             "EGL_EXT_image_dma_buf_import_modifiers");
 
     return true;
 }
 
-bool
-sc_egl_has_extension(struct sc_egl *egl, const char *extension) {
-    assert(egl->extensions);
-    assert(extension);
-    assert(!strchr(extension, ' '));
-
-    size_t len = strlen(extension);
-    const char *p = egl->extensions;
-    while ((p = strstr(p, extension))) {
-        if ((p == egl->extensions || p[-1] == ' ')
-                && (p[len] == '\0' || p[len] == ' ')) {
-            return true;
-        }
-        p += len;
+const char *
+sc_egl_get_drm_render_node(struct sc_egl *egl) {
+    if (!egl->QueryDisplayAttribEXT || !egl->QueryDeviceStringEXT) {
+        return NULL;
     }
 
-    return false;
+    EGLAttrib attrib;
+    if (!egl->QueryDisplayAttribEXT(egl->display, EGL_DEVICE_EXT, &attrib)) {
+        return NULL;
+    }
+
+    EGLDeviceEXT device = (EGLDeviceEXT) attrib;
+    if (device == EGL_NO_DEVICE_EXT) {
+        return NULL;
+    }
+
+    const char *extensions = egl->QueryDeviceStringEXT(device, EGL_EXTENSIONS);
+    if (!extensions
+            || !sc_egl_has_extension(extensions,
+                                     "EGL_EXT_device_drm_render_node")) {
+        return NULL;
+    }
+
+    // May be NULL if the device has no render node
+    return egl->QueryDeviceStringEXT(device, EGL_DRM_RENDER_NODE_FILE_EXT);
 }
 
 EGLImageKHR

@@ -46,6 +46,9 @@ sc_texture_reset(struct sc_texture *tex);
 enum AVHWDeviceType
 sc_texture_get_hw_type(struct sc_texture *tex);
 
+const char *
+sc_texture_get_hw_device(struct sc_texture *tex);
+
 bool
 sc_texture_disable_hwdec(struct sc_texture *tex);
 
