@@ -55,7 +55,8 @@ sudo apt install ffmpeg libsdl3-0 adb libusb-1.0-0 va-driver-all
 # client build dependencies
 sudo apt install gcc git pkg-config meson ninja-build libsdl3-dev \
                  libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev \
-                 libswresample-dev libusb-1.0-0-dev libv4l-dev libdrm-dev
+                 libswresample-dev libusb-1.0-0-dev libv4l-dev libdrm-dev \
+                 libva-dev
 
 # server build dependencies
 sudo apt install openjdk-17-jdk
