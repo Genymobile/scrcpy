@@ -3278,7 +3278,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     if (opts->mouse_input_mode != SC_MOUSE_INPUT_MODE_SDK
             && !opts->mouse_hover) {
-        LOGE("--no-mouse-over is specific to --mouse=sdk");
+        LOGE("--no-mouse-hover is specific to --mouse=sdk");
         return false;
     }
 
