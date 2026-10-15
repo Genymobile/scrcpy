@@ -19,6 +19,8 @@ public final class DesktopConnection implements Closeable {
 
     private static final String SOCKET_NAME_PREFIX = "scrcpy";
 
+    private static final int SEND_TIMEOUT_MS = 5000;
+
     private final LocalSocket videoSocket;
     private final FileDescriptor videoFd;
 
@@ -98,6 +100,14 @@ public final class DesktopConnection implements Closeable {
                 if (control) {
                     controlSocket = connect(socketName);
                 }
+            }
+
+            // setSoTimeout() sets both SO_RCVTIMEO and SO_SNDTIMEO (only SO_SNDTIMEO matters, nothing is read from these sockets)
+            if (videoSocket != null) {
+                videoSocket.setSoTimeout(SEND_TIMEOUT_MS);
+            }
+            if (audioSocket != null) {
+                audioSocket.setSoTimeout(SEND_TIMEOUT_MS);
             }
         } catch (IOException | RuntimeException e) {
             if (videoSocket != null) {

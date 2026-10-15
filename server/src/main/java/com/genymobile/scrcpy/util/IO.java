@@ -76,4 +76,13 @@ public final class IO {
     public static boolean isBrokenPipe(Exception e) {
         return e instanceof IOException && isBrokenPipe((IOException) e);
     }
+
+    public static boolean isEAgain(IOException e) {
+        Throwable cause = e.getCause();
+        return cause instanceof ErrnoException && ((ErrnoException) cause).errno == OsConstants.EAGAIN;
+    }
+
+    public static boolean isEAgain(Exception e) {
+        return e instanceof IOException && isEAgain((IOException) e);
+    }
 }
