@@ -86,6 +86,6 @@ public final class IO {
             return false;
         }
         int errno = ((ErrnoException) cause).errno;
-        return errno == OsConstants.EPIPE || errno == OsConstants.ECONNRESET;
+        return errno == OsConstants.EPIPE || errno == OsConstants.ECONNRESET || errno == OsConstants.EAGAIN;
     }
 }
