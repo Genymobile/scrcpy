@@ -180,6 +180,10 @@ sc_screen_hide_window(struct sc_screen *screen);
 void
 sc_screen_toggle_fullscreen(struct sc_screen *screen);
 
+// toggle the always-on-top mode
+void
+sc_screen_toggle_always_on_top(struct sc_screen *screen);
+
 // resize window to optimal size (remove black borders)
 void
 sc_screen_resize_to_fit(struct sc_screen *screen);
