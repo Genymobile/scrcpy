@@ -116,14 +116,15 @@ public final class CleanUp {
         boolean powerOffScreen = options.getPowerOffScreenOnClose();
 
         try {
-            run(displayId, restoreStayOn, disableShowTouches, powerOffScreen, restoreScreenOffTimeout, restoreDisplayImePolicy);
+            run(displayId, restoreStayOn, disableShowTouches, powerOffScreen, restoreScreenOffTimeout, restoreDisplayImePolicy,
+                    options.getUnlinkServer());
         } catch (IOException e) {
             Ln.e("Clean up I/O exception", e);
         }
     }
 
     private void run(int displayId, int restoreStayOn, boolean disableShowTouches, boolean powerOffScreen, int restoreScreenOffTimeout,
-            int restoreDisplayImePolicy) throws IOException {
+            int restoreDisplayImePolicy, boolean unlinkServer) throws IOException {
         String[] cmd = {
                 "app_process",
                 "/",
@@ -134,6 +135,7 @@ public final class CleanUp {
                 String.valueOf(powerOffScreen),
                 String.valueOf(restoreScreenOffTimeout),
                 String.valueOf(restoreDisplayImePolicy),
+                String.valueOf(unlinkServer),
         };
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
@@ -192,8 +194,6 @@ public final class CleanUp {
         } catch (ErrnoException e) {
             Ln.e("setsid() failed", e);
         }
-        unlinkSelf();
-
         // Needed for workarounds
         prepareMainLooper();
         Workarounds.apply();
@@ -204,6 +204,11 @@ public final class CleanUp {
         boolean powerOffScreen = Boolean.parseBoolean(args[3]);
         int restoreScreenOffTimeout = Integer.parseInt(args[4]);
         int restoreDisplayImePolicy = Integer.parseInt(args[5]);
+        boolean unlinkServer = Boolean.parseBoolean(args[6]);
+
+        if (unlinkServer) {
+            unlinkSelf();
+        }
 
         // Dynamic option
         boolean restoreDisplayPower = false;

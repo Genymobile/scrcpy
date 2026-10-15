@@ -67,6 +67,7 @@ struct sc_server_params {
     bool select_usb;
     bool select_tcpip;
     bool cleanup;
+    bool unlink_server;
     bool power_on;
     bool kill_adb_on_close;
     bool camera_high_speed;
