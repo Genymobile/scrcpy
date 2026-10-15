@@ -1,6 +1,7 @@
 #include "cli.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <getopt.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -1624,6 +1625,53 @@ parse_integers_arg(const char *s, const char sep, size_t max_items, long *out,
 }
 
 static bool
+parse_float_arg(const char *s, float *out, long min, long max,
+                const char *name) {
+    assert(s && *s);
+
+    const char *dot = strchr(s, '.');
+    if (dot && strchr(dot + 1, '.')) {
+        LOGE("Could not parse %s: %s", name, s);
+        return false;
+    }
+
+    if (dot) {
+        // The decimal part must not be empty
+        if (!dot[1]) {
+            LOGE("Could not parse %s: %s", name, s);
+            return false;
+        }
+        const char *e = dot + 1;
+        while (*e >= '0' && *e <= '9') {
+            ++e;
+        }
+        if (*e) {
+            LOGE("Could not parse %s: %s", name, s);
+            return false;
+        }
+    }
+
+    // Parse the integer part (base 0, to be consistent with the other
+    // numeric arguments)
+    char *endptr;
+    errno = 0;
+    long value = strtol(s, &endptr, 0);
+    if (errno == ERANGE || !endptr || *endptr != (dot ? '.' : '\0')) {
+        LOGE("Could not parse %s: %s", name, s);
+        return false;
+    }
+
+    if (value < min || value > max) {
+        LOGE("Could not parse %s: value out-of-range (%ld; %ld)", name,
+             min, max);
+        return false;
+    }
+
+    *out = strtof(s, NULL);
+    return true;
+}
+
+static bool
 parse_bit_rate(const char *s, uint32_t *bit_rate) {
     long value;
     // long may be 32 bits (it is the case on mingw), so do not use more than
@@ -2601,6 +2649,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case OPT_MAX_FPS:
+                {
+                    float max_fps;
+                    if (!parse_float_arg(optarg, &max_fps, 1, 0x7FFFFFFF,
+                                         "max fps")) {
+                        return false;
+                    }
+                }
                 opts->max_fps = optarg;
                 break;
             case 'm':
@@ -2960,6 +3015,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case OPT_ANGLE:
+                {
+                    float angle;
+                    if (!parse_float_arg(optarg, &angle, -0x7FFFFFFF,
+                                         0x7FFFFFFF, "angle")) {
+                        return false;
+                    }
+                }
                 opts->angle = optarg;
                 break;
             case OPT_NO_VD_DESTROY_CONTENT:
