@@ -153,8 +153,8 @@ public class SurfaceEncoder implements AsyncProcessor {
                         alive = !stopped.get() && !capture.isClosed();
                     }
                 } catch (IllegalStateException | IllegalArgumentException | IOException e) {
-                    if (IO.isBrokenPipe(e)) {
-                        // Do not retry on broken pipe, which is expected on close because the socket is closed by the client
+                    if (IO.isConnectionError(e)) {
+                        // Do not retry on connection errors (broken pipe is expected on close because the socket is closed by the client)
                         throw e;
                     }
                     Ln.e("Capture/encoding error: " + e.getClass().getName() + ": " + e.getMessage());
