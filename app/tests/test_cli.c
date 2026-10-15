@@ -121,6 +121,80 @@ static void test_options2(void) {
     assert(opts->record_format == SC_RECORD_FORMAT_MP4);
 }
 
+static void test_max_fps(void) {
+    struct scrcpy_cli_args args;
+    bool ok;
+
+    char *argv1[] = {"scrcpy", "--max-fps", "30"};
+    args.opts = scrcpy_options_default;
+    ok = scrcpy_parse_args(&args, ARRAY_LEN(argv1), argv1);
+    assert(ok);
+    assert(!strcmp(args.opts.max_fps, "30"));
+
+    char *argv2[] = {"scrcpy", "--max-fps", "30.5"};
+    args.opts = scrcpy_options_default;
+    ok = scrcpy_parse_args(&args, ARRAY_LEN(argv2), argv2);
+    assert(ok);
+    assert(!strcmp(args.opts.max_fps, "30.5"));
+
+    char *argv3[] = {"scrcpy", "--max-fps", "abc"};
+    args.opts = scrcpy_options_default;
+    ok = scrcpy_parse_args(&args, ARRAY_LEN(argv3), argv3);
+    assert(!ok);
+
+    char *argv4[] = {"scrcpy", "--max-fps", "0"};
+    args.opts = scrcpy_options_default;
+    ok = scrcpy_parse_args(&args, ARRAY_LEN(argv4), argv4);
+    assert(!ok);
+
+    char *argv5[] = {"scrcpy", "--max-fps", "-1"};
+    args.opts = scrcpy_options_default;
+    ok = scrcpy_parse_args(&args, ARRAY_LEN(argv5), argv5);
+    assert(!ok);
+
+    char *argv6[] = {"scrcpy", "--max-fps", "30abc"};
+    args.opts = scrcpy_options_default;
+    ok = scrcpy_parse_args(&args, ARRAY_LEN(argv6), argv6);
+    assert(!ok);
+
+    char *argv7[] = {"scrcpy", "--max-fps", "30."};
+    args.opts = scrcpy_options_default;
+    ok = scrcpy_parse_args(&args, ARRAY_LEN(argv7), argv7);
+    assert(!ok);
+
+    char *argv8[] = {"scrcpy", "--max-fps", "30.5.5"};
+    args.opts = scrcpy_options_default;
+    ok = scrcpy_parse_args(&args, ARRAY_LEN(argv8), argv8);
+    assert(!ok);
+}
+
+static void test_angle(void) {
+    struct scrcpy_cli_args args;
+    bool ok;
+
+    char *argv1[] = {"scrcpy", "--angle", "90"};
+    args.opts = scrcpy_options_default;
+    ok = scrcpy_parse_args(&args, ARRAY_LEN(argv1), argv1);
+    assert(ok);
+    assert(!strcmp(args.opts.angle, "90"));
+
+    char *argv2[] = {"scrcpy", "--angle", "-90"};
+    args.opts = scrcpy_options_default;
+    ok = scrcpy_parse_args(&args, ARRAY_LEN(argv2), argv2);
+    assert(ok);
+    assert(!strcmp(args.opts.angle, "-90"));
+
+    char *argv3[] = {"scrcpy", "--angle", "abc"};
+    args.opts = scrcpy_options_default;
+    ok = scrcpy_parse_args(&args, ARRAY_LEN(argv3), argv3);
+    assert(!ok);
+
+    char *argv4[] = {"scrcpy", "--angle", "90abc"};
+    args.opts = scrcpy_options_default;
+    ok = scrcpy_parse_args(&args, ARRAY_LEN(argv4), argv4);
+    assert(!ok);
+}
+
 static void test_parse_shortcut_mods(void) {
     uint8_t mods;
     bool ok;
@@ -157,6 +231,8 @@ int main(int argc, char *argv[]) {
     test_flag_help();
     test_options();
     test_options2();
+    test_max_fps();
+    test_angle();
     test_parse_shortcut_mods();
     return 0;
 }
