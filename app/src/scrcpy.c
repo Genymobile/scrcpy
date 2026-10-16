@@ -422,6 +422,7 @@ scrcpy(struct scrcpy_options *options) {
 #endif
 #ifdef HAVE_MPRIS
     bool mpris_initialized = false;
+    bool mpris_started = false;
 #endif
     bool controller_initialized = false;
     bool controller_started = false;
@@ -822,14 +823,11 @@ aoa_complete:
             mpris_initialized = true;
 
             if (!sc_mpris_start(&s->mpris)) {
-                sc_mpris_destroy(&s->mpris);
-                mpris_initialized = false;
                 goto end;
             }
+            mpris_started = true;
 
-            if (s->mpris.conn) {
-                media_listener = &s->mpris.media_listener;
-            }
+            media_listener = &s->mpris.media_listener;
         }
 #endif
 
@@ -1222,9 +1220,11 @@ end:
     // Stop the MPRIS thread after the receiver thread (joined with the
     // controller) and before the controller is destroyed (the MPRIS thread
     // pushes messages to it)
-    if (mpris_initialized) {
+    if (mpris_started) {
         sc_mpris_stop(&s->mpris);
         sc_mpris_join(&s->mpris);
+    }
+    if (mpris_initialized) {
         sc_mpris_destroy(&s->mpris);
     }
 #endif

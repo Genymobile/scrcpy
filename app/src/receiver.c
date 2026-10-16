@@ -163,8 +163,15 @@ process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
                 return;
             }
 
-            // The listener takes ownership of the update strings
-            listener->ops->on_update(listener, &msg->media_update);
+            // The listener takes ownership of the strings (do not destroy
+            // the msg)
+            listener->ops->on_update(listener, msg->media_update.state,
+                                     msg->media_update.position_ms,
+                                     msg->media_update.capabilities,
+                                     msg->media_update.duration_ms,
+                                     msg->media_update.title,
+                                     msg->media_update.artist,
+                                     msg->media_update.album);
             break;
         }
     }

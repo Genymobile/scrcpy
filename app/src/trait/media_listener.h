@@ -26,11 +26,13 @@ struct sc_media_listener_ops {
      * When there is no media session, the state is stopped, the capabilities
      * are empty and the strings are NULL.
      *
-     * The listener takes ownership of the strings of the update.
+     * The listener takes ownership of the strings (which may be NULL).
      */
     void
     (*on_update)(struct sc_media_listener *listener,
-                 struct sc_media_update *update);
+                 enum sc_media_state state, int64_t position_ms,
+                 uint32_t capabilities, int64_t duration_ms, char *title,
+                 char *artist, char *album);
 };
 
 #endif

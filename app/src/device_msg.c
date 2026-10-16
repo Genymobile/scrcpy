@@ -106,18 +106,18 @@ sc_device_msg_deserialize(const uint8_t *buf, size_t len,
                 // + duration (8)
                 return 0; // not available
             }
-            struct sc_media_update *update = &msg->media_update;
-            update->state = buf[1];
-            update->position_ms = (int64_t) sc_read64be(&buf[2]);
-            update->capabilities = sc_read32be(&buf[10]);
-            update->duration_ms = (int64_t) sc_read64be(&buf[14]);
-            update->title = NULL;
-            update->artist = NULL;
-            update->album = NULL;
+            msg->media_update.state = buf[1];
+            msg->media_update.position_ms = (int64_t) sc_read64be(&buf[2]);
+            msg->media_update.capabilities = sc_read32be(&buf[10]);
+            msg->media_update.duration_ms = (int64_t) sc_read64be(&buf[14]);
+            msg->media_update.title = NULL;
+            msg->media_update.artist = NULL;
+            msg->media_update.album = NULL;
 
             size_t pos = 22;
-            char **strings[] = {&update->title, &update->artist,
-                                &update->album};
+            char **strings[] = {&msg->media_update.title,
+                                &msg->media_update.artist,
+                                &msg->media_update.album};
             for (size_t i = 0; i < ARRAY_LEN(strings); ++i) {
                 int r = read_media_string(buf, len, &pos, strings[i]);
                 if (r <= 0) {

@@ -53,7 +53,7 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_MEDIA_ACTION,
 };
 
-// Values must be kept in sync with the server (MediaManager.java)
+// Values must be kept in sync with the server (ControlMessage.java)
 enum sc_media_action {
     SC_MEDIA_ACTION_PLAY,
     SC_MEDIA_ACTION_PAUSE,

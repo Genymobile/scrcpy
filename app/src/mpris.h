@@ -20,7 +20,7 @@ struct sc_mpris_player {
     enum sc_media_state state;
     int64_t position_ms; // SC_MEDIA_POSITION_UNKNOWN if unknown
     sc_tick position_tick; // when position_ms was received
-    uint32_t capabilities; // SC_MEDIA_CAP_* bitmask
+    uint32_t capabilities; // OR of enum sc_media_cap values
     int64_t duration_ms; // SC_MEDIA_DURATION_UNKNOWN if unknown
     char *title; // owned, may be NULL
     char *artist; // owned, may be NULL
@@ -31,10 +31,10 @@ struct sc_mpris_player {
 // MPRIS interface <https://specifications.freedesktop.org/mpris-spec/latest/>.
 //
 // The media updates are received from the receiver thread (via the
-// sc_media_listener trait), which updates the player state and emits the
-// D-Bus signals. The incoming D-Bus requests (method calls and property
-// accesses) are handled by a dedicated thread. The controller is used to send
-// the media actions to the device.
+// sc_media_listener trait), which updates the player and emits the D-Bus
+// signals. The incoming D-Bus requests (method calls and property accesses)
+// are handled by a dedicated thread. The controller is used to send the media
+// actions to the device.
 struct sc_mpris {
     struct sc_media_listener media_listener; // internal
 
@@ -43,8 +43,7 @@ struct sc_mpris {
     sc_thread thread;
     atomic_bool stopped;
 
-    // Private connection to the session bus (NULL if unavailable, in which
-    // case the feature is silently disabled)
+    // Private connection to the session bus
     DBusConnection *conn;
 
     // Pipe to wake up the thread (from libdbus or on stop)
