@@ -2,28 +2,76 @@
 #define SC_MPRIS_H
 
 #include "common.h"
-#include "util/thread.h"
-#include <sys/wait.h>
-#include <gio/gio.h>
 
-struct sc_mpris {
-	sc_thread thread;
-	GMainLoop *loop;
-	gint bus_id;
-	GDBusNodeInfo *introspection_data;
-	GDBusConnection *connection;
-	GDBusInterfaceInfo *root_interface_info;
-	GDBusInterfaceInfo *player_interface_info;
-	guint root_interface_id;
-	guint player_interface_id;
-	const char *status;
-	const char *loop_status;
-	GHashTable *changed_properties;
-	GVariant *metadata;
+#include <stdatomic.h>
+#include <stdbool.h>
+
+#include <dbus/dbus.h>
+
+#include "trait/media_listener.h"
+#include "util/thread.h"
+#include "util/tick.h"
+#include "util/vector.h"
+
+struct sc_controller;
+
+// The media session of the device exposed via MPRIS
+struct sc_mpris_player {
+    enum sc_media_state state;
+    int64_t position_ms; // SC_MEDIA_POSITION_UNKNOWN if unknown
+    sc_tick position_tick; // when position_ms was received
+    uint32_t capabilities; // SC_MEDIA_CAP_* bitmask
+    int64_t duration_ms; // SC_MEDIA_DURATION_UNKNOWN if unknown
+    char *title; // owned, may be NULL
+    char *artist; // owned, may be NULL
+    char *album; // owned, may be NULL
 };
 
-bool sc_mpris_start(struct sc_mpris *mpris);
+// Expose the media session of the device on the D-Bus session bus, using the
+// MPRIS interface <https://specifications.freedesktop.org/mpris-spec/latest/>.
+//
+// The media updates are received from the receiver thread (via the
+// sc_media_listener trait), which updates the player state and emits the
+// D-Bus signals. The incoming D-Bus requests (method calls and property
+// accesses) are handled by a dedicated thread. The controller is used to send
+// the media actions to the device.
+struct sc_mpris {
+    struct sc_media_listener media_listener; // internal
 
-void sc_mpris_stop(struct sc_mpris *mpris);
+    struct sc_controller *controller;
+
+    sc_thread thread;
+    atomic_bool stopped;
+
+    // Private connection to the session bus (NULL if unavailable, in which
+    // case the feature is silently disabled)
+    DBusConnection *conn;
+
+    // Pipe to wake up the thread (from libdbus or on stop)
+    int wakeup_pipe[2];
+
+    // Watches registered by libdbus (may be modified from any thread sending
+    // a message, protected by watches_mutex)
+    sc_mutex watches_mutex;
+    struct SC_VECTOR(DBusWatch *) watches;
+
+    sc_mutex mutex;
+    struct sc_mpris_player player; // protected by mutex
+};
+
+bool
+sc_mpris_init(struct sc_mpris *mpris, struct sc_controller *controller);
+
+bool
+sc_mpris_start(struct sc_mpris *mpris);
+
+void
+sc_mpris_stop(struct sc_mpris *mpris);
+
+void
+sc_mpris_join(struct sc_mpris *mpris);
+
+void
+sc_mpris_destroy(struct sc_mpris *mpris);
 
 #endif

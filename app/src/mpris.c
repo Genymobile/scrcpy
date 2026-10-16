@@ -1,377 +1,1048 @@
 #include "mpris.h"
-#include "events.h"
-#include <SDL_events.h>
-#include "util/log.h"
-#include <gio/gio.h>
-#include <glib-unix.h>
+
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <poll.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
-static const char *introspection_xml =
-	"<node>\n"
-	"  <interface name=\"org.mpris.MediaPlayer2\">\n"
-	"    <method name=\"Raise\"/>\n"
-	"    <method name=\"Quit\"/>\n"
-	"    <property name=\"CanQuit\" type=\"b\" access=\"read\"/>\n"
-	"    <property name=\"CanSetFullscreen\" type=\"b\" access=\"read\"/>\n"
-	"    <property name=\"CanRaise\" type=\"b\" access=\"read\"/>\n"
-	"    <property name=\"Fullscreen\" type=\"b\" access=\"readwrite\"/>\n"
-	"    <property name=\"HasTrackList\" type=\"b\" access=\"read\"/>\n"
-	"    <property name=\"Identity\" type=\"s\" access=\"read\"/>\n"
-	"    <property name=\"DesktopEntry\" type=\"s\" access=\"read\"/>\n"
-	"    <property name=\"SupportedUriSchemes\" type=\"as\" access=\"read\"/>\n"
-	"    <property name=\"SupportedMimeTypes\" type=\"as\" access=\"read\"/>\n"
-	"  </interface>\n"
-	"  <interface name=\"org.mpris.MediaPlayer2.Player\">\n"
-	"    <method name=\"Next\" />\n"
-	"    <method name=\"Previous\" />\n"
-	"    <method name=\"Pause\" />\n"
-	"    <method name=\"PlayPause\" />\n"
-	"    <method name=\"Stop\" />\n"
-	"    <method name=\"Play\" />\n"
-	"    <method name=\"Seek\">\n"
-	"      <arg type=\"x\" name=\"Offset\" direction=\"in\"/>\n"
-	"    </method>\n"
-	"    <method name=\"SetPosition\">\n"
-	"      <arg type=\"o\" name=\"TrackId\" direction=\"in\"/>\n"
-	"      <arg type=\"x\" name=\"Offset\" direction=\"in\"/>\n"
-	"    </method>\n"
-	"    <method name=\"OpenUri\">\n"
-	"      <arg type=\"s\" name=\"Uri\" direction=\"in\"/>\n"
-	"    </method>\n"
-	"    <signal name=\"Seeked\">\n"
-	"      <arg type=\"x\" name=\"Position\" direction=\"out\"/>\n"
-	"    </signal>\n"
-	"    <property name=\"PlaybackStatus\" type=\"s\" access=\"read\"/>\n"
-	"    <property name=\"LoopStatus\" type=\"s\" access=\"readwrite\"/>\n"
-	"    <property name=\"Rate\" type=\"d\" access=\"readwrite\"/>\n"
-	"    <property name=\"Shuffle\" type=\"b\" access=\"readwrite\"/>\n"
-	"    <property name=\"Metadata\" type=\"a{sv}\" access=\"read\"/>\n"
-	"    <property name=\"Volume\" type=\"d\" access=\"readwrite\"/>\n"
-	"    <property name=\"Position\" type=\"x\" access=\"read\"/>\n"
-	"    <property name=\"MinimumRate\" type=\"d\" access=\"read\"/>\n"
-	"    <property name=\"MaximumRate\" type=\"d\" access=\"read\"/>\n"
-	"    <property name=\"CanGoNext\" type=\"b\" access=\"read\"/>\n"
-	"    <property name=\"CanGoPrevious\" type=\"b\" access=\"read\"/>\n"
-	"    <property name=\"CanPlay\" type=\"b\" access=\"read\"/>\n"
-	"    <property name=\"CanPause\" type=\"b\" access=\"read\"/>\n"
-	"    <property name=\"CanSeek\" type=\"b\" access=\"read\"/>\n"
-	"    <property name=\"CanControl\" type=\"b\" access=\"read\"/>\n"
-	"  </interface>\n"
-	"</node>\n";
+#include <SDL3/SDL_events.h>
 
-static inline void
-push_event(uint32_t type, const char *name) {
-	SDL_Event event;
-	event.type = type;
-	int ret = SDL_PushEvent(&event);
-	if (ret < 0) {
-		LOGE("Could not post %s event: %s", name, SDL_GetError());
-		// What could we do?
-	}
+#include "controller.h"
+#include "events.h"
+#include "util/log.h"
+#include "util/tick.h"
+
+#define SC_MPRIS_BUS_NAME "org.mpris.MediaPlayer2.scrcpy"
+#define SC_MPRIS_OBJECT_PATH "/org/mpris/MediaPlayer2"
+#define SC_MPRIS_ROOT_INTERFACE "org.mpris.MediaPlayer2"
+#define SC_MPRIS_PLAYER_INTERFACE "org.mpris.MediaPlayer2.Player"
+#define SC_MPRIS_TRACK_ID "/org/mpris/MediaPlayer2/scrcpy/track/0"
+
+static const char *const root_properties[] = {
+    "CanQuit",
+    "CanSetFullscreen",
+    "CanRaise",
+    "Fullscreen",
+    "HasTrackList",
+    "Identity",
+    "DesktopEntry",
+    "SupportedUriSchemes",
+    "SupportedMimeTypes",
+};
+
+static const char *const player_properties[] = {
+    "PlaybackStatus",
+    "LoopStatus",
+    "Rate",
+    "Shuffle",
+    "Metadata",
+    "Volume",
+    "Position",
+    "MinimumRate",
+    "MaximumRate",
+    "CanGoNext",
+    "CanGoPrevious",
+    "CanPlay",
+    "CanPause",
+    "CanSeek",
+    "CanControl",
+};
+
+// The player properties emitted in PropertiesChanged on every update
+static const char *const player_changed_properties[] = {
+    "PlaybackStatus",
+    "Metadata",
+    "CanGoNext",
+    "CanGoPrevious",
+    "CanPlay",
+    "CanPause",
+    "CanSeek",
+};
+
+static const char *
+playback_status_name(const struct sc_mpris_player *player) {
+    switch (player->state) {
+        case SC_MEDIA_STATE_PLAYING:
+            return "Playing";
+        case SC_MEDIA_STATE_PAUSED:
+            return "Paused";
+        default:
+            return "Stopped";
+    }
 }
-#define PUSH_EVENT(TYPE) push_event(TYPE, #TYPE)
+
+// Return the current position (in microseconds), extrapolated from the last
+// position update if the player is playing
+static int64_t
+player_position_us(const struct sc_mpris_player *player) {
+    if (player->position_ms == SC_MEDIA_POSITION_UNKNOWN) {
+        return 0;
+    }
+
+    int64_t position_us = player->position_ms * 1000;
+    if (player->state == SC_MEDIA_STATE_PLAYING) {
+        sc_tick now = sc_tick_now();
+        position_us += SC_TICK_TO_US(now - player->position_tick);
+    }
+
+    if (player->duration_ms != SC_MEDIA_DURATION_UNKNOWN) {
+        int64_t duration_us = player->duration_ms * 1000;
+        if (position_us > duration_us) {
+            position_us = duration_us;
+        }
+    }
+
+    if (position_us < 0) {
+        position_us = 0;
+    }
+
+    return position_us;
+}
+
+// D-Bus marshalling helpers (return false on OOM)
+
+static bool
+append_variant_string(DBusMessageIter *iter, const char *value) {
+    DBusMessageIter var;
+    return dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
+                                            DBUS_TYPE_STRING_AS_STRING, &var)
+        && dbus_message_iter_append_basic(&var, DBUS_TYPE_STRING, &value)
+        && dbus_message_iter_close_container(iter, &var);
+}
+
+static bool
+append_variant_object_path(DBusMessageIter *iter, const char *value) {
+    DBusMessageIter var;
+    return dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
+                                            DBUS_TYPE_OBJECT_PATH_AS_STRING,
+                                            &var)
+        && dbus_message_iter_append_basic(&var, DBUS_TYPE_OBJECT_PATH, &value)
+        && dbus_message_iter_close_container(iter, &var);
+}
+
+static bool
+append_variant_bool(DBusMessageIter *iter, bool value) {
+    dbus_bool_t b = value;
+    DBusMessageIter var;
+    return dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
+                                            DBUS_TYPE_BOOLEAN_AS_STRING, &var)
+        && dbus_message_iter_append_basic(&var, DBUS_TYPE_BOOLEAN, &b)
+        && dbus_message_iter_close_container(iter, &var);
+}
+
+static bool
+append_variant_double(DBusMessageIter *iter, double value) {
+    DBusMessageIter var;
+    return dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
+                                            DBUS_TYPE_DOUBLE_AS_STRING, &var)
+        && dbus_message_iter_append_basic(&var, DBUS_TYPE_DOUBLE, &value)
+        && dbus_message_iter_close_container(iter, &var);
+}
+
+static bool
+append_variant_int64(DBusMessageIter *iter, int64_t value) {
+    dbus_int64_t v = value;
+    DBusMessageIter var;
+    return dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
+                                            DBUS_TYPE_INT64_AS_STRING, &var)
+        && dbus_message_iter_append_basic(&var, DBUS_TYPE_INT64, &v)
+        && dbus_message_iter_close_container(iter, &var);
+}
+
+// Append a variant containing an array of strings
+static bool
+append_variant_strv(DBusMessageIter *iter, const char *const *values,
+                    size_t count) {
+    DBusMessageIter var;
+    DBusMessageIter array;
+    if (!dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT, "as", &var)
+            || !dbus_message_iter_open_container(&var, DBUS_TYPE_ARRAY,
+                                                 DBUS_TYPE_STRING_AS_STRING,
+                                                 &array)) {
+        return false;
+    }
+    for (size_t i = 0; i < count; ++i) {
+        if (!dbus_message_iter_append_basic(&array, DBUS_TYPE_STRING,
+                                            &values[i])) {
+            return false;
+        }
+    }
+    return dbus_message_iter_close_container(&var, &array)
+        && dbus_message_iter_close_container(iter, &var);
+}
+
+// Open a dict entry in a a{sv} array and append its key
+static bool
+open_dict_entry(DBusMessageIter *array, DBusMessageIter *entry,
+                const char *key) {
+    return dbus_message_iter_open_container(array, DBUS_TYPE_DICT_ENTRY, NULL,
+                                            entry)
+        && dbus_message_iter_append_basic(entry, DBUS_TYPE_STRING, &key);
+}
+
+// Append the MPRIS metadata (a{sv}) wrapped in a variant
+static bool
+append_metadata(DBusMessageIter *iter, const struct sc_mpris_player *player) {
+    DBusMessageIter var;
+    DBusMessageIter dict;
+    DBusMessageIter entry;
+    if (!dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT, "a{sv}",
+                                          &var)
+            || !dbus_message_iter_open_container(&var, DBUS_TYPE_ARRAY, "{sv}",
+                                                 &dict)) {
+        return false;
+    }
+
+    if (!open_dict_entry(&dict, &entry, "mpris:trackid")
+            || !append_variant_object_path(&entry, SC_MPRIS_TRACK_ID)
+            || !dbus_message_iter_close_container(&dict, &entry)) {
+        return false;
+    }
+
+    if (player->duration_ms != SC_MEDIA_DURATION_UNKNOWN) {
+        if (!open_dict_entry(&dict, &entry, "mpris:length")
+                || !append_variant_int64(&entry, player->duration_ms * 1000)
+                || !dbus_message_iter_close_container(&dict, &entry)) {
+            return false;
+        }
+    }
+    if (player->title) {
+        if (!open_dict_entry(&dict, &entry, "xesam:title")
+                || !append_variant_string(&entry, player->title)
+                || !dbus_message_iter_close_container(&dict, &entry)) {
+            return false;
+        }
+    }
+    if (player->artist) {
+        const char *const artists[] = {player->artist};
+        if (!open_dict_entry(&dict, &entry, "xesam:artist")
+                || !append_variant_strv(&entry, artists, 1)
+                || !dbus_message_iter_close_container(&dict, &entry)) {
+            return false;
+        }
+    }
+    if (player->album) {
+        if (!open_dict_entry(&dict, &entry, "xesam:album")
+                || !append_variant_string(&entry, player->album)
+                || !dbus_message_iter_close_container(&dict, &entry)) {
+            return false;
+        }
+    }
+
+    return dbus_message_iter_close_container(&var, &dict)
+        && dbus_message_iter_close_container(iter, &var);
+}
+
+// Properties
+
+// Append the value of a root property (as a variant)
+// Return false if the property is unknown
+static bool
+append_root_property(DBusMessageIter *iter, const char *name, bool *ok) {
+    if (!strcmp(name, "CanQuit") || !strcmp(name, "CanRaise")) {
+        *ok = append_variant_bool(iter, true);
+    } else if (!strcmp(name, "CanSetFullscreen") || !strcmp(name, "Fullscreen")
+            || !strcmp(name, "HasTrackList")) {
+        *ok = append_variant_bool(iter, false);
+    } else if (!strcmp(name, "Identity") || !strcmp(name, "DesktopEntry")) {
+        *ok = append_variant_string(iter, "scrcpy");
+    } else if (!strcmp(name, "SupportedUriSchemes")
+            || !strcmp(name, "SupportedMimeTypes")) {
+        *ok = append_variant_strv(iter, NULL, 0);
+    } else {
+        return false;
+    }
+    return true;
+}
+
+// Append the value of a player property (as a variant)
+// Return false if the property is unknown
+// The mutex must be locked
+static bool
+append_player_property(DBusMessageIter *iter, const struct sc_mpris *mpris,
+                       const char *name, bool *ok) {
+    const struct sc_mpris_player *player = &mpris->player;
+    uint32_t caps = player->capabilities;
+
+    if (!strcmp(name, "PlaybackStatus")) {
+        *ok = append_variant_string(iter, playback_status_name(player));
+    } else if (!strcmp(name, "LoopStatus")) {
+        *ok = append_variant_string(iter, "None");
+    } else if (!strcmp(name, "Rate") || !strcmp(name, "Volume")
+            || !strcmp(name, "MinimumRate") || !strcmp(name, "MaximumRate")) {
+        *ok = append_variant_double(iter, 1.0);
+    } else if (!strcmp(name, "Shuffle")) {
+        *ok = append_variant_bool(iter, false);
+    } else if (!strcmp(name, "Metadata")) {
+        *ok = append_metadata(iter, player);
+    } else if (!strcmp(name, "Position")) {
+        *ok = append_variant_int64(iter, player_position_us(player));
+    } else if (!strcmp(name, "CanGoNext")) {
+        *ok = append_variant_bool(iter, caps & SC_MEDIA_CAP_NEXT);
+    } else if (!strcmp(name, "CanGoPrevious")) {
+        *ok = append_variant_bool(iter, caps & SC_MEDIA_CAP_PREVIOUS);
+    } else if (!strcmp(name, "CanPlay")) {
+        *ok = append_variant_bool(iter, caps & SC_MEDIA_CAP_PLAY);
+    } else if (!strcmp(name, "CanPause")) {
+        *ok = append_variant_bool(iter, caps & SC_MEDIA_CAP_PAUSE);
+    } else if (!strcmp(name, "CanSeek")) {
+        *ok = append_variant_bool(iter, caps & SC_MEDIA_CAP_SEEK);
+    } else if (!strcmp(name, "CanControl")) {
+        *ok = append_variant_bool(iter, true);
+    } else {
+        return false;
+    }
+    return true;
+}
+
+// Append a a{sv} array with the requested properties of an interface
+// The mutex must be locked
+static bool
+append_properties(DBusMessageIter *iter, struct sc_mpris *mpris,
+                  const char *interface, const char *const *names,
+                  size_t count) {
+    DBusMessageIter dict;
+    if (!dbus_message_iter_open_container(iter, DBUS_TYPE_ARRAY, "{sv}",
+                                          &dict)) {
+        return false;
+    }
+
+    bool is_root = !strcmp(interface, SC_MPRIS_ROOT_INTERFACE);
+    for (size_t i = 0; i < count; ++i) {
+        DBusMessageIter entry;
+        if (!open_dict_entry(&dict, &entry, names[i])) {
+            return false;
+        }
+        bool ok;
+        bool known = is_root
+                   ? append_root_property(&entry, names[i], &ok)
+                   : append_player_property(&entry, mpris, names[i], &ok);
+        assert(known);
+        (void) known;
+        if (!ok || !dbus_message_iter_close_container(&dict, &entry)) {
+            return false;
+        }
+    }
+
+    return dbus_message_iter_close_container(iter, &dict);
+}
+
+// Signals (called from the receiver thread, the mutex must be locked)
 
 static void
-method_call_root(G_GNUC_UNUSED GDBusConnection *connection,
-				 G_GNUC_UNUSED const char *sender,
-				 G_GNUC_UNUSED const char *object_path,
-				 G_GNUC_UNUSED const char *interface_name,
-				 const char *method_name, G_GNUC_UNUSED GVariant *parameters,
-				 GDBusMethodInvocation *invocation, G_GNUC_UNUSED gpointer user_data) {
-	if (g_strcmp0(method_name, "Quit") == 0) {
+send_message(struct sc_mpris *mpris, DBusMessage *msg) {
+    if (!dbus_connection_send(mpris->conn, msg, NULL)) {
+        LOG_OOM();
+    }
+    dbus_message_unref(msg);
+}
+
+static void
+emit_player_properties_changed(struct sc_mpris *mpris) {
+    DBusMessage *msg = dbus_message_new_signal(SC_MPRIS_OBJECT_PATH,
+                                               DBUS_INTERFACE_PROPERTIES,
+                                               "PropertiesChanged");
+    if (!msg) {
+        LOG_OOM();
+        return;
+    }
+
+    const char *interface = SC_MPRIS_PLAYER_INTERFACE;
+    DBusMessageIter iter;
+    DBusMessageIter invalidated;
+    dbus_message_iter_init_append(msg, &iter);
+    bool ok = dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING,
+                                             &interface)
+           && append_properties(&iter, mpris, interface,
+                                player_changed_properties,
+                                ARRAY_LEN(player_changed_properties))
+           && dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+                                               DBUS_TYPE_STRING_AS_STRING,
+                                               &invalidated)
+           && dbus_message_iter_close_container(&iter, &invalidated);
+    if (!ok) {
+        LOG_OOM();
+        dbus_message_unref(msg);
+        return;
+    }
+
+    send_message(mpris, msg);
+}
+
+static void
+emit_seeked(struct sc_mpris *mpris, int64_t position_us) {
+    DBusMessage *msg = dbus_message_new_signal(SC_MPRIS_OBJECT_PATH,
+                                               SC_MPRIS_PLAYER_INTERFACE,
+                                               "Seeked");
+    if (!msg) {
+        LOG_OOM();
+        return;
+    }
+
+    dbus_int64_t position = position_us;
+    if (!dbus_message_append_args(msg, DBUS_TYPE_INT64, &position,
+                                  DBUS_TYPE_INVALID)) {
+        LOG_OOM();
+        dbus_message_unref(msg);
+        return;
+    }
+
+    send_message(mpris, msg);
+}
+
+// Actions (called from the mpris thread)
+
+static void
+send_action(struct sc_mpris *mpris, enum sc_media_action action,
+            int64_t position_us) {
+    struct sc_control_msg msg = {
+        .type = SC_CONTROL_MSG_TYPE_MEDIA_ACTION,
+        .media_action = {
+            .action = action,
+            .position_ms = MAX(position_us, 0) / 1000,
+        },
+    };
+
+    if (!sc_controller_push_msg(mpris->controller, &msg)) {
+        LOGW("mpris: could not request media action");
+    }
+}
+
+// Method calls (called from the mpris thread)
+
+static DBusHandlerResult
+send_reply(struct sc_mpris *mpris, DBusMessage *reply) {
+    if (!reply) {
+        LOG_OOM();
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+    }
+    if (!dbus_connection_send(mpris->conn, reply, NULL)) {
+        LOG_OOM();
+        dbus_message_unref(reply);
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+    }
+    dbus_message_unref(reply);
+    return DBUS_HANDLER_RESULT_HANDLED;
+}
+
+static DBusHandlerResult
+reply_empty(struct sc_mpris *mpris, DBusMessage *msg) {
+    return send_reply(mpris, dbus_message_new_method_return(msg));
+}
+
+static DBusHandlerResult
+reply_error(struct sc_mpris *mpris, DBusMessage *msg, const char *error,
+            const char *text) {
+    return send_reply(mpris, dbus_message_new_error(msg, error, text));
+}
+
+static DBusHandlerResult
+handle_properties_get(struct sc_mpris *mpris, DBusMessage *msg) {
+    const char *interface;
+    const char *name;
+    if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &interface,
+                               DBUS_TYPE_STRING, &name, DBUS_TYPE_INVALID)) {
+        return reply_error(mpris, msg, DBUS_ERROR_INVALID_ARGS,
+                           "Expected (ss)");
+    }
+
+    bool is_root = !strcmp(interface, SC_MPRIS_ROOT_INTERFACE);
+    if (!is_root && strcmp(interface, SC_MPRIS_PLAYER_INTERFACE)) {
+        return reply_error(mpris, msg, DBUS_ERROR_UNKNOWN_INTERFACE,
+                           "Unknown interface");
+    }
+
+    DBusMessage *reply = dbus_message_new_method_return(msg);
+    if (!reply) {
+        return send_reply(mpris, NULL);
+    }
+
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(reply, &iter);
+
+    bool known;
+    bool ok = true;
+    if (is_root) {
+        known = append_root_property(&iter, name, &ok);
+    } else {
+        sc_mutex_lock(&mpris->mutex);
+        known = append_player_property(&iter, mpris, name, &ok);
+        sc_mutex_unlock(&mpris->mutex);
+    }
+
+    if (!known) {
+        dbus_message_unref(reply);
+        return reply_error(mpris, msg, DBUS_ERROR_UNKNOWN_PROPERTY,
+                           "Unknown property");
+    }
+    if (!ok) {
+        dbus_message_unref(reply);
+        return send_reply(mpris, NULL);
+    }
+
+    return send_reply(mpris, reply);
+}
+
+static DBusHandlerResult
+handle_properties_get_all(struct sc_mpris *mpris, DBusMessage *msg) {
+    const char *interface;
+    if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &interface,
+                               DBUS_TYPE_INVALID)) {
+        return reply_error(mpris, msg, DBUS_ERROR_INVALID_ARGS,
+                           "Expected (s)");
+    }
+
+    const char *const *names;
+    size_t count;
+    if (!strcmp(interface, SC_MPRIS_ROOT_INTERFACE)) {
+        names = root_properties;
+        count = ARRAY_LEN(root_properties);
+    } else if (!strcmp(interface, SC_MPRIS_PLAYER_INTERFACE)) {
+        names = player_properties;
+        count = ARRAY_LEN(player_properties);
+    } else {
+        return reply_error(mpris, msg, DBUS_ERROR_UNKNOWN_INTERFACE,
+                           "Unknown interface");
+    }
+
+    DBusMessage *reply = dbus_message_new_method_return(msg);
+    if (!reply) {
+        return send_reply(mpris, NULL);
+    }
+
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(reply, &iter);
+
+    sc_mutex_lock(&mpris->mutex);
+    bool ok = append_properties(&iter, mpris, interface, names, count);
+    sc_mutex_unlock(&mpris->mutex);
+
+    if (!ok) {
+        dbus_message_unref(reply);
+        return send_reply(mpris, NULL);
+    }
+
+    return send_reply(mpris, reply);
+}
+
+static DBusHandlerResult
+handle_root_method(struct sc_mpris *mpris, DBusMessage *msg,
+                   const char *member) {
+    if (!strcmp(member, "Raise")) {
+        LOGD("mpris: raise");
+        sc_push_event(SC_EVENT_RAISE_WINDOW);
+    } else if (!strcmp(member, "Quit")) {
         LOGD("mpris: quit");
-		g_dbus_method_invocation_return_value(invocation, NULL);
+        sc_push_event(SDL_EVENT_QUIT);
+    } else {
+        return reply_error(mpris, msg, DBUS_ERROR_UNKNOWN_METHOD,
+                           "Unknown method");
+    }
 
-	} else if (g_strcmp0(method_name, "Raise") == 0) {
-        LOGD("mpris: raise window");
-        PUSH_EVENT(SC_EVENT_RAISE_WINDOW);
-		g_dbus_method_invocation_return_value(invocation, NULL);
-	} else {
-        LOGW("mpris: unknown method %s", method_name);
-		g_dbus_method_invocation_return_error(invocation, G_DBUS_ERROR,
-											  G_DBUS_ERROR_UNKNOWN_METHOD,
-											  "Unknown method");
-	}
+    return reply_empty(mpris, msg);
 }
 
-static GVariant *
-get_property_root(G_GNUC_UNUSED GDBusConnection *connection,
-				  G_GNUC_UNUSED const char *sender,
-				  G_GNUC_UNUSED const char *object_path,
-				  G_GNUC_UNUSED const char *interface_name,
-				  const char *property_name, G_GNUC_UNUSED GError **error,
-				  G_GNUC_UNUSED gpointer user_data) {
-	GVariant *ret;
+static DBusHandlerResult
+handle_player_method(struct sc_mpris *mpris, DBusMessage *msg,
+                     const char *member) {
+    LOGD("mpris: %s", member);
 
-	printf("Getting property %s\n", property_name);
-	if (g_strcmp0(property_name, "CanQuit") == 0) {
-		ret = g_variant_new_boolean(FALSE);
+    if (!strcmp(member, "OpenUri")) {
+        return reply_error(mpris, msg, DBUS_ERROR_NOT_SUPPORTED,
+                           "OpenUri is not supported");
+    }
 
-	} else if (g_strcmp0(property_name, "Fullscreen") == 0) {
-		int fullscreen = 0;
-		ret = g_variant_new_boolean(fullscreen);
-	} else if (g_strcmp0(property_name, "CanSetFullscreen") == 0) {
-		ret = g_variant_new_boolean(FALSE);
-	} else if (g_strcmp0(property_name, "CanRaise") == 0) {
-		ret = g_variant_new_boolean(TRUE);
-	} else if (g_strcmp0(property_name, "HasTrackList") == 0) {
-		ret = g_variant_new_boolean(FALSE);
-	} else if (g_strcmp0(property_name, "Identity") == 0) {
-		ret = g_variant_new_string("Identity");
-	} else if (g_strcmp0(property_name, "DesktopEntry") == 0) {
-		ret = g_variant_new_string("scrcpy");
-	} else if (g_strcmp0(property_name, "SupportedUriSchemes") == 0) {
-		ret = NULL;
-	} else if (g_strcmp0(property_name, "SupportedMimeTypes") == 0) {
-		ret = NULL;
-	} else {
-		ret = NULL;
-		g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_PROPERTY,
-					"Unknown property %s", property_name);
-	}
+    // Snapshot of the player
+    sc_mutex_lock(&mpris->mutex);
+    enum sc_media_state state = mpris->player.state;
+    int64_t position_us = player_position_us(&mpris->player);
+    int64_t duration_ms = mpris->player.duration_ms;
+    sc_mutex_unlock(&mpris->mutex);
 
-	return ret;
+    enum sc_media_action action;
+    int64_t target_us = 0;
+    if (!strcmp(member, "Play")) {
+        action = SC_MEDIA_ACTION_PLAY;
+    } else if (!strcmp(member, "Pause")) {
+        action = SC_MEDIA_ACTION_PAUSE;
+    } else if (!strcmp(member, "PlayPause")) {
+        action = state == SC_MEDIA_STATE_PLAYING ? SC_MEDIA_ACTION_PAUSE
+                                                 : SC_MEDIA_ACTION_PLAY;
+    } else if (!strcmp(member, "Stop")) {
+        action = SC_MEDIA_ACTION_STOP;
+    } else if (!strcmp(member, "Next")) {
+        action = SC_MEDIA_ACTION_NEXT;
+    } else if (!strcmp(member, "Previous")) {
+        action = SC_MEDIA_ACTION_PREVIOUS;
+    } else if (!strcmp(member, "Seek")) {
+        dbus_int64_t offset_us;
+        if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_INT64, &offset_us,
+                                   DBUS_TYPE_INVALID)) {
+            return reply_error(mpris, msg, DBUS_ERROR_INVALID_ARGS,
+                               "Expected (x)");
+        }
+        target_us = position_us + offset_us;
+        if (duration_ms != SC_MEDIA_DURATION_UNKNOWN
+                && target_us > duration_ms * 1000) {
+            // As specified by MPRIS: seeking beyond the end of the track acts
+            // like a call to Next
+            action = SC_MEDIA_ACTION_NEXT;
+        } else {
+            action = SC_MEDIA_ACTION_SEEK;
+        }
+    } else if (!strcmp(member, "SetPosition")) {
+        const char *requested_track_id;
+        dbus_int64_t requested_us;
+        if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_OBJECT_PATH,
+                                   &requested_track_id, DBUS_TYPE_INT64,
+                                   &requested_us, DBUS_TYPE_INVALID)) {
+            return reply_error(mpris, msg, DBUS_ERROR_INVALID_ARGS,
+                               "Expected (ox)");
+        }
+        bool same_track = !strcmp(requested_track_id, SC_MPRIS_TRACK_ID);
+        bool in_range = requested_us >= 0
+                     && (duration_ms == SC_MEDIA_DURATION_UNKNOWN
+                         || requested_us <= duration_ms * 1000);
+        // As specified by MPRIS, ignore the call if the track id does not
+        // match or if the position is out of range
+        if (!same_track || !in_range) {
+            LOGD("mpris: SetPosition ignored");
+            return reply_empty(mpris, msg);
+        }
+        action = SC_MEDIA_ACTION_SEEK;
+        target_us = requested_us;
+    } else {
+        return reply_error(mpris, msg, DBUS_ERROR_UNKNOWN_METHOD,
+                           "Unknown method");
+    }
+
+    send_action(mpris, action, target_us);
+    return reply_empty(mpris, msg);
 }
 
-static gboolean
-set_property_root(G_GNUC_UNUSED GDBusConnection *connection,
-				  G_GNUC_UNUSED const char *sender,
-				  G_GNUC_UNUSED const char *object_path,
-				  G_GNUC_UNUSED const char *interface_name,
-				  const char *property_name, GVariant *value,
-				  G_GNUC_UNUSED GError **error, G_GNUC_UNUSED gpointer user_data) {
-	if (g_strcmp0(property_name, "Fullscreen") == 0) {
-		int fullscreen;
-		g_variant_get(value, "b", &fullscreen);
-        LOGD("mpris: setting fullscreen to %d", fullscreen);
-	} else {
-		g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_PROPERTY,
-					"Cannot set property %s", property_name);
-		return FALSE;
-	}
-	return TRUE;
+static DBusHandlerResult
+handle_message(DBusConnection *conn, DBusMessage *msg, void *userdata) {
+    (void) conn;
+    struct sc_mpris *mpris = userdata;
+
+    if (dbus_message_get_type(msg) != DBUS_MESSAGE_TYPE_METHOD_CALL) {
+        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    }
+
+    const char *interface = dbus_message_get_interface(msg);
+    const char *member = dbus_message_get_member(msg);
+    if (!member) {
+        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    }
+
+    // The interface is optional in D-Bus method calls
+    bool any = !interface;
+
+    if (any || !strcmp(interface, DBUS_INTERFACE_PROPERTIES)) {
+        if (!strcmp(member, "Get")) {
+            return handle_properties_get(mpris, msg);
+        }
+        if (!strcmp(member, "GetAll")) {
+            return handle_properties_get_all(mpris, msg);
+        }
+        if (!strcmp(member, "Set")) {
+            // The writable MPRIS properties (LoopStatus, Rate, Shuffle,
+            // Volume, Fullscreen) have no equivalent in the Android media
+            // session API
+            return reply_error(mpris, msg, DBUS_ERROR_NOT_SUPPORTED,
+                               "Setting properties is not supported");
+        }
+    }
+    if (any || !strcmp(interface, SC_MPRIS_ROOT_INTERFACE)) {
+        if (!strcmp(member, "Raise") || !strcmp(member, "Quit")) {
+            return handle_root_method(mpris, msg, member);
+        }
+    }
+    if (any || !strcmp(interface, SC_MPRIS_PLAYER_INTERFACE)) {
+        return handle_player_method(mpris, msg, member);
+    }
+
+    return reply_error(mpris, msg, DBUS_ERROR_UNKNOWN_METHOD,
+                       "Unknown method");
 }
 
-static GDBusInterfaceVTable vtable_root = {
-	method_call_root, get_property_root, set_property_root, {0}};
+static const DBusObjectPathVTable object_vtable = {
+    .message_function = handle_message,
+};
+
+// Main loop integration (watches and wakeup)
 
 static void
-method_call_player(G_GNUC_UNUSED GDBusConnection *connection,
-				   G_GNUC_UNUSED const char *sender,
-				   G_GNUC_UNUSED const char *_object_path,
-				   G_GNUC_UNUSED const char *interface_name,
-				   const char *method_name, G_GNUC_UNUSED GVariant *parameters,
-				   GDBusMethodInvocation *invocation, G_GNUC_UNUSED gpointer user_data) {
-	if (g_strcmp0(method_name, "Pause") == 0) {
-		g_dbus_method_invocation_return_value(invocation, NULL);
-	} else if (g_strcmp0(method_name, "PlayPause") == 0) {
-        LOGD("mpris: PlayPause");
-		g_dbus_method_invocation_return_value(invocation, NULL);
-	} else if (g_strcmp0(method_name, "Play") == 0) {
-        LOGD("mpris: Play");
-		g_dbus_method_invocation_return_value(invocation, NULL);
-	} else if (g_strcmp0(method_name, "Stop") == 0) {
-        LOGD("mpris: Stop");
-		g_dbus_method_invocation_return_value(invocation, NULL);
-	} else if (g_strcmp0(method_name, "Next") == 0) {
-        LOGD("mpris: Next");
-		g_dbus_method_invocation_return_value(invocation, NULL);
-	} else if (g_strcmp0(method_name, "Previous") == 0) {
-        LOGD("mpris: Previous");
-		g_dbus_method_invocation_return_value(invocation, NULL);
-	} else if (g_strcmp0(method_name, "Seek") == 0) {
-        LOGD("mpris: Seek");
-		g_dbus_method_invocation_return_value(invocation, NULL);
-	} else if (g_strcmp0(method_name, "SetPosition") == 0) {
-        LOGD("mpris: SetPosition");
-		g_dbus_method_invocation_return_value(invocation, NULL);
-	} else if (g_strcmp0(method_name, "OpenUri") == 0) {
-        LOGD("mpris: OpenUri");
-		g_dbus_method_invocation_return_value(invocation, NULL);
-	} else {
-        LOGW("mpris: unknown method %s", method_name);
-		g_dbus_method_invocation_return_error(invocation, G_DBUS_ERROR,
-											  G_DBUS_ERROR_UNKNOWN_METHOD,
-											  "Unknown method");
-	}
-}
-
-static GVariant *
-get_property_player(G_GNUC_UNUSED GDBusConnection *connection,
-					G_GNUC_UNUSED const char *sender,
-					G_GNUC_UNUSED const char *object_path,
-					G_GNUC_UNUSED const char *interface_name,
-					const char *property_name, GError **error,
-					G_GNUC_UNUSED gpointer user_data) {
-	GVariant *ret;
-	if (g_strcmp0(property_name, "PlaybackStatus") == 0) {
-		ret = g_variant_new_string("Stopped");
-	} else if (g_strcmp0(property_name, "LoopStatus") == 0) {
-		ret = g_variant_new_string("None");
-	} else if (g_strcmp0(property_name, "Rate") == 0) {
-		ret = g_variant_new_double(1.0);
-	} else if (g_strcmp0(property_name, "Shuffle") == 0) {
-		ret = g_variant_new_boolean(FALSE);
-	} else if (g_strcmp0(property_name, "Metadata") == 0) {
-		ret = NULL;
-	} else if (g_strcmp0(property_name, "Volume") == 0) {
-		ret = g_variant_new_double(100);
-	} else if (g_strcmp0(property_name, "Position") == 0) {
-		ret = g_variant_new_int64(0);
-	} else if (g_strcmp0(property_name, "MinimumRate") == 0) {
-		ret = g_variant_new_double(100);
-	} else if (g_strcmp0(property_name, "MaximumRate") == 0) {
-		ret = g_variant_new_double(100);
-	} else if (g_strcmp0(property_name, "CanGoNext") == 0) {
-		ret = g_variant_new_boolean(TRUE);
-	} else if (g_strcmp0(property_name, "CanGoPrevious") == 0) {
-		ret = g_variant_new_boolean(TRUE);
-	} else if (g_strcmp0(property_name, "CanPlay") == 0) {
-		ret = g_variant_new_boolean(TRUE);
-	} else if (g_strcmp0(property_name, "CanPause") == 0) {
-		ret = g_variant_new_boolean(TRUE);
-	} else if (g_strcmp0(property_name, "CanSeek") == 0) {
-		ret = g_variant_new_boolean(FALSE);
-	} else if (g_strcmp0(property_name, "CanControl") == 0) {
-		ret = g_variant_new_boolean(TRUE);
-	} else {
-		ret = NULL;
-		g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_PROPERTY,
-					"Unknown property %s", property_name);
-	}
-
-	return ret;
-}
-
-static gboolean
-set_property_player(G_GNUC_UNUSED GDBusConnection *connection,
-					G_GNUC_UNUSED const char *sender,
-					G_GNUC_UNUSED const char *object_path,
-					G_GNUC_UNUSED const char *interface_name,
-					const char *property_name, GVariant *value,
-					G_GNUC_UNUSED GError **error, G_GNUC_UNUSED gpointer user_data) {
-	if (g_strcmp0(property_name, "LoopStatus") == 0) {
-        LOGD("mpris: setting loop status");
-	} else if (g_strcmp0(property_name, "Rate") == 0) {
-		double rate = g_variant_get_double(value);
-        LOGD("mpris: setting rate to %f", rate);
-	} else if (g_strcmp0(property_name, "Shuffle") == 0) {
-		int shuffle = g_variant_get_boolean(value);
-        LOGD("mpris: setting shuffle to %d", shuffle);
-	} else if (g_strcmp0(property_name, "Volume") == 0) {
-        double volume = g_variant_get_double(value);
-        LOGD("mpris: setting volume to %f", volume);
-	} else {
-		g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_PROPERTY,
-					"Cannot set property %s", property_name);
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
-static GDBusInterfaceVTable vtable_player = {
-	method_call_player, get_property_player, set_property_player, {0}};
-
-static void
-on_bus_acquired(GDBusConnection *connection, G_GNUC_UNUSED const char *name,
-				gpointer user_data) {
-	GError *error = NULL;
-	struct sc_mpris *ud = user_data;
-	ud->connection = connection;
-
-	ud->root_interface_id = g_dbus_connection_register_object(
-		connection, "/org/mpris/MediaPlayer2", ud->root_interface_info,
-		&vtable_root, user_data, NULL, &error);
-	if (error != NULL) {
-		g_printerr("%s", error->message);
-	}
-
-	ud->player_interface_id = g_dbus_connection_register_object(
-		connection, "/org/mpris/MediaPlayer2", ud->player_interface_info,
-		&vtable_player, user_data, NULL, &error);
-	if (error != NULL) {
-		g_printerr("%s", error->message);
-	}
+wakeup(struct sc_mpris *mpris) {
+    uint8_t byte = 0;
+    ssize_t r = write(mpris->wakeup_pipe[1], &byte, 1);
+    (void) r; // EAGAIN (pipe full) is fine, the thread will wake up anyway
 }
 
 static void
-on_name_lost(GDBusConnection *connection, G_GNUC_UNUSED const char *_name,
-			 gpointer user_data) {
-	if (connection) {
-		struct sc_mpris *ud = user_data;
-		pid_t pid = getpid();
-		char *name =
-			g_strdup_printf("org.mpris.MediaPlayer2.scrcpy.instance%d", pid);
-		ud->bus_id = g_bus_own_name(G_BUS_TYPE_SESSION, name,
-									G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL,
-									NULL, &ud, NULL);
-		g_free(name);
-	}
+wakeup_main(void *data) {
+    wakeup(data);
+}
+
+static dbus_bool_t
+add_watch(DBusWatch *watch, void *data) {
+    struct sc_mpris *mpris = data;
+    sc_mutex_lock(&mpris->watches_mutex);
+    bool ok = sc_vector_push(&mpris->watches, watch);
+    sc_mutex_unlock(&mpris->watches_mutex);
+    if (!ok) {
+        LOG_OOM();
+    }
+    return ok;
+}
+
+static void
+remove_watch(DBusWatch *watch, void *data) {
+    struct sc_mpris *mpris = data;
+    sc_mutex_lock(&mpris->watches_mutex);
+    ssize_t idx = sc_vector_index_of(&mpris->watches, watch);
+    if (idx != -1) {
+        sc_vector_swap_remove(&mpris->watches, idx);
+    }
+    sc_mutex_unlock(&mpris->watches_mutex);
+}
+
+static void
+toggle_watch(DBusWatch *watch, void *data) {
+    (void) watch;
+    // The enabled state is checked on each loop iteration
+    wakeup(data);
+}
+
+static bool
+has_watch(struct sc_mpris *mpris, DBusWatch *watch) {
+    sc_mutex_lock(&mpris->watches_mutex);
+    bool found = sc_vector_index_of(&mpris->watches, watch) != -1;
+    sc_mutex_unlock(&mpris->watches_mutex);
+    return found;
 }
 
 static int
 run_mpris(void *data) {
-	struct sc_mpris *mpris = data;
-	GMainContext *ctx;
+    struct sc_mpris *mpris = data;
+    DBusConnection *conn = mpris->conn;
 
-	ctx = g_main_context_new();
-	mpris->loop = g_main_loop_new(ctx, FALSE);
+    // Request the bus name (blocking call)
+    DBusError err;
+    dbus_error_init(&err);
+    int r = dbus_bus_request_name(conn, SC_MPRIS_BUS_NAME,
+                                  DBUS_NAME_FLAG_DO_NOT_QUEUE, &err);
+    if (dbus_error_is_set(&err)) {
+        LOGW("mpris: could not request bus name: %s", err.message);
+        dbus_error_free(&err);
+    } else if (r == DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
+        LOGD("mpris: bus name acquired: " SC_MPRIS_BUS_NAME);
+    } else {
+        // The generic name is probably owned by another scrcpy instance, use
+        // an instance-specific name (as allowed by the MPRIS specification)
+        char name[128];
+        snprintf(name, sizeof(name), SC_MPRIS_BUS_NAME ".instance%ld",
+                 (long) getpid());
+        r = dbus_bus_request_name(conn, name, DBUS_NAME_FLAG_DO_NOT_QUEUE,
+                                  &err);
+        if (dbus_error_is_set(&err)) {
+            LOGW("mpris: could not request bus name: %s", err.message);
+            dbus_error_free(&err);
+        } else if (r == DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
+            LOGD("mpris: bus name acquired: %s", name);
+        } else {
+            LOGW("mpris: could not acquire bus name %s", name);
+        }
+    }
 
-	g_main_context_push_thread_default(ctx);
-	mpris->bus_id =
-		g_bus_own_name(G_BUS_TYPE_SESSION, "org.mpris.MediaPlayer2.scrcpy",
-					   G_BUS_NAME_OWNER_FLAGS_DO_NOT_QUEUE, on_bus_acquired,
-					   NULL, on_name_lost, mpris, NULL);
-	g_main_context_pop_thread_default(ctx);
+    // Snapshot of the enabled watches for one iteration (they may be
+    // modified by libdbus while they are handled), and the matching pollfds
+    // (with the wakeup pipe at index 0)
+    struct SC_VECTOR(DBusWatch *) watches = SC_VECTOR_INITIALIZER;
+    struct SC_VECTOR(struct pollfd) fds = SC_VECTOR_INITIALIZER;
 
-	g_main_loop_run(mpris->loop);
+    while (!atomic_load(&mpris->stopped)) {
+        watches.size = 0;
+        fds.size = 0;
 
-	g_dbus_connection_unregister_object(mpris->connection,
-										mpris->root_interface_id);
-	g_dbus_connection_unregister_object(mpris->connection,
-										mpris->player_interface_id);
+        struct pollfd wakeup_fd = {
+            .fd = mpris->wakeup_pipe[0],
+            .events = POLLIN,
+        };
+        bool ok = sc_vector_push(&fds, wakeup_fd);
 
-	g_bus_unown_name(mpris->bus_id);
-	g_main_loop_unref(mpris->loop);
-	g_main_context_unref(ctx);
-	g_dbus_node_info_unref(mpris->introspection_data);
+        sc_mutex_lock(&mpris->watches_mutex);
+        for (size_t i = 0; ok && i < mpris->watches.size; ++i) {
+            DBusWatch *watch = mpris->watches.data[i];
+            if (!dbus_watch_get_enabled(watch)) {
+                continue;
+            }
+            unsigned flags = dbus_watch_get_flags(watch);
+            struct pollfd fd = {
+                .fd = dbus_watch_get_unix_fd(watch),
+                .events = (flags & DBUS_WATCH_READABLE ? POLLIN : 0)
+                        | (flags & DBUS_WATCH_WRITABLE ? POLLOUT : 0),
+            };
+            ok = sc_vector_push(&watches, watch) && sc_vector_push(&fds, fd);
+        }
+        sc_mutex_unlock(&mpris->watches_mutex);
 
-	return 0;
+        if (!ok) {
+            LOG_OOM();
+            break;
+        }
+
+        int ret = poll(fds.data, fds.size, -1);
+        if (ret < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            LOGE("mpris: poll() failed: %s", strerror(errno));
+            break;
+        }
+
+        if (fds.data[0].revents & POLLIN) {
+            // Drain the wakeup pipe
+            uint8_t buf[64];
+            while (read(mpris->wakeup_pipe[0], buf, sizeof(buf)) > 0) {
+                // continue
+            }
+        }
+
+        for (size_t i = 0; i < watches.size; ++i) {
+            short revents = fds.data[i + 1].revents;
+            if (!revents) {
+                continue;
+            }
+            DBusWatch *watch = watches.data[i];
+            if (!has_watch(mpris, watch)) {
+                // Removed while handling a previous watch
+                continue;
+            }
+            unsigned flags = (revents & POLLIN ? DBUS_WATCH_READABLE : 0)
+                           | (revents & POLLOUT ? DBUS_WATCH_WRITABLE : 0)
+                           | (revents & POLLERR ? DBUS_WATCH_ERROR : 0)
+                           | (revents & POLLHUP ? DBUS_WATCH_HANGUP : 0);
+            if (!dbus_watch_handle(watch, flags)) {
+                LOG_OOM();
+            }
+        }
+
+        while (dbus_connection_get_dispatch_status(conn)
+                == DBUS_DISPATCH_DATA_REMAINS) {
+            dbus_connection_dispatch(conn);
+        }
+
+        if (!dbus_connection_get_is_connected(conn)) {
+            LOGW("mpris: disconnected from the session bus");
+            break;
+        }
+    }
+
+    sc_vector_destroy(&watches);
+    sc_vector_destroy(&fds);
+
+    LOGD("mpris: thread stopped");
+    return 0;
+}
+
+// sc_media_listener implementation (called from the receiver thread)
+
+static void
+sc_mpris_on_update(struct sc_media_listener *listener,
+                   struct sc_media_update *update) {
+    struct sc_mpris *mpris = container_of(listener, struct sc_mpris,
+                                          media_listener);
+    struct sc_mpris_player *player = &mpris->player;
+
+    sc_mutex_lock(&mpris->mutex);
+
+    player->state = update->state;
+    player->position_ms = update->position_ms;
+    player->position_tick = sc_tick_now();
+    player->capabilities = update->capabilities;
+    player->duration_ms = update->duration_ms;
+
+    // Take ownership of the strings
+    free(player->title);
+    free(player->artist);
+    free(player->album);
+    player->title = update->title;
+    player->artist = update->artist;
+    player->album = update->album;
+
+    emit_player_properties_changed(mpris);
+    if (player->position_ms != SC_MEDIA_POSITION_UNKNOWN) {
+        // Let the clients resynchronize their position
+        emit_seeked(mpris, player_position_us(player));
+    }
+
+    sc_mutex_unlock(&mpris->mutex);
+}
+
+// Lifecycle
+
+static bool
+set_nonblocking(int fd) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    return flags != -1 && fcntl(fd, F_SETFL, flags | O_NONBLOCK) != -1;
+}
+
+bool
+sc_mpris_init(struct sc_mpris *mpris, struct sc_controller *controller) {
+    static const struct sc_media_listener_ops ops = {
+        .on_update = sc_mpris_on_update,
+    };
+
+    mpris->media_listener.ops = &ops;
+    mpris->controller = controller;
+    atomic_init(&mpris->stopped, false);
+    mpris->conn = NULL;
+    mpris->wakeup_pipe[0] = -1;
+    mpris->wakeup_pipe[1] = -1;
+    sc_vector_init(&mpris->watches);
+
+    // No media session yet
+    mpris->player.state = SC_MEDIA_STATE_STOPPED;
+    mpris->player.position_ms = SC_MEDIA_POSITION_UNKNOWN;
+    mpris->player.capabilities = 0;
+    mpris->player.duration_ms = SC_MEDIA_DURATION_UNKNOWN;
+    mpris->player.title = NULL;
+    mpris->player.artist = NULL;
+    mpris->player.album = NULL;
+
+    bool ok = sc_mutex_init(&mpris->mutex);
+    if (!ok) {
+        return false;
+    }
+
+    ok = sc_mutex_init(&mpris->watches_mutex);
+    if (!ok) {
+        goto error_destroy_mutex;
+    }
+
+    // The connection is used from the receiver thread (signals) and from the
+    // mpris thread (requests)
+    if (!dbus_threads_init_default()) {
+        LOGE("mpris: could not initialize libdbus threading");
+        goto error_destroy_watches_mutex;
+    }
+
+    DBusError err;
+    dbus_error_init(&err);
+    DBusConnection *conn = dbus_bus_get_private(DBUS_BUS_SESSION, &err);
+    if (!conn) {
+        // Not an error: the feature is just unavailable
+        LOGW("mpris: could not connect to the session bus: %s", err.message);
+        dbus_error_free(&err);
+        return true;
+    }
+
+    dbus_connection_set_exit_on_disconnect(conn, FALSE);
+
+    if (pipe(mpris->wakeup_pipe) == -1) {
+        LOGE("mpris: could not create wakeup pipe: %s", strerror(errno));
+        goto error_close_conn;
+    }
+    if (!set_nonblocking(mpris->wakeup_pipe[0])
+            || !set_nonblocking(mpris->wakeup_pipe[1])) {
+        LOGE("mpris: could not configure wakeup pipe: %s", strerror(errno));
+        goto error_close_pipe;
+    }
+
+    if (!dbus_connection_try_register_object_path(conn, SC_MPRIS_OBJECT_PATH,
+                                                  &object_vtable, mpris,
+                                                  &err)) {
+        LOGE("mpris: could not register object path: %s", err.message);
+        dbus_error_free(&err);
+        goto error_close_pipe;
+    }
+
+    if (!dbus_connection_set_watch_functions(conn, add_watch, remove_watch,
+                                             toggle_watch, mpris, NULL)) {
+        LOG_OOM();
+        goto error_unregister;
+    }
+    dbus_connection_set_wakeup_main_function(conn, wakeup_main, mpris, NULL);
+
+    mpris->conn = conn;
+    return true;
+
+error_unregister:
+    dbus_connection_unregister_object_path(conn, SC_MPRIS_OBJECT_PATH);
+error_close_pipe:
+    close(mpris->wakeup_pipe[0]);
+    close(mpris->wakeup_pipe[1]);
+error_close_conn:
+    dbus_connection_close(conn);
+    dbus_connection_unref(conn);
+    sc_vector_destroy(&mpris->watches);
+error_destroy_watches_mutex:
+    sc_mutex_destroy(&mpris->watches_mutex);
+error_destroy_mutex:
+    sc_mutex_destroy(&mpris->mutex);
+    return false;
 }
 
 bool
 sc_mpris_start(struct sc_mpris *mpris) {
-	LOGD("mpris: starting glib thread");
+    if (!mpris->conn) {
+        // Feature unavailable, nothing to do
+        return true;
+    }
 
-	GError *error = NULL;
+    bool ok = sc_thread_create(&mpris->thread, run_mpris, "scrcpy-mpris",
+                               mpris);
+    if (!ok) {
+        LOGE("mpris: could not start thread");
+        return false;
+    }
 
-	// Load introspection data and split into separate interfaces
-	mpris->introspection_data =
-		g_dbus_node_info_new_for_xml(introspection_xml, &error);
-	if (error != NULL) {
-		g_printerr("%s", error->message);
-	}
-	mpris->root_interface_info = g_dbus_node_info_lookup_interface(
-		mpris->introspection_data, "org.mpris.MediaPlayer2");
-	mpris->player_interface_info = g_dbus_node_info_lookup_interface(
-		mpris->introspection_data, "org.mpris.MediaPlayer2.Player");
-
-	mpris->changed_properties = g_hash_table_new(g_str_hash, g_str_equal);
-	mpris->metadata = NULL;
-
-	bool ok =
-		sc_thread_create(&mpris->thread, run_mpris, "scrcpy-mpris", mpris);
-	if (!ok) {
-		LOGE("mpris: cloud not start mpris thread");
-		return false;
-	}
-	return true;
+    return true;
 }
 
 void
 sc_mpris_stop(struct sc_mpris *mpris) {
-	LOGD("mpris: stopping glib thread");
-	g_main_loop_quit(mpris->loop);
-	sc_thread_join(&mpris->thread, NULL);
+    if (!mpris->conn) {
+        return;
+    }
+
+    atomic_store(&mpris->stopped, true);
+    wakeup(mpris);
+}
+
+void
+sc_mpris_join(struct sc_mpris *mpris) {
+    if (!mpris->conn) {
+        return;
+    }
+
+    sc_thread_join(&mpris->thread, NULL);
+}
+
+void
+sc_mpris_destroy(struct sc_mpris *mpris) {
+    if (mpris->conn) {
+        dbus_connection_unregister_object_path(mpris->conn,
+                                               SC_MPRIS_OBJECT_PATH);
+        // Private connection: close and unref
+        dbus_connection_close(mpris->conn);
+        dbus_connection_unref(mpris->conn);
+
+        close(mpris->wakeup_pipe[0]);
+        close(mpris->wakeup_pipe[1]);
+        sc_vector_destroy(&mpris->watches);
+    }
+
+    free(mpris->player.title);
+    free(mpris->player.artist);
+    free(mpris->player.album);
+
+    sc_mutex_destroy(&mpris->watches_mutex);
+    sc_mutex_destroy(&mpris->mutex);
 }

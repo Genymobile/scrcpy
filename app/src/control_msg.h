@@ -50,8 +50,17 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_OUT,
     SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY,
     SC_CONTROL_MSG_TYPE_SCAN_FILE,
-    SC_CONTROL_MSG_TYPE_MEDIA_STATE,
-    SC_CONTROL_MSG_TYPE_MEDIA_SEEK,
+    SC_CONTROL_MSG_TYPE_MEDIA_ACTION,
+};
+
+// Values must be kept in sync with the server (MediaManager.java)
+enum sc_media_action {
+    SC_MEDIA_ACTION_PLAY,
+    SC_MEDIA_ACTION_PAUSE,
+    SC_MEDIA_ACTION_STOP,
+    SC_MEDIA_ACTION_NEXT,
+    SC_MEDIA_ACTION_PREVIOUS,
+    SC_MEDIA_ACTION_SEEK,
 };
 
 enum sc_copy_key {
@@ -131,13 +140,9 @@ struct sc_control_msg {
             char *path; // owned, to be freed by free()
         } scan_file;
         struct {
-            uint16_t player_id;
-            uint64_t position;
-        } media_seek;
-        struct {
-            uint16_t player_id;
-            uint8_t state;
-        } media_state;
+            enum sc_media_action action;
+            int64_t position_ms; // only for SC_MEDIA_ACTION_SEEK
+        } media_action;
     };
 };
 

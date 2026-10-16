@@ -26,7 +26,6 @@ public class Options {
     private int scid = -1; // 31-bit non-negative value, or -1
     private boolean video = true;
     private boolean audio = true;
-    private boolean mediaControl = true;
     private int maxSize;
     private int minSizeAlignment = 1;
     private VideoCodec videoCodec = VideoCodec.H264;
@@ -61,6 +60,7 @@ public class Options {
     private String audioEncoder;
     private boolean powerOffScreenOnClose;
     private boolean clipboardAutosync = true;
+    private boolean mediaControl;
     private boolean downsizeOnError = true;
     private boolean cleanup = true;
     private boolean powerOn = true;
@@ -102,10 +102,6 @@ public class Options {
 
     public boolean getAudio() {
         return audio;
-    }
-
-    public boolean getMediaControls() {
-        return mediaControl;
     }
 
     public int getMaxSize() {
@@ -238,6 +234,10 @@ public class Options {
 
     public boolean getClipboardAutosync() {
         return clipboardAutosync;
+    }
+
+    public boolean getMediaControl() {
+        return mediaControl;
     }
 
     public boolean getDownsizeOnError() {
@@ -463,6 +463,9 @@ public class Options {
                     break;
                 case "clipboard_autosync":
                     options.clipboardAutosync = Boolean.parseBoolean(value);
+                    break;
+                case "media_control":
+                    options.mediaControl = Boolean.parseBoolean(value);
                     break;
                 case "downsize_on_error":
                     options.downsizeOnError = Boolean.parseBoolean(value);

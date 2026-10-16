@@ -49,6 +49,7 @@ enum {
     OPT_TUNNEL_HOST,
     OPT_TUNNEL_PORT,
     OPT_NO_CLIPBOARD_AUTOSYNC,
+    OPT_MPRIS,
     OPT_TCPIP,
     OPT_RAW_KEY_EVENTS,
     OPT_NO_DOWNSIZE_ON_ERROR,
@@ -598,6 +599,13 @@ static const struct sc_option options[] = {
                 " 'n': trigger shortcut \"expand notification panel\"\n"
                 "Default is 'bhsn:++++' for SDK mouse, and '++++:bhsn' for AOA "
                 "and UHID.",
+    },
+    {
+        .longopt_id = OPT_MPRIS,
+        .longopt = "mpris",
+        .text = "Expose the device media sessions via MPRIS (D-Bus), so that "
+                "desktop media controls can control playback on the device.\n"
+                "This feature is only available on Linux.",
     },
     {
         .shortopt = 'n',
@@ -2793,6 +2801,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_CLIPBOARD_AUTOSYNC:
                 opts->clipboard_autosync = false;
                 break;
+            case OPT_MPRIS:
+#ifdef HAVE_MPRIS
+                opts->mpris = true;
+                break;
+#else
+                LOGE("MPRIS (--mpris) is disabled (or unsupported on this "
+                     "platform).");
+                return false;
+#endif
             case OPT_TCPIP:
                 opts->tcpip = true;
                 opts->tcpip_dst = optarg;
@@ -3040,11 +3057,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     bool otg = false;
     bool v4l2 = false;
+    bool mpris = false;
 #ifdef HAVE_USB
     otg = opts->otg;
 #endif
 #ifdef HAVE_V4L2
     v4l2 = !!opts->v4l2_device;
+#endif
+#ifdef HAVE_MPRIS
+    mpris = opts->mpris;
 #endif
 
     if (!opts->window) {
@@ -3293,6 +3314,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("--display-id is only available with --video-source=display");
             return false;
         }
+        if (mpris) {
+            LOGE("--mpris is only available with --video-source=display");
+            return false;
+        }
 
         if (opts->display_ime_policy != SC_DISPLAY_IME_POLICY_UNDEFINED) {
             LOGE("--display-ime-policy is only available with "
@@ -3504,6 +3529,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("Cannot request to turn screen off if control is disabled");
             return false;
         }
+        if (mpris) {
+            LOGE("Cannot expose media sessions via MPRIS if control is "
+                 "disabled");
+            return false;
+        }
         if (opts->stay_awake) {
             LOGE("Cannot request to stay awake if control is disabled");
             return false;
@@ -3547,6 +3577,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         // Only report obvious errors.
         if (opts->record_filename) {
             LOGE("OTG mode: cannot record");
+            return false;
+        }
+        if (mpris) {
+            LOGE("OTG mode: could not expose media sessions via MPRIS");
             return false;
         }
         if (opts->turn_screen_off) {

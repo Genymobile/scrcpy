@@ -12,6 +12,7 @@ public class DeviceMessageWriter {
 
     private static final int MESSAGE_MAX_SIZE = 1 << 18; // 256k
     public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 5; // type: 1 byte; length: 4 bytes
+    public static final int MEDIA_TEXT_MAX_LENGTH = 1024;
 
     private final DataOutputStream dos;
 
@@ -22,7 +23,6 @@ public class DeviceMessageWriter {
     public void write(DeviceMessage msg) throws IOException {
         int type = msg.getType();
         dos.writeByte(type);
-        byte[] data;
         switch (type) {
             case DeviceMessage.TYPE_CLIPBOARD:
                 String text = msg.getText();
@@ -36,22 +36,34 @@ public class DeviceMessageWriter {
                 break;
             case DeviceMessage.TYPE_UHID_OUTPUT:
                 dos.writeShort(msg.getId());
-                data = msg.getData();
+                byte[] data = msg.getData();
                 dos.writeShort(data.length);
                 dos.write(data);
                 break;
             case DeviceMessage.TYPE_MEDIA_UPDATE:
-                dos.writeShort(msg.getId());
-                data = msg.getData();
-                dos.writeShort(data.length);
-                dos.write(data);
-                break;
-            case DeviceMessage.TYPE_MEDIA_REMOVE:
-                dos.writeShort(msg.getId());
+                dos.writeByte(msg.getMediaState());
+                dos.writeLong(msg.getMediaPosition());
+                dos.writeInt(msg.getMediaCapabilities());
+                dos.writeLong(msg.getMediaDuration());
+                writeMediaText(msg.getText());
+                writeMediaText(msg.getArtist());
+                writeMediaText(msg.getAlbum());
                 break;
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
         dos.flush();
+    }
+
+    // Write a string (2-byte length + UTF-8 content), null is written as an empty string
+    private void writeMediaText(String text) throws IOException {
+        if (text == null) {
+            dos.writeShort(0);
+            return;
+        }
+        byte[] raw = text.getBytes(StandardCharsets.UTF_8);
+        int len = StringUtils.getUtf8TruncationIndex(raw, MEDIA_TEXT_MAX_LENGTH);
+        dos.writeShort(len);
+        dos.write(raw, 0, len);
     }
 }

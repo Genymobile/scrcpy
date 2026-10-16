@@ -6,8 +6,6 @@ public final class DeviceMessage {
     public static final int TYPE_ACK_CLIPBOARD = 1;
     public static final int TYPE_UHID_OUTPUT = 2;
     public static final int TYPE_MEDIA_UPDATE = 3;
-    public static final int TYPE_MEDIA_REMOVE = 4;
-    public static final int TYPE_MEDIA_STATE = 4;
 
     private int type;
     private String text;
@@ -15,6 +13,11 @@ public final class DeviceMessage {
     private int id;
     private byte[] data;
     private int mediaState;
+    private long mediaPosition;
+    private int mediaCapabilities;
+    private long mediaDuration;
+    private String artist;
+    private String album;
 
     private DeviceMessage() {
     }
@@ -41,26 +44,17 @@ public final class DeviceMessage {
         return event;
     }
 
-    public static DeviceMessage createMediaUpdate(int id, byte[] data) {
+    public static DeviceMessage createMediaUpdate(int state, long positionMs, int capabilities, long durationMs, String title, String artist,
+            String album) {
         DeviceMessage event = new DeviceMessage();
         event.type = TYPE_MEDIA_UPDATE;
-        event.id = id;
-        event.data = data;
-        return event;
-    }
-
-    public static DeviceMessage createMediaState(int id, int state) {
-        DeviceMessage event = new DeviceMessage();
-        event.type = TYPE_MEDIA_STATE;
-        event.id = id;
         event.mediaState = state;
-        return event;
-    }
-
-    public static DeviceMessage createMediaRemove(int id) {
-        DeviceMessage event = new DeviceMessage();
-        event.type = TYPE_MEDIA_REMOVE;
-        event.id = id;
+        event.mediaPosition = positionMs;
+        event.mediaCapabilities = capabilities;
+        event.mediaDuration = durationMs;
+        event.text = title;
+        event.artist = artist;
+        event.album = album;
         return event;
     }
 
@@ -82,5 +76,29 @@ public final class DeviceMessage {
 
     public byte[] getData() {
         return data;
+    }
+
+    public int getMediaState() {
+        return mediaState;
+    }
+
+    public long getMediaPosition() {
+        return mediaPosition;
+    }
+
+    public int getMediaCapabilities() {
+        return mediaCapabilities;
+    }
+
+    public long getMediaDuration() {
+        return mediaDuration;
+    }
+
+    public String getArtist() {
+        return artist;
+    }
+
+    public String getAlbum() {
+        return album;
     }
 }

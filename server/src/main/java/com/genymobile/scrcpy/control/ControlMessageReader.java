@@ -64,25 +64,17 @@ public class ControlMessageReader {
                 return parseResizeDisplay();
             case ControlMessage.TYPE_SCAN_FILE:
                 return parseScanFile();
-            case ControlMessage.TYPE_MEDIA_STATE:
-                return parseMediaPlayStateRequest();
-            case ControlMessage.TYPE_MEDIA_SEEK:
-                return parseMediaSeekRequest();
+            case ControlMessage.TYPE_MEDIA_ACTION:
+                return parseMediaAction();
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
     }
 
-    private ControlMessage parseMediaSeekRequest() throws IOException {
-        int receiverId = dis.readUnsignedShort();
-        long position = dis.readLong();
-        return ControlMessage.createMediaSeek(receiverId, position);
-    }
-
-    private ControlMessage parseMediaPlayStateRequest() throws IOException {
-        int receiverId = dis.readUnsignedShort();
-        byte state = dis.readByte();
-        return ControlMessage.createMediaState(receiverId, state);
+    private ControlMessage parseMediaAction() throws IOException {
+        int action = dis.readUnsignedByte();
+        long positionMs = dis.readLong();
+        return ControlMessage.createMediaAction(action, positionMs);
     }
 
     private ControlMessage parseInjectKeycode() throws IOException {

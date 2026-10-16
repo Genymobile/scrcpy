@@ -514,6 +514,24 @@ public class ControlMessageReaderTest {
     }
 
     @Test
+    public void testParseMediaAction() throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_MEDIA_ACTION);
+        dos.writeByte(5); // action (seek)
+        dos.writeLong(0x0102030405060708L); // position
+
+        byte[] packet = bos.toByteArray();
+
+        ControlMessageReader reader = new ControlMessageReader(new ByteArrayInputStream(packet));
+
+        ControlMessage event = reader.read();
+        Assert.assertEquals(ControlMessage.TYPE_MEDIA_ACTION, event.getType());
+        Assert.assertEquals(5, event.getAction());
+        Assert.assertEquals(0x0102030405060708L, event.getMediaPosition());
+    }
+
+    @Test
     public void testMultiEvents() throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);

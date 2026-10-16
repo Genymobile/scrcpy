@@ -29,6 +29,7 @@ sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket,
     receiver->control_socket = control_socket;
     receiver->acksync = NULL;
     receiver->uhid_devices = NULL;
+    receiver->media_listener = NULL;
 
     assert(cbs && cbs->on_ended);
     receiver->cbs = cbs;
@@ -76,22 +77,6 @@ task_uhid_output(void *userdata) {
 
     free(data->data);
     free(data);
-}
-
-static void
-dump_media_update(const struct sc_device_msg* msg) {
-    uint8_t msg_type = 0;
-    uint8_t *msg_ptr = NULL;
-    for (int i = 0; i < msg->media_update.size; i++) {
-        if (msg_ptr == NULL) {
-            msg_type = msg->media_update.data[i];
-            msg_ptr = &msg->media_update.data[i + 1];
-        } else if (msg->media_update.data[i] == 0) {
-            LOGI("Media update: %i, %s", (int)msg_type, msg_ptr);
-            msg_ptr = NULL;
-            msg_type = 0;
-        }
-    }
 }
 
 static void
@@ -170,12 +155,18 @@ process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
             }
 
             break;
-        case DEVICE_MSG_TYPE_MEDIA_UPDATE:
-            dump_media_update(msg);
+        case DEVICE_MSG_TYPE_MEDIA_UPDATE: {
+            struct sc_media_listener *listener = receiver->media_listener;
+            if (!listener) {
+                LOGE("Received unexpected media update message");
+                sc_device_msg_destroy(msg);
+                return;
+            }
+
+            // The listener takes ownership of the update strings
+            listener->ops->on_update(listener, &msg->media_update);
             break;
-        case DEVICE_MSG_TYPE_MEDIA_REMOVE:
-            LOGI("Media remove: %i", msg->media_remove.id);
-            break;
+        }
     }
 }
 
