@@ -147,6 +147,13 @@ static void test_parse_shortcut_mods(void) {
 
     ok = sc_parse_shortcut_mods("lctrl,", &mods);
     assert(!ok);
+    
+    ok = sc_parse_shortcut_mods(",lctrl", &mods);
+    assert(!ok);
+
+    ok = sc_parse_shortcut_mods("lctrl,,rctrl", &mods);
+    assert(!ok);
+    
 }
 
 int main(int argc, char *argv[]) {
