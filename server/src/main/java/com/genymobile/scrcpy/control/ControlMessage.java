@@ -38,6 +38,14 @@ public final class ControlMessage {
     public static final int COPY_KEY_COPY = 1;
     public static final int COPY_KEY_CUT = 2;
 
+    // Values must be kept in sync with the client (control_msg.h)
+    public static final int MEDIA_ACTION_PLAY = 0;
+    public static final int MEDIA_ACTION_PAUSE = 1;
+    public static final int MEDIA_ACTION_STOP = 2;
+    public static final int MEDIA_ACTION_NEXT = 3;
+    public static final int MEDIA_ACTION_PREVIOUS = 4;
+    public static final int MEDIA_ACTION_SEEK = 5;
+
     private int type;
     private String text;
     private int metaState; // KeyEvent.META_*

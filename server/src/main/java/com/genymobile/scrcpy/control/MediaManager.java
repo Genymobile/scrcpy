@@ -14,32 +14,11 @@ import android.os.SystemClock;
 
 import java.util.List;
 
-// Forward the media session of the device (metadata and playback state) to the client, and execute the media actions it requests.
-// Everything runs on a dedicated handler thread.
 public final class MediaManager {
 
-    // Values must be kept in sync with the client (device_msg.h and control_msg.h)
-    private static final int STATE_STOPPED = 0;
-    private static final int STATE_PLAYING = 1;
-    private static final int STATE_PAUSED = 2;
-
-    private static final int CAP_PLAY = 1 << 0;
-    private static final int CAP_PAUSE = 1 << 1;
-    private static final int CAP_NEXT = 1 << 2;
-    private static final int CAP_PREVIOUS = 1 << 3;
-    private static final int CAP_SEEK = 1 << 4;
-
-    private static final int ACTION_PLAY = 0;
-    private static final int ACTION_PAUSE = 1;
-    private static final int ACTION_STOP = 2;
-    private static final int ACTION_NEXT = 3;
-    private static final int ACTION_PREVIOUS = 4;
-    private static final int ACTION_SEEK = 5;
-
-    private static final long POSITION_UNKNOWN = -1;
-    private static final long DURATION_UNKNOWN = -1;
-
     private final DeviceMessageSender sender;
+
+    // Everything runs on this thread (no synchronization needed)
     private final HandlerThread thread = new HandlerThread("MediaManager");
     private Handler handler;
 
@@ -111,20 +90,21 @@ public final class MediaManager {
 
     private void sendUpdate() {
         if (current == null) {
-            sender.send(DeviceMessage.createMediaUpdate(STATE_STOPPED, POSITION_UNKNOWN, 0, DURATION_UNKNOWN, null, null, null));
+            sender.send(DeviceMessage.createMediaUpdate(DeviceMessage.MEDIA_STATE_STOPPED, DeviceMessage.MEDIA_POSITION_UNKNOWN, 0,
+                    DeviceMessage.MEDIA_DURATION_UNKNOWN, null, null, null));
             return;
         }
 
-        int state = STATE_STOPPED;
-        long position = POSITION_UNKNOWN;
+        int state = DeviceMessage.MEDIA_STATE_STOPPED;
+        long position = DeviceMessage.MEDIA_POSITION_UNKNOWN;
         int capabilities = 0;
         PlaybackState playbackState = current.getPlaybackState();
         if (playbackState != null) {
             state = convertState(playbackState.getState());
             position = playbackState.getPosition();
             if (position < 0) {
-                position = POSITION_UNKNOWN;
-            } else if (state == STATE_PLAYING) {
+                position = DeviceMessage.MEDIA_POSITION_UNKNOWN;
+            } else if (state == DeviceMessage.MEDIA_STATE_PLAYING) {
                 // Extrapolate the position to the current time
                 long elapsed = SystemClock.elapsedRealtime() - playbackState.getLastPositionUpdateTime();
                 position += (long) (elapsed * playbackState.getPlaybackSpeed());
@@ -132,7 +112,7 @@ public final class MediaManager {
             capabilities = convertCapabilities(playbackState.getActions());
         }
 
-        long duration = DURATION_UNKNOWN;
+        long duration = DeviceMessage.MEDIA_DURATION_UNKNOWN;
         String title = null;
         String artist = null;
         String album = null;
@@ -160,31 +140,31 @@ public final class MediaManager {
             case PlaybackState.STATE_SKIPPING_TO_NEXT:
             case PlaybackState.STATE_SKIPPING_TO_PREVIOUS:
             case PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM:
-                return STATE_PLAYING;
+                return DeviceMessage.MEDIA_STATE_PLAYING;
             case PlaybackState.STATE_PAUSED:
-                return STATE_PAUSED;
+                return DeviceMessage.MEDIA_STATE_PAUSED;
             default:
                 // STATE_NONE, STATE_STOPPED, STATE_ERROR
-                return STATE_STOPPED;
+                return DeviceMessage.MEDIA_STATE_STOPPED;
         }
     }
 
     private static int convertCapabilities(long actions) {
         int caps = 0;
         if ((actions & (PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PLAY_PAUSE)) != 0) {
-            caps |= CAP_PLAY;
+            caps |= DeviceMessage.MEDIA_CAP_PLAY;
         }
         if ((actions & (PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_PLAY_PAUSE)) != 0) {
-            caps |= CAP_PAUSE;
+            caps |= DeviceMessage.MEDIA_CAP_PAUSE;
         }
         if ((actions & PlaybackState.ACTION_SKIP_TO_NEXT) != 0) {
-            caps |= CAP_NEXT;
+            caps |= DeviceMessage.MEDIA_CAP_NEXT;
         }
         if ((actions & PlaybackState.ACTION_SKIP_TO_PREVIOUS) != 0) {
-            caps |= CAP_PREVIOUS;
+            caps |= DeviceMessage.MEDIA_CAP_PREVIOUS;
         }
         if ((actions & PlaybackState.ACTION_SEEK_TO) != 0) {
-            caps |= CAP_SEEK;
+            caps |= DeviceMessage.MEDIA_CAP_SEEK;
         }
         return caps;
     }
@@ -208,22 +188,22 @@ public final class MediaManager {
 
         MediaController.TransportControls controls = current.getTransportControls();
         switch (action) {
-            case ACTION_PLAY:
+            case ControlMessage.MEDIA_ACTION_PLAY:
                 controls.play();
                 break;
-            case ACTION_PAUSE:
+            case ControlMessage.MEDIA_ACTION_PAUSE:
                 controls.pause();
                 break;
-            case ACTION_STOP:
+            case ControlMessage.MEDIA_ACTION_STOP:
                 controls.stop();
                 break;
-            case ACTION_NEXT:
+            case ControlMessage.MEDIA_ACTION_NEXT:
                 controls.skipToNext();
                 break;
-            case ACTION_PREVIOUS:
+            case ControlMessage.MEDIA_ACTION_PREVIOUS:
                 controls.skipToPrevious();
                 break;
-            case ACTION_SEEK:
+            case ControlMessage.MEDIA_ACTION_SEEK:
                 controls.seekTo(positionMs);
                 break;
             default:

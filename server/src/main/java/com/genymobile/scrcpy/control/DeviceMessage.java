@@ -7,11 +7,26 @@ public final class DeviceMessage {
     public static final int TYPE_UHID_OUTPUT = 2;
     public static final int TYPE_MEDIA_UPDATE = 3;
 
+    // Values must be kept in sync with the client (device_msg.h)
+    public static final int MEDIA_STATE_STOPPED = 0;
+    public static final int MEDIA_STATE_PLAYING = 1;
+    public static final int MEDIA_STATE_PAUSED = 2;
+
+    public static final int MEDIA_CAP_PLAY = 1 << 0;
+    public static final int MEDIA_CAP_PAUSE = 1 << 1;
+    public static final int MEDIA_CAP_NEXT = 1 << 2;
+    public static final int MEDIA_CAP_PREVIOUS = 1 << 3;
+    public static final int MEDIA_CAP_SEEK = 1 << 4;
+
+    public static final long MEDIA_POSITION_UNKNOWN = -1;
+    public static final long MEDIA_DURATION_UNKNOWN = -1;
+
     private int type;
     private String text;
     private long sequence;
     private int id;
     private byte[] data;
+    private String title;
     private int mediaState;
     private long mediaPosition;
     private int mediaCapabilities;
@@ -52,7 +67,7 @@ public final class DeviceMessage {
         event.mediaPosition = positionMs;
         event.mediaCapabilities = capabilities;
         event.mediaDuration = durationMs;
-        event.text = title;
+        event.title = title;
         event.artist = artist;
         event.album = album;
         return event;
@@ -76,6 +91,10 @@ public final class DeviceMessage {
 
     public byte[] getData() {
         return data;
+    }
+
+    public String getTitle() {
+        return title;
     }
 
     public int getMediaState() {

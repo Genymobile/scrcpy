@@ -45,7 +45,7 @@ public class DeviceMessageWriter {
                 dos.writeLong(msg.getMediaPosition());
                 dos.writeInt(msg.getMediaCapabilities());
                 dos.writeLong(msg.getMediaDuration());
-                writeMediaText(msg.getText());
+                writeMediaText(msg.getTitle());
                 writeMediaText(msg.getArtist());
                 writeMediaText(msg.getAlbum());
                 break;
