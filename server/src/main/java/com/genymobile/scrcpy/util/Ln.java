@@ -18,6 +18,7 @@ public final class Ln {
 
     private static final PrintStream CONSOLE_OUT = new PrintStream(new FileOutputStream(FileDescriptor.out));
     private static final PrintStream CONSOLE_ERR = new PrintStream(new FileOutputStream(FileDescriptor.err));
+    private static volatile PrintStream consoleOut = CONSOLE_OUT;
 
     public enum Level {
         VERBOSE, DEBUG, INFO, WARN, ERROR
@@ -27,6 +28,11 @@ public final class Ln {
 
     private Ln() {
         // not instantiable
+    }
+
+    /** Reserve stdout for a binary protocol in private subprocesses. */
+    public static void useStdErr() {
+        consoleOut = CONSOLE_ERR;
     }
 
     public static void disableSystemStreams() {
@@ -53,21 +59,21 @@ public final class Ln {
     public static void v(String message) {
         if (isEnabled(Level.VERBOSE)) {
             Log.v(TAG, message);
-            CONSOLE_OUT.print(PREFIX + "VERBOSE: " + message + '\n');
+            consoleOut.print(PREFIX + "VERBOSE: " + message + '\n');
         }
     }
 
     public static void d(String message) {
         if (isEnabled(Level.DEBUG)) {
             Log.d(TAG, message);
-            CONSOLE_OUT.print(PREFIX + "DEBUG: " + message + '\n');
+            consoleOut.print(PREFIX + "DEBUG: " + message + '\n');
         }
     }
 
     public static void i(String message) {
         if (isEnabled(Level.INFO)) {
             Log.i(TAG, message);
-            CONSOLE_OUT.print(PREFIX + "INFO: " + message + '\n');
+            consoleOut.print(PREFIX + "INFO: " + message + '\n');
         }
     }
 
