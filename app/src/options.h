@@ -370,6 +370,7 @@ struct scrcpy_options {
     bool vd_system_decorations;
     bool camera_torch;
     bool keep_active;
+    int16_t boox_pen_rotation; // -1 disables the experimental backend
     bool flex_display;
     bool ignore_video_encoder_constraints;
     bool update_terminal_title;

@@ -22,6 +22,8 @@
 
 #define SC_POINTER_ID_MOUSE UINT64_C(-1)
 #define SC_POINTER_ID_GENERIC_FINGER UINT64_C(-2)
+// Downstream BOOX pen: same touch packet, dedicated pointer ownership.
+#define SC_POINTER_ID_PEN UINT64_C(-4)
 
 // Used for injecting an additional virtual pointer for pinch-to-zoom
 #define SC_POINTER_ID_VIRTUAL_FINGER UINT64_C(-3)

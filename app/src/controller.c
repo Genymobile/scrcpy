@@ -6,6 +6,9 @@
 
 // Drop droppable events above this limit
 #define SC_CONTROL_MSG_QUEUE_LIMIT 60
+// Pen lifecycle overflow terminates transport instead of growing without bound.
+// This is a safety budget in messages, not a latency-derived tuning value.
+#define SC_PEN_BOUNDARY_QUEUE_LIMIT 128
 
 static void
 sc_controller_receiver_on_ended(struct sc_receiver *receiver, bool error,
@@ -99,10 +102,21 @@ sc_controller_push_msg(struct sc_controller *controller,
     assert(msg->type != SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY);
 
     bool pushed = false;
+    bool interrupt = false;
+    bool pen_boundary = msg->type == SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT
+                     && msg->inject_touch_event.pointer_id == SC_POINTER_ID_PEN
+                     && !sc_control_msg_is_droppable(msg);
 
     sc_mutex_lock(&controller->mutex);
+    if (controller->stopped) {
+        sc_mutex_unlock(&controller->mutex);
+        return false;
+    }
     size_t size = sc_vecdeque_size(&controller->queue);
-    if (size < SC_CONTROL_MSG_QUEUE_LIMIT) {
+    if (pen_boundary && size >= SC_PEN_BOUNDARY_QUEUE_LIMIT) {
+        LOGE("Pen lifecycle queue exhausted; stopping control transport");
+        interrupt = true;
+    } else if (size < SC_CONTROL_MSG_QUEUE_LIMIT) {
         bool was_empty = sc_vecdeque_is_empty(&controller->queue);
         sc_vecdeque_push_noresize(&controller->queue, *msg);
         pushed = true;
@@ -116,11 +130,21 @@ sc_controller_push_msg(struct sc_controller *controller,
         } else {
             // A non-droppable event must be dropped anyway
             LOG_OOM();
+            interrupt = pen_boundary;
         }
     }
     // Otherwise, the msg is discarded
 
+    if (interrupt) {
+        // A missing boundary must not leave a continuing half-stroke stream.
+        // The worker EOF cleanup/watchdog remain fallback, not delivery proof.
+        controller->stopped = true;
+        sc_cond_signal(&controller->msg_cond);
+    }
     sc_mutex_unlock(&controller->mutex);
+    if (interrupt && !net_interrupt(controller->control_socket)) {
+        LOGW("Could not interrupt control transport after pen queue failure");
+    }
 
     return pushed;
 }

@@ -92,6 +92,14 @@ Do not change this setting unless you have a good reason.
 Default is 10.
 
 .TP
+.BI "\-\-boox\-pen=" rotation
+Enable experimental BOOX native pen input from SDL pen events. Disabled by default.
+
+Use auto for supported Android input metadata, or an explicitly verified rotation of 0, 90, 180 or 270 degrees. Requires Android 10 or later, display 0, SDK mouse mode and one idle, shell-writable onyx_emp Wacom digitizer. Do not use the physical pen concurrently. Ordinary mouse and finger input remain UI input. Eraser and tilt are not implemented.
+
+Use only a disposable notebook for acceptance tests. This is a BOOX-specific evdev backend, not generic Android stylus support. See doc/boox-pen.md for mapping, safety and failure boundaries.
+
+.TP
 .BI "\-b, \-\-video\-bit\-rate " value
 Encode the video at the given bit rate, expressed in bits/s. Unit suffixes are supported: '\fBK\fR' (x1000) and '\fBM\fR' (x1000000).
 

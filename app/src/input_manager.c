@@ -29,6 +29,8 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->mp = params->mp;
     im->gp = params->gp;
     im->camera = params->camera;
+    im->boox_pen = params->boox_pen;
+    im->pen = (struct sc_pen) {0};
 
     im->mouse_bindings = params->mouse_bindings;
     im->legacy_paste = params->legacy_paste;
@@ -1166,6 +1168,32 @@ sc_input_manager_on_device_disconnected(struct sc_input_manager *im) {
 void
 sc_input_manager_handle_event(struct sc_input_manager *im,
                               const SDL_Event *event) {
+    // Hints can be overridden by the user's environment; filter duplicate pen events too.
+    if (im->boox_pen && sc_pen_is_synthetic(event)) {
+        return;
+    }
+    struct sc_pen_sample pen;
+    if (im->boox_pen && sc_pen_process(&im->pen, event, &pen)
+            && im->controller && !im->disconnected && im->mp
+            && im->mp->ops->process_touch) {
+        if (im->screen->paused) {
+            pen.action = 1;
+            im->pen.down = false;
+        }
+        struct sc_touch_event touch = {
+            .position = {
+                .screen_size = im->screen->frame_size,
+                .point = sc_screen_convert_window_to_frame_coords(
+                    im->screen, pen.x, pen.y),
+            },
+            .action = pen.action == 0 ? SC_TOUCH_ACTION_DOWN
+                    : pen.action == 1 ? SC_TOUCH_ACTION_UP
+                    : SC_TOUCH_ACTION_MOVE,
+            .pointer_id = SC_POINTER_ID_PEN,
+            .pressure = pen.pressure,
+        };
+        im->mp->ops->process_touch(im->mp, &touch);
+    }
     switch (event->type) {
         case SDL_EVENT_TEXT_INPUT:
             sc_input_manager_process_text_input(im, &event->text);

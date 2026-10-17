@@ -107,6 +107,7 @@ enum {
     OPT_MIN_SIZE_ALIGNMENT,
     OPT_NO_WINDOW_ASPECT_RATIO_LOCK,
     OPT_KEEP_ACTIVE,
+    OPT_BOOX_PEN,
     OPT_BACKGROUND_COLOR,
     OPT_RENDER_FIT,
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
@@ -148,6 +149,15 @@ struct sc_getopt_adapter {
 };
 
 static const struct sc_option options[] = {
+    {
+        .longopt_id = OPT_BOOX_PEN,
+        .longopt = "boox-pen",
+        .argdesc = "rotation",
+        .text = "Experimental BOOX native pen input (SDL pen only). "
+                "Use auto for Android input mapping, or 0, 90, 180, 270. "
+                "Requires writable onyx_emp Wacom digitizer; never use "
+                "the physical pen concurrently. Mouse remains UI input.",
+    },
     {
         .longopt_id = OPT_ALWAYS_ON_TOP,
         .longopt = "always-on-top",
@@ -2983,6 +2993,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_WINDOW_ASPECT_RATIO_LOCK:
                 opts->window_aspect_ratio_lock = false;
                 break;
+            case OPT_BOOX_PEN:
+                if (strcmp(optarg, "auto") && strcmp(optarg, "0")
+                        && strcmp(optarg, "90") && strcmp(optarg, "180")
+                        && strcmp(optarg, "270")) {
+                    LOGE("BOOX pen rotation must be auto, 0, 90, 180 or 270");
+                    return false;
+                }
+                opts->boox_pen_rotation = !strcmp(optarg, "auto") ? -2 : atoi(optarg);
+                break;
             case OPT_KEEP_ACTIVE:
                 opts->keep_active = true;
                 break;
@@ -3171,6 +3190,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             opts->gamepad_input_mode = otg ? SC_GAMEPAD_INPUT_MODE_AOA
                                            : SC_GAMEPAD_INPUT_MODE_UHID;
         }
+    }
+
+    if (opts->boox_pen_rotation != -1
+            && (!opts->control || opts->display_id != 0 || opts->new_display
+                || opts->video_source != SC_VIDEO_SOURCE_DISPLAY
+                || opts->mouse_input_mode != SC_MOUSE_INPUT_MODE_SDK)) {
+        LOGE("BOOX pen requires control, SDK mouse mode and main display mirroring");
+        return false;
     }
 
     // If mouse bindings are not explicitly set, configure default bindings
