@@ -113,7 +113,9 @@ static void test_float_to_u16fp(void) {
     assert(sc_float_to_u16fp(0.25f) == 0x4000);
     assert(sc_float_to_u16fp(0.5f) == 0x8000);
     assert(sc_float_to_u16fp(0.75f) == 0xc000);
+    assert(sc_float_to_u16fp(65535.0f / 65536) == 0xffff);
     assert(sc_float_to_u16fp(1.0f) == 0xffff);
+    
 }
 
 static void test_float_to_i16fp(void) {
@@ -124,7 +126,9 @@ static void test_float_to_i16fp(void) {
     assert(sc_float_to_i16fp(0.25f) == 0x2000);
     assert(sc_float_to_i16fp(0.5f) == 0x4000);
     assert(sc_float_to_i16fp(0.75f) == 0x6000);
+    assert(sc_float_to_i16fp(32767.0f / 32768) == 0x7fff);
     assert(sc_float_to_i16fp(1.0f) == 0x7fff);
+    
 
     assert(sc_float_to_i16fp(-0.03125f) == -0x400);
     assert(sc_float_to_i16fp(-0.0625f) == -0x800);
