@@ -376,6 +376,12 @@ run_client_audio(void *data) {
     // Calculate frame duration in microseconds: (frame_size / sample_rate) * 1000000
     int64_t opus_frame_duration_us = (opus_ctx->frame_size * 1000000LL) / opus_ctx->sample_rate;
 
+    // Number of samples sent to the encoder, used as the frame timestamp
+    // (several encoder frames may come from the same input frame, so the input
+    // timestamps would not be strictly increasing)
+    int64_t samples_encoded = 0;
+    AVRational sample_time_base = {1, opus_ctx->sample_rate};
+
     // Set when the socket is closed (the server stopped reading)
     bool socket_closed = false;
 
@@ -427,8 +433,9 @@ run_client_audio(void *data) {
                            opus_ctx->frame_size);
 
                 out_frame->nb_samples = opus_ctx->frame_size;
-                out_frame->pts = av_rescale_q(in_frame->pts, in_codec_ctx->time_base,
-                                                                            opus_ctx->time_base);
+                out_frame->pts = av_rescale_q(samples_encoded, sample_time_base,
+                                              opus_ctx->time_base);
+                samples_encoded += opus_ctx->frame_size;
 
                 // Encode to Opus
                 if (avcodec_send_frame(opus_ctx, out_frame) < 0)
@@ -491,6 +498,9 @@ run_client_audio(void *data) {
             }
             av_audio_fifo_read(fifo, (void **)out_frame->data, samples_to_read);
             out_frame->nb_samples = samples_to_read;
+            out_frame->pts = av_rescale_q(samples_encoded, sample_time_base,
+                                          opus_ctx->time_base);
+            samples_encoded += samples_to_read;
 
             if (avcodec_send_frame(opus_ctx, out_frame) >= 0) {
                 while (avcodec_receive_packet(opus_ctx, out_pkt) >= 0) {
