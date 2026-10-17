@@ -156,12 +156,14 @@ bool
 sc_str_list_contains(const char *list, char sep, const char *s) {
     assert(sep);
 
+    size_t s_len = strlen(s);
+
     const char *p;
     do {
         p = strchr(list, sep);
 
         size_t token_len = p ? (size_t) (p - list) : strlen(list);
-        if (!strncmp(list, s, token_len)) {
+        if (token_len == s_len && !memcmp(list, s, token_len)) {
             return true;
         }
 
