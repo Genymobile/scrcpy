@@ -156,10 +156,10 @@ bool
 sc_str_list_contains(const char *list, char sep, const char *s) {
     const char *p;
     do {
-        p = strchr(list, sep);
+        p = sep ? strchr(list, sep) : NULL;
 
         size_t token_len = p ? (size_t) (p - list) : strlen(list);
-        if (!strncmp(list, s, token_len)) {
+        if (!strncmp(list, s, token_len) && s[token_len] == '\0') {
             return true;
         }
 
