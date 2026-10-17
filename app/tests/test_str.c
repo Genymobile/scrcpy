@@ -170,6 +170,11 @@ static void test_utf8_truncate(void) {
 
     count = sc_str_utf8_truncation_index(s, 8);
     assert(count == 7); // no more chars
+    
+    const char malformed[] = "\x80\x80\x80\x80"; // Malformed input (only continuation bytes) must not go before the start
+    count = sc_str_utf8_truncation_index(malformed, 2); 
+    assert(count == 0);
+    
 }
 
 static void test_parse_integer(void) {
@@ -295,13 +300,18 @@ static void test_parse_integer_with_suffix(void) {
 static void test_strlist_contains(void) {
     assert(sc_str_list_contains("a,bc,def", ',', "bc"));
     assert(!sc_str_list_contains("a,bc,def", ',', "b"));
+    assert(!sc_str_list_contains("a,bc,def", ',', "bcd"));
     assert(sc_str_list_contains("", ',', ""));
+    assert(!sc_str_list_contains("", ',', "x"));
     assert(sc_str_list_contains("abc,", ',', ""));
     assert(sc_str_list_contains(",abc", ',', ""));
     assert(sc_str_list_contains("abc,,def", ',', ""));
+    assert(!sc_str_list_contains("abc,,def", ',', "xyz"));
     assert(!sc_str_list_contains("abc", ',', ""));
     assert(sc_str_list_contains(",,|x", '|', ",,"));
     assert(sc_str_list_contains("xyz", '\0', "xyz"));
+    assert(!sc_str_list_contains("xyz", '\0', "xyzz"));
+    assert(!sc_str_list_contains("xyz", '\0', "abc"));
 }
 
 static void test_wrap_lines(void) {
