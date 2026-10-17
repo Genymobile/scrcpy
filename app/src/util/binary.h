@@ -70,7 +70,7 @@ static inline uint16_t
 sc_float_to_u16fp(float f) {
     assert(f >= 0.0f && f <= 1.0f);
     uint32_t u = f * 0x1p16f; // 2^16
-    if (u >= 0xffff) {
+    if (u > 0xffff) {
         assert(u == 0x10000); // for f == 1.0f
         u = 0xffff;
     }
@@ -85,7 +85,7 @@ sc_float_to_i16fp(float f) {
     assert(f >= -1.0f && f <= 1.0f);
     int32_t i = f * 0x1p15f; // 2^15
     assert(i >= -0x8000);
-    if (i >= 0x7fff) {
+    if (i > 0x7fff) {
         assert(i == 0x8000); // for f == 1.0f
         i = 0x7fff;
     }
