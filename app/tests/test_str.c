@@ -170,6 +170,11 @@ static void test_utf8_truncate(void) {
 
     count = sc_str_utf8_truncation_index(s, 8);
     assert(count == 7); // no more chars
+
+    // Malformed input (only continuation bytes) must not go before the start
+    const char malformed[] = "\x80\x80\x80\x80";
+    count = sc_str_utf8_truncation_index(malformed, 2);
+    assert(count == 0);
 }
 
 static void test_parse_integer(void) {
