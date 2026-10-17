@@ -73,6 +73,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     // control_msg.h values of the pointerId field in inject_touch_event message
     private static final int POINTER_ID_MOUSE = -1;
+    private static final int POINTER_ID_PEN = -4;
 
     // Interval between simulated user activity events
     private static final long KEEP_ACTIVE_INTERVAL_MS = 4000;
@@ -84,6 +85,10 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private Thread keepActiveThread;
 
     private UhidManager uhidManager;
+    private volatile BooxPenProcess booxPen;
+    private final int booxPenRotation;
+    private int booxDisplayRotation;
+    private Size booxDisplaySize;
 
     private final boolean camera;
     private final int displayId;
@@ -114,6 +119,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     public Controller(ControlChannel controlChannel, CleanUp cleanUp, Options options) {
         this.camera = options.getVideoSource() == VideoSource.CAMERA;
+        this.booxPenRotation = options.getBooxPenRotation();
         this.controlChannel = controlChannel;
         this.cleanUp = cleanUp;
 
@@ -278,10 +284,17 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         thread = new Thread(() -> {
             try {
+                if (booxPenRotation != -1) {
+                    DisplayInfo info = ServiceManager.getDisplayManager().getDisplayInfo(0);
+                    booxDisplayRotation = info.getRotation();
+                    booxDisplaySize = info.getSize();
+                    booxPen = new BooxPenProcess(booxPenRotation, booxDisplaySize.getWidth(), booxDisplaySize.getHeight());
+                }
                 control();
             } catch (IOException e) {
                 Ln.e("Controller error", e);
             } finally {
+                closeBooxPen();
                 Ln.d("Controller stopped");
                 if (uhidManager != null) {
                     uhidManager.closeAll();
@@ -297,6 +310,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     @Override
     public void stop() {
+        closeBooxPen();
         if (keepActiveThread != null) {
             keepActiveThread.interrupt();
         }
@@ -509,16 +523,48 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         return Pair.create(point, targetDisplayId);
     }
 
-    private boolean injectTouch(int action, long pointerId, Position position, float pressure, int actionButton, int buttons) {
+    private void closeBooxPen() {
+        if (booxPen != null) {
+            try {
+                booxPen.close();
+            } catch (IOException e) {
+                Ln.e("BOOX pen cleanup failed", e);
+            }
+        }
+    }
+
+    private boolean injectTouch(int action, long pointerId, Position position, float pressure, int actionButton, int buttons) throws IOException {
         long now = SystemClock.uptimeMillis();
+
+        // Release must not depend on a still-valid video mapping or orientation.
+        if (booxPen != null && pointerId == POINTER_ID_PEN
+                && (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL)) {
+            booxPen.inject(action, pointerId, 0, 0, 0);
+            return true;
+        }
 
         Pair<Point, Integer> pair = getEventPointAndDisplayId(position);
         if (pair == null) {
+            if (booxPen != null && pointerId == POINTER_ID_PEN) {
+                booxPen.inject(MotionEvent.ACTION_CANCEL, pointerId, 0, 0, 0);
+            }
             return false;
         }
 
         Point point = pair.first;
         int targetDisplayId = pair.second;
+
+        // Dedicated pen pointer reuses the touch packet; mouse clicks remain UI input.
+        if (booxPen != null && pointerId == POINTER_ID_PEN) {
+            DisplayInfo info = ServiceManager.getDisplayManager().getDisplayInfo(0);
+            if (targetDisplayId != 0 || info.getRotation() != booxDisplayRotation || !info.getSize().equals(booxDisplaySize)) {
+                throw new IOException("Display changed during BOOX pen session; reconnect");
+            }
+            Size size = info.getSize();
+            booxPen.inject(action, pointerId, (float) point.getX() / (size.getWidth() - 1),
+                    (float) point.getY() / (size.getHeight() - 1), pressure);
+            return true;
+        }
 
         int pointerIndex = pointersState.getPointerIndex(pointerId);
         if (pointerIndex == -1) {
