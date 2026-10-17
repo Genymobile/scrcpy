@@ -295,13 +295,18 @@ static void test_parse_integer_with_suffix(void) {
 static void test_strlist_contains(void) {
     assert(sc_str_list_contains("a,bc,def", ',', "bc"));
     assert(!sc_str_list_contains("a,bc,def", ',', "b"));
+    assert(!sc_str_list_contains("a,bc,def", ',', "bcd"));
     assert(sc_str_list_contains("", ',', ""));
+    assert(!sc_str_list_contains("", ',', "x"));
     assert(sc_str_list_contains("abc,", ',', ""));
     assert(sc_str_list_contains(",abc", ',', ""));
     assert(sc_str_list_contains("abc,,def", ',', ""));
+    assert(!sc_str_list_contains("abc,,def", ',', "xyz"));
     assert(!sc_str_list_contains("abc", ',', ""));
     assert(sc_str_list_contains(",,|x", '|', ",,"));
     assert(sc_str_list_contains("xyz", '\0', "xyz"));
+    assert(!sc_str_list_contains("xyz", '\0', "xyzz"));
+    assert(!sc_str_list_contains("xyz", '\0', "abc"));
 }
 
 static void test_wrap_lines(void) {
