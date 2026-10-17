@@ -138,12 +138,7 @@ if usb_support
     ]
 endif
 
-dbus_dep = dependency('dbus-1', required: false)
 mpris_support = get_option('mpris') and host_machine.system() == 'linux'
-if mpris_support and not dbus_dep.found()
-    warning('libdbus-1 not found, MPRIS support disabled')
-    mpris_support = false
-endif
 if mpris_support
     src += [ 'src/mpris.c' ]
 endif
@@ -185,7 +180,7 @@ if usb_support
 endif
 
 if mpris_support
-    dependencies += dbus_dep
+    dependencies += dependency('dbus-1', static: static)
 endif
 
 if host_machine.system() == 'windows'
