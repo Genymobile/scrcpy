@@ -159,32 +159,34 @@ static void from_event(struct sc_pen *pen, SDL_Event *event, bool emitted) {
 static void pressure_and_strokes(void) {
     init();
     struct sc_pen pen = {0};
-    SDL_Event e = {0};
-    e.type = SDL_EVENT_PEN_DOWN;
-    e.ptouch.which = 7;
+    // Initialize the payload we read, not only SDL_Event's first union member.
+    SDL_Event e = {.ptouch = {
+        .type = SDL_EVENT_PEN_DOWN, .which = 7, .x = 20, .y = 30,
+    }};
     from_event(&pen, &e, true);
-    e.type = SDL_EVENT_PEN_AXIS;
-    e.paxis.which = 7;
-    e.paxis.axis = SDL_PEN_AXIS_PRESSURE;
-    e.paxis.value = .2f;
+    e = (SDL_Event) {.paxis = {
+        .type = SDL_EVENT_PEN_AXIS, .which = 7,
+        .axis = SDL_PEN_AXIS_PRESSURE, .value = .2f,
+    }};
     from_event(&pen, &e, true);
     e.paxis.value = .8f;
     from_event(&pen, &e, true);
-    e.type = SDL_EVENT_PEN_UP;
-    e.ptouch.which = 7;
+    e = (SDL_Event) {.ptouch = {
+        .type = SDL_EVENT_PEN_UP, .which = 7, .x = 20, .y = 30,
+    }};
     from_event(&pen, &e, true);
-    e.type = SDL_EVENT_PEN_MOTION;
-    e.pmotion.which = 7;
+    e = (SDL_Event) {.pmotion = {.type = SDL_EVENT_PEN_MOTION, .which = 7}};
     from_event(&pen, &e, false);
-    e.type = SDL_EVENT_PEN_AXIS;
-    e.paxis.which = 7;
-    e.paxis.axis = SDL_PEN_AXIS_PRESSURE;
-    e.paxis.value = .5f;
+    e = (SDL_Event) {.paxis = {
+        .type = SDL_EVENT_PEN_AXIS, .which = 7,
+        .axis = SDL_PEN_AXIS_PRESSURE, .value = .5f,
+    }};
     from_event(&pen, &e, false);
-    e.type = SDL_EVENT_PEN_DOWN;
-    e.ptouch.which = 7;
+    e = (SDL_Event) {.ptouch = {
+        .type = SDL_EVENT_PEN_DOWN, .which = 7, .x = 20, .y = 30,
+    }};
     from_event(&pen, &e, true);
-    e.type = SDL_EVENT_WINDOW_FOCUS_LOST;
+    e = (SDL_Event) {.type = SDL_EVENT_WINDOW_FOCUS_LOST};
     from_event(&pen, &e, true);
     // Accepted pressure-only samples and prior stroke MOVE precede release/new DOWN.
     assert(expected_count == 6);
