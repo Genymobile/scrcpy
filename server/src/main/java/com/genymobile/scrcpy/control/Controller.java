@@ -85,7 +85,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private Thread keepActiveThread;
 
     private UhidManager uhidManager;
-    private volatile BooxPenProcess booxPen;
+    private final BooxPenStartup booxPen;
     private final int booxPenRotation;
     private int booxDisplayRotation;
     private Size booxDisplaySize;
@@ -121,6 +121,19 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         this.camera = options.getVideoSource() == VideoSource.CAMERA;
         this.booxPenRotation = options.getBooxPenRotation();
         this.controlChannel = controlChannel;
+        this.booxPen = booxPenRotation == -1 ? null : new BooxPenStartup(() -> {
+            DisplayInfo info = ServiceManager.getDisplayManager().getDisplayInfo(0);
+            booxDisplayRotation = info.getRotation();
+            booxDisplaySize = info.getSize();
+            return new BooxPenProcess(booxPenRotation, booxDisplaySize.getWidth(), booxDisplaySize.getHeight());
+        }, error -> {
+            Ln.e("BOOX pen startup failed", error);
+            try {
+                controlChannel.shutdownInput();
+            } catch (IOException e) {
+                Ln.e("Could not interrupt BOOX controller input", e);
+            }
+        });
         this.cleanUp = cleanUp;
 
         if (this.camera) {
@@ -284,11 +297,8 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         thread = new Thread(() -> {
             try {
-                if (booxPenRotation != -1) {
-                    DisplayInfo info = ServiceManager.getDisplayManager().getDisplayInfo(0);
-                    booxDisplayRotation = info.getRotation();
-                    booxDisplaySize = info.getSize();
-                    booxPen = new BooxPenProcess(booxPenRotation, booxDisplaySize.getWidth(), booxDisplaySize.getHeight());
+                if (booxPen != null) {
+                    booxPen.start();
                 }
                 control();
             } catch (IOException e) {
@@ -326,6 +336,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     public void join() throws InterruptedException {
         if (thread != null) {
             thread.join();
+        }
+        if (booxPen != null) {
+            booxPen.join();
         }
         if (sender != null) {
             sender.join();
@@ -535,6 +548,10 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private boolean injectTouch(int action, long pointerId, Position position, float pressure, int actionButton, int buttons) throws IOException {
         long now = SystemClock.uptimeMillis();
+
+        if (booxPenRotation != -1 && pointerId == POINTER_ID_PEN && !booxPen.isReady()) {
+            return false; // Drop pending pen input, never queue it or route it through SDK touch.
+        }
 
         // Release must not depend on a still-valid video mapping or orientation.
         if (booxPen != null && pointerId == POINTER_ID_PEN

@@ -16,6 +16,41 @@ Use a desktop session where SDL receives real pen events and pressure from the t
 
 Before enabling input, use normal scrcpy/mouse navigation to create or select a disposable synthetic Notes notebook/page. Never test in an existing valuable note. Put the physical BOOX pen away, and do not use another writer or scrcpy session against the digitizer. The lock prevents other instances of this backend, not the physical stylus or unrelated tools.
 
+## Pen initialization after reboot
+
+On the supported NoteAir firmware, a reboot may leave the digitizer reporting
+X, Y, pressure and distance all zero. In this specific state, BOOX startup waits
+instead of terminating scrcpy and logs this warning once:
+
+    Pen not initialized on the tablet. Please touch the screen with the stylus, then lift it away to continue.
+
+Touch a safe point on the physical tablet using its stylus, then move the stylus
+away from the screen. This can draw in the foreground application: select a
+disposable page or another safe screen first. Video and ordinary mouse/finger
+navigation remain available while waiting. Incoming remote pen packets are
+discarded, not queued for later playback; start a fresh stroke after the writer
+reports ready.
+
+Discovery is polled once per second, with no human-response deadline. The writer
+child is not started until the same digitizer, with unchanged capabilities,
+reports zero pressure and positive distance. The child still performs its own
+strict discovery and retains its ten-second READY handshake deadline. This does
+not accept distance zero as idle or inject a synthetic initialization event.
+
+Physical pen activity may resume between the parent's idle snapshot and the
+child's fresh probes, including its final automatic-mapping recheck. A valid
+non-idle snapshot of the exact bound digitizer now produces a private binary
+BUSY reply before evdev is opened. The parent closes that attempt and returns
+to its paced wait, without restarting scrcpy or the ADB connection. The notice
+is emitted only once across retries. EOF, malformed replies, lock conflicts,
+metadata errors and changed digitizer identity/capabilities are not retried.
+
+Closing scrcpy or disconnecting cancels pending startup. An initially active pen
+(other than the exact boot-neutral state), malformed or ambiguous metadata,
+changed digitizer capabilities, discovery errors and writer failures remain
+fatal. The wait path is host-fixture-tested and Android-compiled; reboot/resume
+on the physical tablet still requires manual acceptance with the updated build.
+
 ## Automatic input mapping
 
 Use the same scrcpy window/video-to-display coordinate path as normal touch:
