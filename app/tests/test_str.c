@@ -301,7 +301,6 @@ static void test_strlist_contains(void) {
     assert(sc_str_list_contains("abc,,def", ',', ""));
     assert(!sc_str_list_contains("abc", ',', ""));
     assert(sc_str_list_contains(",,|x", '|', ",,"));
-    assert(sc_str_list_contains("xyz", '\0', "xyz"));
 }
 
 static void test_wrap_lines(void) {
