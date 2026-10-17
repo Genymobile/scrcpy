@@ -1909,7 +1909,7 @@ parse_shortcut_mods_item(const char *item, size_t len) {
     }
 #undef STREQ
 
-    bool has_plus = strchr(item, '+');
+    bool has_plus = memchr(item, '+', len);
     if (has_plus) {
         LOGE("Shortcut mod combination with '+' is not supported anymore: "
              "'%.*s' (see #4741)", (int) len, item);
