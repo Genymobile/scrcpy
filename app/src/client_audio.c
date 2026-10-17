@@ -145,6 +145,51 @@ interrupt_callback(void *userdata) {
     return is_stopped(ca);
 }
 
+// Resample a decoded frame (or flush the resampler if in is NULL) and append
+// all the output samples to the FIFO. Converting at most one encoder frame per
+// input frame would leave the rest buffered in the resampler, delaying the
+// audio more and more when the device delivers large chunks.
+static bool
+resample_to_fifo(SwrContext *swr_ctx, AVAudioFifo *fifo, const AVFrame *in,
+                 const AVCodecContext *out_ctx, uint8_t ***buf,
+                 int *buf_capacity) {
+    const uint8_t **in_data = in ? (const uint8_t **) in->extended_data : NULL;
+    int in_samples = in ? in->nb_samples : 0;
+
+    int max_samples = swr_get_out_samples(swr_ctx, in_samples);
+    if (max_samples < 0) {
+        return false;
+    }
+    if (max_samples == 0) {
+        // Nothing can be output yet, just feed the input
+        return swr_convert(swr_ctx, NULL, 0, in_data, in_samples) >= 0;
+    }
+
+    if (max_samples > *buf_capacity) {
+        if (*buf) {
+            av_freep(&(*buf)[0]);
+            av_freep(buf);
+        }
+        *buf_capacity = 0;
+        if (av_samples_alloc_array_and_samples(buf, NULL,
+                                               out_ctx->ch_layout.nb_channels,
+                                               max_samples,
+                                               out_ctx->sample_fmt, 0) < 0) {
+            return false;
+        }
+        *buf_capacity = max_samples;
+    }
+
+    int out_samples =
+        swr_convert(swr_ctx, *buf, max_samples, in_data, in_samples);
+    if (out_samples < 0) {
+        return false;
+    }
+
+    return !out_samples
+        || av_audio_fifo_write(fifo, (void **) *buf, out_samples) == out_samples;
+}
+
 // Send a packet framed as [u32 big-endian size][data]
 static bool
 send_packet(sc_socket socket, const AVPacket *packet) {
@@ -176,6 +221,9 @@ run_client_audio(void *data) {
     AVFrame *in_frame = NULL;
     AVFrame *out_frame = NULL;
     AVAudioFifo *fifo = NULL;
+    AVDictionary *input_options = NULL;
+    uint8_t **resample_buf = NULL;
+    int resample_buf_capacity = 0;
 
     if (is_file) {
         // Open audio file (MP3, OGG, WAV, etc.)
@@ -200,8 +248,17 @@ run_client_audio(void *data) {
     fmt_ctx->interrupt_callback.callback = interrupt_callback;
     fmt_ctx->interrupt_callback.opaque = ca;
 
+#ifdef _WIN32
+    if (!is_file) {
+        // DirectShow uses the device buffer size by default, typically some
+        // multiple of 500 ms, which delays the voice by as much
+        av_dict_set(&input_options, "audio_buffer_size", "40", 0);
+    }
+#endif
+
     // On failure, fmt_ctx is freed and set to NULL
-    if (avformat_open_input(&fmt_ctx, input_path, input_format, NULL) < 0) {
+    if (avformat_open_input(&fmt_ctx, input_path, input_format,
+                            &input_options) < 0) {
         LOGE("Could not open audio %s '%s'", is_file ? "file" : "device",
              input_path);
         goto cleanup;
@@ -354,16 +411,18 @@ run_client_audio(void *data) {
 
         while (avcodec_receive_frame(in_codec_ctx, in_frame) >= 0) {
             // Resample to Opus format
-            int out_samples =
-                    swr_convert(swr_ctx, (uint8_t **)out_frame->data, opus_ctx->frame_size,
-                                            (const uint8_t **)in_frame->data, in_frame->nb_samples);
-
-            if (out_samples <= 0)
+            if (!resample_to_fifo(swr_ctx, fifo, in_frame, opus_ctx,
+                                  &resample_buf, &resample_buf_capacity)) {
+                LOGW("Could not resample client audio");
                 continue;
-
-            av_audio_fifo_write(fifo, (void **)out_frame->data, out_samples);
+            }
 
             while (av_audio_fifo_size(fifo) >= opus_ctx->frame_size) {
+                // The encoder may still reference the previous frame buffer
+                if (av_frame_make_writable(out_frame) < 0) {
+                    LOGE("Could not make the audio frame writable");
+                    goto cleanup;
+                }
                 av_audio_fifo_read(fifo, (void **)out_frame->data,
                            opus_ctx->frame_size);
 
@@ -413,13 +472,12 @@ run_client_audio(void *data) {
         // Flush the decoder
         avcodec_send_packet(in_codec_ctx, NULL);
         while (avcodec_receive_frame(in_codec_ctx, in_frame) >= 0) {
-            int out_samples =
-                    swr_convert(swr_ctx, (uint8_t **)out_frame->data, opus_ctx->frame_size,
-                                            (const uint8_t **)in_frame->data, in_frame->nb_samples);
-            if (out_samples > 0) {
-                av_audio_fifo_write(fifo, (void **)out_frame->data, out_samples);
-            }
+            resample_to_fifo(swr_ctx, fifo, in_frame, opus_ctx,
+                             &resample_buf, &resample_buf_capacity);
         }
+        // Flush the samples still buffered in the resampler
+        resample_to_fifo(swr_ctx, fifo, NULL, opus_ctx, &resample_buf,
+                         &resample_buf_capacity);
 
         // Flush any remaining audio in the FIFO
         while (av_audio_fifo_size(fifo) > 0) {
@@ -428,6 +486,9 @@ run_client_audio(void *data) {
                 samples_to_read = opus_ctx->frame_size;
             }
 
+            if (av_frame_make_writable(out_frame) < 0) {
+                break;
+            }
             av_audio_fifo_read(fifo, (void **)out_frame->data, samples_to_read);
             out_frame->nb_samples = samples_to_read;
 
@@ -461,6 +522,11 @@ run_client_audio(void *data) {
 
 cleanup:
     // Cleanup all resources in reverse order of allocation
+    av_dict_free(&input_options);
+    if (resample_buf) {
+        av_freep(&resample_buf[0]);
+        av_freep(&resample_buf);
+    }
     if (fifo) {
         av_audio_fifo_free(fifo);
     }
