@@ -323,6 +323,12 @@ if get_option('buildtype') == 'debug'
             'src/util/str.c',
             'src/util/strbuf.c',
         ]],
+        ['test_timeout', [
+            'tests/test_timeout.c',
+            'src/util/timeout.c',
+            'src/util/thread.c',
+            'src/util/tick.c',
+        ]],
         ['test_vecdeque', [
             'tests/test_vecdeque.c',
             'src/util/memory.c',
