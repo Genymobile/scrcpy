@@ -1009,7 +1009,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
 static void
 sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
                                      const SDL_MouseWheelEvent *event) {
-    if (im->camera || !im->kp || im->screen->paused || im->disconnected) {
+    if (im->camera || !im->mp || im->screen->paused || im->disconnected) {
         return;
     }
 
