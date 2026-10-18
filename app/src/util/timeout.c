@@ -14,6 +14,7 @@ sc_timeout_init(struct sc_timeout *timeout) {
 
     ok = sc_cond_init(&timeout->cond);
     if (!ok) {
+        sc_mutex_destroy(&timeout->mutex);
         return false;
     }
 
