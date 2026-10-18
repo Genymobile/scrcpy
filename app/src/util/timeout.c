@@ -14,6 +14,7 @@ sc_timeout_init(struct sc_timeout *timeout) {
 
     ok = sc_cond_init(&timeout->cond);
     if (!ok) {
+        sc_mutex_destroy(&timeout->mutex);
         return false;
     }
 
@@ -33,9 +34,12 @@ run_timeout(void *data) {
         timed_out = !sc_cond_timedwait(&timeout->cond, &timeout->mutex,
                     deadline);
     }
+    bool stopped = timeout->stopped;
     sc_mutex_unlock(&timeout->mutex);
 
-    timeout->cbs->on_timeout(timeout, timeout->cbs_userdata);
+    if (!stopped) {
+        timeout->cbs->on_timeout(timeout, timeout->cbs_userdata);
+    }
 
     return 0;
 }
