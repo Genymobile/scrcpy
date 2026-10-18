@@ -11,7 +11,6 @@
 #include "trait/media_listener.h"
 #include "util/thread.h"
 #include "util/tick.h"
-#include "util/vector.h"
 
 struct sc_controller;
 
@@ -45,14 +44,6 @@ struct sc_mpris {
 
     // Private connection to the session bus
     DBusConnection *conn;
-
-    // Pipe to wake up the thread (from libdbus or on stop)
-    int wakeup_pipe[2];
-
-    // Watches registered by libdbus (may be modified from any thread sending
-    // a message, protected by watches_mutex)
-    sc_mutex watches_mutex;
-    struct SC_VECTOR(DBusWatch *) watches;
 
     sc_mutex mutex;
     struct sc_mpris_player player; // protected by mutex

@@ -1,10 +1,7 @@
 #include "mpris.h"
 
 #include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
 #include <inttypes.h>
-#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +21,10 @@
 #define SC_MPRIS_ROOT_INTERFACE "org.mpris.MediaPlayer2"
 #define SC_MPRIS_PLAYER_INTERFACE "org.mpris.MediaPlayer2.Player"
 #define SC_MPRIS_TRACK_ID "/org/mpris/MediaPlayer2/scrcpy/track/0"
+
+// Timeout of one iteration of the D-Bus loop (the stop request is checked
+// after each iteration)
+#define SC_MPRIS_LOOP_TIMEOUT_MS 100
 
 // A D-Bus property of one of the MPRIS interfaces
 struct sc_mpris_property {
@@ -377,6 +378,9 @@ append_properties(DBusMessageIter *iter, const struct sc_mpris *mpris,
 }
 
 // Signals (called from the receiver thread, the mutex must be locked)
+//
+// The messages are only queued: they are written by the D-Bus loop in the
+// mpris thread
 
 static void
 send_message(struct sc_mpris *mpris, DBusMessage *msg) {
@@ -708,149 +712,18 @@ static const DBusObjectPathVTable object_vtable = {
     .message_function = handle_message,
 };
 
-// Main loop integration (watches and wakeup)
-
-static void
-wakeup(struct sc_mpris *mpris) {
-    uint8_t byte = 0;
-    ssize_t r = write(mpris->wakeup_pipe[1], &byte, 1);
-    (void) r; // EAGAIN (pipe full) is fine, the thread will wake up anyway
-}
-
-static void
-wakeup_main(void *data) {
-    wakeup(data);
-}
-
-static dbus_bool_t
-add_watch(DBusWatch *watch, void *data) {
-    struct sc_mpris *mpris = data;
-    sc_mutex_lock(&mpris->watches_mutex);
-    bool ok = sc_vector_push(&mpris->watches, watch);
-    sc_mutex_unlock(&mpris->watches_mutex);
-    if (!ok) {
-        LOG_OOM();
-    }
-    return ok;
-}
-
-static void
-remove_watch(DBusWatch *watch, void *data) {
-    struct sc_mpris *mpris = data;
-    sc_mutex_lock(&mpris->watches_mutex);
-    ssize_t idx = sc_vector_index_of(&mpris->watches, watch);
-    if (idx != -1) {
-        sc_vector_swap_remove(&mpris->watches, idx);
-    }
-    sc_mutex_unlock(&mpris->watches_mutex);
-}
-
-static void
-toggle_watch(DBusWatch *watch, void *data) {
-    (void) watch;
-    // The enabled state is checked on each loop iteration
-    wakeup(data);
-}
-
-static bool
-has_watch(struct sc_mpris *mpris, DBusWatch *watch) {
-    sc_mutex_lock(&mpris->watches_mutex);
-    bool found = sc_vector_index_of(&mpris->watches, watch) != -1;
-    sc_mutex_unlock(&mpris->watches_mutex);
-    return found;
-}
-
 static int
 run_mpris(void *data) {
     struct sc_mpris *mpris = data;
-    DBusConnection *conn = mpris->conn;
-
-    // Snapshot of the enabled watches for one iteration (they may be
-    // modified by libdbus while they are handled), and the matching pollfds
-    // (with the wakeup pipe at index 0)
-    struct SC_VECTOR(DBusWatch *) watches = SC_VECTOR_INITIALIZER;
-    struct SC_VECTOR(struct pollfd) fds = SC_VECTOR_INITIALIZER;
 
     while (!atomic_load(&mpris->stopped)) {
-        watches.size = 0;
-        fds.size = 0;
-
-        struct pollfd wakeup_fd = {
-            .fd = mpris->wakeup_pipe[0],
-            .events = POLLIN,
-        };
-        bool ok = sc_vector_push(&fds, wakeup_fd);
-
-        sc_mutex_lock(&mpris->watches_mutex);
-        for (size_t i = 0; ok && i < mpris->watches.size; ++i) {
-            DBusWatch *watch = mpris->watches.data[i];
-            if (!dbus_watch_get_enabled(watch)) {
-                continue;
-            }
-            unsigned flags = dbus_watch_get_flags(watch);
-            struct pollfd fd = {
-                .fd = dbus_watch_get_unix_fd(watch),
-                .events = (flags & DBUS_WATCH_READABLE ? POLLIN : 0)
-                        | (flags & DBUS_WATCH_WRITABLE ? POLLOUT : 0),
-            };
-            ok = sc_vector_push(&watches, watch) && sc_vector_push(&fds, fd);
-        }
-        sc_mutex_unlock(&mpris->watches_mutex);
-
-        if (!ok) {
-            LOG_OOM();
-            break;
-        }
-
-        int ret = poll(fds.data, fds.size, -1);
-        if (ret < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-            LOGE("Could not poll D-Bus watches: %s", strerror(errno));
-            break;
-        }
-
-        if (fds.data[0].revents & POLLIN) {
-            // Drain the wakeup pipe
-            uint8_t buf[64];
-            while (read(mpris->wakeup_pipe[0], buf, sizeof(buf)) > 0) {
-                // continue
-            }
-        }
-
-        for (size_t i = 0; i < watches.size; ++i) {
-            short revents = fds.data[i + 1].revents;
-            if (!revents) {
-                continue;
-            }
-            DBusWatch *watch = watches.data[i];
-            if (!has_watch(mpris, watch)) {
-                // Removed while handling a previous watch
-                continue;
-            }
-            unsigned flags = (revents & POLLIN ? DBUS_WATCH_READABLE : 0)
-                           | (revents & POLLOUT ? DBUS_WATCH_WRITABLE : 0)
-                           | (revents & POLLERR ? DBUS_WATCH_ERROR : 0)
-                           | (revents & POLLHUP ? DBUS_WATCH_HANGUP : 0);
-            if (!dbus_watch_handle(watch, flags)) {
-                LOG_OOM();
-            }
-        }
-
-        while (dbus_connection_get_dispatch_status(conn)
-                == DBUS_DISPATCH_DATA_REMAINS) {
-            dbus_connection_dispatch(conn);
-        }
-
-        if (!dbus_connection_get_is_connected(conn)) {
+        // Read and write the connection, dispatch one message if any
+        if (!dbus_connection_read_write_dispatch(mpris->conn,
+                                                 SC_MPRIS_LOOP_TIMEOUT_MS)) {
             LOGW("Disconnected from the D-Bus session bus");
             break;
         }
     }
-
-    sc_vector_destroy(&watches);
-    sc_vector_destroy(&fds);
 
     return 0;
 }
@@ -888,12 +761,6 @@ sc_mpris_on_update(struct sc_media_listener *listener,
     }
 
     sc_mutex_unlock(&mpris->mutex);
-}
-
-static bool
-set_nonblocking(int fd) {
-    int flags = fcntl(fd, F_GETFL, 0);
-    return flags != -1 && fcntl(fd, F_SETFL, flags | O_NONBLOCK) != -1;
 }
 
 static bool
@@ -941,7 +808,6 @@ sc_mpris_init(struct sc_mpris *mpris, struct sc_controller *controller) {
     mpris->media_listener.ops = &ops;
     mpris->controller = controller;
     atomic_init(&mpris->stopped, false);
-    sc_vector_init(&mpris->watches);
 
     // No media session yet
     mpris->player.state = SC_MEDIA_STATE_STOPPED;
@@ -957,16 +823,11 @@ sc_mpris_init(struct sc_mpris *mpris, struct sc_controller *controller) {
         return false;
     }
 
-    ok = sc_mutex_init(&mpris->watches_mutex);
-    if (!ok) {
-        goto error_destroy_mutex;
-    }
-
     // The connection is used from the receiver thread (signals) and from the
     // mpris thread (requests)
     if (!dbus_threads_init_default()) {
         LOGE("Could not initialize libdbus threading");
-        goto error_destroy_watches_mutex;
+        goto error_destroy_mutex;
     }
 
     DBusError err;
@@ -975,7 +836,7 @@ sc_mpris_init(struct sc_mpris *mpris, struct sc_controller *controller) {
     if (!conn) {
         LOGE("Could not connect to the D-Bus session bus: %s", err.message);
         dbus_error_free(&err);
-        goto error_destroy_watches_mutex;
+        goto error_destroy_mutex;
     }
 
     dbus_connection_set_exit_on_disconnect(conn, FALSE);
@@ -984,45 +845,20 @@ sc_mpris_init(struct sc_mpris *mpris, struct sc_controller *controller) {
         goto error_close_conn;
     }
 
-    if (pipe(mpris->wakeup_pipe) == -1) {
-        LOGE("Could not create wakeup pipe: %s", strerror(errno));
-        goto error_close_conn;
-    }
-    if (!set_nonblocking(mpris->wakeup_pipe[0])
-            || !set_nonblocking(mpris->wakeup_pipe[1])) {
-        LOGE("Could not configure wakeup pipe: %s", strerror(errno));
-        goto error_close_pipe;
-    }
-
     if (!dbus_connection_try_register_object_path(conn, SC_MPRIS_OBJECT_PATH,
                                                   &object_vtable, mpris,
                                                   &err)) {
         LOGE("Could not register MPRIS object path: %s", err.message);
         dbus_error_free(&err);
-        goto error_close_pipe;
+        goto error_close_conn;
     }
-
-    if (!dbus_connection_set_watch_functions(conn, add_watch, remove_watch,
-                                             toggle_watch, mpris, NULL)) {
-        LOG_OOM();
-        goto error_unregister;
-    }
-    dbus_connection_set_wakeup_main_function(conn, wakeup_main, mpris, NULL);
 
     mpris->conn = conn;
     return true;
 
-error_unregister:
-    dbus_connection_unregister_object_path(conn, SC_MPRIS_OBJECT_PATH);
-error_close_pipe:
-    close(mpris->wakeup_pipe[0]);
-    close(mpris->wakeup_pipe[1]);
 error_close_conn:
     dbus_connection_close(conn);
     dbus_connection_unref(conn);
-error_destroy_watches_mutex:
-    sc_vector_destroy(&mpris->watches);
-    sc_mutex_destroy(&mpris->watches_mutex);
 error_destroy_mutex:
     sc_mutex_destroy(&mpris->mutex);
     return false;
@@ -1042,8 +878,8 @@ sc_mpris_start(struct sc_mpris *mpris) {
 
 void
 sc_mpris_stop(struct sc_mpris *mpris) {
+    // The thread checks the flag after each loop iteration
     atomic_store(&mpris->stopped, true);
-    wakeup(mpris);
 }
 
 void
@@ -1058,14 +894,9 @@ sc_mpris_destroy(struct sc_mpris *mpris) {
     dbus_connection_close(mpris->conn);
     dbus_connection_unref(mpris->conn);
 
-    close(mpris->wakeup_pipe[0]);
-    close(mpris->wakeup_pipe[1]);
-    sc_vector_destroy(&mpris->watches);
-
     free(mpris->player.title);
     free(mpris->player.artist);
     free(mpris->player.album);
 
-    sc_mutex_destroy(&mpris->watches_mutex);
     sc_mutex_destroy(&mpris->mutex);
 }
