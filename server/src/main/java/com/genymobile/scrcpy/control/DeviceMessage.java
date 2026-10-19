@@ -27,10 +27,10 @@ public final class DeviceMessage {
     private int id;
     private byte[] data;
     private String title;
-    private int mediaState;
-    private long mediaPosition;
-    private int mediaCapabilities;
-    private long mediaDuration;
+    private int state;
+    private long position;
+    private int capabilities;
+    private long duration;
     private String artist;
     private String album;
 
@@ -63,10 +63,10 @@ public final class DeviceMessage {
             String album) {
         DeviceMessage event = new DeviceMessage();
         event.type = TYPE_MEDIA_UPDATE;
-        event.mediaState = state;
-        event.mediaPosition = positionMs;
-        event.mediaCapabilities = capabilities;
-        event.mediaDuration = durationMs;
+        event.state = state;
+        event.position = positionMs;
+        event.capabilities = capabilities;
+        event.duration = durationMs;
         event.title = title;
         event.artist = artist;
         event.album = album;
@@ -97,20 +97,20 @@ public final class DeviceMessage {
         return title;
     }
 
-    public int getMediaState() {
-        return mediaState;
+    public int getState() {
+        return state;
     }
 
-    public long getMediaPosition() {
-        return mediaPosition;
+    public long getPosition() {
+        return position;
     }
 
-    public int getMediaCapabilities() {
-        return mediaCapabilities;
+    public int getCapabilities() {
+        return capabilities;
     }
 
-    public long getMediaDuration() {
-        return mediaDuration;
+    public long getDuration() {
+        return duration;
     }
 
     public String getArtist() {

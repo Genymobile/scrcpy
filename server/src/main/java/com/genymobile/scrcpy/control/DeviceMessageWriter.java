@@ -12,7 +12,7 @@ public class DeviceMessageWriter {
 
     private static final int MESSAGE_MAX_SIZE = 1 << 18; // 256k
     public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 5; // type: 1 byte; length: 4 bytes
-    public static final int MEDIA_TEXT_MAX_LENGTH = 1024;
+    private static final int MEDIA_TEXT_MAX_LENGTH = 1024;
 
     private final DataOutputStream dos;
 
@@ -41,10 +41,10 @@ public class DeviceMessageWriter {
                 dos.write(data);
                 break;
             case DeviceMessage.TYPE_MEDIA_UPDATE:
-                dos.writeByte(msg.getMediaState());
-                dos.writeLong(msg.getMediaPosition());
-                dos.writeInt(msg.getMediaCapabilities());
-                dos.writeLong(msg.getMediaDuration());
+                dos.writeByte(msg.getState());
+                dos.writeLong(msg.getPosition());
+                dos.writeInt(msg.getCapabilities());
+                dos.writeLong(msg.getDuration());
                 writeMediaText(msg.getTitle());
                 writeMediaText(msg.getArtist());
                 writeMediaText(msg.getAlbum());
