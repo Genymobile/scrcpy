@@ -20,7 +20,7 @@ public final class MediaManager {
 
     // Everything runs on this thread (no synchronization needed)
     private final HandlerThread thread = new HandlerThread("MediaManager");
-    private Handler handler;
+    private final Handler handler;
 
     // The media session exposed to the client (the one with the highest priority), null if none
     private MediaController current;
@@ -39,9 +39,6 @@ public final class MediaManager {
 
     public MediaManager(DeviceMessageSender sender) {
         this.sender = sender;
-    }
-
-    public void start() {
         thread.start();
         handler = new Handler(thread.getLooper());
         handler.post(this::init);

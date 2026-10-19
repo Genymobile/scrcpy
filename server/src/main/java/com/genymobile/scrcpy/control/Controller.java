@@ -297,9 +297,6 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         if (sender != null) {
             sender.start();
         }
-        if (mediaManager != null) {
-            mediaManager.start();
-        }
     }
 
     @Override
