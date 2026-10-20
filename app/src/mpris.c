@@ -76,51 +76,15 @@ player_position_us(const struct sc_mpris_player *player) {
 
 // D-Bus marshalling helpers (return false on OOM)
 
+// Append a basic value (pointed to by value, as expected by libdbus) wrapped
+// in a variant
 static bool
-append_variant_string(DBusMessageIter *iter, const char *value) {
+append_variant(DBusMessageIter *iter, int type, const void *value) {
+    char signature[2] = {type, '\0'};
     DBusMessageIter var;
-    return dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
-                                            DBUS_TYPE_STRING_AS_STRING, &var)
-        && dbus_message_iter_append_basic(&var, DBUS_TYPE_STRING, &value)
-        && dbus_message_iter_close_container(iter, &var);
-}
-
-static bool
-append_variant_object_path(DBusMessageIter *iter, const char *value) {
-    DBusMessageIter var;
-    return dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
-                                            DBUS_TYPE_OBJECT_PATH_AS_STRING,
+    return dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT, signature,
                                             &var)
-        && dbus_message_iter_append_basic(&var, DBUS_TYPE_OBJECT_PATH, &value)
-        && dbus_message_iter_close_container(iter, &var);
-}
-
-static bool
-append_variant_bool(DBusMessageIter *iter, bool value) {
-    dbus_bool_t b = value;
-    DBusMessageIter var;
-    return dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
-                                            DBUS_TYPE_BOOLEAN_AS_STRING, &var)
-        && dbus_message_iter_append_basic(&var, DBUS_TYPE_BOOLEAN, &b)
-        && dbus_message_iter_close_container(iter, &var);
-}
-
-static bool
-append_variant_double(DBusMessageIter *iter, double value) {
-    DBusMessageIter var;
-    return dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
-                                            DBUS_TYPE_DOUBLE_AS_STRING, &var)
-        && dbus_message_iter_append_basic(&var, DBUS_TYPE_DOUBLE, &value)
-        && dbus_message_iter_close_container(iter, &var);
-}
-
-static bool
-append_variant_int64(DBusMessageIter *iter, int64_t value) {
-    dbus_int64_t v = value;
-    DBusMessageIter var;
-    return dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
-                                            DBUS_TYPE_INT64_AS_STRING, &var)
-        && dbus_message_iter_append_basic(&var, DBUS_TYPE_INT64, &v)
+        && dbus_message_iter_append_basic(&var, type, value)
         && dbus_message_iter_close_container(iter, &var);
 }
 
@@ -168,22 +132,24 @@ append_metadata(DBusMessageIter *iter, const struct sc_mpris_player *player) {
         return false;
     }
 
+    const char *track_id = SC_MPRIS_TRACK_ID;
     if (!open_dict_entry(&dict, &entry, "mpris:trackid")
-            || !append_variant_object_path(&entry, SC_MPRIS_TRACK_ID)
+            || !append_variant(&entry, DBUS_TYPE_OBJECT_PATH, &track_id)
             || !dbus_message_iter_close_container(&dict, &entry)) {
         return false;
     }
 
     if (player->duration_ms != SC_MEDIA_DURATION_UNKNOWN) {
+        dbus_int64_t length_us = player->duration_ms * 1000;
         if (!open_dict_entry(&dict, &entry, "mpris:length")
-                || !append_variant_int64(&entry, player->duration_ms * 1000)
+                || !append_variant(&entry, DBUS_TYPE_INT64, &length_us)
                 || !dbus_message_iter_close_container(&dict, &entry)) {
             return false;
         }
     }
     if (player->title) {
         if (!open_dict_entry(&dict, &entry, "xesam:title")
-                || !append_variant_string(&entry, player->title)
+                || !append_variant(&entry, DBUS_TYPE_STRING, &player->title)
                 || !dbus_message_iter_close_container(&dict, &entry)) {
             return false;
         }
@@ -198,7 +164,7 @@ append_metadata(DBusMessageIter *iter, const struct sc_mpris_player *player) {
     }
     if (player->album) {
         if (!open_dict_entry(&dict, &entry, "xesam:album")
-                || !append_variant_string(&entry, player->album)
+                || !append_variant(&entry, DBUS_TYPE_STRING, &player->album)
                 || !dbus_message_iter_close_container(&dict, &entry)) {
             return false;
         }
@@ -213,25 +179,29 @@ append_metadata(DBusMessageIter *iter, const struct sc_mpris_player *player) {
 static bool
 prop_true(DBusMessageIter *iter, const struct sc_mpris *mpris) {
     (void) mpris;
-    return append_variant_bool(iter, true);
+    dbus_bool_t value = TRUE;
+    return append_variant(iter, DBUS_TYPE_BOOLEAN, &value);
 }
 
 static bool
 prop_false(DBusMessageIter *iter, const struct sc_mpris *mpris) {
     (void) mpris;
-    return append_variant_bool(iter, false);
+    dbus_bool_t value = FALSE;
+    return append_variant(iter, DBUS_TYPE_BOOLEAN, &value);
 }
 
 static bool
 prop_one(DBusMessageIter *iter, const struct sc_mpris *mpris) {
     (void) mpris;
-    return append_variant_double(iter, 1.0);
+    double value = 1.0;
+    return append_variant(iter, DBUS_TYPE_DOUBLE, &value);
 }
 
 static bool
 prop_identity(DBusMessageIter *iter, const struct sc_mpris *mpris) {
     (void) mpris;
-    return append_variant_string(iter, "scrcpy");
+    const char *value = "scrcpy";
+    return append_variant(iter, DBUS_TYPE_STRING, &value);
 }
 
 static bool
@@ -243,13 +213,14 @@ prop_no_strings(DBusMessageIter *iter, const struct sc_mpris *mpris) {
 static bool
 prop_loop_status(DBusMessageIter *iter, const struct sc_mpris *mpris) {
     (void) mpris;
-    return append_variant_string(iter, "None");
+    const char *value = "None";
+    return append_variant(iter, DBUS_TYPE_STRING, &value);
 }
 
 static bool
 prop_playback_status(DBusMessageIter *iter, const struct sc_mpris *mpris) {
-    const char *status = playback_status_name(mpris->player.state);
-    return append_variant_string(iter, status);
+    const char *value = playback_status_name(mpris->player.state);
+    return append_variant(iter, DBUS_TYPE_STRING, &value);
 }
 
 static bool
@@ -259,13 +230,15 @@ prop_metadata(DBusMessageIter *iter, const struct sc_mpris *mpris) {
 
 static bool
 prop_position(DBusMessageIter *iter, const struct sc_mpris *mpris) {
-    return append_variant_int64(iter, player_position_us(&mpris->player));
+    dbus_int64_t value = player_position_us(&mpris->player);
+    return append_variant(iter, DBUS_TYPE_INT64, &value);
 }
 
 static bool
 prop_capability(DBusMessageIter *iter, const struct sc_mpris *mpris,
                 enum sc_media_cap cap) {
-    return append_variant_bool(iter, mpris->player.capabilities & cap);
+    dbus_bool_t value = !!(mpris->player.capabilities & cap);
+    return append_variant(iter, DBUS_TYPE_BOOLEAN, &value);
 }
 
 static bool
