@@ -576,7 +576,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                     }
                     return;
                 case SDLK_P:
-                    if (im->kp && !shift && !repeat && !paused) {
+                    if (!shift && !repeat && sc_input_manager_can_press_power(im)) {
                         action_power(im, action);
                     }
                     return;
@@ -1163,6 +1163,12 @@ sc_input_manager_on_device_disconnected(struct sc_input_manager *im) {
     }
 }
 
+bool
+sc_input_manager_can_press_power(const struct sc_input_manager *im) {
+    return im->controller && im->kp && !im->camera && !im->disconnected
+        && !im->screen->paused;
+}
+
 void
 sc_input_manager_handle_event(struct sc_input_manager *im,
                               const SDL_Event *event) {
@@ -1202,6 +1208,12 @@ sc_input_manager_handle_event(struct sc_input_manager *im,
             break;
         case SDL_EVENT_DROP_FILE:
             sc_input_manager_process_file(im, &event->drop);
+            break;
+        case SC_EVENT_POWER_BUTTON:
+            if (sc_input_manager_can_press_power(im)) {
+                action_power(im, SC_ACTION_DOWN);
+                action_power(im, SC_ACTION_UP);
+            }
             break;
         case SC_EVENT_DEVICE_DISCONNECTED:
             sc_input_manager_on_device_disconnected(im);

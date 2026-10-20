@@ -14,6 +14,10 @@
 # include <windows.h>
 #endif
 
+#ifdef __APPLE__
+# include "sys/macos/menu.h"
+#endif
+
 #include "audio_player.h"
 #include "controller.h"
 #include "decoder.h"
@@ -847,6 +851,11 @@ aoa_complete:
             goto end;
         }
         screen_initialized = true;
+#ifdef __APPLE__
+        if (!sc_macos_menu_init(&s->screen)) {
+            LOGW("Could not add the device menu");
+        }
+#endif
     }
 
     bool needs_video_decoder = options->video_playback;
@@ -1179,6 +1188,9 @@ end:
     // destruction
     if (screen_initialized) {
         sc_screen_join(&s->screen);
+#ifdef __APPLE__
+        sc_macos_menu_destroy();
+#endif
         sc_screen_destroy(&s->screen);
     }
 
