@@ -112,6 +112,11 @@ enum {
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
     OPT_NO_TERMINAL_TITLE,
     OPT_HWDEC,
+    OPT_ADB_OVERLAY,
+    OPT_ADB_OVERLAY_ALL,
+    OPT_ADB_OVERLAY_FILTER,
+    OPT_ADB_OVERLAY_TIMEOUT,
+    OPT_ADB_OVERLAY_POSITION,
 };
 
 struct sc_option {
@@ -148,6 +153,50 @@ struct sc_getopt_adapter {
 };
 
 static const struct sc_option options[] = {
+    {
+        .longopt_id = OPT_ADB_OVERLAY,
+        .longopt = "adb-overlay",
+        .text = "Render an on-device HUD overlay card at the bottom of the "
+                "video stream showing executed adb shell commands, timestamps, "
+                "and execution duration.",
+    },
+    {
+        .longopt_id = OPT_ADB_OVERLAY_ALL,
+        .longopt = "adb-overlay-all",
+        .text = "Render an expanded on-device HUD overlay card showing "
+                "executed adb commands along with their stdout/stderr return "
+                "output and exit status.",
+    },
+    {
+        .longopt_id = OPT_ADB_OVERLAY_FILTER,
+        .longopt = "adb-overlay-filter",
+        .argdesc = "patterns",
+        .text = "Filter ADB commands shown on the overlay using "
+                "comma-separated patterns (case-insensitive substring or "
+                "regex).\n"
+                "Plain patterns include only matching commands (e.g. "
+                "\"pm,car_service\").\n"
+                "Patterns prefixed with '!' or '-' exclude matching commands "
+                "(e.g. \"!device_name\").",
+    },
+    {
+        .longopt_id = OPT_ADB_OVERLAY_POSITION,
+        .longopt = "adb-overlay-position",
+        .argdesc = "position",
+        .text = "Set the vertical screen position of the ADB overlay card "
+                "(bottom, top, or middle).\n"
+                "Default is bottom.",
+    },
+    {
+        .longopt_id = OPT_ADB_OVERLAY_TIMEOUT,
+        .longopt = "adb-overlay-timeout",
+        .argdesc = "seconds",
+        .text = "Set how long (in seconds) the ADB overlay card remains "
+                "visible after a command completes.\n"
+                "Pass 0, -1, \"never\", or \"sticky\" to keep the card visible "
+                "until the next command is executed.\n"
+                "Default is 5.",
+    },
     {
         .longopt_id = OPT_ALWAYS_ON_TOP,
         .longopt = "always-on-top",
@@ -2314,6 +2363,45 @@ parse_screen_off_timeout(const char *s, sc_tick *tick) {
 }
 
 static bool
+parse_adb_overlay_timeout(const char *s, int32_t *timeout_sec) {
+    if (!strcmp(s, "never") || !strcmp(s, "sticky")) {
+        *timeout_sec = 0;
+        return true;
+    }
+
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, -1, 0x7FFFFFFF / 1000,
+                                "adb overlay timeout");
+    if (!ok) {
+        return false;
+    }
+
+    *timeout_sec = (int32_t) value;
+    return true;
+}
+
+static bool
+parse_adb_overlay_position(const char *s,
+                           enum sc_adb_overlay_position *position) {
+    if (!strcmp(s, "bottom")) {
+        *position = SC_ADB_OVERLAY_POSITION_BOTTOM;
+        return true;
+    }
+    if (!strcmp(s, "top")) {
+        *position = SC_ADB_OVERLAY_POSITION_TOP;
+        return true;
+    }
+    if (!strcmp(s, "middle") || !strcmp(s, "center")) {
+        *position = SC_ADB_OVERLAY_POSITION_MIDDLE;
+        return true;
+    }
+
+    LOGE("Unsupported adb overlay position: %s "
+         "(expected bottom, top or middle)", s);
+    return false;
+}
+
+static bool
 parse_pause_on_exit(const char *s, enum sc_pause_on_exit *pause_on_exit) {
     if (!s || !strcmp(s, "true")) {
         *pause_on_exit = SC_PAUSE_ON_EXIT_TRUE;
@@ -3008,6 +3096,36 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_HWDEC:
                 if (!parse_hwdec_mode(optarg, &opts->hwdec_mode)) {
                     return false;
+                }
+                break;
+            case OPT_ADB_OVERLAY:
+                opts->adb_overlay = SC_ADB_OVERLAY_COMPACT;
+                break;
+            case OPT_ADB_OVERLAY_ALL:
+                opts->adb_overlay = SC_ADB_OVERLAY_ALL;
+                break;
+            case OPT_ADB_OVERLAY_TIMEOUT:
+                if (!parse_adb_overlay_timeout(optarg,
+                                               &opts->adb_overlay_timeout)) {
+                    return false;
+                }
+                if (opts->adb_overlay == SC_ADB_OVERLAY_OFF) {
+                    opts->adb_overlay = SC_ADB_OVERLAY_COMPACT;
+                }
+                break;
+            case OPT_ADB_OVERLAY_POSITION:
+                if (!parse_adb_overlay_position(optarg,
+                                                &opts->adb_overlay_position)) {
+                    return false;
+                }
+                if (opts->adb_overlay == SC_ADB_OVERLAY_OFF) {
+                    opts->adb_overlay = SC_ADB_OVERLAY_COMPACT;
+                }
+                break;
+            case OPT_ADB_OVERLAY_FILTER:
+                opts->adb_overlay_filter = optarg;
+                if (opts->adb_overlay == SC_ADB_OVERLAY_OFF) {
+                    opts->adb_overlay = SC_ADB_OVERLAY_COMPACT;
                 }
                 break;
             default:

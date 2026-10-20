@@ -124,6 +124,10 @@ const struct scrcpy_options scrcpy_options_default = {
     .flex_display = false,
     .ignore_video_encoder_constraints = false,
     .update_terminal_title = true,
+    .adb_overlay = SC_ADB_OVERLAY_OFF,
+    .adb_overlay_timeout = 5,
+    .adb_overlay_position = SC_ADB_OVERLAY_POSITION_BOTTOM,
+    .adb_overlay_filter = NULL,
 };
 
 enum sc_orientation

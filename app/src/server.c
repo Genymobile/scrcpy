@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "adb/adb.h"
 #include "util/env.h"
@@ -41,6 +42,10 @@ get_server_path(void) {
     }
 #else
     server_path = sc_file_get_local_path(SC_SERVER_FILENAME);
+    if (server_path && access(server_path, R_OK) != 0) {
+        free(server_path);
+        server_path = sc_file_get_local_path("../../" SC_SERVER_FILENAME);
+    }
     if (!server_path) {
         LOGE("Could not get local file path, "
              "using " SC_SERVER_FILENAME " from current directory");
@@ -439,6 +444,43 @@ execute_server(struct sc_server *server,
     }
     if (params->keep_active) {
         ADD_PARAM("keep_active=true");
+    }
+    if (params->adb_overlay != SC_ADB_OVERLAY_OFF) {
+        ADD_PARAM("adb_overlay=%s",
+                  params->adb_overlay == SC_ADB_OVERLAY_ALL ? "all" : "compact");
+        if (params->adb_overlay_timeout != 5) {
+            ADD_PARAM("adb_overlay_timeout=%" PRId32,
+                      params->adb_overlay_timeout);
+        }
+        if (params->adb_overlay_position != SC_ADB_OVERLAY_POSITION_BOTTOM) {
+            const char *pos =
+                params->adb_overlay_position == SC_ADB_OVERLAY_POSITION_TOP
+                    ? "top"
+                    : "middle";
+            ADD_PARAM("adb_overlay_position=%s", pos);
+        }
+        if (params->adb_overlay_filter && params->adb_overlay_filter[0] != '\0') {
+            size_t len = strlen(params->adb_overlay_filter);
+            char *hex = malloc(len * 2 + 1);
+            if (!hex) {
+                LOG_OOM();
+                goto end;
+            }
+            static const char hex_digits[] = "0123456789abcdef";
+            for (size_t i = 0; i < len; ++i) {
+                uint8_t b = (uint8_t) params->adb_overlay_filter[i];
+                hex[i * 2] = hex_digits[b >> 4];
+                hex[i * 2 + 1] = hex_digits[b & 0x0f];
+            }
+            hex[len * 2] = '\0';
+            char *p;
+            int r = asprintf(&p, "adb_overlay_filter=hex:%s", hex);
+            free(hex);
+            if (r == -1) {
+                goto end;
+            }
+            cmd[count++] = p;
+        }
     }
     if (params->list & SC_OPTION_LIST_ENCODERS) {
         ADD_PARAM("list_encoders=true");
