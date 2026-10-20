@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy.overlay;
 
+import com.genymobile.scrcpy.Options;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -20,6 +22,26 @@ public class AdbOverlayTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    @Test
+    public void testOptionsParseAdbOverlayModesAndFilter() {
+        Options compactOpts = Options.parse("5.0.1", "adb_overlay=compact");
+        assertEquals(Options.AdbOverlayMode.COMPACT, compactOpts.getAdbOverlayMode());
+        assertEquals(5, compactOpts.getAdbOverlayTimeout());
+        assertEquals(Options.AdbOverlayPosition.BOTTOM, compactOpts.getAdbOverlayPosition());
+
+        Options allOpts =
+                Options.parse(
+                        "5.0.1",
+                        "adb_overlay=all",
+                        "adb_overlay_timeout=0",
+                        "adb_overlay_position=top",
+                        "adb_overlay_filter=!device_name,pm");
+        assertEquals(Options.AdbOverlayMode.ALL, allOpts.getAdbOverlayMode());
+        assertEquals(0, allOpts.getAdbOverlayTimeout());
+        assertEquals(Options.AdbOverlayPosition.TOP, allOpts.getAdbOverlayPosition());
+        assertEquals("!device_name,pm", allOpts.getAdbOverlayFilter());
+    }
 
     @Test
     public void testProcPollingDetectsAndCompletesAdbShellCommand() throws Exception {
