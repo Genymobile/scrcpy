@@ -11,9 +11,11 @@ import com.genymobile.scrcpy.display.DisplayResizeDebouncer;
 import com.genymobile.scrcpy.model.NewDisplay;
 import com.genymobile.scrcpy.model.Orientation;
 import com.genymobile.scrcpy.model.Size;
+import com.genymobile.scrcpy.opengl.AdbOverlayOpenGLFilter;
 import com.genymobile.scrcpy.opengl.AffineOpenGLFilter;
 import com.genymobile.scrcpy.opengl.OpenGLFilter;
 import com.genymobile.scrcpy.opengl.OpenGLRunner;
+import com.genymobile.scrcpy.overlay.AdbCommandMonitor;
 import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
@@ -50,6 +52,11 @@ public class NewDisplayCapture extends SurfaceCapture {
     private AffineMatrix displayTransform;
     private AffineMatrix eventTransform;
     private OpenGLRunner glRunner;
+    private final Options.AdbOverlayMode adbOverlayMode;
+    private final int adbOverlayTimeout;
+    private final Options.AdbOverlayPosition adbOverlayPosition;
+    private final String adbOverlayFilter;
+    private AdbCommandMonitor adbCommandMonitor;
 
     private Size mainDisplaySize;
     private int mainDisplayDpi;
@@ -88,6 +95,10 @@ public class NewDisplayCapture extends SurfaceCapture {
         this.vdDestroyContent = options.getVDDestroyContent();
         this.vdSystemDecorations = options.getVDSystemDecorations();
         this.flexDisplay = options.getFlexDisplay();
+        this.adbOverlayMode = options.getAdbOverlayMode();
+        this.adbOverlayTimeout = options.getAdbOverlayTimeout();
+        this.adbOverlayPosition = options.getAdbOverlayPosition();
+        this.adbOverlayFilter = options.getAdbOverlayFilter();
     }
 
     @Override
@@ -265,11 +276,21 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     @Override
     public void start(Surface surface) throws IOException {
-        if (displayTransform != null) {
+        boolean useAdbOverlay = adbOverlayMode != Options.AdbOverlayMode.OFF;
+        if (displayTransform != null || useAdbOverlay) {
             assert glRunner == null;
-            OpenGLFilter glFilter = new AffineOpenGLFilter(displayTransform);
+            OpenGLFilter glFilter;
+            if (useAdbOverlay) {
+                adbCommandMonitor = new AdbCommandMonitor(adbOverlayTimeout, adbOverlayFilter);
+                glFilter = new AdbOverlayOpenGLFilter(displayTransform, videoSize, adbOverlayMode, adbOverlayPosition, adbCommandMonitor);
+            } else {
+                glFilter = new AffineOpenGLFilter(displayTransform);
+            }
             glRunner = new OpenGLRunner(glFilter);
             surface = glRunner.start(physicalSize, videoSize, surface);
+            if (adbCommandMonitor != null) {
+                adbCommandMonitor.start(glRunner::requestRender);
+            }
         }
 
         if (virtualDisplay == null) {
@@ -286,6 +307,10 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     @Override
     public void stop() {
+        if (adbCommandMonitor != null) {
+            adbCommandMonitor.stop();
+            adbCommandMonitor = null;
+        }
         if (glRunner != null) {
             glRunner.stopAndRelease();
             glRunner = null;
