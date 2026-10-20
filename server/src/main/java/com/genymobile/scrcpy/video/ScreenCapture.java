@@ -10,9 +10,11 @@ import com.genymobile.scrcpy.display.DisplayProperties;
 import com.genymobile.scrcpy.model.ConfigurationException;
 import com.genymobile.scrcpy.model.Orientation;
 import com.genymobile.scrcpy.model.Size;
+import com.genymobile.scrcpy.opengl.AdbOverlayOpenGLFilter;
 import com.genymobile.scrcpy.opengl.AffineOpenGLFilter;
 import com.genymobile.scrcpy.opengl.OpenGLFilter;
 import com.genymobile.scrcpy.opengl.OpenGLRunner;
+import com.genymobile.scrcpy.overlay.AdbCommandMonitor;
 import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
@@ -49,6 +51,11 @@ public class ScreenCapture extends SurfaceCapture {
 
     private AffineMatrix transform;
     private OpenGLRunner glRunner;
+    private final Options.AdbOverlayMode adbOverlayMode;
+    private final int adbOverlayTimeout;
+    private final Options.AdbOverlayPosition adbOverlayPosition;
+    private final String adbOverlayFilter;
+    private AdbCommandMonitor adbCommandMonitor;
 
     public ScreenCapture(VirtualDisplayListener vdListener, Options options) {
         this.vdListener = vdListener;
@@ -60,6 +67,10 @@ public class ScreenCapture extends SurfaceCapture {
         assert captureOrientationLock != null;
         assert captureOrientation != null;
         this.angle = options.getAngle();
+        this.adbOverlayMode = options.getAdbOverlayMode();
+        this.adbOverlayTimeout = options.getAdbOverlayTimeout();
+        this.adbOverlayPosition = options.getAdbOverlayPosition();
+        this.adbOverlayFilter = options.getAdbOverlayFilter();
     }
 
     @Override
@@ -117,13 +128,22 @@ public class ScreenCapture extends SurfaceCapture {
         }
 
         Size inputSize;
-        if (transform != null) {
-            // If there is a filter, it must receive the full display content
-            inputSize = displayInfo.getSize();
+        boolean useAdbOverlay = adbOverlayMode != Options.AdbOverlayMode.OFF;
+        if (transform != null || useAdbOverlay) {
+            inputSize = transform != null ? displayInfo.getSize() : videoSize;
             assert glRunner == null;
-            OpenGLFilter glFilter = new AffineOpenGLFilter(transform);
+            OpenGLFilter glFilter;
+            if (useAdbOverlay) {
+                adbCommandMonitor = new AdbCommandMonitor(adbOverlayTimeout, adbOverlayFilter);
+                glFilter = new AdbOverlayOpenGLFilter(transform, videoSize, adbOverlayMode, adbOverlayPosition, adbCommandMonitor);
+            } else {
+                glFilter = new AffineOpenGLFilter(transform);
+            }
             glRunner = new OpenGLRunner(glFilter);
             surface = glRunner.start(inputSize, videoSize, surface);
+            if (adbCommandMonitor != null) {
+                adbCommandMonitor.start(glRunner::requestRender);
+            }
         } else {
             // If there is no filter, the display must be rendered at target video size directly
             inputSize = videoSize;
@@ -176,6 +196,10 @@ public class ScreenCapture extends SurfaceCapture {
 
     @Override
     public void stop() {
+        if (adbCommandMonitor != null) {
+            adbCommandMonitor.stop();
+            adbCommandMonitor = null;
+        }
         if (glRunner != null) {
             glRunner.stopAndRelease();
             glRunner = null;

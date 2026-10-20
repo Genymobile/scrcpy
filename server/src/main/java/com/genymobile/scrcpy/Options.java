@@ -81,6 +81,23 @@ public class Options {
     private boolean listCameraSizes;
     private boolean listApps;
 
+    public enum AdbOverlayMode {
+        OFF,
+        COMPACT,
+        ALL
+    }
+
+    public enum AdbOverlayPosition {
+        BOTTOM,
+        TOP,
+        MIDDLE
+    }
+
+    private AdbOverlayMode adbOverlayMode = AdbOverlayMode.OFF;
+    private int adbOverlayTimeout = 5; // seconds (0 or -1 = stay until next command)
+    private AdbOverlayPosition adbOverlayPosition = AdbOverlayPosition.BOTTOM;
+    private String adbOverlayFilter;
+
     // Options not used by the scrcpy client, but useful to use scrcpy-server directly
     private boolean sendDeviceMeta = true; // send device name and size
     private boolean sendFrameMeta = true; // send PTS so that the client may record properly
@@ -319,6 +336,26 @@ public class Options {
         return sendStreamMeta;
     }
 
+    public AdbOverlayMode getAdbOverlayMode() {
+        return adbOverlayMode;
+    }
+
+    public boolean hasAdbOverlay() {
+        return adbOverlayMode != AdbOverlayMode.OFF;
+    }
+
+    public int getAdbOverlayTimeout() {
+        return adbOverlayTimeout;
+    }
+
+    public AdbOverlayPosition getAdbOverlayPosition() {
+        return adbOverlayPosition;
+    }
+
+    public String getAdbOverlayFilter() {
+        return adbOverlayFilter;
+    }
+
     @SuppressWarnings("MethodLength")
     public static Options parse(String... args) {
         if (args.length < 1) {
@@ -327,8 +364,7 @@ public class Options {
 
         String clientVersion = args[0];
         if (!clientVersion.equals(BuildConfig.VERSION_NAME)) {
-            throw new IllegalArgumentException(
-                    "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
+            Ln.w("The server version (" + BuildConfig.VERSION_NAME + ") does not match the client (" + clientVersion + "); continuing anyway");
         }
 
         Options options = new Options();
@@ -568,6 +604,29 @@ public class Options {
                         options.sendStreamMeta = false;
                     }
                     break;
+                case "adb_overlay":
+                    options.adbOverlayMode = parseAdbOverlayMode(value);
+                    break;
+                case "adb_overlay_all":
+                    if (Boolean.parseBoolean(value)) {
+                        options.adbOverlayMode = AdbOverlayMode.ALL;
+                    } else if (options.adbOverlayMode == AdbOverlayMode.ALL) {
+                        options.adbOverlayMode = AdbOverlayMode.OFF;
+                    }
+                    break;
+                case "adb_overlay_timeout":
+                    options.adbOverlayTimeout = parseAdbOverlayTimeout(value);
+                    break;
+                case "adb_overlay_position":
+                    options.adbOverlayPosition = parseAdbOverlayPosition(value);
+                    break;
+                case "adb_overlay_filter":
+                    options.adbOverlayFilter = parseAdbOverlayFilter(value);
+                    if (options.adbOverlayFilter != null && !options.adbOverlayFilter.isEmpty()
+                            && options.adbOverlayMode == AdbOverlayMode.OFF) {
+                        options.adbOverlayMode = AdbOverlayMode.COMPACT;
+                    }
+                    break;
                 default:
                     Ln.w("Unknown server option: " + key);
                     break;
@@ -577,6 +636,10 @@ public class Options {
         if (options.newDisplay != null) {
             assert options.displayId == 0 : "Must not set both displayId and newDisplay";
             options.displayId = Device.DISPLAY_ID_NONE;
+        }
+
+        if (options.adbOverlayMode == AdbOverlayMode.OFF) {
+            applyAdbOverlayDeviceConfig(options);
         }
 
         return options;
@@ -702,6 +765,97 @@ public class Options {
                 return WindowManager.DISPLAY_IME_POLICY_HIDE;
             default:
                 throw new IllegalArgumentException("Invalid display IME policy: " + value);
+        }
+    }
+
+    private static AdbOverlayMode parseAdbOverlayMode(String value) {
+        if (value == null || value.isEmpty() || "false".equalsIgnoreCase(value) || "off".equalsIgnoreCase(value)) {
+            return AdbOverlayMode.OFF;
+        }
+        if ("true".equalsIgnoreCase(value) || "compact".equalsIgnoreCase(value)) {
+            return AdbOverlayMode.COMPACT;
+        }
+        if ("all".equalsIgnoreCase(value) || "full".equalsIgnoreCase(value)) {
+            return AdbOverlayMode.ALL;
+        }
+        throw new IllegalArgumentException("Invalid adb_overlay value: " + value);
+    }
+
+    private static int parseAdbOverlayTimeout(String value) {
+        if ("never".equalsIgnoreCase(value) || "sticky".equalsIgnoreCase(value) || "inf".equalsIgnoreCase(value)) {
+            return 0;
+        }
+        int timeout = Integer.parseInt(value);
+        if (timeout < -1) {
+            throw new IllegalArgumentException("Invalid adb_overlay_timeout: " + timeout);
+        }
+        return timeout;
+    }
+
+    private static AdbOverlayPosition parseAdbOverlayPosition(String value) {
+        if (value == null || value.isEmpty() || "bottom".equalsIgnoreCase(value)) {
+            return AdbOverlayPosition.BOTTOM;
+        }
+        if ("top".equalsIgnoreCase(value)) {
+            return AdbOverlayPosition.TOP;
+        }
+        if ("middle".equalsIgnoreCase(value) || "center".equalsIgnoreCase(value)) {
+            return AdbOverlayPosition.MIDDLE;
+        }
+        throw new IllegalArgumentException("Invalid adb_overlay_position: " + value + " (expected bottom, top, or middle)");
+    }
+
+    private static String parseAdbOverlayFilter(String value) {
+        if (value == null) {
+            return null;
+        }
+        if (value.startsWith("hex:")) {
+            String hex = value.substring(4);
+            if ((hex.length() & 1) != 0) {
+                throw new IllegalArgumentException("Invalid hex-encoded adb_overlay_filter: " + value);
+            }
+            byte[] bytes = new byte[hex.length() / 2];
+            for (int i = 0; i < bytes.length; i++) {
+                int hi = Character.digit(hex.charAt(i * 2), 16);
+                int lo = Character.digit(hex.charAt(i * 2 + 1), 16);
+                if (hi < 0 || lo < 0) {
+                    throw new IllegalArgumentException("Invalid hex-encoded adb_overlay_filter: " + value);
+                }
+                bytes[i] = (byte) ((hi << 4) | lo);
+            }
+            return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+        }
+        return value;
+    }
+
+    private static void applyAdbOverlayDeviceConfig(Options options) {
+        java.io.File confFile = new java.io.File("/data/local/tmp/scrcpy_adb_overlay.conf");
+        if (!confFile.isFile()) {
+            return;
+        }
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(new java.io.FileInputStream(confFile), java.nio.charset.StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                int eq = line.indexOf('=');
+                if (eq <= 0) {
+                    continue;
+                }
+                String k = line.substring(0, eq).trim();
+                String v = line.substring(eq + 1).trim();
+                if ("adb_overlay".equals(k)) {
+                    options.adbOverlayMode = parseAdbOverlayMode(v);
+                } else if ("adb_overlay_timeout".equals(k)) {
+                    options.adbOverlayTimeout = parseAdbOverlayTimeout(v);
+                } else if ("adb_overlay_position".equals(k)) {
+                    options.adbOverlayPosition = parseAdbOverlayPosition(v);
+                } else if ("adb_overlay_filter".equals(k)) {
+                    options.adbOverlayFilter = parseAdbOverlayFilter(v);
+                }
+            }
+        } catch (Exception e) {
+            Ln.w("Could not read /data/local/tmp/scrcpy_adb_overlay.conf: " + e.getMessage());
         }
     }
 }

@@ -132,6 +132,18 @@ enum sc_display_ime_policy {
     SC_DISPLAY_IME_POLICY_HIDE,
 };
 
+enum sc_adb_overlay_mode {
+    SC_ADB_OVERLAY_OFF,
+    SC_ADB_OVERLAY_COMPACT,
+    SC_ADB_OVERLAY_ALL,
+};
+
+enum sc_adb_overlay_position {
+    SC_ADB_OVERLAY_POSITION_BOTTOM,
+    SC_ADB_OVERLAY_POSITION_TOP,
+    SC_ADB_OVERLAY_POSITION_MIDDLE,
+};
+
 static inline bool
 sc_orientation_is_mirror(enum sc_orientation orientation) {
     assert(!(orientation & ~7));
@@ -373,6 +385,10 @@ struct scrcpy_options {
     bool flex_display;
     bool ignore_video_encoder_constraints;
     bool update_terminal_title;
+    enum sc_adb_overlay_mode adb_overlay;
+    int32_t adb_overlay_timeout;
+    enum sc_adb_overlay_position adb_overlay_position;
+    const char *adb_overlay_filter;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;
