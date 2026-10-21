@@ -738,38 +738,31 @@ sc_mpris_on_update(struct sc_media_listener *listener,
 
 static bool
 request_bus_name(DBusConnection *conn) {
-    DBusError err;
-    dbus_error_init(&err);
-    int r = dbus_bus_request_name(conn, SC_MPRIS_BUS_NAME,
-                                  DBUS_NAME_FLAG_DO_NOT_QUEUE, &err);
-    if (dbus_error_is_set(&err)) {
-        LOGE("Could not request D-Bus name: %s", err.message);
-        dbus_error_free(&err);
-        return false;
-    }
-    if (r == DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
-        LOGD("D-Bus name acquired: " SC_MPRIS_BUS_NAME);
-        return true;
-    }
-
-    // The generic name is probably owned by another scrcpy instance, use an
+    // If the generic name is owned by another scrcpy instance, use an
     // instance-specific name (as allowed by the MPRIS specification)
-    char name[128];
-    snprintf(name, sizeof(name), SC_MPRIS_BUS_NAME ".instance%ld",
-             (long) getpid());
-    r = dbus_bus_request_name(conn, name, DBUS_NAME_FLAG_DO_NOT_QUEUE, &err);
-    if (dbus_error_is_set(&err)) {
-        LOGE("Could not request D-Bus name: %s", err.message);
-        dbus_error_free(&err);
-        return false;
-    }
-    if (r != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
-        LOGE("Could not acquire D-Bus name %s", name);
-        return false;
+    char instance_name[128];
+    snprintf(instance_name, sizeof(instance_name),
+             SC_MPRIS_BUS_NAME ".instance%ld", (long) getpid());
+    const char *const names[] = {SC_MPRIS_BUS_NAME, instance_name};
+
+    for (size_t i = 0; i < ARRAY_LEN(names); ++i) {
+        DBusError err;
+        dbus_error_init(&err);
+        int r = dbus_bus_request_name(conn, names[i],
+                                      DBUS_NAME_FLAG_DO_NOT_QUEUE, &err);
+        if (dbus_error_is_set(&err)) {
+            LOGE("Could not request D-Bus name: %s", err.message);
+            dbus_error_free(&err);
+            return false;
+        }
+        if (r == DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
+            LOGD("D-Bus name acquired: %s", names[i]);
+            return true;
+        }
     }
 
-    LOGD("D-Bus name acquired: %s", name);
-    return true;
+    LOGE("Could not acquire D-Bus name " SC_MPRIS_BUS_NAME);
+    return false;
 }
 
 bool
