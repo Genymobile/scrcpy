@@ -112,8 +112,13 @@ public class ScreenCapture extends SurfaceCapture {
             display = null;
         }
         if (virtualDisplay != null) {
-            virtualDisplay.release();
-            virtualDisplay = null;
+            if (virtualDisplay.getDisplay() == null) {
+                // The Quest compatibility fallback has no display to resize.
+                virtualDisplay.release();
+                virtualDisplay = null;
+            } else {
+                virtualDisplay.setSurface(null);
+            }
         }
 
         Size inputSize;
@@ -130,10 +135,25 @@ public class ScreenCapture extends SurfaceCapture {
         }
 
         try {
-            virtualDisplay = ServiceManager.getDisplayManager()
-                    .createVirtualDisplay("scrcpy", inputSize.getWidth(), inputSize.getHeight(), displayId, surface);
-            Ln.d("Display: using DisplayManager API");
+            if (virtualDisplay == null) {
+                virtualDisplay = ServiceManager.getDisplayManager()
+                        .createVirtualDisplay("scrcpy", inputSize.getWidth(), inputSize.getHeight(), displayId, surface);
+                Ln.d("Display: using DisplayManager API");
+            } else {
+                // Releasing a mirrored display may stop another app's MediaProjection recording on Android 14+.
+                // Keep the display across capture resets and preserve its density, which differs from the source display's.
+                DisplayInfo currentDisplay = ServiceManager.getDisplayManager().getDisplayInfo(virtualDisplay.getDisplay().getDisplayId());
+                if (currentDisplay == null) {
+                    throw new IOException("Virtual display is no longer available");
+                }
+                virtualDisplay.resize(inputSize.getWidth(), inputSize.getHeight(), currentDisplay.getDpi());
+                virtualDisplay.setSurface(surface);
+            }
         } catch (Exception displayManagerException) {
+            if (virtualDisplay != null) {
+                // Do not fall back by destroying the existing display if a reset fails.
+                throw new IOException("Could not resize virtual display", displayManagerException);
+            }
             if (Build.BRAND.equalsIgnoreCase("oculus") && Build.MODEL.toLowerCase(Locale.ROOT).startsWith("quest")) {
                 // Workaround for buggy createVirtualDisplay on Quest
                 try {
@@ -176,6 +196,10 @@ public class ScreenCapture extends SurfaceCapture {
 
     @Override
     public void stop() {
+        if (virtualDisplay != null && virtualDisplay.getDisplay() != null) {
+            // Detach before the encoder or OpenGL runner releases its surface.
+            virtualDisplay.setSurface(null);
+        }
         if (glRunner != null) {
             glRunner.stopAndRelease();
             glRunner = null;
