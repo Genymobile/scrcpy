@@ -544,8 +544,6 @@ handle_properties_get_all(struct sc_mpris *mpris, DBusMessage *msg) {
 static DBusHandlerResult
 handle_root_method(struct sc_mpris *mpris, DBusMessage *msg,
                    const char *member) {
-    LOGD("MPRIS method: %s", member);
-
     if (!strcmp(member, "Raise")) {
         sc_push_event(SC_EVENT_RAISE_WINDOW);
     } else if (!strcmp(member, "Quit")) {
@@ -561,8 +559,6 @@ handle_root_method(struct sc_mpris *mpris, DBusMessage *msg,
 static DBusHandlerResult
 handle_player_method(struct sc_mpris *mpris, DBusMessage *msg,
                      const char *member) {
-    LOGD("MPRIS method: %s", member);
-
     if (!strcmp(member, "OpenUri")) {
         return reply_error(mpris, msg, DBUS_ERROR_NOT_SUPPORTED,
                            "OpenUri is not supported");
@@ -668,6 +664,8 @@ handle_message(DBusConnection *conn, DBusMessage *msg, void *userdata) {
                                "Setting properties is not supported");
         }
     }
+    LOGD("MPRIS method: %s", member);
+
     if (any || !strcmp(interface, SC_MPRIS_ROOT_INTERFACE)) {
         if (!strcmp(member, "Raise") || !strcmp(member, "Quit")) {
             return handle_root_method(mpris, msg, member);
