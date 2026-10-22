@@ -83,6 +83,19 @@ sc_sdl_get_window_position(SDL_Window *window) {
     return point;
 }
 
+float
+sc_sdl_get_window_pixel_density(SDL_Window *window) {
+    float density = SDL_GetWindowPixelDensity(window);
+    if (density == 0) {
+        LOGE("Could not get window pixel density: %s", SDL_GetError());
+        LOGE("Please report the error");
+        assert(!"unexpected");
+        density = 1;
+    }
+
+    return density;
+}
+
 void
 sc_sdl_set_window_position(SDL_Window *window, struct sc_point point) {
     bool ok = SDL_SetWindowPosition(window, point.x, point.y);
