@@ -211,6 +211,10 @@ struct sc_point
 sc_screen_convert_window_to_frame_coords(struct sc_screen *screen,
                                         int32_t x, int32_t y);
 
+// return true if the point is inside the content rectangle
+bool
+sc_screen_content_contains(struct sc_screen *screen, float x, float y);
+
 static inline enum AVHWDeviceType
 sc_screen_get_hw_type(struct sc_screen *screen) {
     return sc_texture_get_hw_type(&screen->tex);

@@ -1309,6 +1309,12 @@ sc_screen_handle_disconnection(struct sc_screen *screen) {
     }
 }
 
+bool
+sc_screen_content_contains(struct sc_screen *screen, float x, float y) {
+    SDL_FRect *r = &screen->rect;
+    return x >= r->x && x < r->x + r->w && y >= r->y && y < r->y + r->h;
+}
+
 struct sc_point
 sc_screen_convert_window_to_frame_coords(struct sc_screen *screen,
                                          int32_t x, int32_t y) {
