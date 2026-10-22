@@ -603,8 +603,9 @@ static const struct sc_option options[] = {
     {
         .longopt_id = OPT_MPRIS,
         .longopt = "mpris",
-        .text = "Expose the device media sessions via MPRIS (D-Bus), so that "
-                "desktop media controls can control playback on the device.\n"
+        .text = "Expose the media session of the device via MPRIS (D-Bus), so "
+                "that the desktop media controls can control the playback on "
+                "the device.\n"
                 "This feature is only available on Linux.",
     },
     {
@@ -3530,7 +3531,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
         if (mpris) {
-            LOGE("Cannot expose media sessions via MPRIS if control is "
+            LOGE("Cannot expose the media session via MPRIS if control is "
                  "disabled");
             return false;
         }
@@ -3580,7 +3581,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
         if (mpris) {
-            LOGE("OTG mode: could not expose media sessions via MPRIS");
+            LOGE("OTG mode: could not expose the media session via MPRIS");
             return false;
         }
         if (opts->turn_screen_off) {

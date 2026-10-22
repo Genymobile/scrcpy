@@ -1,6 +1,6 @@
 # MPRIS
 
-On Linux, scrcpy can expose the media sessions of the device on the D-Bus
+On Linux, scrcpy can expose the media session of the device on the D-Bus
 session bus using the [MPRIS] interface, so that the media controls of the
 desktop (media widgets, media keys, tools like [playerctl]) can display and
 control what is playing on the device.

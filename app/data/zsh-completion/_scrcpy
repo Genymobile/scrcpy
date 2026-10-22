@@ -59,7 +59,7 @@ arguments=(
     '--min-size-alignment=[Minimum video size alignment (1, 2, 4, 8 or 16)]'
     '--mouse=[Set the mouse input mode]:mode:(disabled sdk uhid aoa)'
     '--mouse-bind=[Configure bindings of secondary clicks]'
-    '--mpris[Expose device media sessions via MPRIS]'
+    '--mpris[Expose the device media session via MPRIS]'
     {-n,--no-control}'[Disable device control \(mirror the device in read only\)]'
     {-N,--no-playback}'[Disable video and audio playback]'
     '--new-display=[Create a new display]'
