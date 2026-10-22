@@ -1,0 +1,93 @@
+Event Hub State:
+  Devices:
+    9: onyx_emp_Wacom I2C Digitizer
+      Path: /dev/input/event2
+Input Reader State:
+  Device 9: onyx_emp_Wacom I2C Digitizer
+    Generation: 25
+    IsExternal: false
+    AssociatedDisplayPort: <none>
+    HasMic:     false
+    Sources: 0x00005002
+    KeyboardType: 0
+    Motion Ranges:
+      X: source=0x00005002, min=0.000, max=1403.000, flat=0.000, fuzz=0.000, resolution=0.000
+      Y: source=0x00005002, min=0.000, max=1871.000, flat=0.000, fuzz=0.000, resolution=0.000
+      PRESSURE: source=0x00005002, min=0.000, max=1.000, flat=0.000, fuzz=0.000, resolution=0.000
+      ORIENTATION: source=0x00005002, min=-3.142, max=3.142, flat=0.000, fuzz=0.000, resolution=0.000
+      DISTANCE: source=0x00005002, min=0.000, max=255.000, flat=0.000, fuzz=0.000, resolution=0.000
+      TILT: source=0x00005002, min=0.000, max=1.571, flat=0.000, fuzz=0.000, resolution=0.000
+    Touch Input Mapper (mode - direct):
+      Parameters:
+        GestureMode: multi-touch
+        DeviceType: touchScreen
+        AssociatedDisplay: hasAssociatedDisplay=true, isExternal=false, displayId=''
+        OrientationAware: true
+      Raw Touch Axes:
+        X: min=0, max=20966, flat=0, fuzz=0, resolution=0
+        Y: min=0, max=15725, flat=0, fuzz=0, resolution=0
+        Pressure: min=0, max=4095, flat=0, fuzz=0, resolution=0
+        TouchMajor: unknown range
+        TouchMinor: unknown range
+        ToolMajor: unknown range
+        ToolMinor: unknown range
+        Orientation: unknown range
+        Distance: min=0, max=255, flat=0, fuzz=0, resolution=0
+        TiltX: min=-63, max=63, flat=0, fuzz=0, resolution=0
+        TiltY: min=-63, max=63, flat=0, fuzz=0, resolution=0
+        TrackingId: unknown range
+        Slot: unknown range
+      Calibration:
+        touch.size.calibration: none
+        touch.pressure.calibration: physical
+        touch.orientation.calibration: none
+        touch.distance.calibration: scaled
+        touch.coverage.calibration: none
+      Affine Transformation:
+        X scale: 1.000
+        X ymix: 0.000
+        X offset: 0.000
+        Y xmix: 0.000
+        Y scale: 1.000
+        Y offset: 0.000
+      Viewport INTERNAL: displayId=0, uniqueId=local:0, port=0, orientation=1, logicalFrame=[0, 0, 1404, 1872], physicalFrame=[0, 0, 1404, 1872], deviceSize=[1404, 1872]
+      SurfaceWidth: 1872px
+      SurfaceHeight: 1404px
+      SurfaceLeft: 0
+      SurfaceTop: 0
+      PhysicalWidth: 1872px
+      PhysicalHeight: 1404px
+      PhysicalLeft: 0
+      PhysicalTop: 0
+      SurfaceOrientation: 1
+      Translation and Scaling Factors:
+        XTranslate: 0.000
+        YTranslate: 0.000
+        XScale: 0.089
+        YScale: 0.089
+        XPrecision: 11.200
+        YPrecision: 11.201
+        GeometricScale: 0.089
+        PressureScale: 0.000
+        SizeScale: 0.000
+        OrientationScale: 0.000
+        DistanceScale: 1.000
+        HaveTilt: true
+        TiltXCenter: 0.000
+        TiltXScale: 0.017
+        TiltYCenter: 0.000
+        TiltYScale: 0.017
+      Last Raw Button State: 0x00000000
+      Last Raw Touch: pointerCount=0
+      Last Cooked Button State: 0x00000000
+      Last Cooked Touch: pointerCount=0
+      Stylus Fusion:
+        ExternalStylusConnected: false
+        External Stylus ID: -1
+        External Stylus Data Timeout: 9223372036854775807
+      External Stylus State:
+        When: 9223372036854775807
+        Pressure: 0.000000
+        Button State: 0x00000000
+        Tool Type: 0
+Input Dispatcher State:

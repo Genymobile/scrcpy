@@ -155,10 +155,35 @@ static void test_parse_shortcut_mods(void) {
     assert(!ok);
 }
 
+static void test_boox_pen(void) {
+    struct scrcpy_cli_args args = {.opts = scrcpy_options_default};
+    assert(args.opts.boox_pen_rotation == -1);
+    char *valid[] = {"scrcpy", "--boox-pen=90"};
+    assert(scrcpy_parse_args(&args, ARRAY_LEN(valid), valid));
+    assert(args.opts.boox_pen_rotation == 90);
+    args = (struct scrcpy_cli_args) {.opts = scrcpy_options_default};
+    char *automatic[] = {"scrcpy", "--boox-pen=auto"};
+    assert(scrcpy_parse_args(&args, ARRAY_LEN(automatic), automatic));
+    assert(args.opts.boox_pen_rotation == -2);
+    char *invalid[][3] = {
+        {"scrcpy", "--boox-pen=auto", "--no-control"},
+        {"scrcpy", "--boox-pen=45", NULL},
+        {"scrcpy", "--boox-pen=90", "--no-control"},
+        {"scrcpy", "--boox-pen=90", "--mouse=uhid"},
+        {"scrcpy", "--boox-pen=90", "--display-id=1"},
+        {"scrcpy", "--boox-pen=90", "--new-display=800x600"},
+    };
+    for (unsigned i = 0; i < ARRAY_LEN(invalid); ++i) {
+        args = (struct scrcpy_cli_args) {.opts = scrcpy_options_default};
+        assert(!scrcpy_parse_args(&args, invalid[i][2] ? 3 : 2, invalid[i]));
+    }
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
 
+    test_boox_pen();
     test_flag_version();
     test_flag_help();
     test_options();
