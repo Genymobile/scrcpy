@@ -737,6 +737,17 @@ Set the initial window height.
 Default is 0 (automatic).
 
 .TP
+.BI "\-\-window\-size\-unit " unit
+Set the unit of the window size.
+
+Possible values are "logical" and "physical":
+
+ - "logical": the window size is expressed in logical units (scaled by the window pixel density on HiDPI displays).
+ - "physical": the window size is expressed in physical pixels.
+
+Default is "physical".
+
+.TP
 .B \-x, \-\-flex\-display
 Continuously resize the virtual display to match the window.
 

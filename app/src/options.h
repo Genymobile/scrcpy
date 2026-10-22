@@ -255,6 +255,11 @@ enum sc_render_fit {
     SC_RENDER_FIT_UNSCALED,
 };
 
+enum sc_window_size_unit {
+    SC_WINDOW_SIZE_UNIT_LOGICAL,
+    SC_WINDOW_SIZE_UNIT_PHYSICAL,
+};
+
 struct sc_port_range {
     uint16_t first;
     uint16_t last;
@@ -310,6 +315,7 @@ struct scrcpy_options {
     int16_t window_y; // SC_WINDOW_POSITION_UNDEFINED for "auto"
     uint16_t window_width;
     uint16_t window_height;
+    enum sc_window_size_unit window_size_unit;
     uint32_t display_id;
     uint32_t background_color;
     sc_tick video_buffer;

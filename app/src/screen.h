@@ -39,6 +39,7 @@ struct sc_screen {
     bool camera;
     bool window_aspect_ratio_lock;
     bool flex_display;
+    enum sc_window_size_unit window_size_unit;
 
     struct sc_controller *controller;
 
@@ -136,6 +137,7 @@ struct sc_screen_params {
     int16_t window_y; // accepts SC_WINDOW_POSITION_UNDEFINED
     uint16_t window_width;
     uint16_t window_height;
+    enum sc_window_size_unit window_size_unit;
 
     uint32_t background_color;
 
@@ -206,10 +208,14 @@ void
 sc_screen_handle_disconnection(struct sc_screen *screen);
 
 // convert point from window coordinates to frame coordinates
-// x and y are expressed in pixels
+// x and y are expressed in SDL window coordinates
 struct sc_point
 sc_screen_convert_window_to_frame_coords(struct sc_screen *screen,
-                                        int32_t x, int32_t y);
+                                         float x, float y);
+
+// return true if the point is inside the content rectangle
+bool
+sc_screen_content_contains(struct sc_screen *screen, float x, float y);
 
 static inline enum AVHWDeviceType
 sc_screen_get_hw_type(struct sc_screen *screen) {
