@@ -28,6 +28,10 @@ scrcpy --new-display=1024x768 --start-app=com.android.settings -x
 
 # By default, the display size/dpi is 1280x960/160
 scrcpy --new-display --start-app=com.android.settings --flex-display
+
+# On HiDPI displays, match the virtual display size to the window size in
+# physical pixels
+scrcpy --new-display --flex-display --window-size-unit=physical
 ```
 
 Use [`--keep-active`][keep-active] to prevent the screen from turning off:
