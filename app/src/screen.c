@@ -276,13 +276,7 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
         goto end;
     }
 
-    float scale = SDL_GetWindowPixelDensity(screen->window);
-    if (scale == 0) {
-        // Just in case, but in practice the function can only fail when window
-        // is invalid
-        LOGE("Cannot get scale value: %s", SDL_GetError());
-        scale = 1;
-    }
+    float scale = sc_sdl_get_window_pixel_density(screen->window);
 
     SDL_FRect geometry = {
         .x = screen->rect.x * scale,
