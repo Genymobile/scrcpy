@@ -108,6 +108,8 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private final MotionEvent.PointerCoords[] pointerCoords = new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
 
     private boolean keepDisplayPowerOff;
+    // Whether the last display power change requested by the client turned the display off (read from the EXECUTOR thread)
+    private volatile boolean displayPowerOffRequested;
 
     // Used for resetting video encoding on RESET_VIDEO message or for sending camera controls
     private SurfaceCapture surfaceCapture;
@@ -172,7 +174,32 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             synchronized (displayDataAvailable) {
                 displayDataAvailable.notify();
             }
+
+            // Device.isScreenOn(displayId) ignores the displayId below Android 14
+            if (powerOn && displayId == Device.DISPLAY_ID_NONE && Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14) {
+                // On start, power on the device for a new virtual display, which may not be rendered while the device is asleep. Its id is only
+                // known now, so do it asynchronously, to delay neither the capture nor the handling of control messages.
+                EXECUTOR.execute(() -> powerOnNewDisplay(virtualDisplayId));
+            }
         }
+    }
+
+    private void powerOnNewDisplay(int virtualDisplayId) {
+        // Consistent with pressBackOrTurnScreenOn(): check (and inject POWER on) the virtual display id
+        if (Device.isScreenOn(virtualDisplayId)) {
+            return;
+        }
+
+        Device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, virtualDisplayId, Device.INJECT_MODE_ASYNC);
+
+        // The device is powered on asynchronously, so a request to turn the main display off (e.g. --turn-screen-off) handled around that
+        // time would be "canceled" once the device is actually powered on. Apply it again after a small delay.
+        EXECUTOR.schedule(() -> {
+            if (displayPowerOffRequested) {
+                Ln.i("Forcing display off");
+                Device.setDisplayPower(0, false);
+            }
+        }, 200, TimeUnit.MILLISECONDS);
     }
 
     public void setSurfaceCapture(SurfaceCapture surfaceCapture) {
@@ -227,7 +254,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     private void control() throws IOException {
-        // on start, power on the device
+        // on start, power on the device (for a new virtual display, see onNewVirtualDisplay())
         if (!camera && powerOn && displayId == 0 && !Device.isScreenOn(displayId)) {
             Device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, displayId, Device.INJECT_MODE_ASYNC);
 
@@ -861,6 +888,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         if (setDisplayPowerOk) {
             // Do not keep display power off for virtual displays: MOD+p must wake up the physical device
             keepDisplayPowerOff = displayId != Device.DISPLAY_ID_NONE && !on;
+            displayPowerOffRequested = !on;
             Ln.i("Device display turned " + (on ? "on" : "off"));
             if (cleanUp != null) {
                 boolean mustRestoreOnExit = !on;
