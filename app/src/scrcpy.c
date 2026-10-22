@@ -47,6 +47,9 @@
 #ifdef HAVE_V4L2
 # include "v4l2_sink.h"
 #endif
+#ifdef HAVE_MPRIS
+# include "mpris.h"
+#endif
 #include "video_regulator.h"
 
 #define SC_BACKPRESSURE_THRESHOLD 8 // in-flight frames in video regulator
@@ -95,6 +98,9 @@ struct scrcpy {
         struct sc_gamepad_aoa gamepad_aoa;
 #endif
     };
+#ifdef HAVE_MPRIS
+    struct sc_mpris mpris;
+#endif
     struct sc_timeout timeout;
 };
 
@@ -414,6 +420,10 @@ scrcpy(struct scrcpy_options *options) {
     bool mouse_aoa_initialized = false;
     bool gamepad_aoa_initialized = false;
 #endif
+#ifdef HAVE_MPRIS
+    bool mpris_initialized = false;
+    bool mpris_started = false;
+#endif
     bool controller_initialized = false;
     bool controller_started = false;
     bool screen_initialized = false;
@@ -469,6 +479,9 @@ scrcpy(struct scrcpy_options *options) {
         .force_adb_forward = options->force_adb_forward,
         .power_off_on_close = options->power_off_on_close,
         .clipboard_autosync = options->clipboard_autosync,
+#ifdef HAVE_MPRIS
+        .media_control = options->mpris,
+#endif
         .downsize_on_error = options->downsize_on_error,
         .tcpip = options->tcpip,
         .tcpip_dst = options->tcpip_dst,
@@ -801,7 +814,25 @@ aoa_complete:
             uhid_devices = &s->uhid_devices;
         }
 
-        sc_controller_configure(&s->controller, acksync, uhid_devices);
+        struct sc_media_listener *media_listener = NULL;
+#ifdef HAVE_MPRIS
+        if (options->mpris) {
+            if (!sc_mpris_init(&s->mpris, &s->controller)) {
+                goto end;
+            }
+            mpris_initialized = true;
+
+            if (!sc_mpris_start(&s->mpris)) {
+                goto end;
+            }
+            mpris_started = true;
+
+            media_listener = &s->mpris.media_listener;
+        }
+#endif
+
+        sc_controller_configure(&s->controller, acksync, uhid_devices,
+                                media_listener);
 
         if (!sc_controller_start(&s->controller)) {
             goto end;
@@ -1185,6 +1216,18 @@ end:
     if (controller_started) {
         sc_controller_join(&s->controller);
     }
+#ifdef HAVE_MPRIS
+    // Stop the MPRIS thread after the receiver thread (joined with the
+    // controller) and before the controller is destroyed (the MPRIS thread
+    // pushes messages to it)
+    if (mpris_started) {
+        sc_mpris_stop(&s->mpris);
+        sc_mpris_join(&s->mpris);
+    }
+    if (mpris_initialized) {
+        sc_mpris_destroy(&s->mpris);
+    }
+#endif
     if (controller_initialized) {
         sc_controller_destroy(&s->controller);
     }

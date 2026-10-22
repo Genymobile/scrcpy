@@ -7,6 +7,35 @@
 #include "util/binary.h"
 #include "util/log.h"
 
+// Read a string (2-byte length + UTF-8 content) at *pos, and update *pos.
+// An empty string is read as NULL.
+// Return 1 on success, 0 if the string is not complete, -1 on error.
+static int
+read_media_string(const uint8_t *buf, size_t len, size_t *pos, char **out) {
+    if (len - *pos < 2) {
+        return 0; // not available
+    }
+    size_t str_len = sc_read16be(&buf[*pos]);
+    *pos += 2;
+    if (str_len > len - *pos) {
+        return 0; // not available
+    }
+
+    char *str = NULL;
+    if (str_len) {
+        str = malloc(str_len + 1);
+        if (!str) {
+            LOG_OOM();
+            return -1;
+        }
+        memcpy(str, &buf[*pos], str_len);
+        str[str_len] = '\0';
+    }
+    *pos += str_len;
+    *out = str;
+    return 1;
+}
+
 ssize_t
 sc_device_msg_deserialize(const uint8_t *buf, size_t len,
                           struct sc_device_msg *msg) {
@@ -71,6 +100,34 @@ sc_device_msg_deserialize(const uint8_t *buf, size_t len,
 
             return 5 + size;
         }
+        case DEVICE_MSG_TYPE_MEDIA_UPDATE: {
+            if (len < 22) {
+                // type (1) + state (1) + position (8) + capabilities (4)
+                // + duration (8)
+                return 0; // not available
+            }
+            msg->media_update.state = buf[1];
+            msg->media_update.position_ms = (int64_t) sc_read64be(&buf[2]);
+            msg->media_update.capabilities = sc_read32be(&buf[10]);
+            msg->media_update.duration_ms = (int64_t) sc_read64be(&buf[14]);
+            msg->media_update.title = NULL;
+            msg->media_update.artist = NULL;
+            msg->media_update.album = NULL;
+
+            size_t pos = 22;
+            char **strings[] = {&msg->media_update.title,
+                                &msg->media_update.artist,
+                                &msg->media_update.album};
+            for (size_t i = 0; i < ARRAY_LEN(strings); ++i) {
+                int r = read_media_string(buf, len, &pos, strings[i]);
+                if (r <= 0) {
+                    sc_device_msg_destroy(msg);
+                    return r;
+                }
+            }
+
+            return pos;
+        }
         default:
             LOGW("Unknown device message type: %d", (int) msg->type);
             return -1; // error, we cannot recover
@@ -85,6 +142,11 @@ sc_device_msg_destroy(struct sc_device_msg *msg) {
             break;
         case DEVICE_MSG_TYPE_UHID_OUTPUT:
             free(msg->uhid_output.data);
+            break;
+        case DEVICE_MSG_TYPE_MEDIA_UPDATE:
+            free(msg->media_update.title);
+            free(msg->media_update.artist);
+            free(msg->media_update.album);
             break;
         default:
             // nothing to do

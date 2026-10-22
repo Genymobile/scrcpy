@@ -30,12 +30,21 @@ public final class ControlMessage {
     public static final int TYPE_CAMERA_ZOOM_OUT = 20;
     public static final int TYPE_RESIZE_DISPLAY = 21;
     public static final int TYPE_SCAN_FILE = 22;
+    public static final int TYPE_MEDIA_ACTION = 23;
 
     public static final long SEQUENCE_INVALID = 0;
 
     public static final int COPY_KEY_NONE = 0;
     public static final int COPY_KEY_COPY = 1;
     public static final int COPY_KEY_CUT = 2;
+
+    // Values must be kept in sync with the client (control_msg.h)
+    public static final int MEDIA_ACTION_PLAY = 0;
+    public static final int MEDIA_ACTION_PAUSE = 1;
+    public static final int MEDIA_ACTION_STOP = 2;
+    public static final int MEDIA_ACTION_NEXT = 3;
+    public static final int MEDIA_ACTION_PREVIOUS = 4;
+    public static final int MEDIA_ACTION_SEEK = 5;
 
     private int type;
     private String text;
@@ -60,6 +69,7 @@ public final class ControlMessage {
     private int productId;
     private int width;
     private int height;
+    private long mediaPosition;
 
     private ControlMessage() {
     }
@@ -195,6 +205,14 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createMediaAction(int action, long positionMs) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_MEDIA_ACTION;
+        msg.action = action;
+        msg.mediaPosition = positionMs;
+        return msg;
+    }
+
     public int getType() {
         return type;
     }
@@ -285,5 +303,9 @@ public final class ControlMessage {
 
     public int getHeight() {
         return height;
+    }
+
+    public long getMediaPosition() {
+        return mediaPosition;
     }
 }

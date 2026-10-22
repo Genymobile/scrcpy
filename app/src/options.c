@@ -79,6 +79,9 @@ const struct scrcpy_options scrcpy_options_default = {
 #ifdef HAVE_USB
     .otg = false,
 #endif
+#ifdef HAVE_MPRIS
+    .mpris = false,
+#endif
     .show_touches = false,
     .fullscreen = false,
     .always_on_top = false,
