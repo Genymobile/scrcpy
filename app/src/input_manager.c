@@ -510,6 +510,11 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                     sc_screen_toggle_fullscreen(im->screen);
                 }
                 return;
+            case SDLK_A:
+                if (video && !shift && !repeat && down) {
+                    sc_screen_toggle_always_on_top(im->screen);
+                }
+                return;
             case SDLK_W:
                 if (video && !shift && !repeat && down) {
                     sc_screen_resize_to_fit(im->screen);
