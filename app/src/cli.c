@@ -1082,7 +1082,7 @@ static const struct sc_option options[] = {
                 "(scaled by the window pixel density on HiDPI displays).\n"
                 "\"physical\": the window size is expressed in physical "
                 "pixels.\n"
-                "Default is \"logical\".",
+                "Default is \"physical\".",
     },
     {
         .shortopt = 'x',
