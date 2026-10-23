@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
-#ifdef HAVE_V4L2
+#if defined(HAVE_V4L2) || defined(HAVE_CLIENT_AUDIO)
 # include <libavdevice/avdevice.h>
 #endif
 #include <SDL3/SDL.h>
@@ -18,6 +18,9 @@
 #include "util/net.h"
 #include "util/term.h"
 #include "version.h"
+#ifdef HAVE_CLIENT_AUDIO
+# include "client_audio.h"
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -41,6 +44,7 @@ main_scrcpy(int argc, char *argv[]) {
         .help = false,
         .version = false,
         .pause_on_exit = SC_PAUSE_ON_EXIT_UNDEFINED,
+        .list_client_audio_sources = false,
     };
 
 #ifndef NDEBUG
@@ -76,9 +80,26 @@ main_scrcpy(int argc, char *argv[]) {
         goto end;
     }
 
+#if defined(HAVE_V4L2) || defined(HAVE_CLIENT_AUDIO)
+    bool register_devices = false;
 #ifdef HAVE_V4L2
-    if (args.opts.v4l2_device) {
+    register_devices |= !!args.opts.v4l2_device;
+#endif
+#ifdef HAVE_CLIENT_AUDIO
+    // needed for capturing microphone and listing audio sources
+    register_devices |= !!args.opts.client_audio_source
+                     || args.list_client_audio_sources;
+#endif
+    if (register_devices) {
         avdevice_register_all();
+    }
+#endif
+
+#ifdef HAVE_CLIENT_AUDIO
+    if (args.list_client_audio_sources) {
+        sc_client_audio_list_sources();
+        ret = SCRCPY_EXIT_SUCCESS;
+        goto end;
     }
 #endif
 

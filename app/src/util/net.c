@@ -23,6 +23,14 @@
 
 #include "util/log.h"
 
+// Never raise SIGPIPE when sending on a socket shut down by the peer or by
+// net_interrupt(): the error is reported by send() instead.
+#ifdef MSG_NOSIGNAL
+# define SC_SEND_FLAGS MSG_NOSIGNAL
+#else
+# define SC_SEND_FLAGS 0
+#endif
+
 bool
 net_init(void) {
 #ifdef _WIN32
@@ -108,6 +116,16 @@ set_cloexec_flag(sc_raw_socket raw_sock) {
 }
 #endif
 
+#ifdef SO_NOSIGPIPE
+// On platforms without MSG_NOSIGNAL (macOS, BSD), disable SIGPIPE per socket
+static bool
+set_nosigpipe(sc_raw_socket raw_sock) {
+    int on = 1;
+    return setsockopt(raw_sock, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on))
+        != SOCKET_ERROR;
+}
+#endif
+
 static void
 net_perror(const char *s) {
 #ifdef _WIN32
@@ -124,6 +142,14 @@ net_socket(void) {
 #else
     sc_raw_socket raw_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (raw_sock != SC_RAW_SOCKET_NONE && !set_cloexec_flag(raw_sock)) {
+        sc_raw_socket_close(raw_sock);
+        return SC_SOCKET_NONE;
+    }
+#endif
+
+#ifdef SO_NOSIGPIPE
+    if (raw_sock != SC_RAW_SOCKET_NONE && !set_nosigpipe(raw_sock)) {
+        net_perror("setsockopt(SO_NOSIGPIPE)");
         sc_raw_socket_close(raw_sock);
         return SC_SOCKET_NONE;
     }
@@ -200,6 +226,14 @@ net_accept(sc_socket server_socket) {
     }
 #endif
 
+#ifdef SO_NOSIGPIPE
+    if (raw_sock != SC_RAW_SOCKET_NONE && !set_nosigpipe(raw_sock)) {
+        net_perror("setsockopt(SO_NOSIGPIPE)");
+        sc_raw_socket_close(raw_sock);
+        return SC_SOCKET_NONE;
+    }
+#endif
+
     return wrap(raw_sock);
 }
 
@@ -218,7 +252,7 @@ net_recv_all(sc_socket socket, void *buf, size_t len) {
 ssize_t
 net_send(sc_socket socket, const void *buf, size_t len) {
     sc_raw_socket raw_sock = unwrap(socket);
-    return send(raw_sock, buf, len, 0);
+    return send(raw_sock, buf, len, SC_SEND_FLAGS);
 }
 
 ssize_t

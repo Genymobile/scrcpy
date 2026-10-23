@@ -27,6 +27,9 @@
 #include "screen.h"
 #include "sdl_hints.h"
 #include "server.h"
+#ifdef HAVE_CLIENT_AUDIO
+# include "client_audio.h"
+#endif
 #include "uhid/gamepad_uhid.h"
 #include "uhid/keyboard_uhid.h"
 #include "uhid/mouse_uhid.h"
@@ -68,6 +71,9 @@ struct scrcpy {
 #endif
     struct sc_controller controller;
     struct sc_file_pusher file_pusher;
+#ifdef HAVE_CLIENT_AUDIO
+    struct sc_client_audio client_audio;
+#endif
 #ifdef HAVE_USB
     struct sc_usb usb;
     struct sc_aoa aoa;
@@ -403,6 +409,9 @@ scrcpy(struct scrcpy_options *options) {
     bool video_regulator_initialized = false;
     bool video_demuxer_started = false;
     bool audio_demuxer_started = false;
+#ifdef HAVE_CLIENT_AUDIO
+    bool client_audio_started = false;
+#endif
     bool hwdec_initialized = false;
     bool video_decoder_initialized = false;
     bool video_decoder_started = false;
@@ -455,6 +464,11 @@ scrcpy(struct scrcpy_options *options) {
         .display_ime_policy = options->display_ime_policy,
         .video = options->video,
         .audio = options->audio,
+#ifdef HAVE_CLIENT_AUDIO
+        .client_audio = options->client_audio_source != NULL,
+#else
+        .client_audio = false,
+#endif
         .audio_dup = options->audio_dup,
         .show_touches = options->show_touches,
         .stay_awake = options->stay_awake,
@@ -979,6 +993,17 @@ aoa_complete:
         audio_demuxer_started = true;
     }
 
+#ifdef HAVE_CLIENT_AUDIO
+    if (options->client_audio_source) {
+        sc_client_audio_init(&s->client_audio, s->server.client_audio_socket,
+                             options->client_audio_source);
+        if (!sc_client_audio_start(&s->client_audio)) {
+            goto end;
+        }
+        client_audio_started = true;
+    }
+#endif
+
     // If the device screen is to be turned off, send the control message after
     // everything is set up
     if (options->control && options->turn_screen_off) {
@@ -1084,6 +1109,13 @@ end:
         sc_screen_interrupt(&s->screen);
     }
 
+#ifdef HAVE_CLIENT_AUDIO
+    if (client_audio_started) {
+        // Request stop before the socket is shut down, to stop sending early
+        sc_client_audio_stop(&s->client_audio);
+    }
+#endif
+
     if (server_started) {
         // shutdown the sockets and kill the server
         sc_server_stop(&s->server);
@@ -1124,6 +1156,12 @@ end:
     if (audio_demuxer_started) {
         sc_demuxer_join(&s->audio_demuxer);
     }
+
+#ifdef HAVE_CLIENT_AUDIO
+    if (client_audio_started) {
+        sc_client_audio_join(&s->client_audio);
+    }
+#endif
 
     if (video_regulator_initialized) {
         sc_video_regulator_destroy(&s->video_regulator);

@@ -22,6 +22,7 @@ _scrcpy() {
         --camera-torch
         --camera-zoom=
         --capture-orientation=
+        --client-audio-source=
         --crop=
         -d --select-usb
         --disable-screensaver
@@ -44,6 +45,7 @@ _scrcpy() {
         --list-apps
         --list-camera-sizes
         --list-cameras
+        --list-client-audio-sources
         --list-displays
         --list-encoders
         -m --max-size=

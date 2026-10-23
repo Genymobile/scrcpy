@@ -41,6 +41,7 @@ enum {
     OPT_SHORTCUT_MOD,
     OPT_NO_KEY_REPEAT,
     OPT_LEGACY_PASTE,
+    OPT_CLIENT_AUDIO_SOURCE,
     OPT_VIDEO_ENCODER,
     OPT_POWER_OFF_ON_CLOSE,
     OPT_V4L2_SINK,
@@ -112,6 +113,7 @@ enum {
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
     OPT_NO_TERMINAL_TITLE,
     OPT_HWDEC,
+    OPT_LIST_CLIENT_AUDIO_SOURCES,
 };
 
 struct sc_option {
@@ -341,6 +343,18 @@ static const struct sc_option options[] = {
                 "Default is 0.",
     },
     {
+        .longopt_id = OPT_CLIENT_AUDIO_SOURCE,
+        .longopt = "client-audio-source",
+        .argdesc = "source",
+        .text = "Inject audio captured on the computer into the device "
+                "microphone.\n"
+                "The source is either an audio input device name (for example "
+                "\"default\"), or a file path prefixed by \"file://\" (for "
+                "example \"file:///path/to/audio.mp3\"), played in a loop.\n"
+                "Use --list-client-audio-sources to list the available "
+                "devices.",
+    },
+    {
         .longopt_id = OPT_CROP,
         .longopt = "crop",
         .argdesc = "width:height:x:y",
@@ -510,6 +524,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_LIST_CAMERA_SIZES,
         .longopt = "list-camera-sizes",
         .text = "List the valid camera capture sizes.",
+    },
+    {
+        .longopt_id = OPT_LIST_CLIENT_AUDIO_SOURCES,
+        .longopt = "list-client-audio-sources",
+        .text = "List audio input sources available on the computer.",
     },
     {
         .longopt_id = OPT_LIST_DISPLAYS,
@@ -2762,6 +2781,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_AUDIO_CODEC_OPTIONS:
                 opts->audio_codec_options = optarg;
                 break;
+            case OPT_CLIENT_AUDIO_SOURCE:
+#ifdef HAVE_CLIENT_AUDIO
+                opts->client_audio_source = optarg;
+                break;
+#else
+                LOGE("Client audio (--client-audio-source) is disabled in this build");
+                return false;
+#endif
             case OPT_VIDEO_ENCODER:
                 opts->video_encoder = optarg;
                 break;
@@ -2868,6 +2895,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_LIST_APPS:
                 opts->list |= SC_OPTION_LIST_APPS;
                 break;
+            case OPT_LIST_CLIENT_AUDIO_SOURCES:
+#ifdef HAVE_CLIENT_AUDIO
+                args->list_client_audio_sources = true;
+                break;
+#else
+                LOGE("Client audio (--list-client-audio-sources) is disabled in this build");
+                return false;
+#endif
             case OPT_REQUIRE_AUDIO:
                 opts->require_audio = true;
                 break;
@@ -3075,7 +3110,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         opts->audio = false;
     }
 
-    if (!opts->video && !opts->audio && !opts->control && !otg) {
+    bool has_client_audio = false;
+#ifdef HAVE_CLIENT_AUDIO
+    has_client_audio = opts->client_audio_source != NULL;
+#endif
+    if (!opts->video && !opts->audio && !opts->control && !otg && !has_client_audio) {
         LOGE("No video, no audio, no control, no OTG: nothing to do");
         return false;
     }
@@ -3223,6 +3262,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         opts->render_fit = opts->flex_display ? SC_RENDER_FIT_UNSCALED
                                               : SC_RENDER_FIT_LETTERBOX;
     }
+
+#ifdef HAVE_CLIENT_AUDIO
+    if (opts->client_audio_source &&
+        (opts->audio_source == SC_AUDIO_SOURCE_VOICE_CALL ||
+         opts->audio_source == SC_AUDIO_SOURCE_VOICE_CALL_UPLINK)) {
+        LOGE("--client-audio-source is incompatible with --audio-source=voice-call and --audio-source=voice-call-uplink");
+        return false;
+    }
+#endif
 
     if (otg) {
         if (!opts->control) {

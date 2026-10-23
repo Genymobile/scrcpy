@@ -158,6 +158,14 @@ If '@' is passed alone, then the rotation is locked to the initial device orient
 Default is 0.
 
 .TP
+.BI "\-\-client\-audio\-source " source
+Inject audio captured on the computer into the device microphone.
+
+The source is either an audio input device name (for example "default"), or a file path prefixed by "file://" (for example "file:///path/to/audio.mp3"), played in a loop.
+
+Use \-\-list\-client\-audio\-sources to list the available devices.
+
+.TP
 .BI "\-\-crop " width\fR:\fIheight\fR:\fIx\fR:\fIy
 Crop the device screen on the server.
 
@@ -299,6 +307,10 @@ List the valid camera capture sizes.
 .TP
 .B \-\-list\-cameras
 List cameras available on the device.
+
+.TP
+.B \-\-list\-client\-audio\-sources
+List audio input sources available on the computer.
 
 .TP
 .B \-\-list\-encoders
