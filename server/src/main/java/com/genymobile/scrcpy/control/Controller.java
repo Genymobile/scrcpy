@@ -42,6 +42,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Locale;
 
 public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
@@ -811,15 +813,23 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 return;
             }
 
-            String lowerSearchName = name.toLowerCase();
+            String lowerSearchName = name.toLowerCase(Locale.ROOT);
 
             class Match {
-                final DeviceApp app;
-                final double score;
+                private final DeviceApp app;
+                private final double score;
 
                 Match(DeviceApp app, double score) {
-                    this.app = app;
-                    this.score = score;
+                        this.app = app;
+                        this.score = score;
+                }
+
+                public DeviceApp getApp() {
+                    return app;
+                }
+
+                public double getScore() {
+                    return score;
                 }
             }
 
@@ -827,8 +837,8 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
             for (DeviceApp deviceApp : allApps) {
                 double similarity = calculateSmartSimilarity(
-                        lowerSearchName,
-                        deviceApp.getName().toLowerCase()
+                    lowerSearchName,
+                    deviceApp.getName().toLowerCase(Locale.ROOT)
                 );
 
                 matches.add(new Match(deviceApp, similarity));
@@ -839,18 +849,18 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 return;
             }
 
-            matches.sort((a, b) -> Double.compare(b.score, a.score));
+            Collections.sort(matches, (a, b) -> Double.compare(b.getScore(), a.getScore()));
 
             StringBuilder sb = new StringBuilder();
             int topN = 10;
             int count = Math.min(topN, matches.size());
             int countW = (int) Math.log10(count) + 1;
-            sb.append("Top ").append(String.format("%d", count)).append(" fuzzy matches for \"").append(name).append("\":");
+            sb.append("Top ").append(String.format(Locale.ROOT, "%d", count)).append(" fuzzy matches for \"").append(name).append("\":");
 
 
             for (int i = 0; i < count; i++) {
                 Match match = matches.get(i);
-                int lpad = countW - ((int) Math.log10(i+1) + 1);
+                int lpad = countW - ((int) Math.log10(i + 1) + 1);
                 sb.append("\n")
                     .append(" ".repeat(lpad))
                     .append(i + 1)
@@ -859,7 +869,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     .append(" [")
                     .append(match.app.getPackageName())
                     .append("] - ")
-                    .append(String.format("%.1f", match.score * 100))
+                    .append(String.format(Locale.ROOT, "%.1f", match.score * 100))
                     .append("%");
             }
 
@@ -870,7 +880,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             Ln.i("Starting best fuzzy match: \"" + best.app.getName()
                     + "\" [" + best.app.getPackageName()
                     + "] with "
-                    + String.format("%.1f", best.score * 100)
+                    + String.format(Locale.ROOT, "%.1f", best.score * 100)
                     + "% similarity");
             app = best.app;
 
@@ -900,11 +910,11 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         if (search == null || target == null) {
             return 0.0;
         }
-        
+
         if (search.isEmpty() || target.isEmpty()) {
             return 0.0;
         }
-        
+
         // Exact match
         if (target.equals(search)) {
             return 1.0;
@@ -938,7 +948,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             if (isWordBoundary) {
                 score += 0.3;
             }
-            
+
             // Bonus for complete word match
             if (isCompleteWord) {
                 score += 0.3;
@@ -948,7 +958,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         if (target.replace(" ", "").startsWith(search.replace(" ", ""))) {
             score += 0.2;
         }
-        
+
         // Cap at 0.99 (leaving room for exact match at 1.0)
         return Math.min(score, 0.99);
     }
@@ -961,15 +971,15 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         if (s1 == null || s2 == null) {
             return 0.0;
         }
-        
+
         if (s1.isEmpty() && s2.isEmpty()) {
             return 1.0;
         }
-        
+
         if (s1.isEmpty() || s2.isEmpty()) {
             return 0.0;
         }
-        
+
         int maxLength = Math.max(s1.length(), s2.length());
         int distance = levenshteinDistance(s1, s2);
         return 1.0 - ((double) distance / maxLength);
@@ -981,17 +991,17 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private int levenshteinDistance(String s1, String s2) {
         int m = s1.length();
         int n = s2.length();
-        
+
         int[][] dp = new int[m + 1][n + 1];
-        
+
         for (int i = 0; i <= m; i++) {
             dp[i][0] = i;
         }
-        
+
         for (int j = 0; j <= n; j++) {
             dp[0][j] = j;
         }
-        
+
         for (int i = 1; i <= m; i++) {
             for (int j = 1; j <= n; j++) {
                 if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
@@ -1005,7 +1015,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 }
             }
         }
-        
+
         return dp[m][n];
     }
 
