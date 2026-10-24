@@ -727,8 +727,8 @@ sc_input_manager_process_key(struct sc_input_manager *im,
 }
 
 static struct sc_position
-sc_input_manager_get_position(struct sc_input_manager *im, int32_t x,
-                                                           int32_t y) {
+sc_input_manager_get_position(struct sc_input_manager *im, float x,
+                                                           float y) {
     if (im->mp->relative_mode) {
         // No absolute position
         return (struct sc_position) {
@@ -914,12 +914,9 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     bool mouse_relative_mode = im->mp && im->mp->relative_mode;
     if (video && !mouse_relative_mode && event->button == SDL_BUTTON_LEFT
             && event->clicks == 2) {
-        int32_t x = event->x;
-        int32_t y = event->y;
-        SDL_FRect *r = &im->screen->rect;
-        bool outside = x < r->x || x >= r->x + r->w
-                    || y < r->y || y >= r->y + r->h;
-        if (outside) {
+        bool inside =
+            sc_screen_content_contains(im->screen, event->x, event->y);
+        if (!inside) {
             if (down) {
                 sc_screen_resize_to_fit(im->screen);
             }

@@ -16,6 +16,9 @@ sc_sdl_create_window(const char *title, int64_t x, int64_t y, int64_t width,
 struct sc_size
 sc_sdl_get_window_size(SDL_Window *window);
 
+struct sc_size
+sc_sdl_get_window_size_in_pixels(SDL_Window *window);
+
 void
 sc_sdl_set_window_size(SDL_Window *window, struct sc_size size);
 
@@ -24,6 +27,9 @@ sc_sdl_get_window_position(SDL_Window *window);
 
 void
 sc_sdl_set_window_position(SDL_Window *window, struct sc_point point);
+
+float
+sc_sdl_get_window_pixel_density(SDL_Window *window);
 
 void
 sc_sdl_show_window(SDL_Window *window);
