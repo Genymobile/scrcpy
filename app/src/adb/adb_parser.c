@@ -101,6 +101,18 @@ sc_adb_parse_device(char *line, struct sc_adb_device *device) {
             state = token;
             // The device state is the item immediately after the device serial
             break;
+        } else if (!strcmp(token, "permissions")) {
+            // Unlike other states, "no permissions" spans two tokens. ADB may
+            // append a diagnostic before the usual device properties.
+            size_t previous_start;
+            size_t previous_end;
+            locate_last_token(line, start, &previous_start, &previous_end);
+            if (previous_end - previous_start == 2
+                    && !strncmp(&line[previous_start], "no", 2)) {
+                state = "no permissions";
+                start = previous_start;
+                break;
+            }
         }
 
         // Remove the trailing parts already handled
