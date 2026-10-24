@@ -727,8 +727,8 @@ sc_input_manager_process_key(struct sc_input_manager *im,
 }
 
 static struct sc_position
-sc_input_manager_get_position(struct sc_input_manager *im, int32_t x,
-                                                           int32_t y) {
+sc_input_manager_get_position(struct sc_input_manager *im, float x,
+                                                           float y) {
     if (im->mp->relative_mode) {
         // No absolute position
         return (struct sc_position) {
