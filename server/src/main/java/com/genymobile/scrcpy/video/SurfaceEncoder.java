@@ -359,8 +359,10 @@ public class SurfaceEncoder implements AsyncProcessor {
             } catch (ConfigurationException e) {
                 // Do not print stack trace, a user-friendly error-message has already been logged
             } catch (IOException e) {
-                // Broken pipe is expected on close, because the socket is closed by the client
-                if (!IO.isBrokenPipe(e)) {
+                if (IO.isEAgain(e)) {
+                    Ln.e("Video socket send timeout");
+                } else if (!IO.isBrokenPipe(e)) {
+                    // Broken pipe is expected on close, because the socket is closed by the client
                     Ln.e("Video encoding error", e);
                 }
             } finally {

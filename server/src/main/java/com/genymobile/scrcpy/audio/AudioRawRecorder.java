@@ -74,7 +74,11 @@ public final class AudioRawRecorder implements AsyncProcessor {
             } catch (AudioCaptureException e) {
                 // Do not print stack trace, a user-friendly error-message has already been logged
             } catch (Throwable t) {
-                Ln.e("Audio recording error", t);
+                if (IO.isEAgain(t)) {
+                    Ln.e("Audio socket send timeout");
+                } else {
+                    Ln.e("Audio recording error", t);
+                }
                 fatalError = true;
             } finally {
                 Ln.d("Audio recorder stopped");

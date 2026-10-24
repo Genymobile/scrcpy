@@ -82,7 +82,7 @@ public final class IO {
         return cause instanceof ErrnoException && ((ErrnoException) cause).errno == OsConstants.EAGAIN;
     }
 
-    public static boolean isEAgain(Exception e) {
+    public static boolean isEAgain(Throwable e) {
         return e instanceof IOException && isEAgain((IOException) e);
     }
 }
