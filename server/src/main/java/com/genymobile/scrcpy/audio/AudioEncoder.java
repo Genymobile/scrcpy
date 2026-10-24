@@ -261,8 +261,11 @@ public final class AudioEncoder implements AsyncProcessor {
                 } catch (InterruptedException e) {
                     // this is expected on close
                 } catch (IOException e) {
-                    // Broken pipe is expected on close, because the socket is closed by the client
-                    if (!IO.isBrokenPipe(e)) {
+                    if (IO.isEAgain(e)) {
+                        Ln.e("Audio socket send timeout");
+                        error = true;
+                    } else if (!IO.isBrokenPipe(e)) {
+                        // Broken pipe is expected on close, because the socket is closed by the client
                         Ln.e("Audio encoding error", e);
                         error = true;
                     }
