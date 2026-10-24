@@ -70,6 +70,7 @@ public final class AudioEncoder implements AsyncProcessor {
     private Thread outputThread;
 
     private boolean ended;
+    private boolean failed;
 
     public AudioEncoder(AudioCapture capture, Streamer streamer, Options options) {
         this.capture = capture;
@@ -155,7 +156,7 @@ public final class AudioEncoder implements AsyncProcessor {
         thread = new Thread(() -> {
             boolean fatalError = false;
             try {
-                encode();
+                fatalError = !encode();
             } catch (ConfigurationException e) {
                 // Do not print stack trace, a user-friendly error-message has already been logged
                 fatalError = true;
@@ -176,7 +177,7 @@ public final class AudioEncoder implements AsyncProcessor {
     public void stop() {
         if (thread != null) {
             // Just wake up the blocking wait from the thread, so that it properly releases all its resources and terminates
-            end();
+            end(false);
         }
     }
 
@@ -187,12 +188,14 @@ public final class AudioEncoder implements AsyncProcessor {
         }
     }
 
-    private synchronized void end() {
+    private synchronized void end(boolean error) {
         ended = true;
+        failed |= error;
         notify();
     }
 
-    private synchronized void waitEnded() {
+    // Return false if an error occurred, true otherwise
+    private synchronized boolean waitEnded() {
         try {
             while (!ended) {
                 wait();
@@ -200,14 +203,16 @@ public final class AudioEncoder implements AsyncProcessor {
         } catch (InterruptedException e) {
             // ignore
         }
+        return !failed;
     }
 
+    // Return false if an error occurred, true otherwise
     @TargetApi(AndroidVersions.API_23_ANDROID_6_0)
-    private void encode() throws IOException, ConfigurationException, AudioCaptureException {
+    private boolean encode() throws IOException, ConfigurationException, AudioCaptureException {
         if (Build.VERSION.SDK_INT < AndroidVersions.API_30_ANDROID_11) {
             Ln.w("Audio disabled: it is not supported before Android 11");
             streamer.writeDisableStream(false);
-            return;
+            return true;
         }
 
         MediaCodec mediaCodec = null;
@@ -236,18 +241,21 @@ public final class AudioEncoder implements AsyncProcessor {
 
             final MediaCodec mediaCodecRef = mediaCodec;
             inputThread = new Thread(() -> {
+                boolean error = false;
                 try {
                     inputThread(mediaCodecRef, capture);
                 } catch (InterruptedException e) {
                     // this is expected on close
                 } catch (IOException e) {
                     Ln.e("Audio capture error", e);
+                    error = true;
                 } finally {
-                    end();
+                    end(error);
                 }
             }, "audio-in");
 
             outputThread = new Thread(() -> {
+                boolean error = false;
                 try {
                     outputThread(mediaCodecRef);
                 } catch (InterruptedException e) {
@@ -256,9 +264,10 @@ public final class AudioEncoder implements AsyncProcessor {
                     // Broken pipe is expected on close, because the socket is closed by the client
                     if (!IO.isBrokenPipe(e)) {
                         Ln.e("Audio encoding error", e);
+                        error = true;
                     }
                 } finally {
-                    end();
+                    end(error);
                 }
             }, "audio-out");
 
@@ -267,7 +276,7 @@ public final class AudioEncoder implements AsyncProcessor {
             inputThread.start();
             outputThread.start();
 
-            waitEnded();
+            return waitEnded();
         } catch (AudioCaptureException e) {
             // Notify the client that the audio could not be captured
             streamer.writeDisableStream(false);
@@ -355,7 +364,7 @@ public final class AudioEncoder implements AsyncProcessor {
             try {
                 inputTasks.put(new InputTask(index));
             } catch (InterruptedException e) {
-                end();
+                end(false);
             }
         }
 
@@ -364,14 +373,14 @@ public final class AudioEncoder implements AsyncProcessor {
             try {
                 outputTasks.put(new OutputTask(index, bufferInfo));
             } catch (InterruptedException e) {
-                end();
+                end(false);
             }
         }
 
         @Override
         public void onError(MediaCodec codec, MediaCodec.CodecException e) {
             Ln.e("MediaCodec error", e);
-            end();
+            end(true);
         }
 
         @Override
