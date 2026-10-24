@@ -238,7 +238,9 @@ public final class AudioEncoder implements AsyncProcessor {
             inputThread = new Thread(() -> {
                 try {
                     inputThread(mediaCodecRef, capture);
-                } catch (IOException | InterruptedException e) {
+                } catch (InterruptedException e) {
+                    // this is expected on close
+                } catch (IOException e) {
                     Ln.e("Audio capture error", e);
                 } finally {
                     end();
