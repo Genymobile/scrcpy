@@ -47,18 +47,27 @@ is_windowed(struct sc_screen *screen) {
                                                  | SDL_WINDOW_MAXIMIZED));
 }
 
+static inline bool
+sc_screen_is_physical_unit(struct sc_screen *screen) {
+    return screen->window_size_unit == SC_WINDOW_SIZE_UNIT_PHYSICAL;
+}
+
 static struct sc_size
 sc_screen_get_window_size(struct sc_screen *screen) {
-    return sc_sdl_get_window_size_in_pixels(screen->window);
+    if (sc_screen_is_physical_unit(screen)) {
+        return sc_sdl_get_window_size_in_pixels(screen->window);
+    }
+    return sc_sdl_get_window_size(screen->window);
 }
 
 static void
 sc_screen_set_window_size(struct sc_screen *screen, struct sc_size size) {
-    float density = sc_sdl_get_window_pixel_density(screen->window);
-    // Round to the nearest integer
-    size.width = MAX(1, size.width / density + 0.5f);
-    size.height = MAX(1, size.height / density + 0.5f);
-
+    if (sc_screen_is_physical_unit(screen)) {
+        float density = sc_sdl_get_window_pixel_density(screen->window);
+        // Round to the nearest integer
+        size.width = MAX(1, size.width / density + 0.5f);
+        size.height = MAX(1, size.height / density + 0.5f);
+    }
     sc_sdl_set_window_size(screen->window, size);
 }
 
@@ -79,9 +88,14 @@ sc_screen_get_preferred_display_bounds(struct sc_screen *screen,
         return false;
     }
 
-    float scale = sc_sdl_get_window_pixel_density(screen->window);
-    bounds->width = MAX(0, (rect.w - DISPLAY_MARGINS) * scale);
-    bounds->height = MAX(0, (rect.h - DISPLAY_MARGINS) * scale);
+    bounds->width = MAX(0, rect.w - DISPLAY_MARGINS);
+    bounds->height = MAX(0, rect.h - DISPLAY_MARGINS);
+
+    if (sc_screen_is_physical_unit(screen)) {
+        float scale = sc_sdl_get_window_pixel_density(screen->window);
+        bounds->width *= scale;
+        bounds->height *= scale;
+    }
 
     return true;
 }
@@ -300,7 +314,16 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
         goto end;
     }
 
-    SDL_FRect geometry = screen->rect;
+    float scale = sc_screen_is_physical_unit(screen)
+                ? 1
+                : sc_sdl_get_window_pixel_density(screen->window);
+
+    SDL_FRect geometry = {
+        .x = screen->rect.x * scale,
+        .y = screen->rect.y * scale,
+        .w = screen->rect.w * scale,
+        .h = screen->rect.h * scale,
+    };
     enum sc_orientation orientation = screen->orientation;
 
     const SDL_FRect *srcrect = NULL;
@@ -381,8 +404,14 @@ sc_screen_on_resize(struct sc_screen *screen, const SDL_WindowEvent *event) {
 
     if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
         sc_screen_render(screen, true);
+    }
 
-        if (screen->flex_display) {
+    if (screen->flex_display) {
+        // Only handle the event providing the size in window size units
+        uint32_t size_event_type = sc_screen_is_physical_unit(screen)
+                                 ? SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
+                                 : SDL_EVENT_WINDOW_RESIZED;
+        if (event->type == size_event_type) {
             assert(!(event->data1 & ~0xFFFF));
             assert(!(event->data2 & ~0xFFFF));
             uint16_t width = event->data1;
@@ -545,6 +574,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->window_aspect_ratio_lock = params->window_aspect_ratio_lock;
     screen->render_fit = params->render_fit;
     screen->flex_display = params->flex_display;
+    screen->window_size_unit = params->window_size_unit;
 
     screen->bg.r = (params->background_color >> 16) & 0xFF;
     screen->bg.g = (params->background_color >> 8) & 0xFF;
@@ -626,12 +656,15 @@ sc_screen_init(struct sc_screen *screen,
         goto error_destroy_fps_counter;
     }
 
-    // The window has been created with a size in logical units
-    struct sc_size size = {
-        .width = width,
-        .height = height,
-    };
-    sc_screen_set_window_size(screen, size);
+    if (sc_screen_is_physical_unit(screen)) {
+        // The window has been created with a size in logical units
+        struct sc_size size = {
+            .width = width,
+            .height = height,
+        };
+
+        sc_screen_set_window_size(screen, size);
+    }
 
     screen->renderer = SDL_CreateRenderer(screen->window, NULL);
     if (!screen->renderer) {
@@ -1117,13 +1150,16 @@ sc_screen_resize_to_fit(struct sc_screen *screen) {
         }
         assert(x_offset >= 0 && y_offset >= 0);
         if (x_offset || y_offset) {
-            // The window position is always expressed in SDL window
-            // coordinates
-            float scale = sc_sdl_get_window_pixel_density(screen->window);
-
+            if (sc_screen_is_physical_unit(screen)) {
+                // The window position is always expressed in SDL window
+                // coordinates
+                float scale = sc_sdl_get_window_pixel_density(screen->window);
+                x_offset /= scale;
+                y_offset /= scale;
+            }
             struct sc_point pos = sc_sdl_get_window_position(screen->window);
-            pos.x += (int32_t) ((x_offset / scale) + 0.5f);
-            pos.y += (int32_t) ((y_offset / scale) + 0.5f);
+            pos.x += (int32_t) (x_offset + 0.5f);
+            pos.y += (int32_t) (y_offset + 0.5f);
             sc_sdl_set_window_position(screen->window, pos);
         }
 
@@ -1145,12 +1181,16 @@ sc_screen_resize_to_fit(struct sc_screen *screen) {
     float x_offset = (window_size.width - optimal_size.width) / 2.f;
     float y_offset = (window_size.height - optimal_size.height) / 2.f;
 
-    // The window position is always expressed in SDL window coordinates
-    float scale = sc_sdl_get_window_pixel_density(screen->window);
+    if (sc_screen_is_physical_unit(screen)) {
+        // The window position is always expressed in SDL window coordinates
+        float scale = sc_sdl_get_window_pixel_density(screen->window);
+        x_offset /= scale;
+        y_offset /= scale;
+    }
 
     struct sc_point pos = sc_sdl_get_window_position(screen->window);
-    pos.x += (int32_t) ((x_offset / scale) + 0.5f);
-    pos.y += (int32_t) ((y_offset / scale) + 0.5f);
+    pos.x += (int32_t) (x_offset + 0.5f);
+    pos.y += (int32_t) (y_offset + 0.5f);
 
     set_aspect_ratio(screen, screen->content_size);
     sc_screen_set_window_size(screen, optimal_size);
@@ -1338,10 +1378,12 @@ sc_screen_handle_disconnection(struct sc_screen *screen) {
 
 bool
 sc_screen_content_contains(struct sc_screen *screen, float x, float y) {
-    // screen->rect is expressed in physical pixels
-    float scale = sc_sdl_get_window_pixel_density(screen->window);
-    x *= scale;
-    y *= scale;
+    if (sc_screen_is_physical_unit(screen)) {
+        // screen->rect is expressed in physical pixels
+        float scale = sc_sdl_get_window_pixel_density(screen->window);
+        x *= scale;
+        y *= scale;
+    }
 
     SDL_FRect *r = &screen->rect;
     return x >= r->x && x < r->x + r->w && y >= r->y && y < r->y + r->h;
@@ -1354,9 +1396,11 @@ sc_screen_convert_window_to_frame_coords(struct sc_screen *screen,
 
     enum sc_orientation orientation = screen->orientation;
 
-    float scale = sc_sdl_get_window_pixel_density(screen->window);
-    wx *= scale;
-    wy *= scale;
+    if (sc_screen_is_physical_unit(screen)) {
+        float scale = sc_sdl_get_window_pixel_density(screen->window);
+        wx *= scale;
+        wy *= scale;
+    }
 
     int32_t w = screen->content_size.width;
     int32_t h = screen->content_size.height;

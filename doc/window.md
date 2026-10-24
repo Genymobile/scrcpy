@@ -27,6 +27,13 @@ The initial window position and size may be specified:
 scrcpy --window-x=100 --window-y=100 --window-width=800 --window-height=600
 ```
 
+By default, sizes are expressed in physical pixels. To express them in logical
+units instead (scaled by the window pixel density on HiDPI displays):
+
+```bash
+scrcpy --window-size-unit=logical --window-width=800
+```
+
 By default, the window aspect ratio is preserved when resizing. To disable this
 behavior:
 

@@ -115,6 +115,7 @@ _scrcpy() {
         --window-y=
         --window-width=
         --window-height=
+        --window-size-unit=
         -x --flex-display"
 
     _init_completion -s || return
@@ -208,6 +209,10 @@ _scrcpy() {
             ;;
         --hwdec)
             COMPREPLY=($(compgen -W 'auto disabled vaapi d3d11va videotoolbox' -- "$cur"))
+            return
+            ;;
+        --window-size-unit)
+            COMPREPLY=($(compgen -W 'logical physical' -- "$cur"))
             return
             ;;
         --audio-bit-rate \

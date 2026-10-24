@@ -39,6 +39,7 @@ struct sc_screen {
     bool camera;
     bool window_aspect_ratio_lock;
     bool flex_display;
+    enum sc_window_size_unit window_size_unit;
 
     struct sc_controller *controller;
 
@@ -136,6 +137,7 @@ struct sc_screen_params {
     int16_t window_y; // accepts SC_WINDOW_POSITION_UNDEFINED
     uint16_t window_width;
     uint16_t window_height;
+    enum sc_window_size_unit window_size_unit;
 
     uint32_t background_color;
 

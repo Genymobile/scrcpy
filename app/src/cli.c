@@ -112,6 +112,7 @@ enum {
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
     OPT_NO_TERMINAL_TITLE,
     OPT_HWDEC,
+    OPT_WINDOW_SIZE_UNIT,
 };
 
 struct sc_option {
@@ -1070,6 +1071,18 @@ static const struct sc_option options[] = {
         .argdesc = "value",
         .text = "Set the initial window height.\n"
                 "Default is 0 (automatic).",
+    },
+    {
+        .longopt_id = OPT_WINDOW_SIZE_UNIT,
+        .longopt = "window-size-unit",
+        .argdesc = "unit",
+        .text = "Set the unit of the window size.\n"
+                "Possible values are \"logical\" and \"physical\".\n"
+                "\"logical\": the window size is expressed in logical units "
+                "(scaled by the window pixel density on HiDPI displays).\n"
+                "\"physical\": the window size is expressed in physical "
+                "pixels.\n"
+                "Default is \"physical\".",
     },
     {
         .shortopt = 'x',
@@ -2547,6 +2560,23 @@ parse_hwdec_mode(const char *optarg, enum sc_hwdec_mode *mode) {
 }
 
 static bool
+parse_window_size_unit(const char *optarg, enum sc_window_size_unit *unit) {
+    if (!strcmp(optarg, "physical")) {
+        *unit = SC_WINDOW_SIZE_UNIT_PHYSICAL;
+        return true;
+    }
+
+    if (!strcmp(optarg, "logical")) {
+        *unit = SC_WINDOW_SIZE_UNIT_LOGICAL;
+        return true;
+    }
+
+    LOGE("Unsupported window size unit: %s (expected logical or physical)",
+         optarg);
+    return false;
+}
+
+static bool
 parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                        const char *optstring, const struct option *longopts) {
     struct scrcpy_options *opts = &args->opts;
@@ -2704,6 +2734,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_WINDOW_HEIGHT:
                 if (!parse_window_dimension(optarg, &opts->window_height)) {
+                    return false;
+                }
+                break;
+            case OPT_WINDOW_SIZE_UNIT:
+                if (!parse_window_size_unit(optarg, &opts->window_size_unit)) {
                     return false;
                 }
                 break;

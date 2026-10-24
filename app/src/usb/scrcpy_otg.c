@@ -228,6 +228,7 @@ scrcpy_otg(struct scrcpy_options *options) {
         .window_y = options->window_y,
         .window_width = options->window_width,
         .window_height = options->window_height,
+        .window_size_unit = options->window_size_unit,
         .window_borderless = options->window_borderless,
         .orientation = SC_ORIENTATION_0,
         .mipmaps = options->mipmaps,
