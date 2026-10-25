@@ -121,6 +121,63 @@ static void test_options2(void) {
     assert(opts->record_format == SC_RECORD_FORMAT_MP4);
 }
 
+static void test_vd_enable_freeform(void) {
+    struct scrcpy_cli_args args = {
+        .opts = scrcpy_options_default,
+    };
+    assert(!args.opts.vd_enable_freeform);
+
+    char *argv[] = {"scrcpy", "--new-display", "--vd-enable-freeform"};
+    bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+    assert(ok);
+    assert(args.opts.new_display);
+    assert(args.opts.vd_enable_freeform);
+    assert(args.opts.vd_system_decorations);
+    assert(args.opts.cleanup);
+
+    args.opts = scrcpy_options_default;
+    char *reversed[] = {
+        "scrcpy", "--vd-enable-freeform", "--new-display=1920x1080/240",
+    };
+    ok = scrcpy_parse_args(&args, ARRAY_LEN(reversed), reversed);
+    assert(ok);
+    assert(args.opts.vd_enable_freeform);
+    assert(!strcmp(args.opts.new_display, "1920x1080/240"));
+}
+
+static void test_vd_enable_freeform_invalid_options(void) {
+    char *cases[][5] = {
+        {"scrcpy", "--vd-enable-freeform", NULL},
+        {"scrcpy", "--new-display", "--vd-enable-freeform", "--no-cleanup",
+         NULL},
+        {"scrcpy", "--no-cleanup", "--vd-enable-freeform", "--new-display",
+         NULL},
+        {"scrcpy", "--new-display", "--vd-enable-freeform",
+         "--no-vd-system-decorations", NULL},
+        {"scrcpy", "--no-vd-system-decorations", "--vd-enable-freeform",
+         "--new-display", NULL},
+        {"scrcpy", "--new-display", "--vd-enable-freeform=false", NULL},
+        {"scrcpy", "--new-display", "--vd-enable-freeform", "--no-video",
+         NULL},
+        {"scrcpy", "--new-display", "--vd-enable-freeform",
+         "--video-source=camera", NULL},
+#ifdef HAVE_USB
+        {"scrcpy", "--new-display", "--vd-enable-freeform", "--otg", NULL},
+#endif
+    };
+    for (size_t i = 0; i < ARRAY_LEN(cases); ++i) {
+        int argc = 0;
+        while (cases[i][argc]) {
+            ++argc;
+        }
+        struct scrcpy_cli_args args = {
+            .opts = scrcpy_options_default,
+        };
+        bool ok = scrcpy_parse_args(&args, argc, cases[i]);
+        assert(!ok);
+    }
+}
+
 static void test_parse_shortcut_mods(void) {
     uint8_t mods;
     bool ok;
@@ -163,6 +220,8 @@ int main(int argc, char *argv[]) {
     test_flag_help();
     test_options();
     test_options2();
+    test_vd_enable_freeform();
+    test_vd_enable_freeform_invalid_options();
     test_parse_shortcut_mods();
     return 0;
 }
