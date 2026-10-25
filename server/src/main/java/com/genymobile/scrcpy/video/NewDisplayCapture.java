@@ -21,6 +21,7 @@ import com.genymobile.scrcpy.wrappers.ServiceManager;
 import android.graphics.Rect;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
+import android.os.SystemClock;
 import android.view.Surface;
 
 import java.io.IOException;
@@ -61,6 +62,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private final float angle;
     private final boolean vdDestroyContent;
     private final boolean vdSystemDecorations;
+    private final boolean vdEnableFreeform;
     private final boolean flexDisplay;
 
     private VideoConstraints videoConstraints;
@@ -88,6 +90,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         this.angle = options.getAngle();
         this.vdDestroyContent = options.getVDDestroyContent();
         this.vdSystemDecorations = options.getVDSystemDecorations();
+        this.vdEnableFreeform = options.getVDEnableFreeform();
         this.flexDisplay = options.getFlexDisplay();
     }
 
@@ -243,6 +246,10 @@ public class NewDisplayCapture extends SurfaceCapture {
             int virtualDisplayId = vd.getDisplay().getDisplayId();
             Ln.i("New display: " + displaySize.getWidth() + "x" + displaySize.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
 
+            if (contentModeSwitch) {
+                checkDesktopEligibility(virtualDisplayId);
+            }
+
             if (displayImePolicy != -1) {
                 ServiceManager.getWindowManager().setDisplayImePolicy(virtualDisplayId, displayImePolicy);
             }
@@ -266,6 +273,38 @@ public class NewDisplayCapture extends SurfaceCapture {
         } catch (Exception e) {
             Ln.e("Could not create display", e);
             throw new AssertionError("Could not create display");
+        }
+    }
+
+    private void checkDesktopEligibility(int displayId) throws IOException {
+        boolean eligible;
+        try {
+            // DisplayManager may return before WindowManager has processed the added display.
+            long deadline = SystemClock.uptimeMillis() + 3000;
+            do {
+                eligible = ServiceManager.getWindowManager().isEligibleForDesktopMode(displayId);
+                if (eligible) {
+                    break;
+                }
+                Thread.sleep(25);
+            } while (SystemClock.uptimeMillis() < deadline);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while waiting for virtual display desktop eligibility", e);
+        } catch (ReflectiveOperationException e) {
+            if (vdEnableFreeform) {
+                throw new IOException("Cannot verify virtual display desktop eligibility", e);
+            }
+            Ln.w("Could not query desktop eligibility on this Android build", e);
+            return;
+        }
+        if (!eligible) {
+            if (vdEnableFreeform) {
+                throw new IOException("Virtual display is not desktop-eligible despite freeform support; "
+                        + "Android display policy prevents desktop use");
+            }
+            Ln.w("Virtual display is not desktop-eligible; the Android launcher may ignore app icons. "
+                    + "If freeform support is missing, --vd-enable-freeform can temporarily enable it for the entire device");
         }
     }
 

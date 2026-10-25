@@ -103,6 +103,7 @@ _scrcpy() {
         --v4l2-sink=
         -v --version
         -V --verbosity=
+        --vd-enable-freeform
         --video-buffer=
         --video-codec=
         --video-codec-options=

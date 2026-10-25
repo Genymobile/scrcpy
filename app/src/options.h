@@ -368,6 +368,7 @@ struct scrcpy_options {
     const char *start_app;
     bool vd_destroy_content;
     bool vd_system_decorations;
+    bool vd_enable_freeform;
     bool camera_torch;
     bool keep_active;
     bool flex_display;

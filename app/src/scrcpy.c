@@ -480,6 +480,7 @@ scrcpy(struct scrcpy_options *options) {
         .camera_zoom = options->camera_zoom,
         .vd_destroy_content = options->vd_destroy_content,
         .vd_system_decorations = options->vd_system_decorations,
+        .vd_enable_freeform = options->vd_enable_freeform,
         .keep_active = options->keep_active,
         .flex_display = options->flex_display,
         .ignore_video_encoder_constraints =
