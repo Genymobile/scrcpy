@@ -13,11 +13,11 @@
  * device orientation change).
  *
  * Every time a config packet is received, it must be sent alone (for recorder
- * extradata), then concatenated to the next media packet (for correct decoding
- * and recording).
+ * extradata), then concatenated to every key frame (for correct decoding and
+ * recording).
  *
- * This helper reads every input packet and modifies each media packet which
- * immediately follows a config packet to prepend the config packet payload.
+ * This helper reads every input packet and modifies each key frame packet to
+ * prepend the payload of the last config packet.
  */
 
 struct sc_packet_merger {
@@ -33,9 +33,8 @@ sc_packet_merger_destroy(struct sc_packet_merger *merger);
 
 /**
  * If the packet is a config packet, then keep its data for later.
- * Otherwise (if the packet is a media packet), then if a config packet is
- * pending, prepend the config packet to this packet (so the packet is
- * modified!).
+ * Otherwise (if the packet is a media packet), then if it is a key frame,
+ * prepend the last config packet to this packet (so the packet is modified!).
  */
 bool
 sc_packet_merger_merge(struct sc_packet_merger *merger, AVPacket *packet);
