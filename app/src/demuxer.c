@@ -314,7 +314,7 @@ run_demuxer(void *data) {
             }
 
             if (must_merge_config_packet) {
-                // Prepend any config packet to the next media packet
+                // Prepend the last config packet to every key frame
                 ok = sc_packet_merger_merge(&merger, packet);
                 if (!ok) {
                     av_packet_unref(packet);
