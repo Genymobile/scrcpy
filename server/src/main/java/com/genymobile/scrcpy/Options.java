@@ -46,6 +46,7 @@ public class Options {
     private CameraFacing cameraFacing;
     private CameraAspectRatio cameraAspectRatio;
     private float cameraZoom = 1;
+    private float cameraFocus = -1; // in diopters, negative for autofocus
     private int cameraFps;
     private boolean cameraHighSpeed;
     private boolean cameraTorch;
@@ -181,6 +182,10 @@ public class Options {
 
     public float getCameraZoom() {
         return cameraZoom;
+    }
+
+    public float getCameraFocus() {
+        return cameraFocus;
     }
 
     public int getCameraFps() {
@@ -510,6 +515,15 @@ public class Options {
                 case "camera_zoom":
                     if (!value.isEmpty()) {
                         options.cameraZoom = Float.parseFloat(value);
+                    }
+                    break;
+                case "camera_focus":
+                    if (!value.isEmpty()) {
+                        float focus = Float.parseFloat(value);
+                        if (!(focus >= 0)) {
+                            throw new IllegalArgumentException("Invalid camera focus distance: " + value);
+                        }
+                        options.cameraFocus = focus;
                     }
                     break;
                 case "camera_fps":

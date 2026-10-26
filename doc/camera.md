@@ -190,6 +190,24 @@ It can also be adjusted dynamically using <kbd>MOD</kbd>+<kbd>↑</kbd> _(up)_ a
 <kbd>MOD</kbd>+<kbd>↓</kbd> _(down)_.
 
 
+## Focus
+
+By default, the camera uses continuous autofocus. To disable it and hold the
+focus at a fixed distance, pass `--camera-focus`, in diopters (1/meters):
+
+```bash
+scrcpy --video-source=camera --camera-focus=0    # infinity
+scrcpy --video-source=camera --camera-focus=2    # 50cm
+scrcpy --video-source=camera --camera-focus=10   # 10cm
+```
+
+The value is clamped to the minimum focus distance of the camera. It has no
+effect on fixed-focus cameras, or on cameras which do not support manual focus.
+
+On some devices, the lens focus distance is not calibrated, so the actual
+distance in focus may differ from the requested one.
+
+
 ## Webcam
 
 Combined with the [V4L2](v4l2.md) feature on Linux, the Android device camera

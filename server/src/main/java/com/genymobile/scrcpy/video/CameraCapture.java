@@ -67,6 +67,7 @@ public class CameraCapture extends SurfaceCapture {
     private final float angle;
     private final boolean initialTorch;
     private float zoom;
+    private final float focus;
 
     private VideoConstraints videoConstraints;
 
@@ -103,6 +104,7 @@ public class CameraCapture extends SurfaceCapture {
         this.angle = options.getAngle();
         this.initialTorch = options.getCameraTorch();
         this.zoom = options.getCameraZoom();
+        this.focus = options.getCameraFocus();
     }
 
     @Override
@@ -303,9 +305,11 @@ public class CameraCapture extends SurfaceCapture {
                 }
 
                 CameraManager cameraManager = ServiceManager.getCameraManager();
+                Float minFocusDistance = null;
                 try {
                     CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
                     zoomRange = characteristics.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
+                    minFocusDistance = characteristics.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
                 } catch (CameraAccessException e) {
                     Ln.w("Could not get camera characteristics");
                 }
@@ -325,6 +329,16 @@ public class CameraCapture extends SurfaceCapture {
                         zoom = clampZoom(zoom);
                         Ln.i("Set camera zoom: " + zoom);
                         requestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, zoom);
+                    }
+                    if (focus >= 0) {
+                        if (minFocusDistance == null || minFocusDistance == 0) {
+                            Ln.w("Camera does not support manual focus, ignoring --camera-focus");
+                        } else {
+                            float distance = Math.min(focus, minFocusDistance);
+                            Ln.i("Set camera focus: " + distance + " diopters (autofocus disabled)");
+                            requestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
+                            requestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, distance);
+                        }
                     }
 
                     CaptureRequest request = requestBuilder.build();
