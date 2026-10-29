@@ -223,6 +223,7 @@ scrcpy_otg(struct scrcpy_options *options) {
         .mp = mp,
         .gp = gp,
         .mouse_bindings = options->mouse_bindings,
+        .text_input = false,
         .legacy_paste = false,
         .clipboard_autosync = false,
         .shortcut_mods = options->shortcut_mods,

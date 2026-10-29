@@ -626,6 +626,8 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_mouse_processor *mp = NULL;
     struct sc_gamepad_processor *gp = NULL;
 
+    bool text_input = false;
+
     if (options->control) {
         static const struct sc_controller_callbacks controller_cbs = {
             .on_ended = sc_controller_on_ended,
@@ -743,6 +745,7 @@ aoa_complete:
                                  options->key_inject_mode,
                                  options->forward_key_repeat);
             kp = &s->keyboard_sdk.key_processor;
+            text_input = options->key_inject_mode != SC_KEY_INJECT_MODE_RAW;
         } else if (options->keyboard_input_mode
                 == SC_KEYBOARD_INPUT_MODE_UHID) {
             bool ok = sc_keyboard_uhid_init(&s->keyboard_uhid, &s->controller);
@@ -798,6 +801,7 @@ aoa_complete:
             .mp = mp,
             .gp = gp,
             .mouse_bindings = options->mouse_bindings,
+            .text_input = text_input,
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,
             .shortcut_mods = options->shortcut_mods,

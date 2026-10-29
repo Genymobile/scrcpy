@@ -670,10 +670,13 @@ sc_screen_init(struct sc_screen *screen,
         goto error_destroy_renderer;
     }
 
-    ok = SDL_StartTextInput(screen->window);
-    if (!ok) {
-        LOGE("Could not enable text input: %s", SDL_GetError());
-        goto error_destroy_texture;
+    if (params->text_input) {
+        assert(params->kp && params->kp->ops->process_text);
+        ok = SDL_StartTextInput(screen->window);
+        if (!ok) {
+            LOGE("Could not enable text input: %s", SDL_GetError());
+            goto error_destroy_texture;
+        }
     }
 
     screen->icon_tex = NULL;
