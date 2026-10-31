@@ -8,12 +8,6 @@
 #include <string.h>
 #include <SDL3/SDL.h>
 
-#ifdef _WIN32
-// not needed here, but winsock2.h must never be included AFTER windows.h
-# include <winsock2.h>
-# include <windows.h>
-#endif
-
 #include "audio_player.h"
 #include "controller.h"
 #include "decoder.h"
@@ -97,25 +91,6 @@ struct scrcpy {
     };
     struct sc_timeout timeout;
 };
-
-#ifdef _WIN32
-static BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
-    if (ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_BREAK_EVENT) {
-        sc_push_event(SDL_EVENT_QUIT);
-        return TRUE;
-    }
-    return FALSE;
-}
-
-static void
-sdl_configure_ctrl_c_windows(void) {
-    // Clean up properly on Ctrl+C on Windows
-    bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
-    if (!ok) {
-        LOGW("Could not set Ctrl+C handler");
-    }
-}
-#endif // _WIN32
 
 static enum scrcpy_exit_code
 event_loop(struct scrcpy *s, bool has_screen) {
@@ -497,7 +472,7 @@ scrcpy(struct scrcpy_options *options) {
     }
 
 #ifdef _WIN32
-    sdl_configure_ctrl_c_windows();
+    sc_set_windows_ctrl_c_handler();
 #endif
 
     // Set hints before starting the server thread to avoid race conditions in

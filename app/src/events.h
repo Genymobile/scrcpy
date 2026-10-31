@@ -47,4 +47,9 @@ sc_run_on_main_thread(sc_runnable_fn run, void *userdata, bool wait_complete);
 void
 sc_main_thread_stop(void);
 
+#ifdef _WIN32
+void
+sc_set_windows_ctrl_c_handler(void);
+#endif
+
 #endif
