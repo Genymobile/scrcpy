@@ -126,6 +126,10 @@ scrcpy_otg(struct scrcpy_options *options) {
     } else {
         LOGW("Could not call adb executable, adb server not killed");
     }
+
+    // Must be set after killing the adb server, so that Ctrl+C terminates the
+    // process if adb hangs
+    sc_set_windows_ctrl_c_handler();
 #endif
 
     static const struct sc_usb_callbacks cbs = {
