@@ -6,6 +6,9 @@
 #include <SDL3/SDL.h>
 
 #ifdef _WIN32
+// not needed here, but winsock2.h must never be included AFTER windows.h
+# include <winsock2.h>
+# include <windows.h>
 # include "adb/adb.h"
 #endif
 #include "events.h"
@@ -36,6 +39,25 @@ sc_usb_on_disconnected(struct sc_usb *usb, void *userdata) {
 
     sc_push_event(SC_EVENT_DEVICE_DISCONNECTED);
 }
+
+#ifdef _WIN32
+static BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
+    if (ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_BREAK_EVENT) {
+        sc_push_event(SDL_EVENT_QUIT);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static void
+sdl_configure_ctrl_c_windows(void) {
+    // Clean up properly on Ctrl+C on Windows
+    bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
+    if (!ok) {
+        LOGW("Could not set Ctrl+C handler");
+    }
+}
+#endif // _WIN32
 
 static enum scrcpy_exit_code
 event_loop(struct scrcpy_otg *s) {
@@ -92,6 +114,10 @@ scrcpy_otg(struct scrcpy_options *options) {
         LOGE("Could not initialize SDL: %s", SDL_GetError());
         return SCRCPY_EXIT_FAILURE;
     }
+
+#ifdef _WIN32
+    sdl_configure_ctrl_c_windows();
+#endif
 
     if (options->gamepad_input_mode != SC_GAMEPAD_INPUT_MODE_DISABLED) {
         if (!SDL_Init(SDL_INIT_GAMEPAD)) {
