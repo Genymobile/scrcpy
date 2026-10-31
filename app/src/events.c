@@ -1,6 +1,11 @@
 #include "events.h"
 
 #include <assert.h>
+#ifdef _WIN32
+// not needed here, but winsock2.h must never be included AFTER windows.h
+# include <winsock2.h>
+# include <windows.h>
+#endif
 
 #include "util/log.h"
 #include "util/thread.h"
@@ -69,3 +74,22 @@ sc_main_thread_stop(void) {
     // Run all remaining runnables on the main thread
     SDL_PumpEvents();
 }
+
+#ifdef _WIN32
+static BOOL WINAPI
+windows_ctrl_handler(DWORD ctrl_type) {
+    if (ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_BREAK_EVENT) {
+        sc_push_event(SDL_EVENT_QUIT);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+void
+sc_set_windows_ctrl_c_handler(void) {
+    bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
+    if (!ok) {
+        LOGW("Could not set Ctrl+C handler");
+    }
+}
+#endif // _WIN32
