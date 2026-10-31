@@ -72,6 +72,7 @@ _scrcpy() {
         --no-video-playback
         --no-window
         --no-window-aspect-ratio-lock
+        --obs-virtualcam
         --orientation=
         --otg
         -p --port=

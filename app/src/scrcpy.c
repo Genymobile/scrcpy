@@ -44,6 +44,9 @@
 #include "util/term.h"
 #include "util/timeout.h"
 #include "util/tick.h"
+#ifdef HAVE_OBS_VCAM
+# include "obs_vcam_sink.h"
+#endif
 #ifdef HAVE_V4L2
 # include "v4l2_sink.h"
 #endif
@@ -62,6 +65,9 @@ struct scrcpy {
     struct sc_hwdec hwdec;
     struct sc_recorder recorder;
     struct sc_video_regulator video_regulator;
+#ifdef HAVE_OBS_VCAM
+    struct sc_obs_vcam_sink obs_vcam_sink;
+#endif
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
     struct sc_video_regulator v4l2_regulator;
@@ -854,6 +860,9 @@ aoa_complete:
 #ifdef HAVE_V4L2
     needs_video_decoder |= !!options->v4l2_device;
 #endif
+#ifdef HAVE_OBS_VCAM
+    needs_video_decoder |= options->obs_vcam;
+#endif
     if (needs_video_decoder) {
         struct sc_screen *screen = options->video_playback ? &s->screen : NULL;
         assert(!screen || screen_initialized);
@@ -959,6 +968,14 @@ aoa_complete:
         sc_frame_source_add_sink(src, &s->v4l2_sink.frame_sink);
 
         v4l2_sink_initialized = true;
+    }
+#endif
+
+#ifdef HAVE_OBS_VCAM
+    if (options->obs_vcam) {
+        sc_obs_vcam_sink_init(&s->obs_vcam_sink);
+        sc_frame_source_add_sink(&s->video_decoder.frame_source,
+                                 &s->obs_vcam_sink.frame_sink);
     }
 #endif
 

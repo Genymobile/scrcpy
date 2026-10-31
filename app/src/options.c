@@ -76,6 +76,9 @@ const struct scrcpy_options scrcpy_options_default = {
     .v4l2_device = NULL,
     .v4l2_buffer = 0,
 #endif
+#ifdef HAVE_OBS_VCAM
+    .obs_vcam = false,
+#endif
 #ifdef HAVE_USB
     .otg = false,
 #endif
