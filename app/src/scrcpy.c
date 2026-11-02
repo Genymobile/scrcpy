@@ -841,6 +841,7 @@ aoa_complete:
             .hwdec_mode = options->hwdec_mode,
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,
+            .nav_bar = options->nav_bar,
         };
 
         if (!sc_screen_init(&s->screen, &screen_params)) {

@@ -17,6 +17,7 @@
 #include "frame_buffer.h"
 #include "input_manager.h"
 #include "mouse_capture.h"
+#include "nav_bar.h"
 #include "options.h"
 #include "texture.h"
 #include "trait/key_processor.h"
@@ -52,6 +53,10 @@ struct sc_screen {
     struct sc_input_manager im;
     struct sc_mouse_capture mc; // only used in mouse relative mode
     struct sc_fps_counter fps_counter;
+
+    // Optional bar of buttons at the bottom of the window (Back, Home...)
+    bool has_nav_bar;
+    struct sc_nav_bar nav_bar;
 
     struct sc_mutex mutex;
     struct sc_frame_buffer fb; // protected by mutex
@@ -150,6 +155,7 @@ struct sc_screen_params {
 
     bool fullscreen;
     bool start_fps_counter;
+    bool nav_bar;
 };
 
 // initialize screen, create window, renderer and texture (window is hidden)
