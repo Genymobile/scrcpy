@@ -170,6 +170,16 @@ Use USB device (if there is exactly one, like adb -d).
 Also see \fB\-e\fR (\fB\-\-select\-tcpip\fR).
 
 .TP
+.B \-\-device\-ime
+Let the device keyboard (IME) compose text from raw key events, for example to type Korean, instead of the computer input method.
+
+It implies \fB\-\-raw\-key\-events\fR (so the computer input method is not used), and is specific to \fB\-\-keyboard=sdk\fR.
+
+On macOS, the device keyboard language is also switched (by injecting Ctrl+Space) whenever the computer input source switches between a keyboard layout and an input method (e.g. ABC <-> 2-Set Korean).
+
+The device keyboard language can also be switched manually with MOD+l.
+
+.TP
 .BI "\-\-disable\-screensaver"
 Disable screensaver while scrcpy is running.
 
@@ -866,6 +876,10 @@ Inject computer clipboard text as a sequence of key events
 .TP
 .B MOD+k
 Open keyboard settings on the device (for HID keyboard only)
+
+.TP
+.B MOD+l
+Switch the device keyboard language, by injecting Ctrl+Space (for SDK keyboard only)
 
 .TP
 .B MOD+i

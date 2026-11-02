@@ -51,8 +51,44 @@ On the contrary, you could force to always inject raw key events:
 scrcpy --raw-key-events
 ```
 
+In this mode, text input is disabled on the computer side, so that the
+computer input method (IME) does not consume key events.
+
 [textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
+
+
+### Device input method
+
+Text events can only inject characters that the device can generate from its
+key map (typically ASCII). Text composed by a computer input method (IME), for
+example Korean, Japanese or Chinese, cannot be injected this way.
+
+Instead, the device keyboard can compose the text from raw key events, like
+with a physical keyboard:
+
+```bash
+scrcpy --device-ime
+```
+
+This implies `--raw-key-events`, so the computer input method is not used at
+all: keep (or switch) the device keyboard in the target language, and type as
+usual. For example, with the Samsung Keyboard in Korean mode, typing `dkssud`
+produces `안녕`.
+
+To switch the device keyboard language (by injecting
+<kbd>Ctrl</kbd>+<kbd>Space</kbd>), press <kbd>MOD</kbd>+<kbd>l</kbd>.
+
+On macOS, the device keyboard language is also switched automatically whenever
+the computer input source switches between a keyboard layout and an input method
+(e.g. _ABC_ ↔ _2-Set Korean_, with the usual <kbd>Ctrl</kbd>+<kbd>Space</kbd> or
+<kbd>Caps Lock</kbd>), so the usual shortcut keeps working. If both get out of
+sync (for example after switching the language on the device itself), press
+<kbd>MOD</kbd>+<kbd>l</kbd> once.
+
+The computer input source is checked when the next key is pressed, so the
+device keyboard language switches just before that key is injected. Ctrl+Space
+is the shortcut of the Samsung Keyboard (other keyboards may use another one).
 
 
 ### Key repeat

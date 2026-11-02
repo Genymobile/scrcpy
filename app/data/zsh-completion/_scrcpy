@@ -31,6 +31,7 @@ arguments=(
     '--capture-orientation=[Set the capture video orientation]:orientation:(0 90 180 270 flip0 flip90 flip180 flip270 @0 @90 @180 @270 @flip0 @flip90 @flip180 @flip270)'
     '--crop=[\[width\:height\:x\:y\] Crop the device screen on the server]'
     {-d,--select-usb}'[Use USB device]'
+    '--device-ime[Let the device keyboard compose text from raw key events]'
     '--disable-screensaver[Disable screensaver while scrcpy is running]'
     '--display-id=[Specify the display id to mirror]'
     '--display-ime-policy[Set the policy for selecting where the IME should be displayed]'

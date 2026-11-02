@@ -24,6 +24,7 @@ _scrcpy() {
         --capture-orientation=
         --crop=
         -d --select-usb
+        --device-ime
         --disable-screensaver
         --display-id=
         --display-ime-policy=

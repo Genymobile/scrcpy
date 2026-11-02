@@ -112,6 +112,7 @@ enum {
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
     OPT_NO_TERMINAL_TITLE,
     OPT_HWDEC,
+    OPT_DEVICE_IME,
 };
 
 struct sc_option {
@@ -347,6 +348,21 @@ static const struct sc_option options[] = {
         .text = "Crop the device screen on the server.\n"
                 "The values are expressed in the device natural orientation "
                 "(typically, portrait for a phone, landscape for a tablet).",
+    },
+    {
+        .longopt_id = OPT_DEVICE_IME,
+        .longopt = "device-ime",
+        .text = "Let the device keyboard (IME) compose text from raw key "
+                "events, for example to type Korean, instead of the computer "
+                "input method.\n"
+                "It implies --raw-key-events (so the computer input method "
+                "is not used), and is specific to --keyboard=sdk.\n"
+                "On macOS, the device keyboard language is also switched "
+                "(by injecting Ctrl+Space) whenever the computer input "
+                "source switches between a keyboard layout and an input "
+                "method (e.g. ABC <-> 2-Set Korean).\n"
+                "The device keyboard language can also be switched manually "
+                "with MOD+l.",
     },
     {
         .shortopt = 'd',
@@ -1199,6 +1215,11 @@ static const struct sc_shortcut shortcuts[] = {
     {
         .shortcuts = { "MOD+k" },
         .text = "Open keyboard settings on the device (for HID keyboard only)",
+    },
+    {
+        .shortcuts = { "MOD+l" },
+        .text = "Switch the device keyboard language, by injecting Ctrl+Space "
+                "(for SDK keyboard only)",
     },
     {
         .shortcuts = { "MOD+i" },
@@ -2770,6 +2791,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_FORCE_ADB_FORWARD:
                 opts->force_adb_forward = true;
                 break;
+            case OPT_DEVICE_IME:
+                opts->device_ime = true;
+                break;
             case OPT_DISABLE_SCREENSAVER:
                 opts->disable_screensaver = true;
                 break;
@@ -3273,6 +3297,21 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("--no-key-repeat is specific to --keyboard=sdk");
             return false;
         }
+
+        if (opts->device_ime) {
+            LOGE("--device-ime is specific to --keyboard=sdk");
+            return false;
+        }
+    }
+
+    if (opts->device_ime) {
+        if (opts->key_inject_mode == SC_KEY_INJECT_MODE_TEXT) {
+            LOGE("--device-ime is incompatible with --prefer-text");
+            return false;
+        }
+
+        // The device keyboard composes text from raw key events
+        opts->key_inject_mode = SC_KEY_INJECT_MODE_RAW;
     }
 
     if (opts->mouse_input_mode != SC_MOUSE_INPUT_MODE_SDK

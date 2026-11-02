@@ -56,6 +56,15 @@ struct sc_key_processor_ops {
     void
     (*process_text)(struct sc_key_processor *kp,
                     const struct sc_text_event *event);
+
+    /**
+     * Switch the language of the device keyboard (IME), for example between
+     * Korean and English
+     *
+     * This function is optional.
+     */
+    void
+    (*switch_language)(struct sc_key_processor *kp);
 };
 
 #endif

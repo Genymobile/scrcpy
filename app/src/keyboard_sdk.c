@@ -11,6 +11,7 @@
 #include "control_msg.h"
 #include "controller.h"
 #include "input_events.h"
+#include "input_source.h"
 #include "util/intmap.h"
 #include "util/log.h"
 
@@ -268,6 +269,71 @@ convert_input_key(const struct sc_key_event *event, struct sc_control_msg *msg,
 }
 
 static void
+push_keycode(struct sc_keyboard_sdk *kb, enum android_keycode keycode,
+             enum android_keyevent_action action,
+             enum android_metastate metastate) {
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_KEYCODE;
+    msg.inject_keycode.action = action;
+    msg.inject_keycode.keycode = keycode;
+    msg.inject_keycode.repeat = 0;
+    msg.inject_keycode.metastate = metastate;
+
+    if (!sc_controller_push_msg(kb->controller, &msg)) {
+        LOGW("Could not request 'inject keycode'");
+    }
+}
+
+static void
+inject_ctrl_space(struct sc_keyboard_sdk *kb) {
+    // Ctrl+Space switches the language of the device keyboard (at least
+    // Samsung Keyboard, for key events from a hardware keyboard)
+    enum android_metastate ctrl = AMETA_CTRL_ON | AMETA_CTRL_LEFT_ON;
+    push_keycode(kb, AKEYCODE_CTRL_LEFT, AKEY_EVENT_ACTION_DOWN, ctrl);
+    push_keycode(kb, AKEYCODE_SPACE, AKEY_EVENT_ACTION_DOWN, ctrl);
+    push_keycode(kb, AKEYCODE_SPACE, AKEY_EVENT_ACTION_UP, ctrl);
+    push_keycode(kb, AKEYCODE_CTRL_LEFT, AKEY_EVENT_ACTION_UP, 0);
+}
+
+static void
+sync_device_ime_language(struct sc_keyboard_sdk *kb) {
+    assert(kb->device_ime);
+
+    bool input_method;
+    if (!sc_input_source_is_input_method(&input_method)) {
+        return;
+    }
+
+    if (kb->input_method_known && input_method != kb->input_method) {
+        LOGD("Computer input source switched to %s, switching the device "
+             "keyboard language", input_method ? "an input method"
+                                               : "a keyboard layout");
+        inject_ctrl_space(kb);
+    }
+
+    kb->input_method = input_method;
+    kb->input_method_known = true;
+}
+
+static void
+sc_key_processor_switch_language(struct sc_key_processor *kp) {
+    struct sc_keyboard_sdk *kb = DOWNCAST(kp);
+
+    if (kb->device_ime) {
+        // Take any pending computer input source switch into account without
+        // applying it, otherwise it would cancel this manual switch on the
+        // next key
+        bool input_method;
+        if (sc_input_source_is_input_method(&input_method)) {
+            kb->input_method = input_method;
+            kb->input_method_known = true;
+        }
+    }
+
+    inject_ctrl_space(kb);
+}
+
+static void
 sc_key_processor_process_key(struct sc_key_processor *kp,
                              const struct sc_key_event *event,
                              uint64_t ack_to_wait) {
@@ -277,6 +343,13 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
     (void) ack_to_wait;
 
     struct sc_keyboard_sdk *kb = DOWNCAST(kp);
+
+    if (kb->device_ime && event->action == SC_ACTION_DOWN && !event->repeat) {
+        // The input source shortcut (Ctrl+Space by default on macOS) is
+        // consumed by the computer, so detect its effect lazily, before
+        // injecting the next key
+        sync_device_ime_language(kb);
+    }
 
     if (event->repeat) {
         if (!kb->forward_key_repeat) {
@@ -300,10 +373,8 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
                               const struct sc_text_event *event) {
     struct sc_keyboard_sdk *kb = DOWNCAST(kp);
 
-    if (kb->key_inject_mode == SC_KEY_INJECT_MODE_RAW) {
-        // Never inject text events
-        return;
-    }
+    // In raw mode, text events are not requested (see ops_raw)
+    assert(kb->key_inject_mode != SC_KEY_INJECT_MODE_RAW);
 
     if (kb->key_inject_mode == SC_KEY_INJECT_MODE_MIXED) {
         char c = event->text[0];
@@ -331,20 +402,44 @@ void
 sc_keyboard_sdk_init(struct sc_keyboard_sdk *kb,
                      struct sc_controller *controller,
                      enum sc_key_inject_mode key_inject_mode,
-                     bool forward_key_repeat) {
+                     bool forward_key_repeat,
+                     bool device_ime) {
+    // The device keyboard can only compose text from raw key events
+    assert(!device_ime || key_inject_mode == SC_KEY_INJECT_MODE_RAW);
+
     kb->controller = controller;
     kb->key_inject_mode = key_inject_mode;
     kb->forward_key_repeat = forward_key_repeat;
+    kb->device_ime = device_ime;
 
     kb->repeat = 0;
+
+    kb->input_method_known = false;
+    kb->input_method = false;
+    if (device_ime) {
+        // Initialize the reference state (the device keyboard is assumed to
+        // match it)
+        kb->input_method_known =
+            sc_input_source_is_input_method(&kb->input_method);
+    }
 
     static const struct sc_key_processor_ops ops = {
         .process_key = sc_key_processor_process_key,
         .process_text = sc_key_processor_process_text,
+        .switch_language = sc_key_processor_switch_language,
+    };
+
+    // In raw mode, text events are never injected, so do not request them:
+    // this keeps the computer input method (IME) out of the way, so that all
+    // key events are received and forwarded
+    static const struct sc_key_processor_ops ops_raw = {
+        .process_key = sc_key_processor_process_key,
+        .switch_language = sc_key_processor_switch_language,
     };
 
     // Key injection and clipboard synchronization are serialized
     kb->key_processor.async_paste = false;
     kb->key_processor.hid = false;
-    kb->key_processor.ops = &ops;
+    kb->key_processor.ops = key_inject_mode == SC_KEY_INJECT_MODE_RAW
+                          ? &ops_raw : &ops;
 }

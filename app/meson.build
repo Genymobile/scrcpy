@@ -23,6 +23,7 @@ src = [
     'src/hwdec.c',
     'src/icon.c',
     'src/input_manager.c',
+    'src/input_source.c',
     'src/keyboard_sdk.c',
     'src/mouse_capture.c',
     'src/mouse_sdk.c',
@@ -172,6 +173,11 @@ endif
 
 if usb_support
     dependencies += dependency('libusb-1.0', static: static)
+endif
+
+if host_machine.system() == 'darwin'
+    # for the keyboard input source (TISCopyCurrentKeyboardInputSource)
+    dependencies += dependency('appleframeworks', modules: ['Carbon'])
 endif
 
 if host_machine.system() == 'windows'
