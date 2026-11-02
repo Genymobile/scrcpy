@@ -56,6 +56,25 @@ sc_sdl_get_window_size(SDL_Window *window) {
     return size;
 }
 
+struct sc_size
+sc_sdl_get_window_size_in_pixels(SDL_Window *window) {
+    int width;
+    int height;
+    bool ok = SDL_GetWindowSizeInPixels(window, &width, &height);
+    if (!ok) {
+        LOGE("Could not get window size in pixels: %s", SDL_GetError());
+        LOGE("Please report the error");
+        // fatal error
+        abort();
+    }
+
+    struct sc_size size = {
+        .width = width,
+        .height = height,
+    };
+    return size;
+}
+
 void
 sc_sdl_set_window_size(SDL_Window *window, struct sc_size size) {
     bool ok = SDL_SetWindowSize(window, size.width, size.height);
@@ -81,6 +100,19 @@ sc_sdl_get_window_position(SDL_Window *window) {
         .y = y,
     };
     return point;
+}
+
+float
+sc_sdl_get_window_pixel_density(SDL_Window *window) {
+    float density = SDL_GetWindowPixelDensity(window);
+    if (density == 0) {
+        LOGE("Could not get window pixel density: %s", SDL_GetError());
+        LOGE("Please report the error");
+        assert(!"unexpected");
+        density = 1;
+    }
+
+    return density;
 }
 
 void

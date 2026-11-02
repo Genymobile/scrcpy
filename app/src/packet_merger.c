@@ -31,7 +31,7 @@ sc_packet_merger_merge(struct sc_packet_merger *merger, AVPacket *packet) {
 
         memcpy(merger->config, packet->data, packet->size);
         merger->config_size = packet->size;
-    } else if (merger->config) {
+    } else if (merger->config && (packet->flags & AV_PKT_FLAG_KEY)) {
         size_t config_size = merger->config_size;
         size_t media_size = packet->size;
 
@@ -42,10 +42,6 @@ sc_packet_merger_merge(struct sc_packet_merger *merger, AVPacket *packet) {
 
         memmove(packet->data + config_size, packet->data, media_size);
         memcpy(packet->data, merger->config, config_size);
-
-        free(merger->config);
-        merger->config = NULL;
-        // merger->size is meaningless when merger->config is NULL
     }
 
     return true;
