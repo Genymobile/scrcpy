@@ -825,6 +825,7 @@ aoa_complete:
             .mouse_bindings = options->mouse_bindings,
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,
+            .mac_keys = options->mac_keys,
             .shortcut_mods = options->shortcut_mods,
             .window_title = window_title,
             .always_on_top = options->always_on_top,

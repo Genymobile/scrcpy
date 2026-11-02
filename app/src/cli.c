@@ -112,6 +112,7 @@ enum {
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
     OPT_NO_TERMINAL_TITLE,
     OPT_HWDEC,
+    OPT_MAC_KEYS,
 };
 
 struct sc_option {
@@ -536,6 +537,23 @@ static const struct sc_option options[] = {
     {
         .shortopt = 'M',
         .text = "Same as --mouse=uhid, or --mouse=aoa if --otg is set.",
+    },
+    {
+        .longopt_id = OPT_MAC_KEYS,
+        .longopt = "mac-keys",
+        .text = "Use the macOS text editing shortcuts with a Cmd key which "
+                "is a MOD key (Left Cmd by default, see --shortcut-mod):\n"
+                "  Cmd+a: select all\n"
+                "  Cmd+z / Cmd+Shift+z: undo / redo\n"
+                "  Cmd+Left / Cmd+Right: move to the line start / end\n"
+                "  Cmd+Up / Cmd+Down: move to the text start / end\n"
+                "  (with Shift, the arrows extend the selection)\n"
+                "They replace the corresponding scrcpy shortcuts when MOD is "
+                "Cmd (pause/unpause, display rotation and flip, volume), which "
+                "remain available with the other MOD keys (Left Alt by "
+                "default). "
+                "Cmd+c, Cmd+x and Cmd+v (copy, cut and paste with clipboard "
+                "synchronization) are unchanged.",
     },
     {
         .longopt_id = OPT_MAX_FPS,
@@ -2770,6 +2788,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_FORCE_ADB_FORWARD:
                 opts->force_adb_forward = true;
                 break;
+            case OPT_MAC_KEYS:
+                opts->mac_keys = true;
+                break;
             case OPT_DISABLE_SCREENSAVER:
                 opts->disable_screensaver = true;
                 break;
@@ -3539,6 +3560,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     if (opts->start_fps_counter && !opts->video_playback) {
         LOGW("--print-fps has no effect without video playback");
         opts->start_fps_counter = false;
+    }
+
+    if (opts->mac_keys && !(opts->shortcut_mods & (SC_SHORTCUT_MOD_LSUPER
+                                                  | SC_SHORTCUT_MOD_RSUPER))) {
+        LOGW("--mac-keys has no effect if --shortcut-mod contains neither "
+             "lsuper nor rsuper (Cmd)");
     }
 
     if (otg) {

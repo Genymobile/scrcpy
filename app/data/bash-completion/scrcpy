@@ -48,6 +48,7 @@ _scrcpy() {
         --list-encoders
         -m --max-size=
         -M
+        --mac-keys
         --max-fps=
         --min-size-alignment=
         --mouse=
