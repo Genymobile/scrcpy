@@ -9,7 +9,10 @@
 
 static bool
 listen_on_port(struct sc_intr *intr, sc_socket socket, uint16_t port) {
-    return net_listen_intr(intr, socket, IPV4_LOCALHOST, port, 1);
+    // The server opens up to 3 connections (video, audio and control) in a
+    // row, possibly before the first one is accepted (typically over TCP/IP):
+    // with a backlog of 1, the last one could be refused
+    return net_listen_intr(intr, socket, IPV4_LOCALHOST, port, 3);
 }
 
 static bool
