@@ -268,6 +268,39 @@ convert_input_key(const struct sc_key_event *event, struct sc_control_msg *msg,
 }
 
 static void
+push_keycode(struct sc_keyboard_sdk *kb, enum android_keycode keycode,
+             enum android_keyevent_action action,
+             enum android_metastate metastate) {
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_KEYCODE;
+    msg.inject_keycode.action = action;
+    msg.inject_keycode.keycode = keycode;
+    msg.inject_keycode.repeat = 0;
+    msg.inject_keycode.metastate = metastate;
+
+    if (!sc_controller_push_msg(kb->controller, &msg)) {
+        LOGW("Could not request 'inject keycode'");
+    }
+}
+
+static void
+inject_ctrl_space(struct sc_keyboard_sdk *kb) {
+    // Ctrl+Space switches the language of the device keyboard (at least
+    // Samsung Keyboard, for key events from a hardware keyboard)
+    enum android_metastate ctrl = AMETA_CTRL_ON | AMETA_CTRL_LEFT_ON;
+    push_keycode(kb, AKEYCODE_CTRL_LEFT, AKEY_EVENT_ACTION_DOWN, ctrl);
+    push_keycode(kb, AKEYCODE_SPACE, AKEY_EVENT_ACTION_DOWN, ctrl);
+    push_keycode(kb, AKEYCODE_SPACE, AKEY_EVENT_ACTION_UP, ctrl);
+    push_keycode(kb, AKEYCODE_CTRL_LEFT, AKEY_EVENT_ACTION_UP, 0);
+}
+
+static void
+sc_key_processor_switch_language(struct sc_key_processor *kp) {
+    struct sc_keyboard_sdk *kb = DOWNCAST(kp);
+    inject_ctrl_space(kb);
+}
+
+static void
 sc_key_processor_process_key(struct sc_key_processor *kp,
                              const struct sc_key_event *event,
                              uint64_t ack_to_wait) {
@@ -339,6 +372,7 @@ sc_keyboard_sdk_init(struct sc_keyboard_sdk *kb,
     static const struct sc_key_processor_ops ops = {
         .process_key = sc_key_processor_process_key,
         .process_text = sc_key_processor_process_text,
+        .switch_language = sc_key_processor_switch_language,
     };
 
     // In raw mode, text events are never injected, so do not request them:
@@ -346,6 +380,7 @@ sc_keyboard_sdk_init(struct sc_keyboard_sdk *kb,
     // key events are received and forwarded
     static const struct sc_key_processor_ops ops_raw = {
         .process_key = sc_key_processor_process_key,
+        .switch_language = sc_key_processor_switch_language,
     };
 
     // Key injection and clipboard synchronization are serialized

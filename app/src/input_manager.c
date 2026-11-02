@@ -106,6 +106,19 @@ action_menu(struct sc_input_manager *im, enum sc_action action) {
     send_keycode(im, AKEYCODE_MENU, action, "MENU");
 }
 
+static void
+switch_device_keyboard_language(struct sc_input_manager *im) {
+    assert(im->kp);
+
+    if (!im->kp->ops->switch_language) {
+        LOGW("The current keyboard cannot switch the device keyboard "
+             "language");
+        return;
+    }
+
+    im->kp->ops->switch_language(im->kp);
+}
+
 // turn the screen on if it was off, press BACK otherwise
 // If the screen is off, it is turned on only on ACTION_DOWN
 static void
@@ -641,6 +654,11 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                             && im->kp && im->kp->hid) {
                         // Only if the current keyboard is hid
                         open_hard_keyboard_settings(im);
+                    }
+                    return;
+                case SDLK_L:
+                    if (!shift && !repeat && down && !paused && im->kp) {
+                        switch_device_keyboard_language(im);
                     }
                     return;
             }

@@ -1201,6 +1201,11 @@ static const struct sc_shortcut shortcuts[] = {
         .text = "Open keyboard settings on the device (for HID keyboard only)",
     },
     {
+        .shortcuts = { "MOD+l" },
+        .text = "Switch the device keyboard language, by injecting Ctrl+Space "
+                "(for SDK keyboard only)",
+    },
+    {
         .shortcuts = { "MOD+i" },
         .text = "Enable/disable FPS counter (print frames/second in logs)",
     },
