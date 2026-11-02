@@ -48,6 +48,16 @@ struct sc_input_manager {
     uint64_t next_sequence; // used for request acknowledgements
 
     bool disconnected;
+
+    // For each scancode, how its last KEY_DOWN was handled, so that the
+    // matching KEY_UP is always delivered to the same target (even if the
+    // modifiers or the pause state changed in between), otherwise the key
+    // would stay pressed on the device:
+    //  - the Android keycode injected by a shortcut (e.g. MOD+h -> HOME), or
+    //    AKEYCODE_UNKNOWN (0) if none;
+    //  - whether it was forwarded to the key processor.
+    uint16_t shortcut_keycodes[SDL_SCANCODE_COUNT];
+    bool forwarded_keys[SDL_SCANCODE_COUNT];
 };
 
 struct sc_input_manager_params {
