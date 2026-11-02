@@ -112,6 +112,7 @@ enum {
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
     OPT_NO_TERMINAL_TITLE,
     OPT_HWDEC,
+    OPT_NAV_BAR,
 };
 
 struct sc_option {
@@ -609,6 +610,16 @@ static const struct sc_option options[] = {
         .longopt = "no-playback",
         .text = "Disable video and audio playback on the computer (equivalent "
                 "to --no-video-playback --no-audio-playback).",
+    },
+    {
+        .longopt_id = OPT_NAV_BAR,
+        .longopt = "nav-bar",
+        .text = "Display a bar of buttons at the bottom of the window: volume "
+                "down, volume up, back, home, recent apps, rotate and power.\n"
+                "The buttons are pressed on the device as long as the mouse "
+                "button is pressed (so that long presses work).\n"
+                "Not available with a relative mouse (--mouse=uhid or aoa) "
+                "or with --keyboard=disabled.",
     },
     {
         .longopt_id = OPT_NEW_DISPLAY,
@@ -2770,6 +2781,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_FORCE_ADB_FORWARD:
                 opts->force_adb_forward = true;
                 break;
+            case OPT_NAV_BAR:
+                opts->nav_bar = true;
+                break;
             case OPT_DISABLE_SCREENSAVER:
                 opts->disable_screensaver = true;
                 break;
@@ -3539,6 +3553,23 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     if (opts->start_fps_counter && !opts->video_playback) {
         LOGW("--print-fps has no effect without video playback");
         opts->start_fps_counter = false;
+    }
+
+    if (opts->nav_bar) {
+        if (otg || !opts->control) {
+            LOGW("--nav-bar has no effect without control (or in OTG mode)");
+        } else if (!opts->video_playback) {
+            LOGW("--nav-bar has no effect without video playback");
+        } else if (opts->video_source == SC_VIDEO_SOURCE_CAMERA) {
+            LOGW("--nav-bar has no effect with the camera video source");
+        } else if (opts->keyboard_input_mode
+                == SC_KEYBOARD_INPUT_MODE_DISABLED) {
+            LOGW("--nav-bar has no effect with --keyboard=disabled");
+        } else if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_UHID
+                || opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA) {
+            LOGW("--nav-bar has no effect with a relative mouse "
+                 "(--mouse=uhid or --mouse=aoa)");
+        }
     }
 
     if (otg) {

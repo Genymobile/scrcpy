@@ -94,6 +94,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .force_adb_forward = false,
     .disable_screensaver = false,
     .forward_key_repeat = true,
+    .nav_bar = false,
     .legacy_paste = false,
     .power_off_on_close = false,
     .clipboard_autosync = true,

@@ -85,6 +85,25 @@ Fullscreen mode can then be toggled dynamically with <kbd>MOD</kbd>+<kbd>f</kbd>
 or <kbd>F11</kbd> (see [shortcuts](shortcuts.md)).
 
 
+## Navigation bar
+
+To display a bar of buttons at the bottom of the window (volume down, volume
+up, back, home, recent apps, rotate and power):
+
+```bash
+scrcpy --nav-bar
+```
+
+The buttons are pressed on the device as long as the mouse button is pressed,
+so that long presses work (e.g. a long press on _power_ opens the power menu).
+
+The bar is not available with a relative mouse (`--mouse=uhid` or
+`--mouse=aoa`) or with `--keyboard=disabled`. A requested window height
+(`--window-height`) includes the bar. After resizing the window manually, small
+black borders may appear around the device screen: press
+<kbd>MOD</kbd>+<kbd>w</kbd> to remove them.
+
+
 ## Disable screensaver
 
 By default, _scrcpy_ does not prevent the screensaver from running on the
