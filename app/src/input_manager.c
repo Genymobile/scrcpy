@@ -180,6 +180,12 @@ set_device_clipboard(struct sc_input_manager *im, bool paste,
         LOGW("Could not get clipboard text: %s", SDL_GetError());
         return false;
     }
+    if (!*text) {
+        // No text in the computer clipboard (e.g. an image): do not erase the
+        // device clipboard
+        SDL_free(text);
+        return false;
+    }
 
     char *text_dup = strdup(text);
     SDL_free(text);
@@ -763,7 +769,9 @@ sc_input_manager_process_key(struct sc_input_manager *im,
 
     uint64_t ack_to_wait = SC_SEQUENCE_INVALID;
     bool is_ctrl_v = ctrl && !shift && sdl_keycode == SDLK_V && down && !repeat;
-    if (im->clipboard_autosync && is_ctrl_v) {
+    // If the computer clipboard contains no text, just forward Ctrl+v, so that
+    // the device pastes its own clipboard
+    if (im->clipboard_autosync && is_ctrl_v && SDL_HasClipboardText()) {
         if (im->legacy_paste) {
             // inject the text as input events
             clipboard_paste(im);
