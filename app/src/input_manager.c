@@ -49,6 +49,8 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->next_sequence = 1; // 0 is reserved for SC_SEQUENCE_INVALID
 
     im->disconnected = false;
+
+    sc_pending_keys_init(&im->pending);
 }
 
 static void
@@ -71,39 +73,28 @@ send_keycode(struct sc_input_manager *im, enum android_keycode keycode,
     }
 }
 
+// Send the key-down of a shortcut action, and remember it. The matching key-up
+// is sent from the pending key state in sc_input_manager_process_key(), so that
+// it is not lost when the shortcut modifier is released before the key.
+static void
+send_shortcut(struct sc_input_manager *im, enum sc_scancode scancode,
+              enum android_keycode keycode, enum sc_action action,
+              const char *name) {
+    if (action != SC_ACTION_DOWN) {
+        return;
+    }
+    sc_pending_keys_mark_action(&im->pending, scancode, keycode);
+    send_keycode(im, keycode, action, name);
+}
+
 static inline void
 action_home(struct sc_input_manager *im, enum sc_action action) {
     send_keycode(im, AKEYCODE_HOME, action, "HOME");
 }
 
 static inline void
-action_back(struct sc_input_manager *im, enum sc_action action) {
-    send_keycode(im, AKEYCODE_BACK, action, "BACK");
-}
-
-static inline void
 action_app_switch(struct sc_input_manager *im, enum sc_action action) {
     send_keycode(im, AKEYCODE_APP_SWITCH, action, "APP_SWITCH");
-}
-
-static inline void
-action_power(struct sc_input_manager *im, enum sc_action action) {
-    send_keycode(im, AKEYCODE_POWER, action, "POWER");
-}
-
-static inline void
-action_volume_up(struct sc_input_manager *im, enum sc_action action) {
-    send_keycode(im, AKEYCODE_VOLUME_UP, action, "VOLUME_UP");
-}
-
-static inline void
-action_volume_down(struct sc_input_manager *im, enum sc_action action) {
-    send_keycode(im, AKEYCODE_VOLUME_DOWN, action, "VOLUME_DOWN");
-}
-
-static inline void
-action_menu(struct sc_input_manager *im, enum sc_action action) {
-    send_keycode(im, AKEYCODE_MENU, action, "MENU");
 }
 
 // turn the screen on if it was off, press BACK otherwise
@@ -423,11 +414,26 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     bool disconnected = im->disconnected;
 
     SDL_Keycode sdl_keycode = event->key;
+    enum sc_scancode scancode = sc_scancode_from_sdl(event->scancode);
     uint16_t mod = sc_sdl_mod_normalize(event->mod);
     bool down = event->type == SDL_EVENT_KEY_DOWN;
     bool ctrl = mod & SDL_KMOD_CTRL;
     bool shift = mod & SDL_KMOD_SHIFT;
     bool repeat = event->repeat;
+
+    if (!down) {
+        struct sc_pending_key pending;
+        if (sc_pending_keys_take(&im->pending, scancode, &pending)) {
+            // Close the action whose key-down was sent, even if the shortcut
+            // modifier has been released in between: the checks below would
+            // otherwise re-classify this key-up as an ordinary key and the
+            // action would stay open on the device.
+            if (control && im->kp && !im->camera && !disconnected) {
+                send_keycode(im, pending.action, SC_ACTION_UP, "shortcut");
+            }
+            return;
+        }
+    }
 
     // Either the modifier includes a shortcut modifier, or the key
     // press/release is a modifier key.
@@ -556,28 +562,33 @@ sc_input_manager_process_key(struct sc_input_manager *im,
             switch (sdl_keycode) {
                 case SDLK_H:
                     if (im->kp && !shift && !repeat && !paused) {
-                        action_home(im, action);
+                        send_shortcut(im, scancode, AKEYCODE_HOME, action,
+                                      "HOME");
                     }
                     return;
                 case SDLK_B: // fall-through
                 case SDLK_BACKSPACE:
                     if (im->kp && !shift && !repeat && !paused) {
-                        action_back(im, action);
+                        send_shortcut(im, scancode, AKEYCODE_BACK, action,
+                                      "BACK");
                     }
                     return;
                 case SDLK_S:
                     if (im->kp && !shift && !repeat && !paused) {
-                        action_app_switch(im, action);
+                        send_shortcut(im, scancode, AKEYCODE_APP_SWITCH, action,
+                                      "APP_SWITCH");
                     }
                     return;
                 case SDLK_M:
                     if (im->kp && !shift && !repeat && !paused) {
-                        action_menu(im, action);
+                        send_shortcut(im, scancode, AKEYCODE_MENU, action,
+                                      "MENU");
                     }
                     return;
                 case SDLK_P:
                     if (im->kp && !shift && !repeat && !paused) {
-                        action_power(im, action);
+                        send_shortcut(im, scancode, AKEYCODE_POWER, action,
+                                      "POWER");
                     }
                     return;
                 case SDLK_O:
@@ -589,13 +600,15 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 case SDLK_DOWN:
                     if (im->kp && !shift && !paused) {
                         // forward repeated events
-                        action_volume_down(im, action);
+                        send_shortcut(im, scancode, AKEYCODE_VOLUME_DOWN,
+                                      action, "VOLUME_DOWN");
                     }
                     return;
                 case SDLK_UP:
                     if (im->kp && !shift && !paused) {
                         // forward repeated events
-                        action_volume_up(im, action);
+                        send_shortcut(im, scancode, AKEYCODE_VOLUME_UP,
+                                      action, "VOLUME_UP");
                     }
                     return;
                 case SDLK_C:
@@ -709,7 +722,6 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     enum sc_keycode keycode = sc_keycode_from_sdl(sdl_keycode);
     // Accept SC_KEYCODE_UNKNOWN, as long as the physical scancode is known
 
-    enum sc_scancode scancode = sc_scancode_from_sdl(event->scancode);
     if (scancode == SC_SCANCODE_UNKNOWN) {
         return;
     }
@@ -1156,6 +1168,8 @@ sc_input_manager_process_file(struct sc_input_manager *im,
 static void
 sc_input_manager_on_device_disconnected(struct sc_input_manager *im) {
     im->disconnected = true;
+
+    sc_pending_keys_init(&im->pending);
 
     struct sc_fps_counter *fps_counter = &im->screen->fps_counter;
     if (sc_fps_counter_is_started(fps_counter)) {
