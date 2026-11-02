@@ -58,6 +58,30 @@ computer input method (IME) does not consume key events.
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
 
 
+### Device input method
+
+Text events can only inject characters that the device can generate from its
+key map (typically ASCII). Text composed by a computer input method (IME), for
+example Korean, Japanese or Chinese, cannot be injected this way.
+
+Instead, the device keyboard can compose the text from raw key events, like
+with a physical keyboard:
+
+```bash
+scrcpy --device-ime
+```
+
+This implies `--raw-key-events`, so the computer input method is not used at
+all: keep (or switch) the device keyboard in the target language, and type as
+usual. For example, with the Samsung Keyboard in Korean mode, typing `dkssud`
+produces `안녕`.
+
+To switch the device keyboard language (by injecting
+<kbd>Ctrl</kbd>+<kbd>Space</kbd>), press <kbd>MOD</kbd>+<kbd>l</kbd>.
+Ctrl+Space is the shortcut of the Samsung Keyboard (other keyboards may use
+another one).
+
+
 ### Key repeat
 
 By default, holding a key down generates repeated key events. Ths can cause

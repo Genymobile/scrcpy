@@ -170,6 +170,14 @@ Use USB device (if there is exactly one, like adb -d).
 Also see \fB\-e\fR (\fB\-\-select\-tcpip\fR).
 
 .TP
+.B \-\-device\-ime
+Let the device keyboard (IME) compose text from raw key events, for example to type Korean, instead of the computer input method.
+
+It implies \fB\-\-raw\-key\-events\fR (so the computer input method is not used), and is specific to \fB\-\-keyboard=sdk\fR.
+
+The device keyboard language can be switched with MOD+l.
+
+.TP
 .BI "\-\-disable\-screensaver"
 Disable screensaver while scrcpy is running.
 

@@ -362,10 +362,15 @@ void
 sc_keyboard_sdk_init(struct sc_keyboard_sdk *kb,
                      struct sc_controller *controller,
                      enum sc_key_inject_mode key_inject_mode,
-                     bool forward_key_repeat) {
+                     bool forward_key_repeat,
+                     bool device_ime) {
+    // The device keyboard can only compose text from raw key events
+    assert(!device_ime || key_inject_mode == SC_KEY_INJECT_MODE_RAW);
+
     kb->controller = controller;
     kb->key_inject_mode = key_inject_mode;
     kb->forward_key_repeat = forward_key_repeat;
+    kb->device_ime = device_ime;
 
     kb->repeat = 0;
 
