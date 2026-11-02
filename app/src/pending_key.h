@@ -26,7 +26,10 @@
 // mechanism existed: evicting an entry could drop a chord that is still held.
 struct sc_pending_key {
     enum sc_scancode scancode; // SC_SCANCODE_UNKNOWN if the slot is free
+    uint16_t mod; // modifier state at key-down
     enum android_keycode action; // action injected on key-down
+    bool action_sent; // that action was sent to the device
+    bool forwarded; // the key itself was forwarded to the device
 };
 
 #define SC_PENDING_KEY_COUNT 16
@@ -40,7 +43,13 @@ sc_pending_keys_init(struct sc_pending_keys *pks);
 
 // Remember a key-down. Ignored if the scancode is unknown.
 void
-sc_pending_keys_put(struct sc_pending_keys *pks, enum sc_scancode scancode);
+sc_pending_keys_put(struct sc_pending_keys *pks, enum sc_scancode scancode,
+                    uint16_t mod);
+
+// Look up the entry of a key that is still down, or NULL.
+const struct sc_pending_key *
+sc_pending_keys_get(const struct sc_pending_keys *pks,
+                    enum sc_scancode scancode);
 
 // Retrieve and free the entry for a key-up. Returns false if there is none,
 // including for an unknown scancode.
@@ -53,5 +62,10 @@ void
 sc_pending_keys_mark_action(struct sc_pending_keys *pks,
                             enum sc_scancode scancode,
                             enum android_keycode action);
+
+// Record that the key itself was forwarded to the device.
+void
+sc_pending_keys_mark_forwarded(struct sc_pending_keys *pks,
+                               enum sc_scancode scancode);
 
 #endif

@@ -415,15 +415,41 @@ sc_input_manager_process_key(struct sc_input_manager *im,
 
     SDL_Keycode sdl_keycode = event->key;
     enum sc_scancode scancode = sc_scancode_from_sdl(event->scancode);
-    uint16_t mod = sc_sdl_mod_normalize(event->mod);
     bool down = event->type == SDL_EVENT_KEY_DOWN;
-    bool ctrl = mod & SDL_KMOD_CTRL;
-    bool shift = mod & SDL_KMOD_SHIFT;
     bool repeat = event->repeat;
 
-    if (!down) {
-        struct sc_pending_key pending;
-        if (sc_pending_keys_take(&im->pending, scancode, &pending)) {
+    // Remember the modifier state of the key-down, so that both edges of a
+    // chord are handled the same way even if the modifier is released first.
+    struct sc_pending_key pending = {0};
+    bool has_pending = false;
+    if (down) {
+        if (!repeat) {
+            sc_pending_keys_put(&im->pending, scancode,
+                                sc_sdl_mod_normalize(event->mod));
+        }
+    } else {
+        has_pending = sc_pending_keys_take(&im->pending, scancode, &pending);
+    }
+
+    uint16_t mod = sc_sdl_mod_normalize(event->mod);
+    if (repeat) {
+        // keep the chord's modifiers even if the modifier was released while
+        // the key is still held
+        const struct sc_pending_key *key =
+            sc_pending_keys_get(&im->pending, scancode);
+        if (key) {
+            mod = key->mod;
+        }
+    } else if (!down && has_pending) {
+        mod = pending.mod;
+    }
+
+    bool ctrl = mod & SDL_KMOD_CTRL;
+    bool shift = mod & SDL_KMOD_SHIFT;
+
+    bool is_shortcut;
+    if (!down && has_pending) {
+        if (pending.action_sent) {
             // Close the action whose key-down was sent, even if the shortcut
             // modifier has been released in between: the checks below would
             // otherwise re-classify this key-up as an ordinary key and the
@@ -433,15 +459,23 @@ sc_input_manager_process_key(struct sc_input_manager *im,
             }
             return;
         }
+        if (!pending.forwarded) {
+            // nothing was sent for this key-down (paused, no key processor,
+            // unknown scancode), so nothing must be sent for the key-up
+            return;
+        }
+        // the key-down was forwarded to the device: forward the key-up too,
+        // even though a shortcut modifier is currently pressed
+        is_shortcut = false;
+    } else {
+        // Either the modifier includes a shortcut modifier, or the key
+        // press/release is a modifier key.
+        // The second condition is necessary to ignore the release of the
+        // modifier key (because in this case mod is 0).
+        uint16_t mods = im->sdl_shortcut_mods;
+        is_shortcut = sc_shortcut_mods_is_shortcut_mod(mods, mod)
+                   || sc_shortcut_mods_is_shortcut_key(mods, sdl_keycode);
     }
-
-    // Either the modifier includes a shortcut modifier, or the key
-    // press/release is a modifier key.
-    // The second condition is necessary to ignore the release of the modifier
-    // key (because in this case mod is 0).
-    uint16_t mods = im->sdl_shortcut_mods;
-    bool is_shortcut = sc_shortcut_mods_is_shortcut_mod(mods, mod)
-                    || sc_shortcut_mods_is_shortcut_key(mods, sdl_keycode);
 
     if (down && !repeat && !disconnected) {
         if (sdl_keycode == im->last_keycode && mod == im->last_mod) {
@@ -735,6 +769,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     };
 
     assert(im->kp->ops->process_key);
+    sc_pending_keys_mark_forwarded(&im->pending, scancode);
     im->kp->ops->process_key(im->kp, &evt, ack_to_wait);
 }
 

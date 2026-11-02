@@ -25,7 +25,8 @@ sc_pending_keys_init(struct sc_pending_keys *pks) {
 }
 
 void
-sc_pending_keys_put(struct sc_pending_keys *pks, enum sc_scancode scancode) {
+sc_pending_keys_put(struct sc_pending_keys *pks, enum sc_scancode scancode,
+                    uint16_t mod) {
     if (scancode == SC_SCANCODE_UNKNOWN) {
         return;
     }
@@ -46,7 +47,25 @@ sc_pending_keys_put(struct sc_pending_keys *pks, enum sc_scancode scancode) {
     }
 
     key->scancode = scancode;
+    key->mod = mod;
     key->action = 0;
+    key->action_sent = false;
+    key->forwarded = false;
+}
+
+const struct sc_pending_key *
+sc_pending_keys_get(const struct sc_pending_keys *pks,
+                    enum sc_scancode scancode) {
+    if (scancode == SC_SCANCODE_UNKNOWN) {
+        return NULL;
+    }
+
+    for (unsigned i = 0; i < SC_PENDING_KEY_COUNT; ++i) {
+        if (pks->keys[i].scancode == scancode) {
+            return &pks->keys[i];
+        }
+    }
+    return NULL;
 }
 
 bool
@@ -70,5 +89,15 @@ sc_pending_keys_mark_action(struct sc_pending_keys *pks,
     struct sc_pending_key *key = sc_pending_keys_find(pks, scancode);
     if (key) {
         key->action = action;
+        key->action_sent = true;
+    }
+}
+
+void
+sc_pending_keys_mark_forwarded(struct sc_pending_keys *pks,
+                               enum sc_scancode scancode) {
+    struct sc_pending_key *key = sc_pending_keys_find(pks, scancode);
+    if (key) {
+        key->forwarded = true;
     }
 }
