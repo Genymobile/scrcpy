@@ -307,9 +307,10 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
 
     if (kb->key_inject_mode == SC_KEY_INJECT_MODE_MIXED) {
         unsigned char c = event->text[0];
-        if (isalpha(c) || c == ' ') {
-            assert(event->text[1] == '\0');
-            // Letters and space are handled as raw key events
+        if ((isalpha(c) || c == ' ') && event->text[1] == '\0') {
+            // Letters and space are handled as raw key events, except if the
+            // text event contains several characters (e.g. committed by an
+            // input method)
             return;
         }
     }
