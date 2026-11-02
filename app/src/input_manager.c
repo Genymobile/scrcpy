@@ -33,6 +33,7 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->mouse_bindings = params->mouse_bindings;
     im->legacy_paste = params->legacy_paste;
     im->clipboard_autosync = params->clipboard_autosync;
+    im->mac_keys = params->mac_keys;
 
     im->sdl_shortcut_mods = sc_shortcut_mods_to_sdl(params->shortcut_mods);
 
@@ -52,12 +53,14 @@ sc_input_manager_init(struct sc_input_manager *im,
 
     static_assert(AKEYCODE_UNKNOWN == 0, "Unexpected AKEYCODE_UNKNOWN value");
     memset(im->shortcut_keycodes, 0, sizeof(im->shortcut_keycodes));
+    memset(im->shortcut_metastates, 0, sizeof(im->shortcut_metastates));
     memset(im->forwarded_keys, 0, sizeof(im->forwarded_keys));
 }
 
 static void
-send_keycode(struct sc_input_manager *im, enum android_keycode keycode,
-             enum sc_action action, const char *name) {
+send_keycode_meta(struct sc_input_manager *im, enum android_keycode keycode,
+                  enum sc_action action, enum android_metastate metastate,
+                  const char *name) {
     assert(im->controller && im->kp && !im->camera);
 
     // send DOWN event
@@ -67,12 +70,18 @@ send_keycode(struct sc_input_manager *im, enum android_keycode keycode,
                               ? AKEY_EVENT_ACTION_DOWN
                               : AKEY_EVENT_ACTION_UP;
     msg.inject_keycode.keycode = keycode;
-    msg.inject_keycode.metastate = 0;
+    msg.inject_keycode.metastate = metastate;
     msg.inject_keycode.repeat = 0;
 
     if (!sc_controller_push_msg(im->controller, &msg)) {
         LOGW("Could not request 'inject %s'", name);
     }
+}
+
+static inline void
+send_keycode(struct sc_input_manager *im, enum android_keycode keycode,
+             enum sc_action action, const char *name) {
+    send_keycode_meta(im, keycode, action, 0, name);
 }
 
 static inline void
@@ -89,15 +98,137 @@ action_app_switch(struct sc_input_manager *im, enum sc_action action) {
 // Only the DOWN is sent from here: the UP is sent when the physical key is
 // released, even if the shortcut modifier has been released first.
 static void
-shortcut_keycode_down(struct sc_input_manager *im, SDL_Scancode scancode,
-                      enum android_keycode keycode, enum sc_action action,
-                      const char *name) {
+shortcut_keycode_meta_down(struct sc_input_manager *im, SDL_Scancode scancode,
+                           enum android_keycode keycode,
+                           enum android_metastate metastate,
+                           enum sc_action action, const char *name) {
     if (action != SC_ACTION_DOWN || scancode >= SDL_SCANCODE_COUNT) {
         return;
     }
 
+    uint16_t recorded = im->shortcut_keycodes[scancode];
+    if (recorded != AKEYCODE_UNKNOWN
+            && (recorded != keycode
+                || im->shortcut_metastates[scancode] != metastate)) {
+        // A repeated event of a key already pressed as another device key
+        // (the modifiers changed in between): ignore it, the recorded key is
+        // released when the physical key is released
+        return;
+    }
+
     im->shortcut_keycodes[scancode] = keycode;
-    send_keycode(im, keycode, SC_ACTION_DOWN, name);
+    im->shortcut_metastates[scancode] = metastate;
+    send_keycode_meta(im, keycode, SC_ACTION_DOWN, metastate, name);
+}
+
+static inline void
+shortcut_keycode_down(struct sc_input_manager *im, SDL_Scancode scancode,
+                      enum android_keycode keycode, enum sc_action action,
+                      const char *name) {
+    shortcut_keycode_meta_down(im, scancode, keycode, 0, action, name);
+}
+
+// Inject a cursor movement which extends the selection.
+// Text views select only while a Shift key is pressed (the Shift meta state of
+// the event is not sufficient), so press Shift around the movement unless it
+// is already pressed on the device.
+static void
+inject_selecting_move(struct sc_input_manager *im, enum android_keycode keycode,
+                      enum android_metastate metastate, const char *name) {
+    bool shift_pressed = im->forwarded_keys[SDL_SCANCODE_LSHIFT]
+                      || im->forwarded_keys[SDL_SCANCODE_RSHIFT];
+    enum android_metastate shift = AMETA_SHIFT_ON | AMETA_SHIFT_LEFT_ON;
+    metastate |= shift;
+
+    if (!shift_pressed) {
+        send_keycode_meta(im, AKEYCODE_SHIFT_LEFT, SC_ACTION_DOWN, shift,
+                          name);
+    }
+    send_keycode_meta(im, keycode, SC_ACTION_DOWN, metastate, name);
+    send_keycode_meta(im, keycode, SC_ACTION_UP, metastate, name);
+    if (!shift_pressed) {
+        send_keycode_meta(im, AKEYCODE_SHIFT_LEFT, SC_ACTION_UP, 0, name);
+    }
+}
+
+// macOS editing shortcuts with Cmd (--mac-keys), injected as their Android
+// equivalent. Return true if the event is handled.
+static bool
+process_mac_editing_key(struct sc_input_manager *im,
+                        const SDL_KeyboardEvent *event, bool shift,
+                        bool paused) {
+    enum android_metastate ctrl = AMETA_CTRL_ON | AMETA_CTRL_LEFT_ON;
+    enum android_metastate shift_meta =
+        shift ? AMETA_SHIFT_ON | AMETA_SHIFT_LEFT_ON : 0;
+    bool select = false;
+
+    enum android_keycode keycode;
+    enum android_metastate metastate;
+    const char *name;
+    switch (event->key) {
+        case SDLK_A: // select all
+            if (shift) {
+                return false;
+            }
+            keycode = AKEYCODE_A;
+            metastate = ctrl;
+            name = "select all";
+            break;
+        case SDLK_Z: // undo, or redo with Shift
+            keycode = AKEYCODE_Z;
+            metastate = ctrl | shift_meta;
+            name = shift ? "redo" : "undo";
+            break;
+        case SDLK_LEFT: // line start (select with Shift)
+            keycode = AKEYCODE_MOVE_HOME;
+            metastate = 0;
+            select = shift;
+            name = "move to line start";
+            break;
+        case SDLK_RIGHT: // line end (select with Shift)
+            keycode = AKEYCODE_MOVE_END;
+            metastate = 0;
+            select = shift;
+            name = "move to line end";
+            break;
+        case SDLK_UP: // text start (select with Shift)
+            keycode = AKEYCODE_MOVE_HOME;
+            metastate = ctrl;
+            select = shift;
+            name = "move to text start";
+            break;
+        case SDLK_DOWN: // text end (select with Shift)
+            keycode = AKEYCODE_MOVE_END;
+            metastate = ctrl;
+            select = shift;
+            name = "move to text end";
+            break;
+        default:
+            return false;
+    }
+
+    bool down = event->type == SDL_EVENT_KEY_DOWN;
+    if (!down || paused || (event->repeat && event->key == SDLK_A)) {
+        // The UP is sent on release for the recorded DOWN (if any)
+        return true;
+    }
+
+    if (select) {
+        if (event->scancode < SDL_SCANCODE_COUNT
+                && im->shortcut_keycodes[event->scancode] != AKEYCODE_UNKNOWN) {
+            // A repeated event of a key already pressed as another device key
+            // (Shift was pressed in between): ignore it, the recorded key is
+            // released when the physical key is released
+            return true;
+        }
+        // Pressed and released at once (also on repeat), nothing to record
+        inject_selecting_move(im, keycode, metastate, name);
+        return true;
+    }
+
+    shortcut_keycode_meta_down(im, event->scancode, keycode, metastate,
+                               SC_ACTION_DOWN, name);
+    return true;
 }
 
 // turn the screen on if it was off, press BACK otherwise
@@ -447,7 +578,9 @@ release_pressed_key(struct sc_input_manager *im,
     uint16_t shortcut_keycode = im->shortcut_keycodes[event->scancode];
     if (shortcut_keycode != AKEYCODE_UNKNOWN) {
         im->shortcut_keycodes[event->scancode] = AKEYCODE_UNKNOWN;
-        send_keycode(im, shortcut_keycode, SC_ACTION_UP, "shortcut key");
+        send_keycode_meta(im, shortcut_keycode, SC_ACTION_UP,
+                          im->shortcut_metastates[event->scancode],
+                          "shortcut key");
         handled = true;
     }
 
@@ -536,6 +669,14 @@ sc_input_manager_process_key(struct sc_input_manager *im,
 
     if (is_shortcut) {
         enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
+
+        // macOS editing shortcuts take precedence over the scrcpy shortcuts
+        // using the same keys, but only with a Cmd key which is a MOD key
+        if (control && !disconnected && !im->camera && im->kp && im->mac_keys
+                && (mod & im->sdl_shortcut_mods & SDL_KMOD_GUI)
+                && process_mac_editing_key(im, event, shift, paused)) {
+            return;
+        }
         switch (sdl_keycode) {
             case SDLK_Z:
                 if (video && down && !repeat) {

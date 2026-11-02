@@ -323,6 +323,12 @@ Default is 0 (unlimited).
 Same as \fB\-\-mouse=uhid\fR, or \fB\-\-mouse=aoa\fR if \fB\-\-otg\fR is set.
 
 .TP
+.B \-\-mac\-keys
+Use the macOS text editing shortcuts with a Cmd key which is a MOD key (Left Cmd by default, see \fB\-\-shortcut\-mod\fR): Cmd+a (select all), Cmd+z / Cmd+Shift+z (undo / redo), Cmd+Left / Cmd+Right (move to the line start / end), Cmd+Up / Cmd+Down (move to the text start / end), with Shift to extend the selection.
+
+They replace the corresponding scrcpy shortcuts when MOD is Cmd (pause/unpause, display rotation and flip, volume), which remain available with the other MOD keys (Left Alt by default). Cmd+c, Cmd+x and Cmd+v (copy, cut and paste with clipboard synchronization) are unchanged.
+
+.TP
 .BI "\-\-max\-fps " value
 Limit the framerate of screen capture (officially supported since Android 10, but may work on earlier versions).
 

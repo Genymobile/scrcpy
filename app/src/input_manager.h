@@ -29,6 +29,7 @@ struct sc_input_manager {
     struct sc_mouse_bindings mouse_bindings;
     bool legacy_paste;
     bool clipboard_autosync;
+    bool mac_keys;
 
     uint16_t sdl_shortcut_mods;
 
@@ -53,10 +54,11 @@ struct sc_input_manager {
     // matching KEY_UP is always delivered to the same target (even if the
     // modifiers or the pause state changed in between), otherwise the key
     // would stay pressed on the device:
-    //  - the Android keycode injected by a shortcut (e.g. MOD+h -> HOME), or
-    //    AKEYCODE_UNKNOWN (0) if none;
+    //  - the Android keycode (and meta state) injected by a shortcut (e.g.
+    //    MOD+h -> HOME), or AKEYCODE_UNKNOWN (0) if none;
     //  - whether it was forwarded to the key processor.
     uint16_t shortcut_keycodes[SDL_SCANCODE_COUNT];
+    uint32_t shortcut_metastates[SDL_SCANCODE_COUNT];
     bool forwarded_keys[SDL_SCANCODE_COUNT];
 };
 
@@ -72,6 +74,7 @@ struct sc_input_manager_params {
     struct sc_mouse_bindings mouse_bindings;
     bool legacy_paste;
     bool clipboard_autosync;
+    bool mac_keys;
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
 };
 

@@ -55,6 +55,7 @@ arguments=(
     '--list-encoders[List video and audio encoders available on the device]'
     {-m,--max-size=}'[Limit both the width and height of the video to value]'
     '-M[Use UHID/AOA mouse \(same as --mouse=uhid or --mouse=aoa, depending on OTG mode\)]'
+    '--mac-keys[Use the macOS text editing shortcuts with Cmd]'
     '--max-fps=[Limit the frame rate of screen capture]'
     '--min-size-alignment=[Minimum video size alignment (1, 2, 4, 8 or 16)]'
     '--mouse=[Set the mouse input mode]:mode:(disabled sdk uhid aoa)'

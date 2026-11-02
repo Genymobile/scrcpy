@@ -55,6 +55,31 @@ scrcpy --raw-key-events
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
 
 
+### macOS editing shortcuts
+
+On macOS, `--mac-keys` makes the usual text editing shortcuts with
+<kbd>Cmd</kbd> work on the device. The <kbd>Cmd</kbd> key must be a
+[MOD](shortcuts.md#shortcuts) key: by default, only <kbd>Left Cmd</kbd> is (use
+`--shortcut-mod=lalt,lsuper,rsuper` to also use <kbd>Right Cmd</kbd>).
+
+| Action                               | Shortcut
+| ------------------------------------ | :---------------------------------------
+| Select all                           | <kbd>Cmd</kbd>+<kbd>a</kbd>
+| Undo / Redo                          | <kbd>Cmd</kbd>+<kbd>z</kbd> / <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>z</kbd>
+| Move to the line start / end         | <kbd>Cmd</kbd>+<kbd>←</kbd> / <kbd>Cmd</kbd>+<kbd>→</kbd>
+| Move to the text start / end         | <kbd>Cmd</kbd>+<kbd>↑</kbd> / <kbd>Cmd</kbd>+<kbd>↓</kbd>
+| Extend the selection                 | add <kbd>Shift</kbd> to the 4 shortcuts above
+
+[Copy, cut and paste](control.md#copy-paste) are already available with
+<kbd>MOD</kbd>+<kbd>c</kbd>, <kbd>MOD</kbd>+<kbd>x</kbd> and
+<kbd>MOD</kbd>+<kbd>v</kbd> (<kbd>MOD</kbd> is <kbd>Cmd</kbd> or
+<kbd>Left Alt</kbd> by default), with clipboard synchronization.
+
+These shortcuts replace the scrcpy shortcuts using the same keys with
+<kbd>Cmd</kbd> (pause/unpause, display rotation and flip, volume), which remain
+available with the other [MOD](shortcuts.md#shortcuts) keys.
+
+
 ### Key repeat
 
 By default, holding a key down generates repeated key events. Ths can cause
