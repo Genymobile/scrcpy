@@ -78,8 +78,17 @@ produces `안녕`.
 
 To switch the device keyboard language (by injecting
 <kbd>Ctrl</kbd>+<kbd>Space</kbd>), press <kbd>MOD</kbd>+<kbd>l</kbd>.
-Ctrl+Space is the shortcut of the Samsung Keyboard (other keyboards may use
-another one).
+
+On macOS, the device keyboard language is also switched automatically whenever
+the computer input source switches between a keyboard layout and an input method
+(e.g. _ABC_ ↔ _2-Set Korean_, with the usual <kbd>Ctrl</kbd>+<kbd>Space</kbd> or
+<kbd>Caps Lock</kbd>), so the usual shortcut keeps working. If both get out of
+sync (for example after switching the language on the device itself), press
+<kbd>MOD</kbd>+<kbd>l</kbd> once.
+
+The computer input source is checked when the next key is pressed, so the
+device keyboard language switches just before that key is injected. Ctrl+Space
+is the shortcut of the Samsung Keyboard (other keyboards may use another one).
 
 
 ### Key repeat

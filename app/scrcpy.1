@@ -175,7 +175,9 @@ Let the device keyboard (IME) compose text from raw key events, for example to t
 
 It implies \fB\-\-raw\-key\-events\fR (so the computer input method is not used), and is specific to \fB\-\-keyboard=sdk\fR.
 
-The device keyboard language can be switched with MOD+l.
+On macOS, the device keyboard language is also switched (by injecting Ctrl+Space) whenever the computer input source switches between a keyboard layout and an input method (e.g. ABC <-> 2-Set Korean).
+
+The device keyboard language can also be switched manually with MOD+l.
 
 .TP
 .BI "\-\-disable\-screensaver"

@@ -11,6 +11,7 @@
 #include "control_msg.h"
 #include "controller.h"
 #include "input_events.h"
+#include "input_source.h"
 #include "util/intmap.h"
 #include "util/log.h"
 
@@ -295,8 +296,40 @@ inject_ctrl_space(struct sc_keyboard_sdk *kb) {
 }
 
 static void
+sync_device_ime_language(struct sc_keyboard_sdk *kb) {
+    assert(kb->device_ime);
+
+    bool input_method;
+    if (!sc_input_source_is_input_method(&input_method)) {
+        return;
+    }
+
+    if (kb->input_method_known && input_method != kb->input_method) {
+        LOGD("Computer input source switched to %s, switching the device "
+             "keyboard language", input_method ? "an input method"
+                                               : "a keyboard layout");
+        inject_ctrl_space(kb);
+    }
+
+    kb->input_method = input_method;
+    kb->input_method_known = true;
+}
+
+static void
 sc_key_processor_switch_language(struct sc_key_processor *kp) {
     struct sc_keyboard_sdk *kb = DOWNCAST(kp);
+
+    if (kb->device_ime) {
+        // Take any pending computer input source switch into account without
+        // applying it, otherwise it would cancel this manual switch on the
+        // next key
+        bool input_method;
+        if (sc_input_source_is_input_method(&input_method)) {
+            kb->input_method = input_method;
+            kb->input_method_known = true;
+        }
+    }
+
     inject_ctrl_space(kb);
 }
 
@@ -310,6 +343,13 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
     (void) ack_to_wait;
 
     struct sc_keyboard_sdk *kb = DOWNCAST(kp);
+
+    if (kb->device_ime && event->action == SC_ACTION_DOWN && !event->repeat) {
+        // The input source shortcut (Ctrl+Space by default on macOS) is
+        // consumed by the computer, so detect its effect lazily, before
+        // injecting the next key
+        sync_device_ime_language(kb);
+    }
 
     if (event->repeat) {
         if (!kb->forward_key_repeat) {
@@ -373,6 +413,15 @@ sc_keyboard_sdk_init(struct sc_keyboard_sdk *kb,
     kb->device_ime = device_ime;
 
     kb->repeat = 0;
+
+    kb->input_method_known = false;
+    kb->input_method = false;
+    if (device_ime) {
+        // Initialize the reference state (the device keyboard is assumed to
+        // match it)
+        kb->input_method_known =
+            sc_input_source_is_input_method(&kb->input_method);
+    }
 
     static const struct sc_key_processor_ops ops = {
         .process_key = sc_key_processor_process_key,

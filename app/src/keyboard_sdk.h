@@ -21,8 +21,13 @@ struct sc_keyboard_sdk {
     enum sc_key_inject_mode key_inject_mode;
     bool forward_key_repeat;
 
-    // If set, the device keyboard (IME) composes text from raw key events
+    // If set, the device keyboard (IME) composes text from raw key events, and
+    // its language is switched whenever the computer input source switches
+    // between a keyboard layout and an input method
     bool device_ime;
+    // Last known state of the computer input source (only if device_ime)
+    bool input_method_known;
+    bool input_method;
 };
 
 void

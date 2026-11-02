@@ -357,7 +357,12 @@ static const struct sc_option options[] = {
                 "input method.\n"
                 "It implies --raw-key-events (so the computer input method "
                 "is not used), and is specific to --keyboard=sdk.\n"
-                "The device keyboard language can be switched with MOD+l.",
+                "On macOS, the device keyboard language is also switched "
+                "(by injecting Ctrl+Space) whenever the computer input "
+                "source switches between a keyboard layout and an input "
+                "method (e.g. ABC <-> 2-Set Korean).\n"
+                "The device keyboard language can also be switched manually "
+                "with MOD+l.",
     },
     {
         .shortopt = 'd',
