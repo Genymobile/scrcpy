@@ -300,10 +300,8 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
                               const struct sc_text_event *event) {
     struct sc_keyboard_sdk *kb = DOWNCAST(kp);
 
-    if (kb->key_inject_mode == SC_KEY_INJECT_MODE_RAW) {
-        // Never inject text events
-        return;
-    }
+    // In raw mode, text events are not requested (see ops_raw)
+    assert(kb->key_inject_mode != SC_KEY_INJECT_MODE_RAW);
 
     if (kb->key_inject_mode == SC_KEY_INJECT_MODE_MIXED) {
         char c = event->text[0];
@@ -343,8 +341,16 @@ sc_keyboard_sdk_init(struct sc_keyboard_sdk *kb,
         .process_text = sc_key_processor_process_text,
     };
 
+    // In raw mode, text events are never injected, so do not request them:
+    // this keeps the computer input method (IME) out of the way, so that all
+    // key events are received and forwarded
+    static const struct sc_key_processor_ops ops_raw = {
+        .process_key = sc_key_processor_process_key,
+    };
+
     // Key injection and clipboard synchronization are serialized
     kb->key_processor.async_paste = false;
     kb->key_processor.hid = false;
-    kb->key_processor.ops = &ops;
+    kb->key_processor.ops = key_inject_mode == SC_KEY_INJECT_MODE_RAW
+                          ? &ops_raw : &ops;
 }

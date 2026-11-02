@@ -51,6 +51,9 @@ On the contrary, you could force to always inject raw key events:
 scrcpy --raw-key-events
 ```
 
+In this mode, text input is disabled on the computer side, so that the
+computer input method (IME) does not consume key events.
+
 [textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
 
