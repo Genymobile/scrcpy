@@ -16,6 +16,7 @@ _scrcpy() {
         --camera-ar=
         --camera-id=
         --camera-facing=
+        --camera-focus=
         --camera-fps=
         --camera-high-speed
         --camera-size=
@@ -219,6 +220,7 @@ _scrcpy() {
         |--background-color \
         |--camera-ar \
         |--camera-id \
+        |--camera-focus \
         |--camera-fps \
         |--camera-size \
         |--camera-torch \

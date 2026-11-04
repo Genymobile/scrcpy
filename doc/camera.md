@@ -190,6 +190,17 @@ It can also be adjusted dynamically using <kbd>MOD</kbd>+<kbd>↑</kbd> _(up)_ a
 <kbd>MOD</kbd>+<kbd>↓</kbd> _(down)_.
 
 
+## Focus
+
+The camera focus can be set with `--camera-focus`, in diopters (1/meters):
+
+```bash
+scrcpy --video-source=camera --camera-focus=0    # infinity
+scrcpy --video-source=camera --camera-focus=2    # 50cm
+scrcpy --video-source=camera --camera-focus=10   # 10cm
+```
+
+
 ## Webcam
 
 Combined with the [V4L2](v4l2.md) feature on Linux, the Android device camera

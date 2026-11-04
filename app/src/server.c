@@ -371,6 +371,10 @@ execute_server(struct sc_server *server,
         VALIDATE_STRING(params->camera_zoom);
         ADD_PARAM("camera_zoom=%s", params->camera_zoom);
     }
+    if (params->camera_focus) {
+        VALIDATE_STRING(params->camera_focus);
+        ADD_PARAM("camera_focus=%s", params->camera_focus);
+    }
     if (params->show_touches) {
         ADD_PARAM("show_touches=true");
     }

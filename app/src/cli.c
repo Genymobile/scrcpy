@@ -104,6 +104,7 @@ enum {
     OPT_DISPLAY_IME_POLICY,
     OPT_CAMERA_TORCH,
     OPT_CAMERA_ZOOM,
+    OPT_CAMERA_FOCUS,
     OPT_MIN_SIZE_ALIGNMENT,
     OPT_NO_WINDOW_ASPECT_RATIO_LOCK,
     OPT_KEEP_ACTIVE,
@@ -282,6 +283,16 @@ static const struct sc_option options[] = {
         .argdesc = "facing",
         .text = "Select the device camera by its facing direction.\n"
                 "Possible values are \"front\", \"back\" and \"external\".",
+    },
+    {
+        .longopt_id = OPT_CAMERA_FOCUS,
+        .longopt = "camera-focus",
+        .argdesc = "diopters",
+        .text = "Disable autofocus and hold the camera focus at a fixed "
+                "distance, expressed in diopters (1/meters).\n"
+                "0 means infinity; larger values focus closer (e.g. 2 for "
+                "50cm, 10 for 10cm). The value is clamped to the camera "
+                "minimum focus distance.",
     },
     {
         .longopt_id = OPT_CAMERA_FPS,
@@ -2933,6 +2944,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_CAMERA_ZOOM:
                 opts->camera_zoom = optarg;
                 break;
+            case OPT_CAMERA_FOCUS:
+                opts->camera_focus = optarg;
+                break;
             case OPT_NO_WINDOW:
                 opts->window = false;
                 break;
@@ -3333,7 +3347,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             || opts->camera_facing != SC_CAMERA_FACING_ANY
             || opts->camera_fps
             || opts->camera_high_speed
-            || opts->camera_size) {
+            || opts->camera_size
+            || opts->camera_focus) {
         LOGE("Camera options are only available with --video-source=camera");
         return false;
     }
