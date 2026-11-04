@@ -192,7 +192,7 @@ It can also be adjusted dynamically using <kbd>MOD</kbd>+<kbd>↑</kbd> _(up)_ a
 
 ## Focus
 
-The camera zoom can be set with `--camera-focus`, in diopters (1/meters):
+The camera focus can be set with `--camera-focus`, in diopters (1/meters):
 
 ```bash
 scrcpy --video-source=camera --camera-focus=0    # infinity
