@@ -72,6 +72,9 @@ To keep the window always on top:
 scrcpy --always-on-top
 ```
 
+Always-on-top mode can then be toggled dynamically with
+<kbd>MOD</kbd>+<kbd>a</kbd> (see [shortcuts](shortcuts.md)).
+
 ## Fullscreen
 
 The app may be started directly in fullscreen:

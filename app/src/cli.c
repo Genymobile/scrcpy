@@ -151,7 +151,8 @@ static const struct sc_option options[] = {
     {
         .longopt_id = OPT_ALWAYS_ON_TOP,
         .longopt = "always-on-top",
-        .text = "Make scrcpy window always on top (above other windows).",
+        .text = "Make scrcpy window always on top (above other windows).\n"
+                "It can be switched at any time with MOD+a.",
     },
     {
         .longopt_id = OPT_ANGLE,
@@ -1086,6 +1087,10 @@ static const struct sc_shortcut shortcuts[] = {
     {
         .shortcuts = { "MOD+f", "F11" },
         .text = "Switch fullscreen mode",
+    },
+    {
+        .shortcuts = { "MOD+a" },
+        .text = "Switch always-on-top mode",
     },
     {
         .shortcuts = { "MOD+Left" },
