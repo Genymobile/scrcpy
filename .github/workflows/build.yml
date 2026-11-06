@@ -57,16 +57,16 @@ jobs:
       - name: 配置 MSYS2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
+          msystem: UCRT64
           update: true
           install: >-
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-pkg-config
-            mingw-w64-x86_64-meson
-            mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-sdl3
-            mingw-w64-x86_64-ffmpeg
-            mingw-w64-x86_64-libusb
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-pkg-config
+            mingw-w64-ucrt-x86_64-meson
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-sdl3
+            mingw-w64-ucrt-x86_64-ffmpeg
+            mingw-w64-ucrt-x86_64-libusb
             zip
 
       - name: 下载服务端产物
@@ -107,7 +107,7 @@ jobs:
           cp build/app/scrcpy.exe dist/scrcpy-win64/scrcpy.exe
           cp server-artifact/scrcpy-server dist/scrcpy-win64/scrcpy-server
           # 收集运行时需要的 MinGW DLL
-          ldd build/app/scrcpy.exe | grep mingw64 | awk '{print $3}' | xargs -I{} cp {} dist/scrcpy-win64/ || true
+          ldd build/app/scrcpy.exe | grep -E 'ucrt64|mingw64' | awk '{print $3}' | xargs -I{} cp {} dist/scrcpy-win64/ || true
           # 复制映射模板管理器
           cp -r scrcpy-mapping-manager/bin/Release/net8.0-windows/win-x64/publish/* dist/scrcpy-win64/
           # 复制模板和配置
