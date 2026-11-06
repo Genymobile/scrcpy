@@ -481,6 +481,7 @@ scrcpy(struct scrcpy_options *options) {
         .vd_destroy_content = options->vd_destroy_content,
         .vd_system_decorations = options->vd_system_decorations,
         .keep_active = options->keep_active,
+        .boox_pen_rotation = options->boox_pen_rotation,
         .flex_display = options->flex_display,
         .ignore_video_encoder_constraints =
             options->ignore_video_encoder_constraints,
@@ -503,6 +504,10 @@ scrcpy(struct scrcpy_options *options) {
     // Set hints before starting the server thread to avoid race conditions in
     // SDL
     sc_sdl_set_hints(options->render_driver, options->disable_screensaver);
+    if (options->boox_pen_rotation != -1) {
+        SDL_SetHint(SDL_HINT_PEN_MOUSE_EVENTS, "0");
+        SDL_SetHint(SDL_HINT_PEN_TOUCH_EVENTS, "0");
+    }
 
     if (!sc_server_start(&s->server)) {
         goto end;
@@ -826,6 +831,7 @@ aoa_complete:
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,
             .shortcut_mods = options->shortcut_mods,
+            .boox_pen = options->boox_pen_rotation != -1,
             .window_title = window_title,
             .always_on_top = options->always_on_top,
             .window_x = options->window_x,

@@ -116,14 +116,15 @@ public final class CleanUp {
         boolean powerOffScreen = options.getPowerOffScreenOnClose();
 
         try {
-            run(displayId, restoreStayOn, disableShowTouches, powerOffScreen, restoreScreenOffTimeout, restoreDisplayImePolicy);
+            run(displayId, restoreStayOn, disableShowTouches, powerOffScreen, restoreScreenOffTimeout, restoreDisplayImePolicy,
+                    options.getBooxPenRotation() != -1);
         } catch (IOException e) {
             Ln.e("Clean up I/O exception", e);
         }
     }
 
     private void run(int displayId, int restoreStayOn, boolean disableShowTouches, boolean powerOffScreen, int restoreScreenOffTimeout,
-            int restoreDisplayImePolicy) throws IOException {
+            int restoreDisplayImePolicy, boolean deferUnlink) throws IOException {
         String[] cmd = {
                 "app_process",
                 "/",
@@ -134,6 +135,7 @@ public final class CleanUp {
                 String.valueOf(powerOffScreen),
                 String.valueOf(restoreScreenOffTimeout),
                 String.valueOf(restoreDisplayImePolicy),
+                String.valueOf(deferUnlink),
         };
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
@@ -192,7 +194,10 @@ public final class CleanUp {
         } catch (ErrnoException e) {
             Ln.e("setsid() failed", e);
         }
-        unlinkSelf();
+        boolean deferUnlink = args.length > 6 && Boolean.parseBoolean(args[6]);
+        if (!deferUnlink) {
+            unlinkSelf();
+        }
 
         // Needed for workarounds
         prepareMainLooper();
@@ -220,6 +225,9 @@ public final class CleanUp {
             // Expected when the server is dead
         }
 
+        if (deferUnlink) {
+            unlinkSelf();
+        }
         Ln.i("Cleaning up");
 
         if (disableShowTouches) {
