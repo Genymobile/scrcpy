@@ -1,6 +1,9 @@
 name: Build scrcpy Windows Client
 
 on:
+  push:
+    branches:
+      - 'trae/**'
   workflow_dispatch:
     inputs:
       tag_name:
