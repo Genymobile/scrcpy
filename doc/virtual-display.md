@@ -75,6 +75,57 @@ scrcpy --new-display=1920x1080 --no-vd-system-decorations --start-app=org.fossif
 [Fossify Launcher]: https://f-droid.org/en/packages/org.fossify.home/
 
 
+## Android 17 desktop compatibility
+
+On Android 17, the native launcher may use the desktop launch path for a virtual
+display. scrcpy requests content-mode switching for displays with system
+decorations, but Android also requires freeform window support. Without it, the
+launcher may react to navigation while silently ignoring app icons.
+
+On devices missing that capability, explicitly opt in to temporarily enabling it:
+
+```bash
+scrcpy --new-display --vd-enable-freeform
+```
+
+This option changes the **device-wide** `enable_freeform_support` setting and may
+reconfigure the main display. It is disabled by default. It requires Android 17
+or newer, a new display with video and system decorations, and cleanup enabled.
+Only one session using this option may run on a device at a time. Other sessions
+and apps on the device also observe the temporary setting.
+
+With this option, scrcpy waits for WindowManager to report desktop
+support on the default display before creating the virtual display, then checks
+the new display's eligibility. An
+unsupported API, policy restriction or failure to become eligible aborts startup
+and triggers restoration; setting the value alone is not treated as success.
+These checks do not guarantee that every device's launcher supports desktop
+launching.
+
+A separate guardian process saves the original value before changing it. After
+the session ends, it restores that value (or deletes the key if originally
+absent), unless another writer has changed it to a different value. A later
+external write of the same value cannot be distinguished. On normal exit, the
+virtual display is released before restoration. The guardian also handles loss
+of the server process, but **cannot restore after it is itself killed or the
+device restarts**. In that case, restore the original setting manually; record
+its value before running experiments with this option:
+
+```bash
+adb shell settings get global enable_freeform_support
+# If the key was originally absent:
+adb shell settings delete global enable_freeform_support
+# Otherwise, restore the recorded original value:
+adb shell settings put global enable_freeform_support ORIGINAL_VALUE
+```
+
+This is a compatibility workaround for the desktop launch prerequisites. It does
+not change Android's launcher fallback behavior, force apps to open fullscreen,
+or isolate app tasks, focus or keyboards from the main display. In particular,
+the native launcher may restore an existing recent task on the main display
+even when the virtual display is desktop-eligible.
+
+
 ## System decorations
 
 By default, virtual display system decorations are enabled. To disable them, use

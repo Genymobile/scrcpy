@@ -73,6 +73,7 @@ struct sc_server_params {
     bool camera_torch;
     bool vd_destroy_content;
     bool vd_system_decorations;
+    bool vd_enable_freeform;
     bool keep_active;
     bool flex_display;
     bool ignore_video_encoder_constraints;

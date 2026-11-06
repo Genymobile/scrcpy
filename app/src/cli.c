@@ -101,6 +101,7 @@ enum {
     OPT_ANGLE,
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
+    OPT_VD_ENABLE_FREEFORM,
     OPT_DISPLAY_IME_POLICY,
     OPT_CAMERA_TORCH,
     OPT_CAMERA_ZOOM,
@@ -981,6 +982,18 @@ static const struct sc_option options[] = {
                 "V4L2 sink.\n"
                 "Default is 0 (no buffering).\n"
                 "This option is only available on Linux.",
+    },
+    {
+        .longopt_id = OPT_VD_ENABLE_FREEFORM,
+        .longopt = "vd-enable-freeform",
+        .text = "Temporarily enable freeform window management for the whole "
+                "device, so that the Android desktop can launch apps on the "
+                "new display when freeform support is disabled.\n"
+                "Requires --new-display and Android 17 or newer.\n"
+                "Cleanup attempts to restore the original "
+                "enable_freeform_support setting on exit.\n"
+                "Incompatible with --no-cleanup and "
+                "--no-vd-system-decorations.",
     },
     {
         .longopt_id = OPT_VIDEO_BUFFER,
@@ -2967,6 +2980,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_VD_SYSTEM_DECORATIONS:
                 opts->vd_system_decorations = false;
                 break;
+            case OPT_VD_ENABLE_FREEFORM:
+                opts->vd_enable_freeform = true;
+                break;
             case OPT_DISPLAY_IME_POLICY:
                 if (!parse_display_ime_policy(optarg,
                                               &opts->display_ime_policy)) {
@@ -3214,6 +3230,26 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
         if (!opts->video) {
             LOGE("--new-display is incompatible with --no-video");
+            return false;
+        }
+    }
+
+    if (opts->vd_enable_freeform) {
+        if (!opts->new_display) {
+            LOGE("--vd-enable-freeform requires --new-display");
+            return false;
+        }
+        if (!opts->vd_system_decorations) {
+            LOGE("--vd-enable-freeform is incompatible with "
+                 "--no-vd-system-decorations");
+            return false;
+        }
+        if (!opts->cleanup) {
+            LOGE("--vd-enable-freeform is incompatible with --no-cleanup");
+            return false;
+        }
+        if (otg) {
+            LOGE("--vd-enable-freeform is not available in OTG mode");
             return false;
         }
     }
