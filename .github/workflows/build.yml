@@ -96,10 +96,11 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: 编译映射模板管理器
+        shell: pwsh
         run: |
           cd scrcpy-mapping-manager
           dotnet publish -c Release -r win-x64 --self-contained false
-          ls -lh bin/Release/net8.0-windows/win-x64/publish/
+          Get-ChildItem bin/Release/net8.0-windows/win-x64/publish/
 
       - name: 打包
         run: |
