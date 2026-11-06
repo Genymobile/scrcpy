@@ -48,6 +48,16 @@ struct sc_input_manager {
     uint64_t next_sequence; // used for request acknowledgements
 
     bool disconnected;
+
+    // ---- Custom key-mapping state ----
+    bool g_pressed[256];       // index = SDL keycode & 0xFF
+    bool left_click_locked;
+    bool left_click_locked_down;
+    bool right_click_down;
+    // Design mode
+    bool design_mode;
+    // Switch popup open
+    bool switch_open;
 };
 
 struct sc_input_manager_params {

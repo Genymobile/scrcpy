@@ -87,6 +87,17 @@ jobs:
       - name: 编译
         run: ninja -C build
 
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 编译映射模板管理器
+        run: |
+          cd scrcpy-mapping-manager
+          dotnet publish -c Release -r win-x64 --self-contained false
+          ls -lh bin/Release/net8.0-windows/win-x64/publish/
+
       - name: 打包
         run: |
           mkdir -p dist/scrcpy-win64
@@ -94,9 +105,14 @@ jobs:
           cp server-artifact/scrcpy-server dist/scrcpy-win64/scrcpy-server
           # 收集运行时需要的 MinGW DLL
           ldd build/app/scrcpy.exe | grep mingw64 | awk '{print $3}' | xargs -I{} cp {} dist/scrcpy-win64/ || true
-          # 复制映射文件（如果存在）
-          if [ -f scrcpy_mappings.txt ]; then
-            cp scrcpy_mappings.txt dist/scrcpy-win64/
+          # 复制映射模板管理器
+          cp -r scrcpy-mapping-manager/bin/Release/net8.0-windows/win-x64/publish/* dist/scrcpy-win64/
+          # 复制模板和配置
+          if [ -d templates ]; then
+            cp -r templates dist/scrcpy-win64/
+          fi
+          if [ -f scrcpy_mapping_config.json ]; then
+            cp scrcpy_mapping_config.json dist/scrcpy-win64/
           fi
           cd dist
           zip -r scrcpy-win64.zip scrcpy-win64
@@ -135,13 +151,27 @@ jobs:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: "scrcpy Windows Custom Build ${{ steps.tag.outputs.tag }}"
           body: |
-            ## scrcpy 自定义按键映射版本（Windows 64 位）
+            ## scrcpy 映射模板管理版本（Windows 64 位）
 
-            基于 scrcpy 源码编译，添加了按键到屏幕坐标的触摸注入功能。
+            基于 scrcpy 源码编译，集成了按键映射模板管理功能。
+
+            ### 功能
+            - **模板管理器** (`scrcpy-mapping-manager.exe`)：新建/编辑/删除模板，设置活动模板，配置快捷键
+            - **JSON 模板格式**：坐标使用归一化值 (0.0~1.0)，适配任意手机分辨率
+            - **热替换**：在管理器中修改或切换模板后，SCRCPY 自动重新加载
+            - **设计模式**：投屏中按快捷键进入，点击屏幕记录位置，按按键绑定
+            - **快速切换**：按快捷键弹出模板列表，鼠标悬停自动切换
+            - **开关映射**：快捷键一键启用/关闭按键映射
+
+            ### 默认快捷键（可在 `scrcpy_mapping_config.json` 中修改）
+            - `F2`：快速切换模板
+            - `F3`：进入/退出设计模式
+            - `F4`：开关按键映射
 
             ### 使用
-            1. 解压后，将 `scrcpy_mappings.txt` 放在 `scrcpy.exe` 同目录。
-            2. 双击 `scrcpy.exe` 运行，连接已开启 USB 调试的手机即可。
+            1. 解压后运行 `scrcpy.exe` 投屏。
+            2. 运行 `scrcpy-mapping-manager.exe` 管理模板。
+            3. 模板文件位于 `templates/` 目录，活动模板记录在 `scrcpy_mapping_config.json`。
 
             编译时间：${{ github.event.repository.updated_at }}
           draft: false

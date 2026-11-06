@@ -16,8 +16,10 @@
 #include "fps_counter.h"
 #include "frame_buffer.h"
 #include "input_manager.h"
+#include "mapping_manager.h"
 #include "mouse_capture.h"
 #include "options.h"
+#include "overlay_ui.h"
 #include "texture.h"
 #include "trait/key_processor.h"
 #include "trait/frame_sink.h"
@@ -50,6 +52,8 @@ struct sc_screen {
 
     struct sc_texture tex;
     struct sc_input_manager im;
+    struct sc_mapping_manager mm;
+    struct sc_overlay overlay;
     struct sc_mouse_capture mc; // only used in mouse relative mode
     struct sc_fps_counter fps_counter;
 

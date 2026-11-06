@@ -1,0 +1,9 @@
+{
+  "shortcuts": {
+    "switch_template": "F2",
+    "design_mode": "F3",
+    "toggle_mapping": "F4"
+  },
+  "active_template": "default",
+  "enabled": true
+}

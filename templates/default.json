@@ -1,0 +1,20 @@
+{
+  "name": "default",
+  "mappings": [
+    {
+      "key": "W",
+      "x": 0.5,
+      "y": 0.5
+    },
+    {
+      "key": "MOUSE_RIGHT",
+      "x": 0.9,
+      "y": 0.85
+    },
+    {
+      "key": "MOUSE_LEFT_LOCKED",
+      "x": 0.9,
+      "y": 0.85
+    }
+  ]
+}

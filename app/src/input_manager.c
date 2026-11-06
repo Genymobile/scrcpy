@@ -11,334 +11,42 @@
 #include "android/keycodes.h"
 #include "events.h"
 #include "input_events.h"
+#include "mapping_manager.h"
+#include "overlay_ui.h"
 #include "screen.h"
 #include "shortcut_mod.h"
 #include "util/log.h"
 #include "util/sdl.h"
 
-// ==================== 自定义映射（从文件加载） ====================
+// ==================== 辅助函数 ====================
 
-struct sc_custom_mapping {
-    SDL_Keycode keycode;
-    int32_t x;
-    int32_t y;
-    uint64_t pointer_id;
-    bool down;
-};
-#define MAX_COMBO_KEYS 4
-
-struct sc_custom_combo {
-    SDL_Keycode keys[MAX_COMBO_KEYS];
-    int nkeys;
-    int32_t x;
-    int32_t y;
-    uint64_t pointer_id;
-    bool active;
-};
-
-static struct sc_custom_combo *g_custom_combos = NULL;
-static int g_custom_combo_count = 0;
-static int g_custom_combo_capacity = 0;
-
-// 当前按下的所有映射键
-static bool g_pressed[256];  // 索引为 SDL keycode & 0xFF，简化处理
-
-static struct sc_custom_mapping *g_custom_mappings = NULL;
-static int g_custom_mapping_count = 0;
-static int g_custom_mapping_capacity = 0;
-
-// 特殊鼠标坐标
-static int32_t g_right_click_x = 1953;
-static int32_t g_right_click_y = 826;
-static int32_t g_left_click_locked_x = 1953;
-static int32_t g_left_click_locked_y = 826;
-
-// 左 Alt 切换左键锁定状态
-static bool g_left_click_locked = false;
-static bool g_left_click_locked_down = false;
-static bool g_right_click_down = false;
-
-static SDL_Keycode
-parse_key_name(const char *name) {
-    char buf[64];
-    strncpy(buf, name, sizeof(buf) - 1);
-    buf[sizeof(buf) - 1] = '\0';
-
-    // trim
-    char *start = buf;
-    while (*start && isspace((unsigned char)*start)) start++;
-    char *end = start + strlen(start);
-    while (end > start && isspace((unsigned char)*(end - 1))) end--;
-    *end = '\0';
-    if (*start == '\0') return SDLK_UNKNOWN;
-
-    // 自定义名称（全 ASCII，避免编码问题）
-    if (SDL_strcasecmp(start, "space") == 0) return SDLK_SPACE;
-    if (SDL_strcasecmp(start, "lshift") == 0 ||
-        SDL_strcasecmp(start, "left shift") == 0 ||
-        SDL_strcasecmp(start, "shift") == 0) return SDLK_LSHIFT;
-    if (SDL_strcasecmp(start, "rshift") == 0 ||
-        SDL_strcasecmp(start, "right shift") == 0) return SDLK_RSHIFT;
-    if (SDL_strcasecmp(start, "esc") == 0 ||
-        SDL_strcasecmp(start, "escape") == 0) return SDLK_ESCAPE;
-
-    // 单字母 / 数字
-    if (strlen(start) == 1) {
-        char c = toupper((unsigned char)start[0]);
-        if (c >= 'A' && c <= 'Z') return SDLK_A + (c - 'A');
-        if (c >= '0' && c <= '9') return SDLK_0 + (c - '0');
-    }
-
-    // 尝试 SDL 原生名称
-    SDL_Keycode kc = SDL_GetKeyFromName(start);
-    if (kc != SDLK_UNKNOWN) return kc;
-
-    // 尝试大写
-    char upper[64];
-    for (int i = 0; start[i]; i++) upper[i] = toupper((unsigned char)start[i]);
-    upper[strlen(start)] = '\0';
-    kc = SDL_GetKeyFromName(upper);
-    if (kc != SDLK_UNKNOWN) return kc;
-
-    return SDLK_UNKNOWN;
+static struct sc_mapping_manager *
+mm_of(struct sc_input_manager *im) {
+    return &im->screen->mm;
 }
 
-static void
-add_custom_mapping(SDL_Keycode kc, int32_t x, int32_t y) {
-    if (g_custom_mapping_count >= g_custom_mapping_capacity) {
-        int new_cap = g_custom_mapping_capacity ? g_custom_mapping_capacity * 2 : 16;
-        struct sc_custom_mapping *new_arr = realloc(g_custom_mappings, new_cap * sizeof(*new_arr));
-        if (!new_arr) return;
-        g_custom_mappings = new_arr;
-        g_custom_mapping_capacity = new_cap;
-    }
-    g_custom_mappings[g_custom_mapping_count].keycode = kc;
-    g_custom_mappings[g_custom_mapping_count].x = x;
-    g_custom_mappings[g_custom_mapping_count].y = y;
-    g_custom_mappings[g_custom_mapping_count].pointer_id = (uint64_t)-(10 + g_custom_mapping_count);
-    g_custom_mappings[g_custom_mapping_count].down = false;
-    g_custom_mapping_count++;
-}
-static void
-add_custom_combo(SDL_Keycode *keys, int nkeys, int32_t x, int32_t y) {
-    if (g_custom_combo_count >= g_custom_combo_capacity) {
-        int new_cap = g_custom_combo_capacity ? g_custom_combo_capacity * 2 : 8;
-        struct sc_custom_combo *new_arr = realloc(g_custom_combos, new_cap * sizeof(*new_arr));
-        if (!new_arr) return;
-        g_custom_combos = new_arr;
-        g_custom_combo_capacity = new_cap;
-    }
-    struct sc_custom_combo *c = &g_custom_combos[g_custom_combo_count];
-    memcpy(c->keys, keys, nkeys * sizeof(SDL_Keycode));
-    c->nkeys = nkeys;
-    c->x = x;
-    c->y = y;
-    c->pointer_id = (uint64_t)-(100 + g_custom_combo_count);
-    c->active = false;
-    g_custom_combo_count++;
+static struct sc_overlay *
+ov_of(struct sc_input_manager *im) {
+    return &im->screen->overlay;
 }
 
-// 判断某个键是否被任何 combo 覆盖
+// Send a touch at a normalized position (nx, ny in [0,1])
 static bool
-key_in_combo(SDL_Keycode kc) {
-    for (int i = 0; i < g_custom_combo_count; ++i) {
-        for (int j = 0; j < g_custom_combos[i].nkeys; ++j) {
-            if (g_custom_combos[i].keys[j] == kc) return true;
-        }
-    }
-    return false;
-}
-// 前向声明
-static struct sc_custom_mapping *
-find_mapping(SDL_Keycode keycode);
+inject_touch_norm(struct sc_input_manager *im,
+                  enum android_motionevent_action action,
+                  double nx, double ny, uint64_t pointer_id) {
+    struct sc_screen *screen = im->screen;
+    int32_t x = (int32_t)(nx * screen->frame_size.width);
+    int32_t y = (int32_t)(ny * screen->frame_size.height);
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
 
-static bool
-inject_touch_at(struct sc_input_manager *im, enum android_motionevent_action action,
-                int32_t x, int32_t y, uint64_t pointer_id);
-// 检查所有 combo，匹配成功的激活，不再匹配的释放
-static void
-update_combos(struct sc_input_manager *im) {
-    for (int i = 0; i < g_custom_combo_count; ++i) {
-        struct sc_custom_combo *c = &g_custom_combos[i];
-        bool match = true;
-        for (int j = 0; j < c->nkeys; ++j) {
-            if (!g_pressed[c->keys[j] & 0xFF]) {
-                match = false;
-                break;
-            }
-        }
-
-        if (match && !c->active) {
-            // 组合键激活：
-            // 先撤销组合键里所有键的单键 DOWN，避免同时按下两个位置
-            for (int j = 0; j < c->nkeys; ++j) {
-                struct sc_custom_mapping *m = find_mapping(c->keys[j]);
-                if (m && m->down) {
-                    inject_touch_at(im, AMOTION_EVENT_ACTION_UP,
-                                    m->x, m->y, m->pointer_id);
-                    m->down = false;
-                }
-            }
-            // 再发送组合键 DOWN
-            c->active = true;
-            inject_touch_at(im, AMOTION_EVENT_ACTION_DOWN,
-                            c->x, c->y, c->pointer_id);
-            LOGI("Combo down: %d keys -> (%d, %d)", c->nkeys, c->x, c->y);
-
-        } else if (!match && c->active) {
-            // 组合键停用：
-            // 先发送组合键 UP
-            c->active = false;
-            inject_touch_at(im, AMOTION_EVENT_ACTION_UP,
-                            c->x, c->y, c->pointer_id);
-            LOGI("Combo up: %d keys", c->nkeys);
-
-            // 对于组合键里仍然按着的键，重新发送单键 DOWN
-            for (int j = 0; j < c->nkeys; ++j) {
-                if (!g_pressed[c->keys[j] & 0xFF]) continue;
-                struct sc_custom_mapping *m = find_mapping(c->keys[j]);
-                if (m && !m->down) {
-                    inject_touch_at(im, AMOTION_EVENT_ACTION_DOWN,
-                                    m->x, m->y, m->pointer_id);
-                    m->down = true;
-                }
-            }
-        }
-    }
-}
-
-static void
-load_mappings(void) {
-    g_custom_mapping_count = 0;
-    const char *filename = "scrcpy_mappings.txt";
-    FILE *f = fopen(filename, "r");
-    if (!f) {
-        char *base = SDL_GetBasePath();
-        if (base) {
-            char path[512];
-            snprintf(path, sizeof(path), "%s%s", base, filename);
-            SDL_free(base);
-            f = fopen(path, "r");
-        }
-    }
-    if (!f) {
-        LOGW("Could not open mappings file: %s", filename);
-        return;
-    }
-
-    char line[256];
-    bool first_line = true;
-    while (fgets(line, sizeof(line), f)) {
-        char *p = line;
-
-        // 跳过 UTF-8 BOM（只在第一行）
-        if (first_line) {
-            first_line = false;
-            if ((unsigned char)p[0] == 0xEF &&
-                (unsigned char)p[1] == 0xBB &&
-                (unsigned char)p[2] == 0xBF) {
-                p += 3;
-            }
-        }
-
-        while (*p == ' ' || *p == '\t') p++;
-        if (*p == '#' || *p == '\n' || *p == '\r' || *p == '\0') continue;
-
-        char *colon = strchr(p, ':');
-        if (!colon) continue;
-        *colon = '\0';
-        char *keyname = p;
-
-        char *end = keyname + strlen(keyname);
-        while (end > keyname && isspace((unsigned char)*(end - 1))) end--;
-        *end = '\0';
-
-        int x, y;
-        if (sscanf(colon + 1, "%d , %d", &x, &y) != 2 &&
-            sscanf(colon + 1, "%d %d", &x, &y) != 2) {
-            continue;
-        }
-
-        if (SDL_strcasecmp(keyname, "MOUSE_RIGHT") == 0 ||
-            SDL_strcasecmp(keyname, "RIGHT_CLICK") == 0) {
-            g_right_click_x = x;
-            g_right_click_y = y;
-            continue;
-        }
-        if (SDL_strcasecmp(keyname, "MOUSE_LEFT_LOCKED") == 0 ||
-            SDL_strcasecmp(keyname, "LEFT_CLICK_LOCKED") == 0) {
-            g_left_click_locked_x = x;
-            g_left_click_locked_y = y;
-            continue;
-        }
-
-        // ==================== 组合键识别 ====================
-        if (strchr(keyname, '+')) {
-            SDL_Keycode keys[MAX_COMBO_KEYS];
-            int nkeys = 0;
-            char tmp[128];
-            strncpy(tmp, keyname, sizeof(tmp) - 1);
-            tmp[sizeof(tmp) - 1] = '\0';
-
-            char *save = NULL;
-            char *tok = strtok_r(tmp, "+", &save);
-            while (tok && nkeys < MAX_COMBO_KEYS) {
-                while (*tok == ' ' || *tok == '\t') tok++;
-                char *e = tok + strlen(tok);
-                while (e > tok && isspace((unsigned char)*(e - 1))) e--;
-                *e = '\0';
-
-                SDL_Keycode kc = parse_key_name(tok);
-                if (kc == SDLK_UNKNOWN) {
-                    LOGW("Unknown combo key: %s", tok);
-                    nkeys = 0;
-                    break;
-                }
-                keys[nkeys++] = kc;
-                tok = strtok_r(NULL, "+", &save);
-            }
-            if (nkeys >= 2) {
-                add_custom_combo(keys, nkeys, x, y);
-                LOGI("Loaded combo: %s -> (%d, %d)", keyname, x, y);
-            } else {
-                LOGW("Invalid combo: %s", keyname);
-            }
-            continue;
-        }
-        // ==================== 组合键识别结束 ====================
-
-        SDL_Keycode kc = parse_key_name(keyname);
-        if (kc != SDLK_UNKNOWN) {
-            add_custom_mapping(kc, x, y);
-        } else {
-            LOGW("Unknown key name: %s", keyname);
-        }
-    }
-    fclose(f);
-    LOGI("Loaded %d custom mappings, %d combos",
-         g_custom_mapping_count, g_custom_combo_count);
-}
-
-static struct sc_custom_mapping *
-find_mapping(SDL_Keycode keycode) {
-    for (int i = 0; i < g_custom_mapping_count; ++i) {
-        if (g_custom_mappings[i].keycode == keycode) {
-            return &g_custom_mappings[i];
-        }
-    }
-    return NULL;
-}
-
-// 直接发送手机坐标的触摸事件
-static bool
-inject_touch_at(struct sc_input_manager *im, enum android_motionevent_action action,
-                int32_t x, int32_t y, uint64_t pointer_id) {
     bool up = action == AMOTION_EVENT_ACTION_UP;
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
     msg.inject_touch_event.action = action;
-    msg.inject_touch_event.position.screen_size = im->screen->frame_size;
+    msg.inject_touch_event.position.screen_size = screen->frame_size;
     msg.inject_touch_event.position.point.x = x;
     msg.inject_touch_event.position.point.y = y;
     msg.inject_touch_event.pointer_id = pointer_id;
@@ -352,8 +60,110 @@ inject_touch_at(struct sc_input_manager *im, enum android_motionevent_action act
     }
     return true;
 }
-// ==================== 自定义映射结束 ====================
 
+// Inject a touch for a mapping entry (uses its normalized coords)
+static bool
+inject_entry(struct sc_input_manager *im, struct sc_mapping_entry *e,
+             enum android_motionevent_action action) {
+    return inject_touch_norm(im, action, e->nx, e->ny, e->pointer_id);
+}
+
+// Update all combos based on currently pressed keys
+static void
+update_combos(struct sc_input_manager *im) {
+    struct sc_mapping_manager *mm = mm_of(im);
+    for (int i = 0; i < mm->count; ++i) {
+        struct sc_mapping_entry *c = &mm->entries[i];
+        if (c->nkeys < 2) continue;
+
+        bool match = true;
+        for (int j = 0; j < c->nkeys; ++j) {
+            if (!im->g_pressed[c->keys[j] & 0xFF]) {
+                match = false;
+                break;
+            }
+        }
+
+        if (match && !c->active) {
+            // Release single-key downs for combo members
+            for (int j = 0; j < c->nkeys; ++j) {
+                struct sc_mapping_entry *m =
+                    sc_mapping_manager_find_single(mm, c->keys[j]);
+                if (m && m->down) {
+                    inject_entry(im, m, AMOTION_EVENT_ACTION_UP);
+                    m->down = false;
+                }
+            }
+            c->active = true;
+            inject_entry(im, c, AMOTION_EVENT_ACTION_DOWN);
+            LOGI("Combo down: %s -> (%.3f, %.3f)", c->key_name, c->nx, c->ny);
+        } else if (!match && c->active) {
+            c->active = false;
+            inject_entry(im, c, AMOTION_EVENT_ACTION_UP);
+            LOGI("Combo up: %s", c->key_name);
+            // Re-press single keys still held
+            for (int j = 0; j < c->nkeys; ++j) {
+                if (!im->g_pressed[c->keys[j] & 0xFF]) continue;
+                struct sc_mapping_entry *m =
+                    sc_mapping_manager_find_single(mm, c->keys[j]);
+                if (m && !m->down) {
+                    inject_entry(im, m, AMOTION_EVENT_ACTION_DOWN);
+                    m->down = true;
+                }
+            }
+        }
+    }
+}
+
+// ==================== 模板切换弹窗 ====================
+
+static void
+open_template_switch(struct sc_input_manager *im) {
+    struct sc_mapping_manager *mm = mm_of(im);
+    struct sc_overlay *ov = ov_of(im);
+
+    char **names = NULL;
+    int total = sc_mapping_manager_list(mm, NULL, 0);
+    if (total <= 0) {
+        sc_overlay_set_status(ov, "No templates found");
+        return;
+    }
+    names = calloc((size_t)total, sizeof(char *));
+    if (!names) return;
+    sc_mapping_manager_list(mm, names, total);
+
+    sc_overlay_show_switch(ov, names, total);
+    im->switch_open = true;
+}
+
+static void
+close_template_switch(struct sc_input_manager *im) {
+    if (im->switch_open) {
+        sc_overlay_hide_switch(ov_of(im));
+        im->switch_open = false;
+    }
+}
+
+// ==================== 设计模式 ====================
+
+static void
+toggle_design_mode(struct sc_input_manager *im) {
+    struct sc_overlay *ov = ov_of(im);
+    im->design_mode = !im->design_mode;
+    if (im->design_mode) {
+        sc_overlay_set_design(ov, true,
+            "Design: click a position, then press a key to bind. F3 to save.");
+        LOGI("Design mode ON");
+    } else {
+        // Save on exit
+        sc_mapping_manager_save_active(mm_of(im));
+        sc_overlay_set_design(ov, false, NULL);
+        sc_overlay_set_status(ov, "Template saved");
+        LOGI("Design mode OFF, template saved");
+    }
+}
+
+// ==================== 初始化 ====================
 
 void
 sc_input_manager_init(struct sc_input_manager *im,
@@ -390,8 +200,19 @@ sc_input_manager_init(struct sc_input_manager *im,
 
     im->disconnected = false;
 
-    load_mappings();
+    // custom mapping state
+    memset(im->g_pressed, 0, sizeof(im->g_pressed));
+    im->left_click_locked = false;
+    im->left_click_locked_down = false;
+    im->right_click_down = false;
+    im->design_mode = false;
+    im->switch_open = false;
+
+    sc_overlay_init(&im->screen->overlay);
+    sc_mapping_manager_init(&im->screen->mm);
 }
+
+// ==================== SCRCPY 原有按键动作 ====================
 
 static void
 send_keycode(struct sc_input_manager *im, enum android_keycode keycode,
@@ -703,6 +524,8 @@ inverse_point(struct sc_point point, struct sc_size size,
     return point;
 }
 
+// ==================== 按键处理（含自定义映射拦截） ====================
+
 static void
 sc_input_manager_process_key(struct sc_input_manager *im,
                              const SDL_KeyboardEvent *event) {
@@ -718,88 +541,111 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     bool shift = mod & SDL_KMOD_SHIFT;
     bool repeat = event->repeat;
 
-    // ==================== 自定义拦截 ====================
-    if (control && !paused && !disconnected && !im->camera) {
+    struct sc_mapping_manager *mm = mm_of(im);
+    struct sc_overlay *ov = ov_of(im);
+
+    // ---- 全局快捷键（无论映射是否启用都响应） ----
+    if (down && !repeat) {
+        if (sdl_keycode == mm->sc_switch) {
+            if (im->switch_open) close_template_switch(im);
+            else open_template_switch(im);
+            return;
+        }
+        // Esc closes the switch popup
+        if (im->switch_open && sdl_keycode == SDLK_ESCAPE) {
+            close_template_switch(im);
+            return;
+        }
+        if (sdl_keycode == mm->sc_design) {
+            toggle_design_mode(im);
+            return;
+        }
+        if (sdl_keycode == mm->sc_toggle) {
+            bool new_state = !mm->enabled;
+            sc_mapping_manager_set_enabled(mm, new_state);
+            sc_overlay_show_toggle(ov, new_state);
+            return;
+        }
+    }
+
+    // While the switch popup is open, suppress all other key input
+    if (im->switch_open) {
+        return;
+    }
+
+    // ---- 设计模式：按键绑定到待记录位置 ----
+    if (im->design_mode && down && !repeat) {
+        // Ignore modifier-only keys in design bind
+        if (sdl_keycode != SDLK_LCTRL && sdl_keycode != SDLK_RCTRL &&
+            sdl_keycode != SDLK_LSHIFT && sdl_keycode != SDLK_RSHIFT &&
+            sdl_keycode != SDLK_LALT && sdl_keycode != SDLK_RALT &&
+            sdl_keycode != SDLK_LGUI && sdl_keycode != SDLK_RGUI) {
+            const char *name = sc_mapping_key_name(sdl_keycode);
+            if (sc_mapping_manager_design_bind(mm, name)) {
+                char buf[128];
+                snprintf(buf, sizeof(buf), "Bound %s -> (%.3f, %.3f)",
+                         name, mm->design_nx, mm->design_ny);
+                sc_overlay_set_status(ov, buf);
+            } else if (!mm->design_has_pending) {
+                sc_overlay_set_status(ov,
+                    "Click a position first, then press a key");
+            }
+            return;
+        }
+    }
+
+    // ---- 自定义映射拦截（仅当启用且非设计模式） ----
+    if (mm->enabled && !im->design_mode && control && !paused
+            && !disconnected && !im->camera) {
         // 左 Alt 切换左键锁定
         if (sdl_keycode == SDLK_LALT && down && !repeat && !ctrl && !shift) {
-            g_left_click_locked = !g_left_click_locked;
-            g_left_click_locked_down = false;
-            LOGI("Left click lock: %s", g_left_click_locked ? "ON" : "OFF");
+            im->left_click_locked = !im->left_click_locked;
+            im->left_click_locked_down = false;
+            LOGI("Left click lock: %s", im->left_click_locked ? "ON" : "OFF");
             return;
         }
 
-        // Escape 映射
-        if (sdl_keycode == SDLK_ESCAPE) {
-            struct sc_custom_mapping *m = find_mapping(SDLK_ESCAPE);
-            if (m) {
-                if (down && repeat) return;
-                if (down && m->down) return;
-                if (!down && !m->down) return;
-                enum android_motionevent_action action = down
-                    ? AMOTION_EVENT_ACTION_DOWN : AMOTION_EVENT_ACTION_UP;
-                inject_touch_at(im, action, m->x, m->y, m->pointer_id);
-                m->down = down;
-                return;
-            } else {
-                enum android_motionevent_action action = down
-                    ? AMOTION_EVENT_ACTION_DOWN : AMOTION_EVENT_ACTION_UP;
-                inject_touch_at(im, action, 1776, 155, (uint64_t)-23);
-                return;
-            }
-        }
+        bool is_mapping_key = sc_mapping_manager_find_single(mm, sdl_keycode) != NULL;
+        bool is_combo_key = sc_mapping_manager_key_in_combo(mm, sdl_keycode);
 
-                // 记录按键状态
-        bool is_mapping_key = find_mapping(sdl_keycode) != NULL;
-        bool is_combo_key = key_in_combo(sdl_keycode);
         if (is_mapping_key || is_combo_key) {
             if (down && repeat) return;  // 忽略键盘自动重复
 
-            // 更新全局按下状态
-            if (down) {
-                g_pressed[sdl_keycode & 0xFF] = true;
-            } else {
-                g_pressed[sdl_keycode & 0xFF] = false;
-            }
+            if (down) im->g_pressed[sdl_keycode & 0xFF] = true;
+            else im->g_pressed[sdl_keycode & 0xFF] = false;
 
-            // 优先检查 combo：先更新 combo 状态
-            if (g_custom_combo_count > 0) {
-                update_combos(im);
-            }
+            update_combos(im);
 
-            // 单键处理：如果该键没有被任何 combo 覆盖，或没有活跃 combo 覆盖它
-            struct sc_custom_mapping *m = find_mapping(sdl_keycode);
+            struct sc_mapping_entry *m =
+                sc_mapping_manager_find_single(mm, sdl_keycode);
             if (m) {
-                // 如果该键属于某个已激活的 combo，则跳过单键逻辑
-                bool covered_by_active_combo = false;
-                for (int i = 0; i < g_custom_combo_count; ++i) {
-                    struct sc_custom_combo *c = &g_custom_combos[i];
+                // 如果该键被已激活的 combo 覆盖，跳过单键逻辑
+                bool covered = false;
+                for (int i = 0; i < mm->count; ++i) {
+                    struct sc_mapping_entry *c = &mm->entries[i];
                     if (!c->active) continue;
                     for (int j = 0; j < c->nkeys; ++j) {
-                        if (c->keys[j] == sdl_keycode) {
-                            covered_by_active_combo = true;
-                            break;
-                        }
+                        if (c->keys[j] == sdl_keycode) { covered = true; break; }
                     }
-                    if (covered_by_active_combo) break;
+                    if (covered) break;
                 }
-
-                if (!covered_by_active_combo) {
+                if (!covered) {
                     if (down && m->down) return;
                     if (!down && !m->down) return;
                     enum android_motionevent_action action = down
                         ? AMOTION_EVENT_ACTION_DOWN : AMOTION_EVENT_ACTION_UP;
-                    inject_touch_at(im, action, m->x, m->y, m->pointer_id);
+                    inject_entry(im, m, action);
                     m->down = down;
                 } else if (!down && m->down) {
-                    // 从 combo 覆盖切换到不覆盖时，需要补发单键的 UP
                     m->down = false;
-                    inject_touch_at(im, AMOTION_EVENT_ACTION_UP, m->x, m->y, m->pointer_id);
+                    inject_entry(im, m, AMOTION_EVENT_ACTION_UP);
                 }
             }
             return;
         }
     }
-    // ==================== 自定义拦截结束 ====================
+
+    // ---- 以下为 SCRCPY 原有逻辑 ----
 
     uint16_t mods = im->sdl_shortcut_mods;
     bool is_shortcut = sc_shortcut_mods_is_shortcut_mod(mods, mod)
@@ -1016,6 +862,21 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
     if (im->camera || !im->mp || im->screen->paused || im->disconnected) return;
     if (event->which == SDL_TOUCH_MOUSEID) return;
 
+    // If switch popup is open, update hover (and auto-switch on hover)
+    if (im->switch_open) {
+        int hovered = sc_overlay_update_switch_mouse(ov_of(im),
+                                                     (float)event->x,
+                                                     (float)event->y);
+        if (hovered >= 0) {
+            char **names = ov_of(im)->names;
+            if (names && names[hovered]) {
+                sc_mapping_manager_switch(mm_of(im), names[hovered]);
+                sc_overlay_set_status(ov_of(im), names[hovered]);
+            }
+        }
+        return;
+    }
+
     struct sc_mouse_motion_event evt = {
         .position = sc_input_manager_get_position(im, event->x, event->y),
         .pointer_id = im->vfinger_down ? SC_POINTER_ID_GENERIC_FINGER : SC_POINTER_ID_MOUSE,
@@ -1078,29 +939,58 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     bool paused = im->screen->paused;
     bool down = event->type == SDL_EVENT_MOUSE_BUTTON_DOWN;
 
+    struct sc_mapping_manager *mm = mm_of(im);
+
+    // 设计模式：左键点击记录位置
+    if (im->design_mode && event->button == SDL_BUTTON_LEFT && down) {
+        struct sc_point p = sc_screen_convert_window_to_frame_coords(
+            im->screen, event->x, event->y);
+        double nx = (double)p.x / im->screen->frame_size.width;
+        double ny = (double)p.y / im->screen->frame_size.height;
+        if (nx < 0) nx = 0;
+        if (nx > 1) nx = 1;
+        if (ny < 0) ny = 0;
+        if (ny > 1) ny = 1;
+        sc_mapping_manager_design_set_pending(mm, nx, ny);
+        char buf[128];
+        snprintf(buf, sizeof(buf),
+                 "Position recorded (%.3f, %.3f). Press a key to bind.",
+                 nx, ny);
+        sc_overlay_set_status(ov_of(im), buf);
+        sc_overlay_set_design(ov_of(im), true, buf);
+        return;
+    }
+
+    // 切换弹窗打开时，点击关闭
+    if (im->switch_open) {
+        close_template_switch(im);
+        return;
+    }
+
     // ==================== 自定义鼠标拦截 ====================
-    if (control && !paused && !im->camera) {
+    if (mm->enabled && !im->design_mode && control && !paused) {
         // 左键锁定
-        if (event->button == SDL_BUTTON_LEFT && g_left_click_locked) {
-            if (down == g_left_click_locked_down) return;
-            g_left_click_locked_down = down;
+        if (event->button == SDL_BUTTON_LEFT && im->left_click_locked) {
+            if (down == im->left_click_locked_down) return;
+            im->left_click_locked_down = down;
             enum android_motionevent_action action = down
                 ? AMOTION_EVENT_ACTION_DOWN : AMOTION_EVENT_ACTION_UP;
-            inject_touch_at(im, action, g_left_click_locked_x, g_left_click_locked_y, (uint64_t)-25);
+            struct sc_mapping_entry *e = mm->mouse_left_locked;
+            if (e) inject_entry(im, e, action);
             return;
         }
 
         // 右键固定映射
         if (event->button == SDL_BUTTON_RIGHT) {
-            if (down == g_right_click_down) return;
-            g_right_click_down = down;
+            if (down == im->right_click_down) return;
+            im->right_click_down = down;
             enum android_motionevent_action action = down
                 ? AMOTION_EVENT_ACTION_DOWN : AMOTION_EVENT_ACTION_UP;
-            inject_touch_at(im, action, g_right_click_x, g_right_click_y, (uint64_t)-24);
+            struct sc_mapping_entry *e = mm->mouse_right;
+            if (e) inject_entry(im, e, action);
             return;
         }
     }
-    // ==================== 自定义鼠标拦截结束 ====================
 
     enum sc_mouse_button button = sc_mouse_button_from_sdl(event->button);
     if (button == SC_MOUSE_BUTTON_UNKNOWN) return;
@@ -1197,7 +1087,7 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
     (void)buttons;
 
     struct sc_mouse_scroll_event evt = {
-        .position = sc_input_manager_get_position(im, mouse_x, mouse_y),
+        .position = sc_input_manager_get_position(im, (int32_t)mouse_x, (int32_t)mouse_y),
         .hscroll = event->x,
         .vscroll = event->y,
         .buttons_state = im->mouse_buttons_state,

@@ -6,9 +6,12 @@
 
 #include "events.h"
 #include "icon.h"
+#include "mapping_manager.h"
 #include "options.h"
+#include "overlay_ui.h"
 #include "util/log.h"
 #include "util/sdl.h"
+#include "util/tick.h"
 
 #define DISPLAY_MARGINS 96
 
@@ -337,6 +340,13 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
 
     if (!ok) {
         LOGE("Could not render texture: %s", SDL_GetError());
+    }
+
+    // ---- Custom overlay (template switch popup, design mode, etc.) ----
+    {
+        int ww = 0, wh = 0;
+        SDL_GetWindowSize(screen->window, &ww, &wh);
+        sc_overlay_render(&screen->overlay, renderer, ww, wh);
     }
 
 end:
@@ -1170,6 +1180,14 @@ sc_disconnect_on_timeout(struct sc_disconnect *d, void *userdata) {
 
 void
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
+    // Periodically check for external template/config changes (hot-reload)
+    static sc_tick last_reload_check = 0;
+    sc_tick now = sc_tick_now();
+    if (now - last_reload_check > SC_TICK_FROM_MS(500)) {
+        last_reload_check = now;
+        sc_mapping_manager_reload_if_changed(&screen->mm);
+    }
+
     switch (event->type) {
         case SC_EVENT_OPEN_WINDOW: {
             struct sc_size *size = event->user.data1;
