@@ -320,7 +320,11 @@ public final class AudioEncoder implements AsyncProcessor {
 
             if (mediaCodec != null) {
                 if (mediaCodecStarted) {
-                    mediaCodec.stop();
+                    try {
+                        mediaCodec.stop();
+                    } catch (IllegalStateException e) {
+                        // ignore (just in case)
+                    }
                 }
                 mediaCodec.release();
             }
