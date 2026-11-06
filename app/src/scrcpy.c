@@ -484,6 +484,10 @@ scrcpy(struct scrcpy_options *options) {
         .flex_display = options->flex_display,
         .ignore_video_encoder_constraints =
             options->ignore_video_encoder_constraints,
+        .adb_overlay = options->adb_overlay,
+        .adb_overlay_timeout = options->adb_overlay_timeout,
+        .adb_overlay_position = options->adb_overlay_position,
+        .adb_overlay_filter = options->adb_overlay_filter,
         .list = options->list,
     };
 
