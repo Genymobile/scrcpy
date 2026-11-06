@@ -79,3 +79,10 @@ second time. For example, to execute "Expand settings panel":
 
 All <kbd>Ctrl</kbd>+_key_ shortcuts are forwarded to the device, so they are
 handled by the active application.
+
+On macOS, **Device → Power Button** in the menu bar performs the same action as
+`MOD`+`p`, without requiring a keyboard shortcut. It presses Android's power
+button (screen on/off); it does not force an immediate lock if the device has a
+lock delay. The menu action is disabled when control or keyboard input is
+unavailable, in camera mode, while paused, or after disconnection. Configured
+keyboard shortcuts are unchanged.

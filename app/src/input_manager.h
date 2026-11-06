@@ -69,6 +69,9 @@ void
 sc_input_manager_init(struct sc_input_manager *im,
                       const struct sc_input_manager_params *params);
 
+bool
+sc_input_manager_can_press_power(const struct sc_input_manager *im);
+
 void
 sc_input_manager_handle_event(struct sc_input_manager *im,
                               const SDL_Event *event);

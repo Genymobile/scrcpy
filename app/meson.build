@@ -98,6 +98,9 @@ else
         'src/sys/unix/process.c',
     ]
     if host_machine.system() == 'darwin'
+        add_languages('objc')
+        add_project_arguments('-fobjc-arc', language: 'objc')
+        src += [ 'src/sys/macos/menu.m' ]
         feature_test_macros += '-D_DARWIN_C_SOURCE'
     endif
 endif
@@ -172,6 +175,10 @@ endif
 
 if usb_support
     dependencies += dependency('libusb-1.0', static: static)
+endif
+
+if host_machine.system() == 'darwin'
+    dependencies += dependency('appleframeworks', modules: ['AppKit'])
 endif
 
 if host_machine.system() == 'windows'
