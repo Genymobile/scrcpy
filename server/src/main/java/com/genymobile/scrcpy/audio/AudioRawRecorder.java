@@ -36,6 +36,7 @@ public final class AudioRawRecorder implements AsyncProcessor {
 
         try {
             try {
+                capture.checkCompatibility(); // throws an AudioCaptureException on error
                 capture.start();
             } catch (Throwable t) {
                 // Notify the client that the audio could not be captured
