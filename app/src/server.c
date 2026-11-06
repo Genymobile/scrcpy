@@ -413,6 +413,10 @@ execute_server(struct sc_server *server,
         // By default, cleanup is true
         ADD_PARAM("cleanup=false");
     }
+    if (!params->unlink_server) {
+        // By default, the server binary is removed on exit
+        ADD_PARAM("unlink_server=false");
+    }
     if (!params->power_on) {
         // By default, power_on is true
         ADD_PARAM("power_on=false");
