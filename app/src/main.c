@@ -36,6 +36,9 @@ main_scrcpy(int argc, char *argv[]) {
     printf("scrcpy " SCRCPY_VERSION
            " <https://github.com/Genymobile/scrcpy>\n");
 
+    // Configure logs before parsing the arguments, which may log messages
+    sc_log_configure();
+
     struct scrcpy_cli_args args = {
         .opts = scrcpy_options_default,
         .help = false,
@@ -86,8 +89,6 @@ main_scrcpy(int argc, char *argv[]) {
         ret = SCRCPY_EXIT_FAILURE;
         goto end;
     }
-
-    sc_log_configure();
 
     if (!sc_main_thread_init()) {
         ret = SCRCPY_EXIT_FAILURE;
