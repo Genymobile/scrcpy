@@ -5,6 +5,7 @@
 
 #include "cli.h"
 #include "options.h"
+#include "util/log.h"
 
 static void test_flag_version(void) {
     struct scrcpy_cli_args args = {
@@ -121,6 +122,23 @@ static void test_options2(void) {
     assert(opts->record_format == SC_RECORD_FORMAT_MP4);
 }
 
+static void test_log_level(void) {
+    struct scrcpy_cli_args args = {
+        .opts = scrcpy_options_default,
+        .help = false,
+        .version = false,
+    };
+
+    char *argv[] = {"scrcpy", "-V", "error"};
+
+    bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+    assert(ok);
+    assert(args.opts.log_level == SC_LOG_LEVEL_ERROR);
+    // The log level must be applied before the options post-processing,
+    // which may log messages
+    assert(sc_get_log_level() == SC_LOG_LEVEL_ERROR);
+}
+
 static void test_parse_shortcut_mods(void) {
     uint8_t mods;
     bool ok;
@@ -163,6 +181,7 @@ int main(int argc, char *argv[]) {
     test_flag_help();
     test_options();
     test_options2();
+    test_log_level();
     test_parse_shortcut_mods();
     return 0;
 }
