@@ -121,6 +121,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .vd_system_decorations = true,
     .camera_torch = false,
     .keep_active = false,
+    .boox_pen_rotation = -1,
     .flex_display = false,
     .ignore_video_encoder_constraints = false,
     .update_terminal_title = true,

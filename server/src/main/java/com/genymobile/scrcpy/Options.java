@@ -70,6 +70,7 @@ public class Options {
     private boolean flexDisplay;
 
     private boolean keepActive;
+    private int booxPenRotation = -1;
     private boolean ignoreVideoEncoderConstraints;
 
     private Orientation.Lock captureOrientationLock = Orientation.Lock.Unlocked;
@@ -265,6 +266,10 @@ public class Options {
 
     public boolean getVDSystemDecorations() {
         return vdSystemDecorations;
+    }
+
+    public int getBooxPenRotation() {
+        return booxPenRotation;
     }
 
     public boolean getKeepActive() {
@@ -541,6 +546,16 @@ public class Options {
                 case "display_ime_policy":
                     options.displayImePolicy = parseDisplayImePolicy(value);
                     break;
+                case "boox_pen":
+                    if (value.equals("auto")) {
+                        options.booxPenRotation = -2;
+                        break;
+                    }
+                    if (!value.equals("0") && !value.equals("90") && !value.equals("180") && !value.equals("270")) {
+                        throw new IllegalArgumentException("boox_pen must be auto, 0, 90, 180 or 270");
+                    }
+                    options.booxPenRotation = Integer.parseInt(value) / 90;
+                    break;
                 case "keep_active":
                     options.keepActive = Boolean.parseBoolean(value);
                     break;
@@ -579,6 +594,11 @@ public class Options {
             options.displayId = Device.DISPLAY_ID_NONE;
         }
 
+        if (options.booxPenRotation != -1 && (!options.control || options.displayId != 0
+                || options.videoSource != VideoSource.DISPLAY || options.newDisplay != null
+                || android.os.Build.VERSION.SDK_INT < 29)) {
+            throw new IllegalArgumentException("BOOX pen requires Android 10+, main display and control");
+        }
         return options;
     }
 
