@@ -119,6 +119,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .angle = NULL,
     .vd_destroy_content = true,
     .vd_system_decorations = true,
+    .vd_enable_freeform = false,
     .camera_torch = false,
     .keep_active = false,
     .flex_display = false,

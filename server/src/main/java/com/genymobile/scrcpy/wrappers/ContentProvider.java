@@ -29,6 +29,10 @@ public final class ContentProvider implements Closeable {
     private static final String CALL_METHOD_PUT_SECURE = "PUT_secure";
     private static final String CALL_METHOD_PUT_GLOBAL = "PUT_global";
 
+    private static final String CALL_METHOD_DELETE_SYSTEM = "DELETE_system";
+    private static final String CALL_METHOD_DELETE_SECURE = "DELETE_secure";
+    private static final String CALL_METHOD_DELETE_GLOBAL = "DELETE_global";
+
     private static final String CALL_METHOD_USER_KEY = "_user";
 
     private static final String NAME_VALUE_TABLE_VALUE = "value";
@@ -129,6 +133,30 @@ public final class ContentProvider implements Closeable {
                 return CALL_METHOD_PUT_GLOBAL;
             default:
                 throw new IllegalArgumentException("Invalid table: " + table);
+        }
+    }
+
+    private static String getDeleteMethod(String table) {
+        switch (table) {
+            case TABLE_SECURE:
+                return CALL_METHOD_DELETE_SECURE;
+            case TABLE_SYSTEM:
+                return CALL_METHOD_DELETE_SYSTEM;
+            case TABLE_GLOBAL:
+                return CALL_METHOD_DELETE_GLOBAL;
+            default:
+                throw new IllegalArgumentException("Invalid table: " + table);
+        }
+    }
+
+    public void deleteValue(String table, String key) throws SettingsException {
+        String method = getDeleteMethod(table);
+        Bundle arg = new Bundle();
+        arg.putInt(CALL_METHOD_USER_KEY, FakeContext.ROOT_UID);
+        try {
+            call(method, key, arg);
+        } catch (Exception e) {
+            throw new SettingsException(table, "delete", key, null, e);
         }
     }
 

@@ -23,11 +23,14 @@ import com.genymobile.scrcpy.video.ScreenCapture;
 import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.SurfaceEncoder;
 import com.genymobile.scrcpy.video.VideoSource;
+import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.system.Os;
+import android.view.Display;
 
 import java.io.File;
 import java.io.IOException;
@@ -85,6 +88,49 @@ public final class Server {
             }
         }
 
+        if (options.getVDEnableFreeform()) {
+            if (Build.VERSION.SDK_INT < AndroidVersions.API_37_ANDROID_17 || options.getNewDisplay() == null
+                    || !options.getVideo() || options.getVideoSource() != VideoSource.DISPLAY
+                    || !options.getVDSystemDecorations() || !options.getCleanup()) {
+                throw new ConfigurationException("vd_enable_freeform requires Android 17+, a new display with video and system decorations, "
+                        + "and cleanup");
+            }
+            Ln.w("Enabling freeform temporarily for the entire device; this may reconfigure the main display");
+        }
+
+        Workarounds.apply();
+
+        // Start the guardian before CleanUp can unlink the server jar. Keep it alive until
+        // all capture threads have released their displays, including on startup failure.
+        try (FreeformSupport freeform = options.getVDEnableFreeform() ? FreeformSupport.start() : null) {
+            if (freeform != null) {
+                awaitFreeformSupport();
+            }
+            scrcpySession(options);
+        }
+    }
+
+    private static void awaitFreeformSupport() throws IOException {
+        // SettingsProvider notifies WindowManager asynchronously. A successful write is
+        // not sufficient: verify the capability before Shell sees the new display.
+        long deadline = SystemClock.uptimeMillis() + 3000;
+        try {
+            do {
+                if (ServiceManager.getWindowManager().isEligibleForDesktopMode(Display.DEFAULT_DISPLAY)) {
+                    return;
+                }
+                Thread.sleep(25);
+            } while (SystemClock.uptimeMillis() < deadline);
+        } catch (ReflectiveOperationException e) {
+            throw new IOException("Cannot verify desktop support on this Android build", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while waiting for desktop support", e);
+        }
+        throw new IOException("Android did not make the default display desktop-eligible; device policy or other prerequisites may prevent it");
+    }
+
+    private static void scrcpySession(Options options) throws IOException, ConfigurationException {
         CleanUp cleanUp = null;
 
         if (options.getCleanup()) {
@@ -97,8 +143,6 @@ public final class Server {
         boolean video = options.getVideo();
         boolean audio = options.getAudio();
         boolean sendDummyByte = options.getSendDummyByte();
-
-        Workarounds.apply();
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
@@ -175,22 +219,28 @@ public final class Server {
                 asyncProcessor.stop();
             }
 
-            connection.shutdown();
-
             try {
-                if (cleanUp != null) {
-                    cleanUp.join();
+                connection.shutdown();
+            } finally {
+                // A failed socket shutdown or an interruption must not release the
+                // freeform setting while a capture thread still owns its display.
+                boolean joined = false;
+                while (!joined) {
+                    try {
+                        if (cleanUp != null) {
+                            cleanUp.join();
+                        }
+                        for (AsyncProcessor asyncProcessor : asyncProcessors) {
+                            asyncProcessor.join();
+                        }
+                        OpenGLRunner.shutdown();
+                        joined = true;
+                    } catch (InterruptedException e) {
+                        // Finish releasing resources before this server process exits.
+                    }
                 }
-                for (AsyncProcessor asyncProcessor : asyncProcessors) {
-                    asyncProcessor.join();
-                }
-
-                OpenGLRunner.shutdown();
-            } catch (InterruptedException e) {
-                // ignore
+                connection.close();
             }
-
-            connection.close();
         }
     }
 

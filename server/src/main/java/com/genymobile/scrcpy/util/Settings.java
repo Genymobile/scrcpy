@@ -26,6 +26,12 @@ public final class Settings {
 
     }
 
+    public static void deleteValue(String table, String key) throws SettingsException {
+        try (ContentProvider provider = ServiceManager.getActivityManager().createSettingsProvider()) {
+            provider.deleteValue(table, key);
+        }
+    }
+
     public static String getAndPutValue(String table, String key, String value) throws SettingsException {
         try (ContentProvider provider = ServiceManager.getActivityManager().createSettingsProvider()) {
             String oldValue = provider.getValue(table, key);

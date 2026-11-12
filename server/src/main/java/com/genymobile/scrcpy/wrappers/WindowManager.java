@@ -32,6 +32,7 @@ public final class WindowManager {
 
     private Method getDisplayImePolicyMethod;
     private Method setDisplayImePolicyMethod;
+    private Method isEligibleForDesktopModeMethod;
 
     static WindowManager create() {
         IInterface manager = ServiceManager.getService("window", "android.view.IWindowManager");
@@ -40,6 +41,14 @@ public final class WindowManager {
 
     private WindowManager(IInterface manager) {
         this.manager = manager;
+    }
+
+    // Android 17. Let callers distinguish an unsupported method from an ineligible display.
+    public boolean isEligibleForDesktopMode(int displayId) throws ReflectiveOperationException {
+        if (isEligibleForDesktopModeMethod == null) {
+            isEligibleForDesktopModeMethod = manager.getClass().getMethod("isEligibleForDesktopMode", int.class);
+        }
+        return (boolean) isEligibleForDesktopModeMethod.invoke(manager, displayId);
     }
 
     private Method getGetRotationMethod() throws NoSuchMethodException {
