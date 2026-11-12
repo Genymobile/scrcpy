@@ -76,6 +76,10 @@ struct sc_server_params {
     bool keep_active;
     bool flex_display;
     bool ignore_video_encoder_constraints;
+    enum sc_adb_overlay_mode adb_overlay;
+    int32_t adb_overlay_timeout;
+    enum sc_adb_overlay_position adb_overlay_position;
+    const char *adb_overlay_filter;
     uint8_t list;
 };
 
