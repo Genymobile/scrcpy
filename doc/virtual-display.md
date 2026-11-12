@@ -75,6 +75,31 @@ scrcpy --new-display=1920x1080 --no-vd-system-decorations --start-app=org.fossif
 [Fossify Launcher]: https://f-droid.org/en/packages/org.fossify.home/
 
 
+### Launcher compatibility
+
+A launcher may be visible and respond to input without being able to launch apps
+on the virtual display.
+
+On some Android 17 configurations, the native launcher uses Android's desktop
+launch path. This requires a desktop-eligible display: both the display creation
+flags and the system's support for freeform windows matter. Enabling freeform
+support alone may not be sufficient.
+
+If app icons do nothing, inspect the logs after a click:
+
+```bash
+adb logcat -d -s ShellDesktopMode:V
+```
+
+For the display ID reported by scrcpy's `New display` line, look for
+`desktop ineligible` during display setup, followed by
+`Failed to create immediate desk` after a click.
+This identifies a desktop-launch failure, but does not by itself identify which
+eligibility condition is missing. See [#7125] for a reproduction and comparison.
+
+[#7125]: https://github.com/Genymobile/scrcpy/issues/7125
+
+
 ## System decorations
 
 By default, virtual display system decorations are enabled. To disable them, use
