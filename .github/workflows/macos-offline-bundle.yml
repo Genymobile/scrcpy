@@ -30,7 +30,7 @@ jobs:
         run: |
           mkdir -p offline-bundle/libs
           cp dist/bin/scrcpy offline-bundle/
-          cp dist/share/scrcpy/scrcpy-server offline-bundle/
+          cp prebuilt-server offline-bundle/scrcpy-server
           cp "$(which adb)" offline-bundle/
           cp -r macos-autoconnect/* offline-bundle/
           chmod +w offline-bundle/scrcpy
