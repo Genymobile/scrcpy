@@ -1,0 +1,113 @@
+name: Build Offline macOS Bundle
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Fork
+        uses: actions/checkout@v4
+
+      - name: Install Build Dependencies on Runner
+        run: |
+          brew install sdl2 ffmpeg libusb meson ninja pkg-config android-platform-tools dylibbundler
+
+      - name: Compile Custom Scrcpy
+        run: |
+          meson setup build --prefix="$PWD/dist" --buildtype=release --strip -Db_lto=true
+          ninja -Cbuild
+          ninja -Cbuild install
+
+      - name: Bundle Standalone Offline Package
+        run: |
+          mkdir -p offline-bundle/libs
+          cp dist/bin/scrcpy offline-bundle/
+          cp dist/share/scrcpy/scrcpy-server offline-bundle/
+          cp "$(which adb)" offline-bundle/
+          cp -r macos-autoconnect/* offline-bundle/
+          
+          # Embed all dynamic libraries so target Mac needs zero dependencies
+          dylibbundler -od -b -x offline-bundle/scrcpy -d offline-bundle/libs/ -p @executable_path/libs/
+          
+          # Create the 1-command offline installer inside the zip
+          cat << 'INSTALLER' > offline-bundle/offline-install.sh
+          #!/bin/bash
+          set -e
+          DIR="$(cd "$(dirname "$0")" && pwd)"
+          DEST="$HOME/.local/scrcpy-offline"
+          BIN="$HOME/.local/bin"
+          PLIST="$HOME/Library/LaunchAgents/com.user.autoscrpcy.plist"
+          
+          mkdir -p "$DEST" "$BIN" "$HOME/Library/LaunchAgents"
+          cp -R "$DIR/"* "$DEST/"
+          chmod +x "$DEST/scrcpy" "$DEST/adb"
+          
+          # Remove macOS quarantine flags for offline execution
+          xattr -dr com.apple.quarantine "$DEST" 2>/dev/null || true
+          
+          # Create wrapper so scrcpy always finds its bundled scrcpy-server
+          cat << WRAP > "$BIN/scrcpy"
+          #!/bin/bash
+          export SCRCPY_SERVER_PATH="$DEST/scrcpy-server"
+          exec "$DEST/scrcpy" "\$@"
+          WRAP
+          ln -sf "$DEST/adb" "$BIN/adb"
+          chmod +x "$BIN/scrcpy"
+          
+          # Configure Bluetooth/Radio IP
+          PHONE_IP="${1:-192.168.44.1}"
+          cat << DAEMON > "$BIN/auto_scrcpy.sh"
+          #!/bin/bash
+          export PATH="$BIN:/usr/bin:/bin:/usr/sbin:/sbin:\$PATH"
+          TARGET="${PHONE_IP}:5555"
+          while true; do
+              if ping -c 1 -W 1 "${PHONE_IP}" &> /dev/null; then
+                  if ! pgrep -f "scrcpy.*\${TARGET}" > /dev/null; then
+                      if ! adb devices | grep -q "\${TARGET}[[:space:]]*device"; then
+                          adb connect "\$TARGET" &> /dev/null
+                          sleep 2
+                      fi
+                      if adb devices | grep -q "\${TARGET}[[:space:]]*device"; then
+                          scrcpy -s "\$TARGET" --window-title="Android Radio Mirror" &> /dev/null
+                          sleep 5
+                      fi
+                  fi
+              fi
+              sleep 3
+          done
+          DAEMON
+          chmod +x "$BIN/auto_scrcpy.sh"
+          
+          cat << P > "$PLIST"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://apple.com">
+          <plist version="1.0">
+          <dict>
+              <key>Label</key><string>com.user.autoscrpcy</string>
+              <key>ProgramArguments</key><array><string>$BIN/auto_scrcpy.sh</string></array>
+              <key>RunAtLoad</key><true/>
+              <key>KeepAlive</key><true/>
+          </dict>
+          </plist>
+          P
+          
+          launchctl unload "$PLIST" 2>/dev/null || true
+          launchctl load -w "$PLIST"
+          echo "✅ Offline Scrcpy & Auto-Connect installed! Target IP: $PHONE_IP:5555"
+          INSTALLER
+          chmod +x offline-bundle/offline-install.sh
+          cd offline-bundle && zip -r ../scrcpy-macos-offline.zip .
+
+      - name: Publish Offline Zip to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v5.0.1-offline
+          name: Scrcpy Bluetooth Offline Bundle (macOS)
+          files: scrcpy-macos-offline.zip
