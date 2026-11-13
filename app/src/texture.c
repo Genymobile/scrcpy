@@ -104,16 +104,22 @@ sc_texture_disable_hwdec(struct sc_texture *tex) {
     return true;
 }
 
-bool
-sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
-    assert(tex->interop);
-
+static enum AVPixelFormat
+sc_texture_get_frame_format(const AVFrame *frame) {
     enum AVPixelFormat format = frame->format;
     if (format == AV_PIX_FMT_YUVJ420P) {
         // Deprecated full-range alias of YUV420P, with the same layout (the
         // color range is read from the frame)
         format = AV_PIX_FMT_YUV420P;
     }
+    return format;
+}
+
+bool
+sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
+    assert(tex->interop);
+
+    enum AVPixelFormat format = sc_texture_get_frame_format(frame);
 
     if (tex->interop->hw_type != AV_HWDEVICE_TYPE_NONE
             && tex->interop->pix_fmt != format) {
