@@ -17,7 +17,7 @@ jobs:
 
       - name: Install Build Dependencies on Runner
         run: |
-          brew install sdl2 ffmpeg libusb meson ninja pkg-config android-platform-tools dylibbundler
+          brew install sdl2 ffmpeg libusb meson ninja pkg-config android-platform-tools
 
       - name: Download v5.0.1 Prebuilt Server & Compile Custom Client
         run: |
@@ -33,9 +33,25 @@ jobs:
           cp dist/share/scrcpy/scrcpy-server offline-bundle/
           cp "$(which adb)" offline-bundle/
           cp -r macos-autoconnect/* offline-bundle/
-          
-          dylibbundler -od -b -x offline-bundle/scrcpy -d offline-bundle/libs/ -p @executable_path/libs/
-          
+          chmod +w offline-bundle/scrcpy
+
+          # Recursively copy all non-system .dylib dependencies and rewrite rpaths natively
+          copy_deps() {
+            local target="$1"
+            for dep in $(otool -L "$target" | awk '/\/usr\/local|\/opt\/homebrew/ {print $1}'); do
+              local name=$(basename "$dep")
+              if [ ! -f "offline-bundle/libs/$name" ]; then
+                cp -L "$dep" "offline-bundle/libs/$name"
+                chmod +w "offline-bundle/libs/$name"
+                install_name_tool -id "@executable_path/libs/$name" "offline-bundle/libs/$name"
+                copy_deps "offline-bundle/libs/$name"
+              fi
+              install_name_tool -change "$dep" "@executable_path/libs/$name" "$target"
+            done
+          }
+          copy_deps "offline-bundle/scrcpy"
+          codesign --force --deep --sign - offline-bundle/scrcpy offline-bundle/libs/*.dylib
+
           cat << 'INSTALLER' > offline-bundle/offline-install.sh
           #!/bin/bash
           set -e
@@ -95,7 +111,7 @@ jobs:
           
           launchctl unload "$PLIST" 2>/dev/null || true
           launchctl load -w "$PLIST"
-          echo "✅ Offline Scrcpy & Auto-Connect installed! Target IP: $PHONE_IP:5555"
+          echo "Offline Scrcpy & Auto-Connect installed! Target IP: $PHONE_IP:5555"
           INSTALLER
           chmod +x offline-bundle/offline-install.sh
           cd offline-bundle && zip -r ../scrcpy-macos-offline.zip .
