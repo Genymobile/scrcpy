@@ -1004,9 +1004,20 @@ sc_screen_apply_frame(struct sc_screen *screen, bool can_resize) {
         sc_screen_update_content_rect(screen);
     }
 
-    bool ok = sc_texture_update(&screen->tex, frame);
+    bool ok = sc_texture_prepare(&screen->tex, frame);
     if (!ok) {
         return false;
+    }
+
+    ok = sc_texture_update(&screen->tex, frame);
+    if (!ok) {
+        // The texture creation or update may fail in some cases, for example on
+        // Windows with D3D9 when the window is minimized:
+        // <https://github.com/Genymobile/scrcpy/issues/3947>
+        //
+        // This is not a fatal error.
+        LOGW("Could not update the texture");
+        return true;
     }
 
     sc_screen_render(screen, false);
@@ -1223,6 +1234,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
             bool ok = sc_screen_update_frame(screen);
             if (!ok) {
                 LOGE("Frame update failed");
+                return false;
             }
             return true;
         }

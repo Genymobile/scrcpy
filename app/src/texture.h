@@ -37,6 +37,15 @@ sc_texture_get(struct sc_texture *tex);
 struct sc_size
 sc_texture_get_frame_size(struct sc_texture *tex);
 
+// Prepare the texture to receive the frame (replace the interop if necessary)
+bool
+sc_texture_prepare(struct sc_texture *tex, const AVFrame *frame);
+
+// Update the texture with the frame
+//
+// sc_texture_prepare() must have been called successfully for this frame.
+//
+// A failure is not fatal (the frame is just not rendered).
 bool
 sc_texture_update(struct sc_texture *tex, const AVFrame *frame);
 

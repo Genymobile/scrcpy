@@ -116,7 +116,7 @@ sc_texture_get_frame_format(const AVFrame *frame) {
 }
 
 bool
-sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
+sc_texture_prepare(struct sc_texture *tex, const AVFrame *frame) {
     assert(tex->interop);
 
     enum AVPixelFormat format = sc_texture_get_frame_format(frame);
@@ -137,7 +137,15 @@ sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
         return false;
     }
 
-    assert(interop->ops && interop->ops->import);
+    return true;
+}
+
+bool
+sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
+    struct sc_interop *interop = tex->interop;
+    assert(interop && interop->ops && interop->ops->import);
+    // sc_texture_prepare() must have been called for this frame
+    assert(interop->pix_fmt == sc_texture_get_frame_format(frame));
     return interop->ops->import(interop, frame);
 }
 
