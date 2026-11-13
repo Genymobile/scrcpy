@@ -1222,7 +1222,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
         case SC_EVENT_NEW_FRAME: {
             bool ok = sc_screen_update_frame(screen);
             if (!ok) {
-                LOGE("Frame update failed\n");
+                LOGE("Frame update failed");
             }
             return;
         }
