@@ -1,7 +1,10 @@
 [Desktop Entry]
 Name=scrcpy (console)
+Name[sv]=scrcpy (terminal)
 GenericName=Android Remote Control
+GenericName[sv]=Fjärrstyrning av Android
 Comment=Display and control your Android device
+Comment[sv]=Visa och styr din Android-enhet
 # For some users, the PATH or ADB environment variables are set from the shell
 # startup file, like .bashrc or .zshrc… Run an interactive shell to get
 # environment correctly initialized.
@@ -11,4 +14,5 @@ Terminal=true
 Type=Application
 Categories=Utility;RemoteAccess;
 Keywords=adb;android;screen;mirroring;display;control;phone;device;console;
+Keywords[sv]=adb;android;skärm;spegling;visning;styrning;telefon;enhet;terminal;
 StartupNotify=false
