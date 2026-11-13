@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-macos:
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     steps:
       - name: Checkout Fork
         uses: actions/checkout@v4
@@ -19,9 +19,10 @@ jobs:
         run: |
           brew install sdl2 ffmpeg libusb meson ninja pkg-config android-platform-tools dylibbundler
 
-      - name: Compile Custom Scrcpy
+      - name: Download v5.0.1 Prebuilt Server & Compile Custom Client
         run: |
-          meson setup build --prefix="$PWD/dist" --buildtype=release --strip -Db_lto=true
+          curl -L https://github.com -o prebuilt-server
+          meson setup build --prefix="$PWD/dist" --buildtype=release --strip -Db_lto=true -Dcompile_server=false -Dprebuilt_server="$PWD/prebuilt-server"
           ninja -Cbuild
           ninja -Cbuild install
 
@@ -33,10 +34,8 @@ jobs:
           cp "$(which adb)" offline-bundle/
           cp -r macos-autoconnect/* offline-bundle/
           
-          # Embed all dynamic libraries so target Mac needs zero dependencies
           dylibbundler -od -b -x offline-bundle/scrcpy -d offline-bundle/libs/ -p @executable_path/libs/
           
-          # Create the 1-command offline installer inside the zip
           cat << 'INSTALLER' > offline-bundle/offline-install.sh
           #!/bin/bash
           set -e
@@ -48,11 +47,8 @@ jobs:
           mkdir -p "$DEST" "$BIN" "$HOME/Library/LaunchAgents"
           cp -R "$DIR/"* "$DEST/"
           chmod +x "$DEST/scrcpy" "$DEST/adb"
-          
-          # Remove macOS quarantine flags for offline execution
           xattr -dr com.apple.quarantine "$DEST" 2>/dev/null || true
           
-          # Create wrapper so scrcpy always finds its bundled scrcpy-server
           cat << WRAP > "$BIN/scrcpy"
           #!/bin/bash
           export SCRCPY_SERVER_PATH="$DEST/scrcpy-server"
@@ -61,7 +57,6 @@ jobs:
           ln -sf "$DEST/adb" "$BIN/adb"
           chmod +x "$BIN/scrcpy"
           
-          # Configure Bluetooth/Radio IP
           PHONE_IP="${1:-192.168.44.1}"
           cat << DAEMON > "$BIN/auto_scrcpy.sh"
           #!/bin/bash
