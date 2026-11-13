@@ -100,7 +100,9 @@ event_loop(struct scrcpy *s, bool has_screen) {
             case SC_EVENT_DEVICE_DISCONNECTED:
                 LOGW("Device disconnected");
                 if (has_screen) {
-                    sc_screen_handle_event(&s->screen, &event);
+                    if (!sc_screen_handle_event(&s->screen, &event)) {
+                        return SCRCPY_EXIT_FAILURE;
+                    }
                 }
                 return SCRCPY_EXIT_DISCONNECTED;
             case SC_EVENT_DEMUXER_ERROR:
@@ -126,7 +128,9 @@ event_loop(struct scrcpy *s, bool has_screen) {
                 return SCRCPY_EXIT_SUCCESS;
             default:
                 if (has_screen) {
-                    sc_screen_handle_event(&s->screen, &event);
+                    if (!sc_screen_handle_event(&s->screen, &event)) {
+                        return SCRCPY_EXIT_FAILURE;
+                    }
                 }
                 break;
         }

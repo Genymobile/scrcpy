@@ -199,7 +199,7 @@ void
 sc_screen_set_paused(struct sc_screen *screen, bool paused);
 
 // react to SDL events
-void
+bool
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event);
 
 // run the event loop once the device is disconnected

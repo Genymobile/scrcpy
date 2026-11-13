@@ -44,7 +44,9 @@ event_loop(struct scrcpy_otg *s) {
         switch (event.type) {
             case SC_EVENT_DEVICE_DISCONNECTED:
                 LOGW("Device disconnected");
-                sc_screen_handle_event(&s->screen, &event);
+                if (!sc_screen_handle_event(&s->screen, &event)) {
+                    return SCRCPY_EXIT_FAILURE;
+                }
                 return SCRCPY_EXIT_DISCONNECTED;
             case SC_EVENT_AOA_OPEN_ERROR:
                 LOGE("AOA open error");
@@ -53,7 +55,9 @@ event_loop(struct scrcpy_otg *s) {
                 LOGD("User requested to quit");
                 return SCRCPY_EXIT_SUCCESS;
             default:
-                sc_screen_handle_event(&s->screen, &event);
+                if (!sc_screen_handle_event(&s->screen, &event)) {
+                    return SCRCPY_EXIT_FAILURE;
+                }
                 break;
         }
     }

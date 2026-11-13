@@ -1198,7 +1198,7 @@ sc_disconnect_on_timeout(struct sc_disconnect *d, void *userdata) {
     (void) ok; // ignore failure
 }
 
-void
+bool
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
     switch (event->type) {
         case SC_EVENT_OPEN_WINDOW: {
@@ -1217,35 +1217,35 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
             }
 
             sc_screen_render(screen, false);
-            return;
+            return true;
         }
         case SC_EVENT_NEW_FRAME: {
             bool ok = sc_screen_update_frame(screen);
             if (!ok) {
                 LOGE("Frame update failed");
             }
-            return;
+            return true;
         }
         case SDL_EVENT_WINDOW_EXPOSED:
             sc_screen_render(screen, true);
-            return;
+            return true;
 // If defined, then the actions are already performed by the event watcher
 #ifndef CONTINUOUS_RESIZING_WORKAROUND
         case SDL_EVENT_WINDOW_RESIZED:
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
             sc_screen_on_resize(screen, &event->window);
-            return;
+            return true;
 #endif
         case SDL_EVENT_WINDOW_RESTORED:
             if (screen->video && is_windowed(screen)) {
                 apply_pending_resize(screen);
                 sc_screen_render(screen, true);
             }
-            return;
+            return true;
         case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
             LOGD("Switched to fullscreen mode");
             assert(screen->video);
-            return;
+            return true;
         case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
             LOGD("Switched to windowed mode");
             assert(screen->video);
@@ -1253,13 +1253,13 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                 apply_pending_resize(screen);
                 sc_screen_render(screen, true);
             }
-            return;
+            return true;
         case SC_EVENT_DEVICE_DISCONNECTED:
             assert(!screen->disconnected);
             screen->disconnected = true;
             if (!screen->window_shown) {
                 // No window open
-                return;
+                return true;
             }
 
             sc_input_manager_handle_event(&screen->im, event);
@@ -1278,16 +1278,17 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                 screen->disconnect_started = true;
             }
 
-            return;
+            return true;
     }
 
     if (sc_screen_is_relative_mode(screen)
             && sc_mouse_capture_handle_event(&screen->mc, event)) {
         // The mouse capture handler consumed the event
-        return;
+        return true;
     }
 
     sc_input_manager_handle_event(&screen->im, event);
+    return true;
 }
 
 void
