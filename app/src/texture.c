@@ -84,14 +84,14 @@ sc_texture_get_frame_size(struct sc_texture *tex) {
     return tex->interop->frame_size;
 }
 
-bool
-sc_texture_disable_hwdec(struct sc_texture *tex) {
+static bool
+sc_texture_replace_interop(struct sc_texture *tex,
+                           enum AVHWDeviceType hw_type) {
     assert(tex->interop);
-    assert(tex->interop->hw_type != AV_HWDEVICE_TYPE_NONE);
 
     struct sc_opengl *gl = tex->has_gl ? &tex->gl : NULL;
     struct sc_interop *interop =
-        sc_interop_new(AV_HWDEVICE_TYPE_NONE, tex->renderer, gl, tex->mipmaps);
+        sc_interop_new(hw_type, tex->renderer, gl, tex->mipmaps);
     if (!interop) {
         return false;
     }
@@ -105,6 +105,14 @@ sc_texture_disable_hwdec(struct sc_texture *tex) {
     return true;
 }
 
+bool
+sc_texture_disable_hwdec(struct sc_texture *tex) {
+    assert(tex->interop);
+    assert(tex->interop->hw_type != AV_HWDEVICE_TYPE_NONE);
+
+    return sc_texture_replace_interop(tex, AV_HWDEVICE_TYPE_NONE);
+}
+
 static enum AVPixelFormat
 sc_texture_get_frame_format(const AVFrame *frame) {
     enum AVPixelFormat format = frame->format;
@@ -116,16 +124,31 @@ sc_texture_get_frame_format(const AVFrame *frame) {
     return format;
 }
 
+static enum AVHWDeviceType
+sc_texture_get_frame_hw_device_type(const AVFrame *frame) {
+    if (!frame->hw_frames_ctx) {
+        return AV_HWDEVICE_TYPE_NONE;
+    }
+
+    AVHWFramesContext *frames_ctx =
+        (AVHWFramesContext *) frame->hw_frames_ctx->data;
+    return frames_ctx->device_ctx->type;
+}
+
 bool
 sc_texture_prepare(struct sc_texture *tex, const AVFrame *frame) {
     assert(tex->interop);
 
     enum AVPixelFormat format = sc_texture_get_frame_format(frame);
 
-    if (tex->interop->hw_type != AV_HWDEVICE_TYPE_NONE
-            && tex->interop->pix_fmt != format) {
-        LOGI("Incompatible frame, switching to software interop");
-        if (!sc_texture_disable_hwdec(tex)) {
+    if (tex->interop->pix_fmt != format) {
+        // The decoder may fall back to software decoding for a session that the
+        // hardware decoder does not support, and use hardware decoding again
+        // for the next one
+        enum AVHWDeviceType hw_type =
+            sc_texture_get_frame_hw_device_type(frame);
+        if (hw_type != tex->interop->hw_type
+                && !sc_texture_replace_interop(tex, hw_type)) {
             return false;
         }
     }
