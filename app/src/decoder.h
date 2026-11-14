@@ -46,10 +46,10 @@ struct sc_decoder {
     struct sc_decoder_queue queue;
 
     AVCodecContext *ctx;
-    // copy of the stream parameters, to reopen the decoder in software if the
-    // hardware decoder fails
+    // copy of the stream parameters, to reopen the decoder for new sessions or
+    // fall back to software
     AVCodecParameters *params;
-    bool frame_decoded;
+    bool frame_decoded; // in the current session
     AVFrame *frame;
 
     struct sc_stream_session session; // only initialized for video stream
