@@ -46,7 +46,8 @@ sc_texture_init(struct sc_texture *tex, SDL_Renderer *renderer, bool mipmaps,
     }
 
     tex->renderer = renderer;
-    tex->interop = sc_interop_new(hwdec_mode, tex->renderer, gl, tex->mipmaps);
+    tex->interop = sc_interop_new_from_hwdec_mode(hwdec_mode, tex->renderer, gl,
+                                                  tex->mipmaps);
     if (!tex->interop) {
         return false;
     }
@@ -90,7 +91,7 @@ sc_texture_disable_hwdec(struct sc_texture *tex) {
 
     struct sc_opengl *gl = tex->has_gl ? &tex->gl : NULL;
     struct sc_interop *interop =
-        sc_interop_new(SC_HWDEC_MODE_DISABLED, tex->renderer, gl, tex->mipmaps);
+        sc_interop_new(AV_HWDEVICE_TYPE_NONE, tex->renderer, gl, tex->mipmaps);
     if (!interop) {
         return false;
     }
