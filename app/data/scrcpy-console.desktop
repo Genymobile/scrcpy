@@ -10,4 +10,5 @@ Icon=scrcpy
 Terminal=true
 Type=Application
 Categories=Utility;RemoteAccess;
+Keywords=adb;android;screen;mirroring;display;control;phone;device;console;
 StartupNotify=false

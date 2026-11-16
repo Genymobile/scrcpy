@@ -2,9 +2,12 @@
 set -ex
 . $(dirname ${BASH_SOURCE[0]})/_init "$@"
 
-VERSION=36.0.0
+# Google only provides x86 Windows platform-tools, so the same adb.exe is used
+# for all Windows targets (on Windows ARM64, it runs via emulation).
+
+VERSION=37.0.1
 URL="https://dl.google.com/android/repository/platform-tools_r$VERSION-win.zip"
-SHA256SUM=12c2841f354e92a0eb2fd7bf6f0f9bf8538abce7bd6b060ac8349d6f6a61107c
+SHA256SUM=45f4d63113e895ebde0c90f194099a4676b6ac653bd28d54314a9e022bbc1a99
 
 PROJECT_DIR="platform-tools-$VERSION-windows"
 FILENAME="$PROJECT_DIR.zip"

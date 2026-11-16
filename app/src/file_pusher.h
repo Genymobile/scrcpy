@@ -9,6 +9,8 @@
 #include "util/thread.h"
 #include "util/vecdeque.h"
 
+struct sc_controller;
+
 enum sc_file_pusher_action {
     SC_FILE_PUSHER_ACTION_INSTALL_APK,
     SC_FILE_PUSHER_ACTION_PUSH_FILE,
@@ -22,6 +24,7 @@ struct sc_file_pusher_request {
 struct sc_file_pusher_request_queue SC_VECDEQUE(struct sc_file_pusher_request);
 
 struct sc_file_pusher {
+    struct sc_controller *controller; // used to send SCAN_FILE requests
     char *serial;
     const char *push_target;
     sc_thread thread;
@@ -35,8 +38,8 @@ struct sc_file_pusher {
 };
 
 bool
-sc_file_pusher_init(struct sc_file_pusher *fp, const char *serial,
-                    const char *push_target);
+sc_file_pusher_init(struct sc_file_pusher *fp, struct sc_controller *controller,
+                    const char *serial, const char *push_target);
 
 void
 sc_file_pusher_destroy(struct sc_file_pusher *fp);

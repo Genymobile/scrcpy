@@ -4,21 +4,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #include "android/input.h"
 #include "android/keycodes.h"
+#include "events.h"
 #include "input_events.h"
 #include "screen.h"
 #include "screenshot.h"
 #include "shortcut_mod.h"
 #include "util/log.h"
+#include "util/sdl.h"
 
 void
 sc_input_manager_init(struct sc_input_manager *im,
                       const struct sc_input_manager_params *params) {
-    // A key/mouse processor may not be present if there is no controller
-    assert((!params->kp && !params->mp && !params->gp) || params->controller);
     // A processor must have ops initialized
     assert(!params->kp || params->kp->ops);
     assert(!params->mp || params->mp->ops);
@@ -30,6 +30,7 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->kp = params->kp;
     im->mp = params->mp;
     im->gp = params->gp;
+    im->camera = params->camera;
 
     im->mouse_bindings = params->mouse_bindings;
     im->legacy_paste = params->legacy_paste;
@@ -48,12 +49,14 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->key_repeat = 0;
 
     im->next_sequence = 1; // 0 is reserved for SC_SEQUENCE_INVALID
+
+    im->disconnected = false;
 }
 
 static void
 send_keycode(struct sc_input_manager *im, enum android_keycode keycode,
              enum sc_action action, const char *name) {
-    assert(im->controller && im->kp);
+    assert(im->controller && im->kp && !im->camera);
 
     // send DOWN event
     struct sc_control_msg msg;
@@ -110,7 +113,7 @@ action_menu(struct sc_input_manager *im, enum sc_action action) {
 static void
 press_back_or_turn_screen_on(struct sc_input_manager *im,
                              enum sc_action action) {
-    assert(im->controller && im->kp);
+    assert(im->controller && im->kp && !im->camera);
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
@@ -125,7 +128,7 @@ press_back_or_turn_screen_on(struct sc_input_manager *im,
 
 static void
 expand_notification_panel(struct sc_input_manager *im) {
-    assert(im->controller);
+    assert(im->controller && !im->camera);
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL;
@@ -137,7 +140,7 @@ expand_notification_panel(struct sc_input_manager *im) {
 
 static void
 expand_settings_panel(struct sc_input_manager *im) {
-    assert(im->controller);
+    assert(im->controller && !im->camera);
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL;
@@ -149,7 +152,7 @@ expand_settings_panel(struct sc_input_manager *im) {
 
 static void
 collapse_panels(struct sc_input_manager *im) {
-    assert(im->controller);
+    assert(im->controller && !im->camera);
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS;
@@ -161,7 +164,7 @@ collapse_panels(struct sc_input_manager *im) {
 
 static bool
 get_device_clipboard(struct sc_input_manager *im, enum sc_copy_key copy_key) {
-    assert(im->controller && im->kp);
+    assert(im->controller && im->kp && !im->camera);
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_GET_CLIPBOARD;
@@ -178,7 +181,7 @@ get_device_clipboard(struct sc_input_manager *im, enum sc_copy_key copy_key) {
 static bool
 set_device_clipboard(struct sc_input_manager *im, bool paste,
                      uint64_t sequence) {
-    assert(im->controller && im->kp);
+    assert(im->controller && im->kp && !im->camera);
 
     char *text = SDL_GetClipboardText();
     if (!text) {
@@ -210,7 +213,7 @@ set_device_clipboard(struct sc_input_manager *im, bool paste,
 
 static void
 set_display_power(struct sc_input_manager *im, bool on) {
-    assert(im->controller);
+    assert(im->controller && !im->camera);
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_SET_DISPLAY_POWER;
@@ -237,7 +240,7 @@ switch_fps_counter_state(struct sc_input_manager *im) {
 
 static void
 clipboard_paste(struct sc_input_manager *im) {
-    assert(im->controller && im->kp);
+    assert(im->controller && im->kp && !im->camera);
 
     char *text = SDL_GetClipboardText();
     if (!text) {
@@ -268,7 +271,7 @@ clipboard_paste(struct sc_input_manager *im) {
 
 static void
 rotate_device(struct sc_input_manager *im) {
-    assert(im->controller);
+    assert(im->controller && !im->camera);
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_ROTATE_DEVICE;
@@ -280,7 +283,7 @@ rotate_device(struct sc_input_manager *im) {
 
 static void
 open_hard_keyboard_settings(struct sc_input_manager *im) {
-    assert(im->controller);
+    assert(im->controller && !im->camera);
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS;
@@ -303,6 +306,43 @@ reset_video(struct sc_input_manager *im) {
 }
 
 static void
+camera_set_torch(struct sc_input_manager *im, bool on) {
+    assert(im->controller && im->camera);
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_CAMERA_SET_TORCH;
+    msg.camera_set_torch.on = on;
+
+    if (!sc_controller_push_msg(im->controller, &msg)) {
+        LOGW("Could not request setting camera torch");
+    }
+}
+
+static void
+camera_zoom_in(struct sc_input_manager *im) {
+    assert(im->controller && im->camera);
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_IN;
+
+    if (!sc_controller_push_msg(im->controller, &msg)) {
+        LOGW("Could not request camera zoom in");
+    }
+}
+
+static void
+camera_zoom_out(struct sc_input_manager *im) {
+    assert(im->controller && im->camera);
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_OUT;
+
+    if (!sc_controller_push_msg(im->controller, &msg)) {
+        LOGW("Could not request camera zoom out");
+    }
+}
+
+static void
 apply_orientation_transform(struct sc_input_manager *im,
                             enum sc_orientation transform) {
     struct sc_screen *screen = im->screen;
@@ -314,13 +354,17 @@ apply_orientation_transform(struct sc_input_manager *im,
 static void
 sc_input_manager_process_text_input(struct sc_input_manager *im,
                                     const SDL_TextInputEvent *event) {
+    if (im->camera || !im->kp || im->screen->paused || im->disconnected) {
+        return;
+    }
+
     if (!im->kp->ops->process_text) {
         // The key processor does not support text input
         return;
     }
 
-    if (sc_shortcut_mods_is_shortcut_mod(im->sdl_shortcut_mods,
-                                         SDL_GetModState())) {
+    uint16_t mod = sc_sdl_mod_normalize(SDL_GetModState());
+    if (sc_shortcut_mods_is_shortcut_mod(im->sdl_shortcut_mods, mod)) {
         // A shortcut must never generate text events
         return;
     }
@@ -518,18 +562,33 @@ open_logcat_for_foreground_app(void) {
 }
 
 static void
+take_screenshot(struct sc_input_manager *im) {
+    bool ok = sc_screenshot_save(im->screen->frame, im->screen->orientation);
+    if (ok) {
+        LOGD("Screenshot saved successfully, triggering flash overlay");
+        sc_screen_flash(im->screen);
+    } else {
+        LOGD("Screenshot save failed");
+    }
+}
+
+static void
 sc_input_manager_process_key(struct sc_input_manager *im,
                              const SDL_KeyboardEvent *event) {
+    // some key events do not interact with the device, so process the event
+    // even if control is disabled
+
     // controller is NULL if --no-control is requested
     bool control = im->controller;
     bool paused = im->screen->paused;
     bool video = im->screen->video;
+    bool disconnected = im->disconnected;
 
-    SDL_Keycode sdl_keycode = event->keysym.sym;
-    uint16_t mod = event->keysym.mod;
-    bool down = event->type == SDL_KEYDOWN;
-    bool ctrl = event->keysym.mod & KMOD_CTRL;
-    bool shift = event->keysym.mod & KMOD_SHIFT;
+    SDL_Keycode sdl_keycode = event->key;
+    uint16_t mod = sc_sdl_mod_normalize(event->mod);
+    bool down = event->type == SDL_EVENT_KEY_DOWN;
+    bool ctrl = mod & SDL_KMOD_CTRL;
+    bool shift = mod & SDL_KMOD_SHIFT;
     bool repeat = event->repeat;
 
     // Either the modifier includes a shortcut modifier, or the key
@@ -540,7 +599,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     bool is_shortcut = sc_shortcut_mods_is_shortcut_mod(mods, mod)
                     || sc_shortcut_mods_is_shortcut_key(mods, sdl_keycode);
 
-    if (down && !repeat) {
+    if (down && !repeat && !disconnected) {
         if (sdl_keycode == im->last_keycode && mod == im->last_mod) {
             ++im->key_repeat;
         } else {
@@ -550,22 +609,32 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         }
     }
 
+    // Shortcuts that do not involve the MOD key
+    switch (sdl_keycode) {
+        case SDLK_F11:
+            if (video && !repeat && down) {
+                bool alt = mod & SDL_KMOD_ALT;
+                bool super = mod & SDL_KMOD_GUI;
+                if (!ctrl && !shift && !alt && !super) {
+                    sc_screen_toggle_fullscreen(im->screen);
+                }
+            }
+            return;
+    }
+
     // Ctrl+Shift+L: open logcat filtered to foreground app
-    if (ctrl && shift && sdl_keycode == SDLK_l && !repeat && down) {
-        open_logcat_for_foreground_app();
+    if (ctrl && shift && sdl_keycode == SDLK_L) {
+        if (!repeat && down) {
+            open_logcat_for_foreground_app();
+        }
         return;
     }
 
     // Ctrl+Shift+S: screenshot (independent of MOD key)
-    if (ctrl && shift && sdl_keycode == SDLK_s && !repeat && down && video) {
-        LOGD("Screenshot shortcut triggered (Ctrl+Shift+S)");
-        bool ok = sc_screenshot_save(im->screen->frame,
-                                     im->screen->orientation);
-        if (ok) {
-            LOGD("Screenshot saved successfully, triggering flash overlay");
-            sc_display_flash(&im->screen->display);
-        } else {
-            LOGD("Screenshot save failed");
+    if (ctrl && shift && sdl_keycode == SDLK_S && video) {
+        if (!repeat && down) {
+            LOGD("Screenshot shortcut triggered (Ctrl+Shift+S)");
+            take_screenshot(im);
         }
         return;
     }
@@ -573,156 +642,209 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     if (is_shortcut) {
         enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
         switch (sdl_keycode) {
-            case SDLK_h:
-                if (im->kp && !shift && !repeat && !paused) {
-                    action_home(im, action);
-                }
-                return;
-            case SDLK_b: // fall-through
-            case SDLK_BACKSPACE:
-                if (im->kp && !shift && !repeat && !paused) {
-                    action_back(im, action);
-                }
-                return;
-            case SDLK_s:
-                if (im->kp && !shift && !repeat && !paused) {
-                    action_app_switch(im, action);
-                }
-                return;
-            case SDLK_m:
-                if (im->kp && !shift && !repeat && !paused) {
-                    action_menu(im, action);
-                }
-                return;
-            case SDLK_p:
-                if (im->kp && !shift && !repeat && !paused) {
-                    action_power(im, action);
-                }
-                return;
-            case SDLK_o:
-                if (control && !repeat && down && !paused) {
-                    bool on = shift;
-                    set_display_power(im, on);
-                }
-                return;
-            case SDLK_z:
+            case SDLK_Z:
                 if (video && down && !repeat) {
                     sc_screen_set_paused(im->screen, !shift);
                 }
                 return;
             case SDLK_DOWN:
+                // Only capture if shift is set
                 if (shift) {
                     if (video && !repeat && down) {
                         apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_180);
                     }
-                } else if (im->kp && !paused) {
-                    // forward repeated events
-                    action_volume_down(im, action);
+                    return;
                 }
-                return;
+                break;
             case SDLK_UP:
+                // Only capture if shift is set
                 if (shift) {
                     if (video && !repeat && down) {
-                        apply_orientation_transform(im,
-                                                    SC_ORIENTATION_FLIP_180);
+                        apply_orientation_transform(im, SC_ORIENTATION_FLIP_180);
                     }
-                } else if (im->kp && !paused) {
-                    // forward repeated events
-                    action_volume_up(im, action);
+                    return;
                 }
-                return;
+                break;
             case SDLK_LEFT:
                 if (video && !repeat && down) {
                     if (shift) {
-                        apply_orientation_transform(im,
-                                                    SC_ORIENTATION_FLIP_0);
+                        apply_orientation_transform(im, SC_ORIENTATION_FLIP_0);
                     } else {
-                        apply_orientation_transform(im,
-                                                    SC_ORIENTATION_270);
+                        apply_orientation_transform(im, SC_ORIENTATION_270);
                     }
                 }
                 return;
             case SDLK_RIGHT:
                 if (video && !repeat && down) {
                     if (shift) {
-                        apply_orientation_transform(im,
-                                                    SC_ORIENTATION_FLIP_0);
+                        apply_orientation_transform(im, SC_ORIENTATION_FLIP_0);
                     } else {
-                        apply_orientation_transform(im,
-                                                    SC_ORIENTATION_90);
+                        apply_orientation_transform(im, SC_ORIENTATION_90);
                     }
                 }
                 return;
-            case SDLK_c:
-                if (im->kp && !shift && !repeat && down && !paused) {
-                    get_device_clipboard(im, SC_COPY_KEY_COPY);
-                }
-                return;
-            case SDLK_x:
-                if (im->kp && !shift && !repeat && down && !paused) {
-                    get_device_clipboard(im, SC_COPY_KEY_CUT);
-                }
-                return;
-            case SDLK_v:
-                if (im->kp && !repeat && down && !paused) {
-                    if (shift || im->legacy_paste) {
-                        // inject the text as input events
-                        clipboard_paste(im);
-                    } else {
-                        // store the text in the device clipboard and paste,
-                        // without requesting an acknowledgment
-                        set_device_clipboard(im, true, SC_SEQUENCE_INVALID);
-                    }
-                }
-                return;
-            case SDLK_f:
+            case SDLK_F:
                 if (video && !shift && !repeat && down) {
                     sc_screen_toggle_fullscreen(im->screen);
                 }
                 return;
-            case SDLK_w:
+            case SDLK_W:
                 if (video && !shift && !repeat && down) {
                     sc_screen_resize_to_fit(im->screen);
                 }
                 return;
-            case SDLK_g:
+            case SDLK_G:
                 if (video && !shift && !repeat && down) {
                     sc_screen_resize_to_pixel_perfect(im->screen);
                 }
                 return;
-            case SDLK_i:
+            case SDLK_I:
                 if (video && !shift && !repeat && down) {
                     switch_fps_counter_state(im);
                 }
                 return;
-            case SDLK_n:
-                if (control && !repeat && down && !paused) {
-                    if (shift) {
-                        collapse_panels(im);
-                    } else if (im->key_repeat == 0) {
-                        expand_notification_panel(im);
-                    } else {
-                        expand_settings_panel(im);
-                    }
-                }
+            case SDLK_Q:
+                sc_push_event(SDL_EVENT_QUIT);
                 return;
-            case SDLK_r:
-                if (control && !repeat && down && !paused) {
+        }
+
+        if (disconnected) {
+            // Only handle shortcuts that do not interact with the device (since
+            // it is disconnected)
+            return;
+        }
+
+        // Flatten conditions to avoid additional indentation levels
+        if (control) {
+            // Controls for all sources
+            switch (sdl_keycode) {
+                case SDLK_R:
+                    // Only capture if shift is set
                     if (shift) {
-                        reset_video(im);
-                    } else {
+                        if (!repeat && down && !paused) {
+                            reset_video(im);
+                        }
+                        return;
+                    }
+                    break;
+            }
+        }
+
+        if (control && !im->camera) {
+            switch (sdl_keycode) {
+                case SDLK_H:
+                    if (im->kp && !shift && !repeat && !paused) {
+                        action_home(im, action);
+                    }
+                    return;
+                case SDLK_B: // fall-through
+                case SDLK_BACKSPACE:
+                    if (im->kp && !shift && !repeat && !paused) {
+                        action_back(im, action);
+                    }
+                    return;
+                case SDLK_S:
+                    if (im->kp && !shift && !repeat && !paused) {
+                        action_app_switch(im, action);
+                    }
+                    return;
+                case SDLK_M:
+                    if (im->kp && !shift && !repeat && !paused) {
+                        action_menu(im, action);
+                    }
+                    return;
+                case SDLK_P:
+                    if (im->kp && !shift && !repeat && !paused) {
+                        action_power(im, action);
+                    }
+                    return;
+                case SDLK_O:
+                    if (control && !repeat && down && !paused) {
+                        bool on = shift;
+                        set_display_power(im, on);
+                    }
+                    return;
+                case SDLK_DOWN:
+                    if (im->kp && !shift && !paused) {
+                        // forward repeated events
+                        action_volume_down(im, action);
+                    }
+                    return;
+                case SDLK_UP:
+                    if (im->kp && !shift && !paused) {
+                        // forward repeated events
+                        action_volume_up(im, action);
+                    }
+                    return;
+                case SDLK_C:
+                    if (im->kp && !shift && !repeat && down && !paused) {
+                        get_device_clipboard(im, SC_COPY_KEY_COPY);
+                    }
+                    return;
+                case SDLK_X:
+                    if (im->kp && !shift && !repeat && down && !paused) {
+                        get_device_clipboard(im, SC_COPY_KEY_CUT);
+                    }
+                    return;
+                case SDLK_V:
+                    if (im->kp && !repeat && down && !paused) {
+                        if (shift || im->legacy_paste) {
+                            // inject the text as input events
+                            clipboard_paste(im);
+                        } else {
+                            // store the text in the device clipboard and paste,
+                            // without requesting an acknowledgment
+                            set_device_clipboard(im, true, SC_SEQUENCE_INVALID);
+                        }
+                    }
+                    return;
+                case SDLK_N:
+                    if (!repeat && down && !paused) {
+                        if (shift) {
+                            collapse_panels(im);
+                        } else if (im->key_repeat == 0) {
+                            expand_notification_panel(im);
+                        } else {
+                            expand_settings_panel(im);
+                        }
+                    }
+                    return;
+                case SDLK_R:
+                    if (!repeat && !shift && down && !paused) {
                         rotate_device(im);
                     }
-                }
-                return;
-            case SDLK_k:
-                if (control && !shift && !repeat && down && !paused
-                        && im->kp && im->kp->hid) {
-                    // Only if the current keyboard is hid
-                    open_hard_keyboard_settings(im);
-                }
-                return;
+                    return;
+                case SDLK_K:
+                    if (!shift && !repeat && down && !paused
+                            && im->kp && im->kp->hid) {
+                        // Only if the current keyboard is hid
+                        open_hard_keyboard_settings(im);
+                    }
+                    return;
+            }
+        }
+
+        if (control && im->camera) {
+            switch (sdl_keycode) {
+                case SDLK_T:
+                    if (!repeat && down) {
+                        camera_set_torch(im, !shift);
+                    }
+                    return;
+                case SDLK_DOWN:
+                    if (!shift && down && !paused) {
+                        // forward repeated events
+                        camera_zoom_out(im);
+                    }
+                    return;
+                case SDLK_UP:
+                    if (!shift && down && !paused) {
+                        // forward repeated events
+                        camera_zoom_in(im);
+                    }
+                    return;
+            }
         }
 
         return;
@@ -732,8 +854,10 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         return;
     }
 
+    assert(!im->camera);
+
     uint64_t ack_to_wait = SC_SEQUENCE_INVALID;
-    bool is_ctrl_v = ctrl && !shift && sdl_keycode == SDLK_v && down && !repeat;
+    bool is_ctrl_v = ctrl && !shift && sdl_keycode == SDLK_V && down && !repeat;
     if (im->clipboard_autosync && is_ctrl_v) {
         if (im->legacy_paste) {
             // inject the text as input events
@@ -762,11 +886,9 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     }
 
     enum sc_keycode keycode = sc_keycode_from_sdl(sdl_keycode);
-    if (keycode == SC_KEYCODE_UNKNOWN) {
-        return;
-    }
+    // Accept SC_KEYCODE_UNKNOWN, as long as the physical scancode is known
 
-    enum sc_scancode scancode = sc_scancode_from_sdl(event->keysym.scancode);
+    enum sc_scancode scancode = sc_scancode_from_sdl(event->scancode);
     if (scancode == SC_SCANCODE_UNKNOWN) {
         return;
     }
@@ -776,7 +898,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         .keycode = keycode,
         .scancode = scancode,
         .repeat = event->repeat,
-        .mods_state = sc_mods_state_from_sdl(event->keysym.mod),
+        .mods_state = sc_mods_state_from_sdl(mod),
     };
 
     assert(im->kp->ops->process_key);
@@ -800,30 +922,70 @@ sc_input_manager_get_position(struct sc_input_manager *im, int32_t x,
     };
 }
 
-// Returns true if (window-space) point lands inside the toolbar strip.
+// Returns true if the (window coordinates) point lands inside the toolbar strip
 static bool
-sc_input_manager_in_toolbar(struct sc_input_manager *im, int32_t wx,
-                            int32_t wy) {
+sc_input_manager_in_toolbar(struct sc_input_manager *im, float x, float y) {
     if (!im->screen->video) {
         return false;
     }
-    int32_t x = wx, y = wy;
-    sc_screen_hidpi_scale_coords(im->screen, &x, &y);
-    (void) x;
-    const SDL_Rect *tb = &im->screen->toolbar_rect;
-    return y < tb->y + tb->h;
+    return sc_toolbar_contains(&im->screen->toolbar, x, y);
+}
+
+static void
+sc_input_manager_on_toolbar_click(struct sc_input_manager *im, float x,
+                                  float y) {
+    enum sc_toolbar_button btn = sc_toolbar_hit(&im->screen->toolbar, x, y);
+    switch (btn) {
+        case SC_TOOLBAR_BUTTON_SCREENSHOT:
+            LOGD("Screenshot toolbar button clicked");
+            take_screenshot(im);
+            break;
+        case SC_TOOLBAR_BUTTON_LOGS:
+            LOGD("Logs toolbar button clicked");
+            open_logcat_for_foreground_app();
+            break;
+        case SC_TOOLBAR_BUTTON_SAVE_LOGS:
+            LOGD("Save-logs toolbar button clicked");
+            save_logcat_to_downloads();
+            break;
+        case SC_TOOLBAR_BUTTON_SAVE_ALL_LOGS:
+            LOGD("Save-all-logs toolbar button clicked");
+            save_full_system_logcat_to_downloads();
+            break;
+        case SC_TOOLBAR_BUTTON_HOME:
+            LOGD("Home toolbar button clicked");
+            if (im->controller && im->kp && !im->camera && !im->disconnected
+                    && !im->screen->paused) {
+                action_home(im, SC_ACTION_DOWN);
+                action_home(im, SC_ACTION_UP);
+            }
+            break;
+        case SC_TOOLBAR_BUTTON_EXPAND:
+            LOGD("Expand toolbar button clicked");
+            sc_screen_expand_to_display(im->screen);
+            break;
+        default:
+            break;
+    }
 }
 
 static void
 sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
                                       const SDL_MouseMotionEvent *event) {
+    if (im->camera || !im->mp || im->screen->paused || im->disconnected) {
+        return;
+    }
+
     if (event->which == SDL_TOUCH_MOUSEID) {
         // simulated from touch events, so it's a duplicate
         return;
     }
 
-    if (sc_input_manager_in_toolbar(im, event->x, event->y)) {
-        // Don't forward motion over the toolbar strip to the device
+    if (!im->mouse_buttons_state && !im->mp->relative_mode
+            && sc_input_manager_in_toolbar(im, event->x, event->y)) {
+        // Don't forward hover motion over the toolbar strip to the device (a
+        // drag started on the content is still forwarded, so that the device
+        // receives a consistent gesture)
         return;
     }
 
@@ -857,27 +1019,29 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
 static void
 sc_input_manager_process_touch(struct sc_input_manager *im,
                                const SDL_TouchFingerEvent *event) {
+    if (im->camera || !im->mp || im->screen->paused || im->disconnected) {
+        return;
+    }
+
     if (!im->mp->ops->process_touch) {
         // The mouse processor does not support touch events
         return;
     }
 
-    int dw;
-    int dh;
-    SDL_GL_GetDrawableSize(im->screen->window, &dw, &dh);
+    struct sc_size window_size = sc_sdl_get_window_size(im->screen->window);
 
     // SDL touch event coordinates are normalized in the range [0; 1]
-    int32_t x = event->x * dw;
-    int32_t y = event->y * dh;
+    int32_t x = event->x * (int32_t) window_size.width;
+    int32_t y = event->y * (int32_t) window_size.height;
 
     struct sc_touch_event evt = {
         .position = {
             .screen_size = im->screen->frame_size,
             .point =
-                sc_screen_convert_drawable_to_frame_coords(im->screen, x, y),
+                sc_screen_convert_window_to_frame_coords(im->screen, x, y),
         },
         .action = sc_touch_action_from_sdl(event->type),
-        .pointer_id = event->fingerId,
+        .pointer_id = event->fingerID,
         .pressure = event->pressure,
     };
 
@@ -906,65 +1070,39 @@ sc_input_manager_get_binding(const struct sc_mouse_binding_set *bindings,
 static void
 sc_input_manager_process_mouse_button(struct sc_input_manager *im,
                                       const SDL_MouseButtonEvent *event) {
+    // some mouse events do not interact with the device, so process the event
+    // even if control is disabled
+
     if (event->which == SDL_TOUCH_MOUSEID) {
         // simulated from touch events, so it's a duplicate
         return;
     }
 
-    bool control = im->controller;
-    bool paused = im->screen->paused;
-    bool down = event->type == SDL_MOUSEBUTTONDOWN;
+    bool mouse_relative_mode = im->mp && im->mp->relative_mode;
+    bool down = event->type == SDL_EVENT_MOUSE_BUTTON_DOWN;
+    enum sc_mouse_button button = sc_mouse_button_from_sdl(event->button);
 
-    // Handle clicks on the toolbar strip (outside the mirrored content)
-    if (sc_input_manager_in_toolbar(im, event->x, event->y)) {
-        if (down && event->button == SDL_BUTTON_LEFT && im->screen->video) {
-            int32_t x = event->x, y = event->y;
-            sc_screen_hidpi_scale_coords(im->screen, &x, &y);
-            const SDL_Rect *btn = &im->screen->toolbar_button_rect;
-            const SDL_Rect *logs = &im->screen->toolbar_logs_button_rect;
-            const SDL_Rect *save = &im->screen->toolbar_save_logs_button_rect;
-            const SDL_Rect *save_all =
-                &im->screen->toolbar_save_all_logs_button_rect;
-            const SDL_Rect *home = &im->screen->toolbar_home_button_rect;
-            const SDL_Rect *expand = &im->screen->toolbar_expand_button_rect;
-            if (x >= btn->x && x < btn->x + btn->w
-                    && y >= btn->y && y < btn->y + btn->h) {
-                LOGD("Screenshot toolbar button clicked");
-                bool ok = sc_screenshot_save(im->screen->frame,
-                                             im->screen->orientation);
-                if (ok) {
-                    sc_display_flash(&im->screen->display);
-                }
-            } else if (x >= logs->x && x < logs->x + logs->w
-                    && y >= logs->y && y < logs->y + logs->h) {
-                LOGD("Logs toolbar button clicked");
-                open_logcat_for_foreground_app();
-            } else if (x >= save->x && x < save->x + save->w
-                    && y >= save->y && y < save->y + save->h) {
-                LOGD("Save-logs toolbar button clicked");
-                save_logcat_to_downloads();
-            } else if (x >= save_all->x && x < save_all->x + save_all->w
-                    && y >= save_all->y && y < save_all->y + save_all->h) {
-                LOGD("Save-all-logs toolbar button clicked");
-                save_full_system_logcat_to_downloads();
-            } else if (x >= home->x && x < home->x + home->w
-                    && y >= home->y && y < home->y + home->h) {
-                LOGD("Home toolbar button clicked");
-                if (im->controller && im->kp && !im->screen->paused) {
-                    action_home(im, SC_ACTION_DOWN);
-                    action_home(im, SC_ACTION_UP);
-                }
-            } else if (x >= expand->x && x < expand->x + expand->w
-                    && y >= expand->y && y < expand->y + expand->h) {
-                LOGD("Expand toolbar button clicked");
-                sc_screen_expand_to_display(im->screen);
-            }
+    // Handle clicks on the toolbar strip (outside the mirrored content). A
+    // release of a button pressed on the content is still forwarded, so that
+    // the device never sees a press without a release.
+    bool held = button != SC_MOUSE_BUTTON_UNKNOWN
+             && (im->mouse_buttons_state & button);
+    if (!mouse_relative_mode && !(!down && held)
+            && sc_input_manager_in_toolbar(im, event->x, event->y)) {
+        if (down && event->button == SDL_BUTTON_LEFT) {
+            sc_input_manager_on_toolbar_click(im, event->x, event->y);
         }
-        // Swallow all mouse button events in the toolbar region
+        // Swallow all other mouse button events in the toolbar region
         return;
     }
 
-    enum sc_mouse_button button = sc_mouse_button_from_sdl(event->button);
+    if (im->camera || im->disconnected) {
+        return;
+    }
+
+    bool control = im->controller;
+    bool paused = im->screen->paused;
+
     if (button == SC_MOUSE_BUTTON_UNKNOWN) {
         return;
     }
@@ -975,8 +1113,8 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     }
 
     SDL_Keymod keymod = SDL_GetModState();
-    bool ctrl_pressed = keymod & KMOD_CTRL;
-    bool shift_pressed = keymod & KMOD_SHIFT;
+    bool ctrl_pressed = keymod & SDL_KMOD_CTRL;
+    bool shift_pressed = keymod & SDL_KMOD_SHIFT;
 
     if (control && !paused) {
         enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
@@ -1023,13 +1161,11 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
 
     // double-click on black borders resizes to fit the device screen
     bool video = im->screen->video;
-    bool mouse_relative_mode = im->mp && im->mp->relative_mode;
     if (video && !mouse_relative_mode && event->button == SDL_BUTTON_LEFT
             && event->clicks == 2) {
         int32_t x = event->x;
         int32_t y = event->y;
-        sc_screen_hidpi_scale_coords(im->screen, &x, &y);
-        SDL_Rect *r = &im->screen->rect;
+        SDL_FRect *r = &im->screen->rect;
         bool outside = x < r->x || x >= r->x + r->w
                     || y < r->y || y >= r->y + r->h;
         if (outside) {
@@ -1122,28 +1258,25 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
 static void
 sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
                                      const SDL_MouseWheelEvent *event) {
+    if (im->camera || !im->kp || im->screen->paused || im->disconnected) {
+        return;
+    }
+
     if (!im->mp->ops->process_mouse_scroll) {
         // The mouse processor does not support scroll events
         return;
     }
 
     // mouse_x and mouse_y are expressed in pixels relative to the window
-    int mouse_x;
-    int mouse_y;
+    float mouse_x;
+    float mouse_y;
     uint32_t buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
     (void) buttons; // Actual buttons are tracked manually to ignore shortcuts
 
     struct sc_mouse_scroll_event evt = {
         .position = sc_input_manager_get_position(im, mouse_x, mouse_y),
-#if SDL_VERSION_ATLEAST(2, 0, 18)
-        .hscroll = event->preciseX,
-        .vscroll = event->preciseY,
-#else
         .hscroll = event->x,
         .vscroll = event->y,
-#endif
-        .hscroll_int = event->x,
-        .vscroll_int = event->y,
         .buttons_state = im->mouse_buttons_state,
     };
 
@@ -1152,31 +1285,37 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
 
 static void
 sc_input_manager_process_gamepad_device(struct sc_input_manager *im,
-                                       const SDL_ControllerDeviceEvent *event) {
-    if (event->type == SDL_CONTROLLERDEVICEADDED) {
-        SDL_GameController *gc = SDL_GameControllerOpen(event->which);
-        if (!gc) {
-            LOGW("Could not open game controller");
+                                       const SDL_GamepadDeviceEvent *event) {
+    // Handle device added or removed even if paused
+
+    if (im->camera || !im->gp || im->disconnected) {
+        return;
+    }
+
+    if (event->type == SDL_EVENT_GAMEPAD_ADDED) {
+        SDL_Gamepad *sdl_gamepad = SDL_OpenGamepad(event->which);
+        if (!sdl_gamepad) {
+            LOGW("Could not open gamepad: %s", SDL_GetError());
             return;
         }
 
-        SDL_Joystick *joystick = SDL_GameControllerGetJoystick(gc);
+        SDL_Joystick *joystick = SDL_GetGamepadJoystick(sdl_gamepad);
         if (!joystick) {
-            LOGW("Could not get controller joystick");
-            SDL_GameControllerClose(gc);
+            LOGW("Could not get gamepad joystick: %s", SDL_GetError());
+            SDL_CloseGamepad(sdl_gamepad);
             return;
         }
 
         struct sc_gamepad_device_event evt = {
-            .gamepad_id = SDL_JoystickInstanceID(joystick),
+            .gamepad_id = SDL_GetJoystickID(joystick),
         };
         im->gp->ops->process_gamepad_added(im->gp, &evt);
-    } else if (event->type == SDL_CONTROLLERDEVICEREMOVED) {
+    } else if (event->type == SDL_EVENT_GAMEPAD_REMOVED) {
         SDL_JoystickID id = event->which;
 
-        SDL_GameController *gc = SDL_GameControllerFromInstanceID(id);
-        if (gc) {
-            SDL_GameControllerClose(gc);
+        SDL_Gamepad *sdl_gamepad = SDL_GetGamepadFromID(id);
+        if (sdl_gamepad) {
+            SDL_CloseGamepad(sdl_gamepad);
         } else {
             LOGW("Unknown gamepad device removed");
         }
@@ -1193,7 +1332,11 @@ sc_input_manager_process_gamepad_device(struct sc_input_manager *im,
 
 static void
 sc_input_manager_process_gamepad_axis(struct sc_input_manager *im,
-                                      const SDL_ControllerAxisEvent *event) {
+                                      const SDL_GamepadAxisEvent *event) {
+    if (im->camera || !im->gp || im->screen->paused || im->disconnected) {
+        return;
+    }
+
     enum sc_gamepad_axis axis = sc_gamepad_axis_from_sdl(event->axis);
     if (axis == SC_GAMEPAD_AXIS_UNKNOWN) {
         return;
@@ -1209,7 +1352,11 @@ sc_input_manager_process_gamepad_axis(struct sc_input_manager *im,
 
 static void
 sc_input_manager_process_gamepad_button(struct sc_input_manager *im,
-                                       const SDL_ControllerButtonEvent *event) {
+                                       const SDL_GamepadButtonEvent *event) {
+    if (im->camera || !im->gp || im->screen->paused || im->disconnected) {
+        return;
+    }
+
     enum sc_gamepad_button button = sc_gamepad_button_from_sdl(event->button);
     if (button == SC_GAMEPAD_BUTTON_UNKNOWN) {
         return;
@@ -1217,7 +1364,7 @@ sc_input_manager_process_gamepad_button(struct sc_input_manager *im,
 
     struct sc_gamepad_button_event evt = {
         .gamepad_id = event->which,
-        .action = sc_action_from_sdl_controllerbutton_type(event->type),
+        .action = sc_action_from_sdl_gamepad_button_type(event->type),
         .button = button,
     };
     im->gp->ops->process_gamepad_button(im->gp, &evt);
@@ -1232,8 +1379,12 @@ is_apk(const char *file) {
 static void
 sc_input_manager_process_file(struct sc_input_manager *im,
                               const SDL_DropEvent *event) {
-    char *file = strdup(event->file);
-    SDL_free(event->file);
+    if (im->camera || !im->controller || im->disconnected) {
+        return;
+    }
+
+    assert(event->type == SDL_EVENT_DROP_FILE);
+    char *file = strdup(event->data);
     if (!file) {
         LOG_OOM();
         return;
@@ -1251,76 +1402,58 @@ sc_input_manager_process_file(struct sc_input_manager *im,
     }
 }
 
+static void
+sc_input_manager_on_device_disconnected(struct sc_input_manager *im) {
+    im->disconnected = true;
+
+    struct sc_fps_counter *fps_counter = &im->screen->fps_counter;
+    if (sc_fps_counter_is_started(fps_counter)) {
+        sc_fps_counter_stop(fps_counter);
+    }
+}
+
 void
 sc_input_manager_handle_event(struct sc_input_manager *im,
                               const SDL_Event *event) {
-    bool control = im->controller;
-    bool paused = im->screen->paused;
     switch (event->type) {
-        case SDL_TEXTINPUT:
-            if (!im->kp || paused) {
-                break;
-            }
+        case SDL_EVENT_TEXT_INPUT:
             sc_input_manager_process_text_input(im, &event->text);
             break;
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
-            // some key events do not interact with the device, so process the
-            // event even if control is disabled
+        case SDL_EVENT_KEY_DOWN:
+        case SDL_EVENT_KEY_UP:
             sc_input_manager_process_key(im, &event->key);
             break;
-        case SDL_MOUSEMOTION:
-            if (!im->mp || paused) {
-                break;
-            }
+        case SDL_EVENT_MOUSE_MOTION:
             sc_input_manager_process_mouse_motion(im, &event->motion);
             break;
-        case SDL_MOUSEWHEEL:
-            if (!im->mp || paused) {
-                break;
-            }
+        case SDL_EVENT_MOUSE_WHEEL:
             sc_input_manager_process_mouse_wheel(im, &event->wheel);
             break;
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP:
-            // some mouse events do not interact with the device, so process
-            // the event even if control is disabled
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        case SDL_EVENT_MOUSE_BUTTON_UP:
             sc_input_manager_process_mouse_button(im, &event->button);
             break;
-        case SDL_FINGERMOTION:
-        case SDL_FINGERDOWN:
-        case SDL_FINGERUP:
-            if (!im->mp || paused) {
-                break;
-            }
+        case SDL_EVENT_FINGER_MOTION:
+        case SDL_EVENT_FINGER_DOWN:
+        case SDL_EVENT_FINGER_UP:
             sc_input_manager_process_touch(im, &event->tfinger);
             break;
-        case SDL_CONTROLLERDEVICEADDED:
-        case SDL_CONTROLLERDEVICEREMOVED:
-            // Handle device added or removed even if paused
-            if (!im->gp) {
-                break;
-            }
-            sc_input_manager_process_gamepad_device(im, &event->cdevice);
+        case SDL_EVENT_GAMEPAD_ADDED:
+        case SDL_EVENT_GAMEPAD_REMOVED:
+            sc_input_manager_process_gamepad_device(im, &event->gdevice);
             break;
-        case SDL_CONTROLLERAXISMOTION:
-            if (!im->gp || paused) {
-                break;
-            }
-            sc_input_manager_process_gamepad_axis(im, &event->caxis);
+        case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+            sc_input_manager_process_gamepad_axis(im, &event->gaxis);
             break;
-        case SDL_CONTROLLERBUTTONDOWN:
-        case SDL_CONTROLLERBUTTONUP:
-            if (!im->gp || paused) {
-                break;
-            }
-            sc_input_manager_process_gamepad_button(im, &event->cbutton);
+        case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+        case SDL_EVENT_GAMEPAD_BUTTON_UP:
+            sc_input_manager_process_gamepad_button(im, &event->gbutton);
             break;
-        case SDL_DROPFILE: {
-            if (!control) {
-                break;
-            }
+        case SDL_EVENT_DROP_FILE:
             sc_input_manager_process_file(im, &event->drop);
-        }
+            break;
+        case SC_EVENT_DEVICE_DISCONNECTED:
+            sc_input_manager_on_device_disconnected(im);
+            break;
     }
 }

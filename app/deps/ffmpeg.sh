@@ -3,9 +3,9 @@ set -ex
 . $(dirname ${BASH_SOURCE[0]})/_init
 process_args "$@"
 
-VERSION=7.1.1
+VERSION=9.0.2
 URL="https://ffmpeg.org/releases/ffmpeg-$VERSION.tar.xz"
-SHA256SUM=733984395e0dbbe5c046abda2dc49a5544e7e0e1e2366bba849222ae9e3a03b1
+SHA256SUM=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
 
 PROJECT_DIR="ffmpeg-$VERSION"
 FILENAME="$PROJECT_DIR.tar.xz"
@@ -52,18 +52,18 @@ else
         --disable-programs
         --disable-doc
         --disable-swscale
-        --disable-postproc
         --disable-avfilter
         --disable-network
         --disable-everything
         --disable-vulkan
-        --disable-vaapi
         --disable-vdpau
         --enable-swresample
         --enable-libdav1d
         --enable-decoder=h264
         --enable-decoder=hevc
         --enable-decoder=av1
+        --enable-decoder=vp8
+        --enable-decoder=vp9
         --enable-decoder=libdav1d
         --enable-decoder=pcm_s16le
         --enable-decoder=opus
@@ -87,11 +87,47 @@ else
             --enable-libv4l2
             --enable-outdev=v4l2
             --enable-encoder=rawvideo
+            --enable-vaapi
+            --enable-libdrm
+            --disable-xlib
+            --enable-hwaccel=h264_vaapi
+            --enable-hwaccel=hevc_vaapi
+            --enable-hwaccel=av1_vaapi
+            --enable-hwaccel=vp8_vaapi
+            --enable-hwaccel=vp9_vaapi
         )
     else
-        # libavdevice is only used for V4L2 on Linux
         conf+=(
+            # libavdevice is only used for V4L2 on Linux
             --disable-avdevice
+            --disable-vaapi
+        )
+    fi
+
+    if [[ "$HOST" == win* ]]
+    then
+        conf+=(
+            --enable-d3d11va
+            # Only the *_d3d11va2 hwaccels are used, but the FFmpeg Makefile
+            # compiles their source files only for the *_d3d11va hwaccels
+            # (legacy API), so both must be enabled.
+            --enable-hwaccel=h264_d3d11va
+            --enable-hwaccel=h264_d3d11va2
+            --enable-hwaccel=hevc_d3d11va
+            --enable-hwaccel=hevc_d3d11va2
+            --enable-hwaccel=av1_d3d11va
+            --enable-hwaccel=av1_d3d11va2
+            --enable-hwaccel=vp9_d3d11va
+            --enable-hwaccel=vp9_d3d11va2
+        )
+    elif [[ "$HOST" == macos ]]
+    then
+        conf+=(
+            --enable-videotoolbox
+            --enable-hwaccel=h264_videotoolbox
+            --enable-hwaccel=hevc_videotoolbox
+            --enable-hwaccel=av1_videotoolbox
+            --enable-hwaccel=vp9_videotoolbox
         )
     fi
 
@@ -135,10 +171,17 @@ else
                 echo "Unsupported host: $HOST" >&2
                 exit 1
         esac
+    elif [[ "$HOST" == winarm64 ]]
+    then
+        # Native Windows ARM64 build (MSYS2 CLANGARM64)
+        conf+=(
+            --target-os=mingw32
+            --arch=aarch64
+        )
     fi
 
     "$SOURCES_DIR/$PROJECT_DIR"/configure "${conf[@]}"
 fi
 
-make -j
+make -j"$NPROC"
 make install

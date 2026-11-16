@@ -39,5 +39,11 @@ sc_adb_device_get_type(const char *serial) {
         return SC_ADB_DEVICE_TYPE_TCPIP;
     }
 
+    // TCP/IP devices provided by mDNS contain "adb-tls-connect"
+    // <https://github.com/Genymobile/scrcpy/issues/6248>
+    if (strstr(serial, "adb-tls-connect")) {
+        return SC_ADB_DEVICE_TYPE_TCPIP;
+    }
+
     return SC_ADB_DEVICE_TYPE_USB;
 }

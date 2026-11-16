@@ -12,15 +12,16 @@ src = [
     'src/control_msg.c',
     'src/controller.c',
     'src/decoder.c',
-    'src/delay_buffer.c',
     'src/demuxer.c',
     'src/device_msg.c',
-    'src/display.c',
+    'src/disconnect.c',
+    'src/egl.c',
     'src/events.c',
-    'src/icon.c',
     'src/file_pusher.c',
     'src/fps_counter.c',
     'src/frame_buffer.c',
+    'src/hwdec.c',
+    'src/icon.c',
     'src/input_manager.c',
     'src/keyboard_sdk.c',
     'src/mouse_capture.c',
@@ -33,11 +34,17 @@ src = [
     'src/scrcpy.c',
     'src/screen.c',
     'src/screenshot.c',
+    'src/toolbar.c',
+    'src/sdl_hints.c',
     'src/server.c',
+    'src/texture.c',
     'src/version.c',
+    'src/video_regulator.c',
     'src/hid/hid_gamepad.c',
     'src/hid/hid_keyboard.c',
     'src/hid/hid_mouse.c',
+    'src/interop/interop.c',
+    'src/interop/interop_software.c',
     'src/trait/frame_source.c',
     'src/trait/packet_source.c',
     'src/uhid/gamepad_uhid.c',
@@ -58,6 +65,7 @@ src = [
     'src/util/process.c',
     'src/util/process_intr.c',
     'src/util/rand.c',
+    'src/util/sdl.c',
     'src/util/strbuf.c',
     'src/util/str.c',
     'src/util/term.c',
@@ -66,34 +74,58 @@ src = [
     'src/util/timeout.c',
 ]
 
-conf = configuration_data()
+feature_test_macros = [
+    '-D_GNU_SOURCE',
+    '-D_POSIX_C_SOURCE=200809L',
+    '-D_XOPEN_SOURCE=700',
+]
 
-conf.set('_POSIX_C_SOURCE', '200809L')
-conf.set('_XOPEN_SOURCE', '700')
-conf.set('_GNU_SOURCE', true)
+conf = configuration_data()
 
 if host_machine.system() == 'windows'
     windows = import('windows')
     src += [
+        'src/util/command.c',
         'src/sys/win/file.c',
         'src/sys/win/process.c',
         windows.compile_resources('scrcpy-windows.rc'),
     ]
-    conf.set('_WIN32_WINNT', '0x0600')
-    conf.set('WINVER', '0x0600')
+    feature_test_macros += [
+        '-D_WIN32_WINNT=0x0600',
+        '-DWINVER=0x0600',
+    ]
 else
     src += [
         'src/sys/unix/file.c',
         'src/sys/unix/process.c',
     ]
     if host_machine.system() == 'darwin'
-        conf.set('_DARWIN_C_SOURCE', true)
+        feature_test_macros += '-D_DARWIN_C_SOURCE'
     endif
 endif
+
+
+add_project_arguments(feature_test_macros, language: 'c')
 
 v4l2_support = get_option('v4l2') and host_machine.system() == 'linux'
 if v4l2_support
     src += [ 'src/v4l2_sink.c' ]
+endif
+
+vaapi_support = get_option('vaapi') and host_machine.system() == 'linux'
+if vaapi_support
+    src += [ 'src/interop/interop_vaapi.c' ]
+endif
+
+d3d11va_support = get_option('d3d11va') and host_machine.system() == 'windows'
+if d3d11va_support
+    src += [ 'src/interop/interop_d3d11va.c' ]
+endif
+
+videotoolbox_support = get_option('videotoolbox') \
+                       and host_machine.system() == 'darwin'
+if videotoolbox_support
+    src += [ 'src/interop/interop_videotoolbox.c' ]
 endif
 
 usb_support = get_option('usb')
@@ -104,7 +136,6 @@ if usb_support
         'src/usb/keyboard_aoa.c',
         'src/usb/mouse_aoa.c',
         'src/usb/scrcpy_otg.c',
-        'src/usb/screen_otg.c',
         'src/usb/usb.c',
     ]
 endif
@@ -114,16 +145,32 @@ cc = meson.get_compiler('c')
 static = get_option('static')
 
 dependencies = [
-    dependency('libavformat', version: '>= 57.33', static: static),
-    dependency('libavcodec', version: '>= 57.37', static: static),
-    dependency('libavutil', static: static),
+    dependency('libavformat', version: '>= 60.3', static: static),
+    dependency('libavcodec', version: '>= 60.3', static: static),
+    dependency('libavutil', version: '>= 58.2', static: static),
     dependency('libswresample', static: static),
     dependency('libswscale', static: static),
-    dependency('sdl2', version: '>= 2.0.5', static: static),
+    dependency('sdl3', version: '>= 3.2.0', static: static),
 ]
 
 if v4l2_support
     dependencies += dependency('libavdevice', static: static)
+endif
+
+if vaapi_support
+    libdrm_dep = dependency('libdrm')
+    dependencies += libdrm_dep.partial_dependency(compile_args: true,
+                                                  includes: true)
+    if static
+        # libva and libdrm are loaded at runtime by a shim (which only needs
+        # their headers), so that the static binary does not depend on them
+        libva_drm_dep = dependency('libva-drm')
+        dependencies += libva_drm_dep.partial_dependency(compile_args: true,
+                                                         includes: true)
+        # "required: false" because dlopen() may be provided by libc itself
+        dependencies += cc.find_library('dl', required: false)
+        src += [ 'src/vaapi_shim.c' ]
+    endif
 endif
 
 if usb_support
@@ -175,6 +222,15 @@ conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 # enable V4L2 support (linux only)
 conf.set('HAVE_V4L2', v4l2_support)
 
+# enable VA-API hardware decoding (linux only)
+conf.set('HAVE_VAAPI', vaapi_support)
+
+# enable D3D11 hardware decoding (windows only)
+conf.set('HAVE_D3D11VA', d3d11va_support)
+
+# enable VideoToolbox hardware decoding (macOS only)
+conf.set('HAVE_VIDEOTOOLBOX', videotoolbox_support)
+
 # enable HID over AOA support (linux only)
 conf.set('HAVE_USB', usb_support)
 
@@ -192,8 +248,9 @@ executable('scrcpy', src,
 datadir = get_option('datadir') # by default 'share'
 
 install_man('scrcpy.1')
-install_data('data/icon.png',
-             rename: 'scrcpy.png',
+install_data('data/scrcpy.png',
+             install_dir: datadir / 'icons/hicolor/256x256/apps')
+install_data('data/disconnected.png',
              install_dir: datadir / 'icons/hicolor/256x256/apps')
 install_data('data/zsh-completion/_scrcpy',
              install_dir: datadir / 'zsh/site-functions')
@@ -240,6 +297,12 @@ if get_option('buildtype') == 'debug'
             'src/util/strbuf.c',
             'src/util/term.c',
         ]],
+        ['test_command_windows', [
+          'tests/test_command_windows.c',
+          'src/util/command.c',
+          'src/util/str.c',
+          'src/util/strbuf.c',
+        ]],
         ['test_control_msg_serialize', [
             'tests/test_control_msg_serialize.c',
             'src/control_msg.c',
@@ -277,13 +340,13 @@ if get_option('buildtype') == 'debug'
         exe = executable(t[0], sources,
                          include_directories: src_dir,
                          dependencies: dependencies,
-                         c_args: ['-DSDL_MAIN_HANDLED', '-DSC_TEST'])
+                         c_args: ['-DSC_TEST'])
         test(t[0], exe)
     endforeach
 endif
 
 if meson.version().version_compare('>= 0.58.0')
        devenv = environment()
-       devenv.set('SCRCPY_ICON_PATH', meson.current_source_dir() / 'data/icon.png')
+       devenv.set('SCRCPY_ICON_DIR', meson.current_source_dir() / 'data')
        meson.add_devenv(devenv)
 endif

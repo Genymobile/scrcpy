@@ -2,9 +2,9 @@
 set -ex
 . $(dirname ${BASH_SOURCE[0]})/_init "$@"
 
-VERSION=36.0.0
+VERSION=37.0.1
 URL="https://dl.google.com/android/repository/platform-tools_r$VERSION-linux.zip"
-SHA256SUM=0ead642c943ffe79701fccca8f5f1c69c4ce4f43df2eefee553f6ccb27cbfbe8
+SHA256SUM=d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1
 
 PROJECT_DIR="platform-tools-$VERSION-linux"
 FILENAME="$PROJECT_DIR.zip"

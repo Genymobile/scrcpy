@@ -6,14 +6,17 @@
 
 Download the [latest release]:
 
- - [`scrcpy-win64-v3.3.4.zip`][direct-win64] (64-bit)  
-   <sub>SHA-256: `d8a155b7c180b7ca4cdadd40712b8750b63f3aab48cb5b8a2a39ac2d0d4c5d38`</sub>
- - [`scrcpy-win32-v3.3.4.zip`][direct-win32] (32-bit)  
-   <sub>SHA-256: `393f7d5379dabd8aacc41184755c3d0df975cd2861353cb7a8d50e0835e2eb72`</sub>
+ - [`scrcpy-win64-v5.0.1.zip`][direct-win64] (64-bit)  
+   <sub>SHA-256: `b12a2c4ee8be317422451fc7dcf8ee20a71b5ea7ef9ad73ddd825a25316227a5`</sub>
+ - [`scrcpy-win32-v5.0.1.zip`][direct-win32] (32-bit)  
+   <sub>SHA-256: `0cb65ebf1bce892fa4d1502d699af0c7a1a7f24d7febcb9ef72894e3f23fc2ad`</sub>
+ - [`scrcpy-winarm64-v5.0.1.zip`][direct-win32] (ARM 64-bit)  
+   <sub>SHA-256: `16c3fc2068df64946f670e3504b4752073ebae47a416a45b46e79a5ab19c689b`</sub>
 
 [latest release]: https://github.com/Genymobile/scrcpy/releases/latest
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v3.3.4/scrcpy-win64-v3.3.4.zip
-[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v3.3.4/scrcpy-win32-v3.3.4.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v5.0.1/scrcpy-win64-v5.0.1.zip
+[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v5.0.1/scrcpy-win32-v5.0.1.zip
+[direct-winarm64]: https://github.com/Genymobile/scrcpy/releases/download/v5.0.1/scrcpy-winarm64-v5.0.1.zip
 
 and extract it.
 
@@ -64,25 +67,13 @@ scrcpy
 
 or with arguments (here to disable audio and record to `file.mkv`):
 
-```
+```bash
 scrcpy --no-audio --record=file.mkv
 ```
 
 Documentation for command line arguments is available:
  - `scrcpy --help`
  - on [github](/README.md)
-
-To start scrcpy directly without opening a terminal, double-click on one of
-these files:
- - `scrcpy-console.bat`: start with a terminal open (it will close when scrcpy
-   terminates, unless an error occurs);
- - `scrcpy-noconsole.vbs`: start without a terminal (but you won't see any error
-   message).
-
-_Avoid double-clicking on `scrcpy.exe` directly: on error, the terminal would
-close immediately and you won't have time to read any error message (this
-executable is intended to be run from the terminal). Use `scrcpy-console.bat`
-instead._
 
 If you plan to always use the same arguments, create a file `myscrcpy.bat`
 (enable [show file extensions] to avoid confusion) containing your command, For
@@ -92,9 +83,17 @@ example:
 scrcpy --prefer-text --turn-screen-off --stay-awake
 ```
 
+Add `--pause-on-exit=if-error` if you want the console to remain open when
+scrcpy fails:
+
+```bash
+scrcpy --prefer-text --turn-screen-off --stay-awake --pause-on-exit=if-error
+```
+
 [show file extensions]: https://www.howtogeek.com/205086/beginner-how-to-make-windows-show-file-extensions/
 
-Then just double-click on that file.
+Then just double-click on that file to run it.
 
-You could also edit (a copy of) `scrcpy-console.bat` or `scrcpy-noconsole.vbs`
-to add some arguments.
+To start scrcpy without opening a terminal, double-click `scrcpy-noconsole.vbs`
+(note that errors won't be shown). To pass arguments, edit (a copy of)
+`scrcpy-noconsole.vbs` and add the desired arguments.

@@ -41,6 +41,15 @@ char *
 sc_file_get_local_path(const char *name);
 
 /**
+ * Return the concatenation of dir, the path separator and the filename.
+ *
+ * The result must be freed by the caller using free(). It may return NULL on
+ * error.
+ */
+char *
+sc_file_build_path(const char *dir, const char *filename);
+
+/**
  * Indicate if the file exists and is not a directory
  */
 bool

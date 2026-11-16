@@ -22,13 +22,25 @@ scrcpy -m 1024   # short version
 ```
 
 The other dimension is computed so that the Android device aspect ratio is
-preserved. That way, a device in 1920×1080 will be mirrored at 1024×576.
+preserved (except for flex displays). That way, a device in 1920×1080 will be
+mirrored at 1024×576.
 
 If encoding fails, scrcpy automatically tries again with a lower definition
 (unless `--no-downsize-on-error` is enabled).
 
 For camera mirroring, the `--max-size` value is used to select the camera source
 size instead (among the available resolutions).
+
+The size is rounded to a multiple of the _alignment_ required by the encoder, a
+power-of-2 value (1, 2, 4, 8 or 16) that the video width and height must be
+multiples of.
+
+The alignment can be forced to a minimum value. For instance, to force the width
+and height to be multiples of 8:
+
+```bash
+scrcpy --min-size-alignment=8
+```
 
 
 ## Bit rate
@@ -52,7 +64,7 @@ scrcpy --max-fps=15
 
 The actual capture frame rate may be printed to the console:
 
-```
+```bash
 scrcpy --print-fps
 ```
 
@@ -67,12 +79,14 @@ your device, you should not get more than 24 frames per second in scrcpy.
 ## Codec
 
 The video codec can be selected. The possible values are `h264` (default),
-`h265` and `av1`:
+`h265`, `av1`, `vp8` and `vp9`:
 
 ```bash
 scrcpy --video-codec=h264  # default
 scrcpy --video-codec=h265
 scrcpy --video-codec=av1
+scrcpy --video-codec=vp8
+scrcpy --video-codec=vp9
 ```
 
 H265 may provide better quality, but H264 should provide lower latency.
@@ -98,6 +112,40 @@ try another one:
 ```bash
 scrcpy --video-codec=h264 --video-encoder=OMX.qcom.video.encoder.avc
 ```
+
+
+## Hardware decoding
+
+The video stream is decoded on the computer. By default, the first available
+hardware decoder is used, and software decoding is used otherwise.
+
+Hardware decoding can be configured explicitly:
+
+```bash
+scrcpy --hwdec=auto          # use hardware decoding if possible (default)
+scrcpy --hwdec=disabled      # software decoding
+scrcpy --hwdec=vaapi         # VA-API, Linux only
+scrcpy --hwdec=d3d11va       # D3D11VA, Windows only
+scrcpy --hwdec=videotoolbox  # VideoToolbox, macOS only
+```
+
+Hardware decoding is only supported when video playback is enabled and V4L2 is
+disabled.
+
+The available hardware decoders are:
+ - `vaapi` (Linux only). This requires the renderer to use EGL: this is always
+   the case on Wayland, and scrcpy also requests EGL on X11 (where SDL uses GLX
+   by default). Set `SDL_VIDEO_FORCE_EGL=0` to force GLX (hardware decoding is
+   then unavailable). The VA-API driver for the GPU must be installed
+   (`va-driver-all` on Debian/Ubuntu). The prebuilt binary uses the libva
+   installed on the system. Trilinear filtering (mipmaps) is not available for
+   hardware frames.
+ - `d3d11va` (Windows only).
+ - `videotoolbox` (macOS only).
+
+With `--hwdec=auto`, if the hardware decoder cannot decode the stream, FFmpeg
+falls back to software decoding. It fails instead if a specific hardware decoder
+is explicitly requested (e.g. `--hwdec=vaapi`).
 
 
 ## Orientation
@@ -161,7 +209,7 @@ The orientation can be set separately for display and record if necessary, via
 `--display-orientation` and `--record-orientation`.
 
 The rotation is applied to a recorded file by writing a display transformation
-to the MP4 or MKV target file. Flipping is not supported, so only the 4 first
+to the MP4 or MKV target file. Flipping is not supported, so only the first four
 values are allowed when recording.
 
 
@@ -169,7 +217,7 @@ values are allowed when recording.
 
 To rotate the video content by a custom angle (in degrees, clockwise):
 
-```
+```bash
 scrcpy --angle=23
 ```
 
@@ -216,7 +264,7 @@ scrcpy --list-displays
 A secondary display may only be controlled if the device runs at least Android
 10 (otherwise it is mirrored as read-only).
 
-It is also possible to create a [virtual display](virtual_display.md).
+It is also possible to create a [virtual display](virtual-display.md).
 
 
 ## Buffering
@@ -229,7 +277,7 @@ get a smoother playback (see [#2464]).
 [#2464]: https://github.com/Genymobile/scrcpy/issues/2464
 
 The configuration is available independently for the display,
-[v4l2 sinks](video.md#video4linux) and [audio](audio.md#buffering) playback.
+[v4l2 sinks](v4l2.md#buffering) and [audio](audio.md#buffering) playback.
 
 ```bash
 scrcpy --video-buffer=50     # add 50ms buffering for video playback
@@ -271,7 +319,7 @@ scrcpy --record=file.mkv --no-audio-playback
 
 To disable video forwarding completely, so that only audio is forwarded:
 
-```
+```bash
 scrcpy --no-video
 ```
 

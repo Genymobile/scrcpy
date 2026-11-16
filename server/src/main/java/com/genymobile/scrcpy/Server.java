@@ -9,11 +9,11 @@ import com.genymobile.scrcpy.audio.AudioRawRecorder;
 import com.genymobile.scrcpy.audio.AudioSource;
 import com.genymobile.scrcpy.control.ControlChannel;
 import com.genymobile.scrcpy.control.Controller;
-import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.DesktopConnection;
 import com.genymobile.scrcpy.device.Device;
-import com.genymobile.scrcpy.device.NewDisplay;
 import com.genymobile.scrcpy.device.Streamer;
+import com.genymobile.scrcpy.model.ConfigurationException;
+import com.genymobile.scrcpy.model.NewDisplay;
 import com.genymobile.scrcpy.opengl.OpenGLRunner;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
@@ -27,6 +27,7 @@ import com.genymobile.scrcpy.video.VideoSource;
 import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.Looper;
+import android.system.Os;
 
 import java.io.File;
 import java.io.IOException;
@@ -125,7 +126,7 @@ public final class Server {
                     audioCapture = new AudioPlaybackCapture(options.getAudioDup());
                 }
 
-                Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendCodecMeta(), options.getSendFrameMeta());
+                Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendStreamMeta(), options.getSendFrameMeta());
                 AsyncProcessor audioRecorder;
                 if (audioCodec == AudioCodec.RAW) {
                     audioRecorder = new AudioRawRecorder(audioCapture, audioStreamer);
@@ -136,7 +137,7 @@ public final class Server {
             }
 
             if (video) {
-                Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecMeta(),
+                Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendStreamMeta(),
                         options.getSendFrameMeta());
                 SurfaceCapture surfaceCapture;
                 if (options.getVideoSource() == VideoSource.DISPLAY) {
@@ -174,8 +175,6 @@ public final class Server {
                 asyncProcessor.stop();
             }
 
-            OpenGLRunner.quit(); // quit the OpenGL thread, if any
-
             connection.shutdown();
 
             try {
@@ -185,7 +184,8 @@ public final class Server {
                 for (AsyncProcessor asyncProcessor : asyncProcessors) {
                     asyncProcessor.join();
                 }
-                OpenGLRunner.join();
+
+                OpenGLRunner.shutdown();
             } catch (InterruptedException e) {
                 // ignore
             }
@@ -233,6 +233,8 @@ public final class Server {
             }
         });
 
+        dropRootPrivileges();
+
         prepareMainLooper();
 
         Options options = Options.parse(args);
@@ -271,6 +273,19 @@ public final class Server {
             scrcpy(options);
         } catch (ConfigurationException e) {
             // Do not print stack trace, a user-friendly error-message has already been logged
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static void dropRootPrivileges() {
+        try {
+            if (Os.getuid() == 0) {
+                // Copy-paste does not work with root user
+                // <https://github.com/Genymobile/scrcpy/issues/6224>
+                Os.setuid(2000);
+            }
+        } catch (Exception e) {
+            Ln.w("Cannot set UID", e);
         }
     }
 }

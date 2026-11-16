@@ -3,9 +3,10 @@ package com.genymobile.scrcpy.util;
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.audio.AudioCodec;
 import com.genymobile.scrcpy.device.Device;
-import com.genymobile.scrcpy.device.DeviceApp;
-import com.genymobile.scrcpy.device.DisplayInfo;
-import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.display.DisplayInfo;
+import com.genymobile.scrcpy.model.Codec;
+import com.genymobile.scrcpy.model.DeviceApp;
+import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.video.VideoCodec;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
@@ -23,6 +24,7 @@ import android.media.MediaCodecList;
 import android.os.Build;
 import android.util.Range;
 
+import java.text.DecimalFormat;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -164,12 +166,24 @@ public final class LogUtils {
                         // Capture frame rates for low-FPS mode are the same for every resolution
                         Range<Integer>[] lowFpsRanges = characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
                         if (lowFpsRanges != null) {
-                            SortedSet<Integer> uniqueLowFps = getUniqueSet(lowFpsRanges);
+                            String uniqueLowFps = getFormattedUniqueSet(lowFpsRanges);
                             builder.append(", fps=").append(uniqueLowFps);
                         }
                     } catch (Exception e) {
                         // Some devices may provide invalid ranges, causing an IllegalArgumentException "lower must be less than or equal to upper"
                         Ln.w("Could not get available frame rates for camera " + id, e);
+                    }
+
+                    if (Build.VERSION.SDK_INT >= AndroidVersions.API_30_ANDROID_11) {
+                        try {
+                            Range<Float> zoomRange = characteristics.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
+                            if (zoomRange != null) {
+                                String zoom = getFormattedZoomRange(zoomRange);
+                                builder.append(", zoom-range=").append(zoom);
+                            }
+                        } catch (Exception e) {
+                            Ln.w("Could not get available zoom ranges for camera " + id, e);
+                        }
                     }
 
                     builder.append(')');
@@ -191,7 +205,7 @@ public final class LogUtils {
                             builder.append("\n      High speed capture (--camera-high-speed):");
                             for (android.util.Size size : highSpeedSizes) {
                                 Range<Integer>[] highFpsRanges = configs.getHighSpeedVideoFpsRanges();
-                                SortedSet<Integer> uniqueHighFps = getUniqueSet(highFpsRanges);
+                                String uniqueHighFps = getFormattedUniqueSet(highFpsRanges);
                                 builder.append("\n        - ").append(size.getWidth()).append("x").append(size.getHeight());
                                 builder.append(" (fps=").append(uniqueHighFps).append(')');
                             }
@@ -205,14 +219,31 @@ public final class LogUtils {
         return builder.toString();
     }
 
-    private static SortedSet<Integer> getUniqueSet(Range<Integer>[] ranges) {
+    private static String getFormattedUniqueSet(Range<Integer>[] ranges) {
         SortedSet<Integer> set = new TreeSet<>();
         for (Range<Integer> range : ranges) {
             set.add(range.getUpper());
         }
-        return set;
+
+        StringBuilder builder = new StringBuilder("{");
+        boolean first = true;
+        for (Integer i : set) {
+            if (!first) {
+                builder.append(", ");
+            } else {
+                first = false;
+            }
+            builder.append(i);
+        }
+        builder.append("}");
+
+        return builder.toString();
     }
 
+    private static String getFormattedZoomRange(Range<Float> range) {
+        DecimalFormat format = new DecimalFormat("#.##");
+        return "[" + format.format(range.getLower()) + ", " + format.format(range.getUpper()) + "]";
+    }
 
     public static String buildAppListMessage() {
         List<DeviceApp> apps = Device.listApps();

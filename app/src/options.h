@@ -43,6 +43,8 @@ enum sc_codec {
     SC_CODEC_H264,
     SC_CODEC_H265,
     SC_CODEC_AV1,
+    SC_CODEC_VP8,
+    SC_CODEC_VP9,
     SC_CODEC_OPUS,
     SC_CODEC_AAC,
     SC_CODEC_FLAC,
@@ -68,6 +70,32 @@ enum sc_audio_source {
     SC_AUDIO_SOURCE_VOICE_CALL_DOWNLINK,
     SC_AUDIO_SOURCE_VOICE_PERFORMANCE,
 };
+
+enum sc_hwdec_mode {
+    SC_HWDEC_MODE_AUTO,
+    SC_HWDEC_MODE_DISABLED,
+    SC_HWDEC_MODE_VAAPI,
+    SC_HWDEC_MODE_D3D11VA,
+    SC_HWDEC_MODE_VIDEOTOOLBOX,
+};
+
+static inline const char *
+sc_hwdec_mode_get_name(enum sc_hwdec_mode mode) {
+    switch (mode) {
+        case SC_HWDEC_MODE_AUTO:
+            return "auto";
+        case SC_HWDEC_MODE_DISABLED:
+            return "disabled";
+        case SC_HWDEC_MODE_VAAPI:
+            return "vaapi";
+        case SC_HWDEC_MODE_D3D11VA:
+            return "d3d11va";
+        case SC_HWDEC_MODE_VIDEOTOOLBOX:
+            return "videotoolbox";
+        default:
+            return "(unknown)";
+    }
+}
 
 enum sc_camera_facing {
     SC_CAMERA_FACING_ANY,
@@ -220,6 +248,13 @@ enum sc_shortcut_mod {
     SC_SHORTCUT_MOD_RSUPER = 1 << 5,
 };
 
+enum sc_render_fit {
+    SC_RENDER_FIT_AUTO,
+    SC_RENDER_FIT_LETTERBOX,
+    SC_RENDER_FIT_STRETCHED,
+    SC_RENDER_FIT_UNSCALED,
+};
+
 struct sc_port_range {
     uint16_t first;
     uint16_t last;
@@ -241,12 +276,14 @@ struct scrcpy_options {
     const char *camera_id;
     const char *camera_size;
     const char *camera_ar;
+    const char *camera_zoom;
     uint16_t camera_fps;
     enum sc_log_level log_level;
     enum sc_codec video_codec;
     enum sc_codec audio_codec;
     enum sc_video_source video_source;
     enum sc_audio_source audio_source;
+    enum sc_hwdec_mode hwdec_mode;
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
     enum sc_mouse_input_mode mouse_input_mode;
@@ -257,6 +294,7 @@ struct scrcpy_options {
     uint32_t tunnel_host;
     uint16_t tunnel_port;
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
+    uint8_t min_size_alignment;
     uint16_t max_size;
     uint32_t video_bit_rate;
     uint32_t audio_bit_rate;
@@ -267,11 +305,13 @@ struct scrcpy_options {
     enum sc_orientation display_orientation;
     enum sc_orientation record_orientation;
     enum sc_display_ime_policy display_ime_policy;
+    enum sc_render_fit render_fit;
     int16_t window_x; // SC_WINDOW_POSITION_UNDEFINED for "auto"
     int16_t window_y; // SC_WINDOW_POSITION_UNDEFINED for "auto"
     uint16_t window_width;
     uint16_t window_height;
     uint32_t display_id;
+    uint32_t background_color;
     sc_tick video_buffer;
     sc_tick audio_buffer;
     sc_tick audio_output_buffer;
@@ -292,6 +332,7 @@ struct scrcpy_options {
     bool audio_playback;
     bool turn_screen_off;
     enum sc_key_inject_mode key_inject_mode;
+    bool window_aspect_ratio_lock;
     bool window_borderless;
     bool mipmaps;
     bool stay_awake;
@@ -327,6 +368,11 @@ struct scrcpy_options {
     const char *start_app;
     bool vd_destroy_content;
     bool vd_system_decorations;
+    bool camera_torch;
+    bool keep_active;
+    bool flex_display;
+    bool ignore_video_encoder_constraints;
+    bool update_terminal_title;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

@@ -7,6 +7,7 @@
 
 #include <libavcodec/avcodec.h>
 #include <libavutil/avutil.h>
+#include <libavutil/hwcontext.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/pixfmt.h>
 #include <libswscale/swscale.h>
@@ -281,7 +282,28 @@ sc_screenshot_save(const AVFrame *frame, enum sc_orientation orientation) {
 
     LOGD("Screenshot target path: %s", filename);
 
+    // With hardware decoding (e.g. VideoToolbox), the frame lives in GPU
+    // memory: download it to a software frame first
+    AVFrame *sw_frame = NULL;
+    if (frame->hw_frames_ctx) {
+        sw_frame = av_frame_alloc();
+        if (!sw_frame) {
+            LOG_OOM();
+            return false;
+        }
+        int r = av_hwframe_transfer_data(sw_frame, frame, 0);
+        if (r < 0) {
+            LOGE("Could not download hardware frame for screenshot");
+            av_frame_free(&sw_frame);
+            return false;
+        }
+        LOGD("Downloaded hardware frame: %dx%d format=%d",
+             sw_frame->width, sw_frame->height, sw_frame->format);
+        frame = sw_frame;
+    }
+
     AVFrame *rgb_frame = convert_to_rgb(frame);
+    av_frame_free(&sw_frame); // no-op if NULL
     if (!rgb_frame) {
         return false;
     }

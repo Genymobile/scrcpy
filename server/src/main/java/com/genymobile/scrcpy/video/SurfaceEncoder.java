@@ -3,11 +3,11 @@ package com.genymobile.scrcpy.video;
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.AsyncProcessor;
 import com.genymobile.scrcpy.Options;
-import com.genymobile.scrcpy.device.ConfigurationException;
-import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.device.Streamer;
-import com.genymobile.scrcpy.util.Codec;
-import com.genymobile.scrcpy.util.CodecOption;
+import com.genymobile.scrcpy.model.Codec;
+import com.genymobile.scrcpy.model.CodecOption;
+import com.genymobile.scrcpy.model.ConfigurationException;
+import com.genymobile.scrcpy.model.Size;
 import com.genymobile.scrcpy.util.CodecUtils;
 import com.genymobile.scrcpy.util.IO;
 import com.genymobile.scrcpy.util.Ln;
@@ -41,8 +41,11 @@ public class SurfaceEncoder implements AsyncProcessor {
     private final String encoderName;
     private final List<CodecOption> codecOptions;
     private final int videoBitRate;
+    private final int maxSize;
     private final float maxFps;
     private final boolean downsizeOnError;
+    private final int minSizeAlignment;
+    private final boolean ignoreVideoEncoderConstraints;
 
     private boolean firstFrameSent;
     private int consecutiveErrors;
@@ -50,16 +53,21 @@ public class SurfaceEncoder implements AsyncProcessor {
     private Thread thread;
     private final AtomicBoolean stopped = new AtomicBoolean();
 
-    private final CaptureReset reset = new CaptureReset();
+    private final CaptureControl captureControl = new CaptureControl();
+
+    private VideoConstraints videoConstraints;
 
     public SurfaceEncoder(SurfaceCapture capture, Streamer streamer, Options options) {
         this.capture = capture;
         this.streamer = streamer;
         this.videoBitRate = options.getVideoBitRate();
+        this.maxSize = options.getMaxSize();
         this.maxFps = options.getMaxFps();
         this.codecOptions = options.getVideoCodecOptions();
         this.encoderName = options.getVideoEncoder();
         this.downsizeOnError = options.getDownsizeOnError();
+        this.minSizeAlignment = options.getMinSizeAlignment();
+        this.ignoreVideoEncoderConstraints = options.getIgnoreVideoEncoderConstraints();
     }
 
     private void streamCapture() throws IOException, ConfigurationException {
@@ -67,20 +75,47 @@ public class SurfaceEncoder implements AsyncProcessor {
         MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
         MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
 
-        capture.init(reset);
+        MediaCodecInfo.VideoCapabilities caps;
+        int alignment;
+        if (ignoreVideoEncoderConstraints) {
+            caps = null;
+            alignment = 1;
+        } else {
+            caps = mediaCodec.getCodecInfo().getCapabilitiesForType(codec.getMimeType()).getVideoCapabilities();
+            assert caps != null; // caps cannot be null for a video codec
+            alignment = Math.max(caps.getWidthAlignment(), caps.getHeightAlignment());
+            Ln.d("Video codec size alignment requirement: " + alignment + "px");
+        }
+        if (alignment < minSizeAlignment) {
+            alignment = minSizeAlignment;
+            Ln.d("Actual video size alignment: " + alignment + "px");
+        }
+
+        // Do not constrain by the declared video encoder capabilities before encoding actually fails
+        videoConstraints = new VideoConstraints(maxSize, alignment, null);
+
+        capture.init(captureControl, videoConstraints);
 
         try {
             boolean alive;
-            boolean headerWritten = false;
+
+            streamer.writeVideoHeader();
+
+            int retainedResetReasons = 0;
 
             do {
-                reset.consumeReset(); // If a capture reset was requested, it is implicitly fulfilled
+                int resetReasons = captureControl.consumeReset();
+                if ((resetReasons & CaptureControl.RESET_REASON_TERMINATED) != 0) {
+                    break;
+                }
+                if (retainedResetReasons != 0) {
+                    // The reasons for the previous failed encoding must be preserved when retrying
+                    resetReasons |= retainedResetReasons;
+                    retainedResetReasons = 0;
+                }
+
                 capture.prepare();
                 Size size = capture.getSize();
-                if (!headerWritten) {
-                    streamer.writeVideoHeader(size);
-                    headerWritten = true;
-                }
 
                 format.setInteger(MediaFormat.KEY_WIDTH, size.getWidth());
                 format.setInteger(MediaFormat.KEY_HEIGHT, size.getHeight());
@@ -99,16 +134,21 @@ public class SurfaceEncoder implements AsyncProcessor {
                     mediaCodecStarted = true;
 
                     // Set the MediaCodec instance to "interrupt" (by signaling an EOS) on reset
-                    reset.setRunningMediaCodec(mediaCodec);
+                    captureControl.setRunningMediaCodec(mediaCodec);
 
                     if (stopped.get()) {
                         alive = false;
                     } else {
-                        boolean resetRequested = reset.consumeReset();
-                        if (!resetRequested) {
+                        if (!captureControl.isResetRequested()) {
+                            // The reset is due to a resize initiated by the client
+                            boolean isClientResize = (resetReasons & CaptureControl.RESET_REASON_CLIENT_RESIZED) != 0
+                                    && (resetReasons & CaptureControl.RESET_REASON_DISPLAY_PROPERTIES_CHANGED) == 0;
+                            streamer.writeSessionMeta(size.getWidth(), size.getHeight(), isClientResize);
+
                             // If a reset is requested during encode(), it will interrupt the encoding by an EOS
                             encode(mediaCodec, streamer);
                         }
+
                         // The capture might have been closed internally (for example if the camera is disconnected)
                         alive = !stopped.get() && !capture.isClosed();
                     }
@@ -118,12 +158,14 @@ public class SurfaceEncoder implements AsyncProcessor {
                         throw e;
                     }
                     Ln.e("Capture/encoding error: " + e.getClass().getName() + ": " + e.getMessage());
-                    if (!prepareRetry(size)) {
+                    if (!prepareRetry(caps, size)) {
                         throw e;
                     }
+                    // Keep the current resetReasons flags for the retry
+                    retainedResetReasons = resetReasons;
                     alive = true;
                 } finally {
-                    reset.setRunningMediaCodec(null);
+                    captureControl.setRunningMediaCodec(null);
                     if (captureStarted) {
                         capture.stop();
                     }
@@ -146,17 +188,14 @@ public class SurfaceEncoder implements AsyncProcessor {
         }
     }
 
-    private boolean prepareRetry(Size currentSize) {
+    private boolean prepareRetry(MediaCodecInfo.VideoCapabilities caps, Size currentSize) {
         if (firstFrameSent) {
             ++consecutiveErrors;
-            if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-                // Definitively fail
-                return false;
+            if (consecutiveErrors < MAX_CONSECUTIVE_ERRORS) {
+                // Wait a bit to increase the probability that retrying will fix the problem
+                SystemClock.sleep(50);
+                return true;
             }
-
-            // Wait a bit to increase the probability that retrying will fix the problem
-            SystemClock.sleep(50);
-            return true;
         }
 
         if (!downsizeOnError) {
@@ -164,7 +203,23 @@ public class SurfaceEncoder implements AsyncProcessor {
             return false;
         }
 
-        // Downsizing on error is only enabled if an encoding failure occurs before the first frame (downsizing later could be surprising)
+        if (caps != null && videoConstraints.getEncoderCapabilities() == null) {
+            assert !ignoreVideoEncoderConstraints : "caps != null implies !ignoreVideoEncoderConstraints";
+            Ln.i("Applying video encoder constraints");
+            videoConstraints = videoConstraints.withCapabilities(caps);
+            boolean accepted = capture.applyNewVideoConstraints(videoConstraints);
+            if (accepted) {
+                return true;
+            }
+        }
+
+        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            // Definitively fail
+            return false;
+        }
+
+        // Downsizing on error is only enabled if an encoding failure occurs before the first frame, or if the video constraints were not applied
+        // (downsizing later could be surprising)
 
         int newMaxSize = chooseMaxSizeFallback(currentSize);
         if (newMaxSize == 0) {
@@ -172,7 +227,7 @@ public class SurfaceEncoder implements AsyncProcessor {
             return false;
         }
 
-        boolean accepted = capture.setMaxSize(newMaxSize);
+        boolean accepted = capture.applyNewVideoConstraints(videoConstraints.withMaxSize(newMaxSize));
         if (!accepted) {
             return false;
         }
@@ -204,8 +259,6 @@ public class SurfaceEncoder implements AsyncProcessor {
                 eos = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
                 // On EOS, there might be data or not, depending on bufferInfo.size
                 if (outputBufferId >= 0 && bufferInfo.size > 0) {
-                    ByteBuffer codecBuffer = codec.getOutputBuffer(outputBufferId);
-
                     boolean isConfig = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0;
                     if (!isConfig) {
                         // If this is not a config packet, then it contains a frame
@@ -213,6 +266,7 @@ public class SurfaceEncoder implements AsyncProcessor {
                         consecutiveErrors = 0;
                     }
 
+                    ByteBuffer codecBuffer = codec.getOutputBuffer(outputBufferId);
                     streamer.writePacket(codecBuffer, bufferInfo);
                 }
             } finally {
@@ -266,6 +320,14 @@ public class SurfaceEncoder implements AsyncProcessor {
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
         // display the very first frame, and recover from bad quality when no new frames
         format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, REPEAT_FRAME_DELAY_US); // µs
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_23_ANDROID_6_0) {
+            // real-time priority
+            format.setInteger(MediaFormat.KEY_PRIORITY, 0);
+        }
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_26_ANDROID_8_0) {
+            // output 1 frame as soon as 1 frame is queued
+            format.setInteger(MediaFormat.KEY_LATENCY, 1);
+        }
         if (maxFps > 0) {
             // The key existed privately before Android 10:
             // <https://android.googlesource.com/platform/frameworks/base/+/625f0aad9f7a259b6881006ad8710adce57d1384%5E%21/>
@@ -313,7 +375,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     public void stop() {
         if (thread != null) {
             stopped.set(true);
-            reset.reset();
+            captureControl.reset(CaptureControl.RESET_REASON_TERMINATED);
         }
     }
 

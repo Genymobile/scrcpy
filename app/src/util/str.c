@@ -50,21 +50,6 @@ truncated:
 }
 
 char *
-sc_str_quote(const char *src) {
-    size_t len = strlen(src);
-    char *quoted = malloc(len + 3);
-    if (!quoted) {
-        LOG_OOM();
-        return NULL;
-    }
-    memcpy(&quoted[1], src, len);
-    quoted[0] = '"';
-    quoted[len + 1] = '"';
-    quoted[len + 2] = '\0';
-    return quoted;
-}
-
-char *
 sc_str_concat(const char *start, const char *end) {
     assert(start);
     assert(end);
@@ -169,7 +154,7 @@ sc_str_parse_integer_with_suffix(const char *s, long *out) {
 
 bool
 sc_str_list_contains(const char *list, char sep, const char *s) {
-    char *p;
+    const char *p;
     do {
         p = strchr(list, sep);
 

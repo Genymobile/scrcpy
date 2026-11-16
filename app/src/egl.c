@@ -1,0 +1,165 @@
+#include "egl.h"
+
+#include <assert.h>
+#include <string.h>
+#include <SDL3/SDL.h>
+
+#include "util/log.h"
+
+static bool
+sc_egl_has_extension(const char *extensions, const char *extension) {
+    assert(extensions);
+    assert(extension);
+    assert(!strchr(extension, ' '));
+
+    size_t len = strlen(extension);
+    const char *p = extensions;
+    while ((p = strstr(p, extension))) {
+        if ((p == extensions || p[-1] == ' ')
+                && (p[len] == '\0' || p[len] == ' ')) {
+            return true;
+        }
+        p += len;
+    }
+
+    return false;
+}
+
+bool
+sc_egl_init(struct sc_egl *egl) {
+    egl->display = (EGLDisplay) SDL_EGL_GetCurrentDisplay();
+    if (egl->display == EGL_NO_DISPLAY) {
+        LOGD("EGL_NO_DISPLAY");
+        return false;
+    }
+
+    egl->QueryString = (PFNEGLQUERYSTRINGPROC)
+        SDL_EGL_GetProcAddress("eglQueryString");
+    assert(egl->QueryString);
+
+    egl->GetError = (PFNEGLGETERRORPROC)
+        SDL_EGL_GetProcAddress("eglGetError");
+    assert(egl->GetError);
+
+    const char *extensions = egl->QueryString(egl->display, EGL_EXTENSIONS);
+    if (!extensions) {
+        LOGE("EGL error: Could not get EGL extensions");
+        return false;
+    }
+
+    // eglGetProcAddress() may return a pointer even for unsupported functions,
+    // so only resolve the entry points of advertised extensions
+    egl->CreateImageKHR = NULL;
+    egl->DestroyImageKHR = NULL;
+    if (sc_egl_has_extension(extensions, "EGL_KHR_image_base")
+            || sc_egl_has_extension(extensions, "EGL_KHR_image")) {
+        egl->CreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)
+            SDL_EGL_GetProcAddress("eglCreateImageKHR");
+        assert(egl->CreateImageKHR);
+
+        egl->DestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC)
+            SDL_EGL_GetProcAddress("eglDestroyImageKHR");
+        assert(egl->DestroyImageKHR);
+    }
+
+    egl->EGLImageTargetTexture2DOES = NULL;
+    if (SDL_GL_ExtensionSupported("GL_OES_EGL_image")) {
+        egl->EGLImageTargetTexture2DOES = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC)
+            SDL_GL_GetProcAddress("glEGLImageTargetTexture2DOES");
+    }
+
+    // EGL_EXT_device_query is a client extension (not specific to a display)
+    const char *client_extensions =
+        egl->QueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+
+    egl->QueryDisplayAttribEXT = NULL;
+    egl->QueryDeviceStringEXT = NULL;
+    if (client_extensions && sc_egl_has_extension(client_extensions,
+                                                  "EGL_EXT_device_query")) {
+        egl->QueryDisplayAttribEXT = (PFNEGLQUERYDISPLAYATTRIBEXTPROC)
+            SDL_EGL_GetProcAddress("eglQueryDisplayAttribEXT");
+        assert(egl->QueryDisplayAttribEXT);
+
+        egl->QueryDeviceStringEXT = (PFNEGLQUERYDEVICESTRINGEXTPROC)
+            SDL_EGL_GetProcAddress("eglQueryDeviceStringEXT");
+        assert(egl->QueryDeviceStringEXT);
+    }
+
+    egl->has_dma_buf_import =
+        sc_egl_has_extension(extensions, "EGL_EXT_image_dma_buf_import");
+    egl->has_dma_buf_import_modifiers =
+        sc_egl_has_extension(extensions,
+                             "EGL_EXT_image_dma_buf_import_modifiers");
+
+    return true;
+}
+
+const char *
+sc_egl_get_drm_render_node(struct sc_egl *egl) {
+    if (!egl->QueryDisplayAttribEXT || !egl->QueryDeviceStringEXT) {
+        return NULL;
+    }
+
+    EGLAttrib attrib;
+    if (!egl->QueryDisplayAttribEXT(egl->display, EGL_DEVICE_EXT, &attrib)) {
+        return NULL;
+    }
+
+    EGLDeviceEXT device = (EGLDeviceEXT) attrib;
+    if (device == EGL_NO_DEVICE_EXT) {
+        return NULL;
+    }
+
+    const char *extensions = egl->QueryDeviceStringEXT(device, EGL_EXTENSIONS);
+    if (!extensions
+            || !sc_egl_has_extension(extensions,
+                                     "EGL_EXT_device_drm_render_node")) {
+        return NULL;
+    }
+
+    // May be NULL if the device has no render node
+    return egl->QueryDeviceStringEXT(device, EGL_DRM_RENDER_NODE_FILE_EXT);
+}
+
+EGLImageKHR
+sc_egl_create_image_dma_buf(struct sc_egl *egl, uint32_t drm_format,
+                            int width, int height,
+                            const struct sc_egl_dma_buf_plane *plane) {
+    assert(egl->CreateImageKHR);
+    assert(egl->has_dma_buf_import);
+
+    EGLint attrs[20];
+    unsigned n = 0;
+    attrs[n++] = EGL_WIDTH;
+    attrs[n++] = width;
+    attrs[n++] = EGL_HEIGHT;
+    attrs[n++] = height;
+    attrs[n++] = EGL_LINUX_DRM_FOURCC_EXT;
+    attrs[n++] = (EGLint) drm_format;
+    attrs[n++] = EGL_DMA_BUF_PLANE0_FD_EXT;
+    attrs[n++] = plane->fd;
+    attrs[n++] = EGL_DMA_BUF_PLANE0_OFFSET_EXT;
+    attrs[n++] = (EGLint) plane->offset;
+    attrs[n++] = EGL_DMA_BUF_PLANE0_PITCH_EXT;
+    attrs[n++] = (EGLint) plane->pitch;
+
+    if (plane->modifier != SC_DRM_FORMAT_MOD_INVALID
+            && egl->has_dma_buf_import_modifiers) {
+        attrs[n++] = EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT;
+        attrs[n++] = (EGLint) (plane->modifier & UINT32_MAX);
+        attrs[n++] = EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT;
+        attrs[n++] = (EGLint) (plane->modifier >> 32);
+    }
+
+    attrs[n++] = EGL_NONE;
+    assert(n <= ARRAY_LEN(attrs));
+
+    return egl->CreateImageKHR(egl->display, EGL_NO_CONTEXT,
+                               EGL_LINUX_DMA_BUF_EXT, NULL, attrs);
+}
+
+void
+sc_egl_destroy_image(struct sc_egl *egl, EGLImageKHR image) {
+    assert(egl->DestroyImageKHR);
+    egl->DestroyImageKHR(egl->display, image);
+}

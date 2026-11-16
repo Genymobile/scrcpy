@@ -1,10 +1,11 @@
-**This GitHub repo (<https://github.com/Genymobile/scrcpy>) is the only official
+> [!WARNING]
+> **This GitHub repo (<https://github.com/Genymobile/scrcpy>) is the only official
 source for the project. Do not download releases from random websites, even if
 their name contains `scrcpy`.**
 
-# scrcpy (v3.3.4)
+# scrcpy (v5.0.1)
 
-<img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
+<img src="app/data/scrcpy.svg" width="128" height="128" alt="scrcpy" align="right" />
 
 _pronounced "**scr**een **c**o**py**"_
 
@@ -12,6 +13,10 @@ This application mirrors Android devices (video and audio) connected via USB or
 [TCP/IP](doc/connection.md#tcpip-wireless) and allows control using the
 computer's keyboard and mouse. It does not require _root_ access or an app
 installed on the device. It works on _Linux_, _Windows_, and _macOS_.
+
+[![Linux](https://img.shields.io/badge/Linux-download-orange?style=for-the-badge&logo=linux)](doc/linux.md)&nbsp;
+[![Windows](https://img.shields.io/badge/Windows-download-blue?style=for-the-badge&logo=windows)](doc/windows.md)&nbsp;
+[![macOS](https://img.shields.io/badge/macOS-download-brightgreen?style=for-the-badge&logo=apple)](doc/macos.md)&nbsp;
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
@@ -31,7 +36,7 @@ It focuses on:
 Its features include:
  - [audio forwarding](doc/audio.md) (Android 11+)
  - [recording](doc/recording.md)
- - [virtual display](doc/virtual_display.md)
+ - [virtual display](doc/virtual-display.md)
  - mirroring with [Android device screen off](doc/device.md#turn-screen-off)
  - [copy-paste](doc/control.md#copy-paste) in both directions
  - [configurable quality](doc/video.md)
@@ -79,26 +84,46 @@ Note that USB debugging is not required to run scrcpy in [OTG mode](doc/otg.md).
 
 ## Fork features (this repo)
 
-This fork adds a small toolbar above the mirrored device screen with four
-buttons (left → right):
+This fork is based on upstream scrcpy 5.0.1 (SDL3). Building it needs SDL3
+and FFmpeg's libswscale (`brew install sdl3 ffmpeg` on macOS), in addition to
+the usual upstream dependencies.
 
- 1. **Dump full system logs** — runs `adb logcat -d -b all` and writes the
-    output to `~/Downloads/scrcpy_syslogs_<timestamp>.txt`. Unfiltered, all
-    buffers (main, system, crash, events, radio, …).
- 2. **Dump foreground-app logs** — runs `adb logcat -d --pid=$(adb shell pidof
-    <foreground-pkg>)` and writes to
+It adds a toolbar strip above the mirrored device screen with six labelled
+buttons (left → right). Clicks on the toolbar never reach the device.
+
+ 1. **FIT** — resizes the window to the largest size that fits the computer
+    display while keeping the device's aspect ratio.
+ 2. **HOME** — sends Android `HOME`.
+ 3. **SYS** (dump full system logs) — runs `adb logcat -d -b all` and writes
+    the output to `~/Downloads/scrcpy_syslogs_<timestamp>.txt`. Unfiltered,
+    all buffers (main, system, crash, events, radio, …).
+ 4. **APP** (dump foreground-app logs) — runs `adb logcat -d --pid=$(adb shell
+    pidof <foreground-pkg>)` and writes to
     `~/Downloads/scrcpy_logs_<timestamp>.txt`. Falls back to the full buffer
     if the foreground package can't be detected.
- 3. **Open live logcat** — opens a Terminal window streaming `adb logcat
+ 5. **LOG** (open live logcat) — opens a Terminal window streaming `adb logcat
     --pid=…` for the foreground app (same as `Ctrl+Shift+L`).
- 4. **Screenshot** — saves a PNG to `~/Downloads/scrcpy_<timestamp>.png` **and
-    copies it to the system clipboard** so you can paste it straight into
-    Slack/Messages/etc. (same as `Ctrl+Shift+S`).
+ 6. **CAM** (screenshot) — saves a PNG to `~/Downloads/scrcpy_<timestamp>.png`
+    **and copies it to the system clipboard** so you can paste it straight
+    into Slack/Messages/etc. (same as `Ctrl+Shift+S`). The window flashes
+    white to confirm.
 
 All dumps are point-in-time snapshots of the device's in-memory log ring
 buffers; older entries that have already been overwritten are not recoverable
 (Android doesn't persist logs to disk). Run `adb logcat -g` to see the exact
 buffer sizes on your device.
+
+Other changes:
+
+ - **Opens at device resolution**: without `--window-width`/`--window-height`,
+   the window maps the device screen 1:1 to physical pixels instead of being
+   scaled down to fit the display (use **FIT** to shrink it).
+ - **Mirrors every connected device**: if no device is selected (`-s`, `-d`,
+   `-e`, `--tcpip=…` or `ANDROID_SERIAL`) and several devices are ready, one
+   scrcpy window is started per device, tiled side by side.
+ - **D-pad logging**: D-pad key events are logged (`[DPAD] …`), and after each
+   release the focused view is queried with `adb shell dumpsys activity top`
+   and logged, showing how focus moved.
 
 ### macOS: launch scrcpy from the Dock
 
@@ -140,7 +165,7 @@ SH
 chmod +x "/Applications/Scrcpy.app/Contents/MacOS/scrcpy-launcher"
 
 # 4. Icon (converts the repo icon to .icns)
-cp app/data/icon.png "/Applications/Scrcpy.app/Contents/Resources/icon.png"
+cp app/data/scrcpy.png "/Applications/Scrcpy.app/Contents/Resources/icon.png"
 sips -s format icns "/Applications/Scrcpy.app/Contents/Resources/icon.png" \
      --out "/Applications/Scrcpy.app/Contents/Resources/icon.icns"
 
@@ -188,6 +213,13 @@ Here are just some common examples.
     scrcpy --new-display=1920x1080 --start-app=org.videolan.vlc
     ```
 
+ - Start VLC in a new _flex_ display using H.265 with a bitrate of 16 Mbps,
+   while keeping the display active so it does not turn off:
+
+    ```bash
+    scrcpy --new-display -x --keep-active --start-app=org.videolan.vlc --video-codec=h265 -b16M
+    ```
+
  - Record the device camera in H.265 at 1920x1080 (and microphone) to an MP4
    file:
 
@@ -209,7 +241,7 @@ Here are just some common examples.
     scrcpy --otg
     ```
 
- - Control the device using gamepad controllers plugged into the computer:
+ - Control the device using gamepads plugged into the computer:
 
     ```bash
     scrcpy --gamepad=uhid
@@ -231,7 +263,7 @@ documented in the following pages:
  - [Device](doc/device.md)
  - [Window](doc/window.md)
  - [Recording](doc/recording.md)
- - [Virtual display](doc/virtual_display.md)
+ - [Virtual display](doc/virtual-display.md)
  - [Tunnels](doc/tunnels.md)
  - [OTG](doc/otg.md)
  - [Camera](doc/camera.md)
@@ -245,6 +277,7 @@ documented in the following pages:
  - [Translations][wiki] (not necessarily up to date)
  - [Build instructions](doc/build.md)
  - [Developers](doc/develop.md)
+ - [Verify release signatures](doc/verify-release.md)
 
 [wiki]: https://github.com/Genymobile/scrcpy/wiki
 

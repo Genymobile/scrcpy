@@ -20,7 +20,7 @@ struct sc_clock_point {
  * computer clock. It is expected to be very close to 1.
  *
  * Since the clock is used to estimate very close points in the future (which
- * are reestimated on every clock update, see delay_buffer), the error caused
+ * are reestimated on every clock update, see video_regulator), the error caused
  * by clock drift is totally negligible, so it is better to assume that the
  * slope is 1 than to estimate it (the estimation error would be larger).
  *

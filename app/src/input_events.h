@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <SDL2/SDL_events.h>
+#include <SDL3/SDL_events.h>
 
 #include "coords.h"
 
@@ -14,17 +14,18 @@
  * for simplicity.
  *
  * This scrcpy input events API is designed to be consumed by input event
- * processors (sc_key_processor and sc_mouse_processor, see app/src/trait/).
+ * processors (sc_key_processor, sc_mouse_processor and sc_gamepad_processor,
+ * see app/src/trait/).
  *
  * One major semantic difference between SDL input events and scrcpy input
  * events is their frame of reference (for mouse and touch events): SDL events
  * coordinates are expressed in SDL window coordinates (the visible UI), while
  * scrcpy events are expressed in device frame coordinates.
  *
- * In particular, the window may be visually scaled or rotated (with --rotation
- * or MOD+Left/Right), but this does not impact scrcpy input events (contrary
- * to SDL input events). This allows to abstract these display details from the
- * input event processors (and to make them independent from the "screen").
+ * In particular, the window may be visually scaled or rotated, but this does
+ * not impact scrcpy input events (contrary to SDL input events). This allows to
+ * abstract these display details from the input event processors (and to make
+ * them independent from the "screen").
  *
  * For many enums below, the values are purposely the same as the SDL
  * constants (though not all SDL values are represented), so that the
@@ -43,17 +44,17 @@
  */
 
 enum sc_mod {
-    SC_MOD_LSHIFT = KMOD_LSHIFT,
-    SC_MOD_RSHIFT = KMOD_RSHIFT,
-    SC_MOD_LCTRL = KMOD_LCTRL,
-    SC_MOD_RCTRL = KMOD_RCTRL,
-    SC_MOD_LALT = KMOD_LALT,
-    SC_MOD_RALT = KMOD_RALT,
-    SC_MOD_LGUI = KMOD_LGUI,
-    SC_MOD_RGUI = KMOD_RGUI,
+    SC_MOD_LSHIFT = SDL_KMOD_LSHIFT,
+    SC_MOD_RSHIFT = SDL_KMOD_RSHIFT,
+    SC_MOD_LCTRL = SDL_KMOD_LCTRL,
+    SC_MOD_RCTRL = SDL_KMOD_RCTRL,
+    SC_MOD_LALT = SDL_KMOD_LALT,
+    SC_MOD_RALT = SDL_KMOD_RALT,
+    SC_MOD_LGUI = SDL_KMOD_LGUI,
+    SC_MOD_RGUI = SDL_KMOD_RGUI,
 
-    SC_MOD_NUM = KMOD_NUM,
-    SC_MOD_CAPS = KMOD_CAPS,
+    SC_MOD_NUM = SDL_KMOD_NUM,
+    SC_MOD_CAPS = SDL_KMOD_CAPS,
 };
 
 enum sc_action {
@@ -70,12 +71,12 @@ enum sc_keycode {
     SC_KEYCODE_TAB = SDLK_TAB,
     SC_KEYCODE_SPACE = SDLK_SPACE,
     SC_KEYCODE_EXCLAIM = SDLK_EXCLAIM,
-    SC_KEYCODE_QUOTEDBL = SDLK_QUOTEDBL,
+    SC_KEYCODE_QUOTEDBL = SDLK_DBLAPOSTROPHE,
     SC_KEYCODE_HASH = SDLK_HASH,
     SC_KEYCODE_PERCENT = SDLK_PERCENT,
     SC_KEYCODE_DOLLAR = SDLK_DOLLAR,
     SC_KEYCODE_AMPERSAND = SDLK_AMPERSAND,
-    SC_KEYCODE_QUOTE = SDLK_QUOTE,
+    SC_KEYCODE_QUOTE = SDLK_APOSTROPHE,
     SC_KEYCODE_LEFTPAREN = SDLK_LEFTPAREN,
     SC_KEYCODE_RIGHTPAREN = SDLK_RIGHTPAREN,
     SC_KEYCODE_ASTERISK = SDLK_ASTERISK,
@@ -107,33 +108,33 @@ enum sc_keycode {
     SC_KEYCODE_RIGHTBRACKET = SDLK_RIGHTBRACKET,
     SC_KEYCODE_CARET = SDLK_CARET,
     SC_KEYCODE_UNDERSCORE = SDLK_UNDERSCORE,
-    SC_KEYCODE_BACKQUOTE = SDLK_BACKQUOTE,
-    SC_KEYCODE_a = SDLK_a,
-    SC_KEYCODE_b = SDLK_b,
-    SC_KEYCODE_c = SDLK_c,
-    SC_KEYCODE_d = SDLK_d,
-    SC_KEYCODE_e = SDLK_e,
-    SC_KEYCODE_f = SDLK_f,
-    SC_KEYCODE_g = SDLK_g,
-    SC_KEYCODE_h = SDLK_h,
-    SC_KEYCODE_i = SDLK_i,
-    SC_KEYCODE_j = SDLK_j,
-    SC_KEYCODE_k = SDLK_k,
-    SC_KEYCODE_l = SDLK_l,
-    SC_KEYCODE_m = SDLK_m,
-    SC_KEYCODE_n = SDLK_n,
-    SC_KEYCODE_o = SDLK_o,
-    SC_KEYCODE_p = SDLK_p,
-    SC_KEYCODE_q = SDLK_q,
-    SC_KEYCODE_r = SDLK_r,
-    SC_KEYCODE_s = SDLK_s,
-    SC_KEYCODE_t = SDLK_t,
-    SC_KEYCODE_u = SDLK_u,
-    SC_KEYCODE_v = SDLK_v,
-    SC_KEYCODE_w = SDLK_w,
-    SC_KEYCODE_x = SDLK_x,
-    SC_KEYCODE_y = SDLK_y,
-    SC_KEYCODE_z = SDLK_z,
+    SC_KEYCODE_BACKQUOTE = SDLK_GRAVE,
+    SC_KEYCODE_a = SDLK_A,
+    SC_KEYCODE_b = SDLK_B,
+    SC_KEYCODE_c = SDLK_C,
+    SC_KEYCODE_d = SDLK_D,
+    SC_KEYCODE_e = SDLK_E,
+    SC_KEYCODE_f = SDLK_F,
+    SC_KEYCODE_g = SDLK_G,
+    SC_KEYCODE_h = SDLK_H,
+    SC_KEYCODE_i = SDLK_I,
+    SC_KEYCODE_j = SDLK_J,
+    SC_KEYCODE_k = SDLK_K,
+    SC_KEYCODE_l = SDLK_L,
+    SC_KEYCODE_m = SDLK_M,
+    SC_KEYCODE_n = SDLK_N,
+    SC_KEYCODE_o = SDLK_O,
+    SC_KEYCODE_p = SDLK_P,
+    SC_KEYCODE_q = SDLK_Q,
+    SC_KEYCODE_r = SDLK_R,
+    SC_KEYCODE_s = SDLK_S,
+    SC_KEYCODE_t = SDLK_T,
+    SC_KEYCODE_u = SDLK_U,
+    SC_KEYCODE_v = SDLK_V,
+    SC_KEYCODE_w = SDLK_W,
+    SC_KEYCODE_x = SDLK_X,
+    SC_KEYCODE_y = SDLK_Y,
+    SC_KEYCODE_z = SDLK_Z,
 
     SC_KEYCODE_CAPSLOCK = SDLK_CAPSLOCK,
 
@@ -315,43 +316,40 @@ enum sc_scancode {
 // to avoid unnecessary conversions (and confusion).
 enum sc_mouse_button {
     SC_MOUSE_BUTTON_UNKNOWN = 0,
-    SC_MOUSE_BUTTON_LEFT = SDL_BUTTON(SDL_BUTTON_LEFT),
-    SC_MOUSE_BUTTON_RIGHT = SDL_BUTTON(SDL_BUTTON_RIGHT),
-    SC_MOUSE_BUTTON_MIDDLE = SDL_BUTTON(SDL_BUTTON_MIDDLE),
-    SC_MOUSE_BUTTON_X1 = SDL_BUTTON(SDL_BUTTON_X1),
-    SC_MOUSE_BUTTON_X2 = SDL_BUTTON(SDL_BUTTON_X2),
+    SC_MOUSE_BUTTON_LEFT = SDL_BUTTON_MASK(SDL_BUTTON_LEFT),
+    SC_MOUSE_BUTTON_RIGHT = SDL_BUTTON_MASK(SDL_BUTTON_RIGHT),
+    SC_MOUSE_BUTTON_MIDDLE = SDL_BUTTON_MASK(SDL_BUTTON_MIDDLE),
+    SC_MOUSE_BUTTON_X1 = SDL_BUTTON_MASK(SDL_BUTTON_X1),
+    SC_MOUSE_BUTTON_X2 = SDL_BUTTON_MASK(SDL_BUTTON_X2),
 };
-
-// Use the naming from SDL3 for gamepad axis and buttons:
-// <https://wiki.libsdl.org/SDL3/README/migration>
 
 enum sc_gamepad_axis {
     SC_GAMEPAD_AXIS_UNKNOWN = -1,
-    SC_GAMEPAD_AXIS_LEFTX = SDL_CONTROLLER_AXIS_LEFTX,
-    SC_GAMEPAD_AXIS_LEFTY = SDL_CONTROLLER_AXIS_LEFTY,
-    SC_GAMEPAD_AXIS_RIGHTX = SDL_CONTROLLER_AXIS_RIGHTX,
-    SC_GAMEPAD_AXIS_RIGHTY = SDL_CONTROLLER_AXIS_RIGHTY,
-    SC_GAMEPAD_AXIS_LEFT_TRIGGER = SDL_CONTROLLER_AXIS_TRIGGERLEFT,
-    SC_GAMEPAD_AXIS_RIGHT_TRIGGER = SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
+    SC_GAMEPAD_AXIS_LEFTX = SDL_GAMEPAD_AXIS_LEFTX,
+    SC_GAMEPAD_AXIS_LEFTY = SDL_GAMEPAD_AXIS_LEFTY,
+    SC_GAMEPAD_AXIS_RIGHTX = SDL_GAMEPAD_AXIS_RIGHTX,
+    SC_GAMEPAD_AXIS_RIGHTY = SDL_GAMEPAD_AXIS_RIGHTY,
+    SC_GAMEPAD_AXIS_LEFT_TRIGGER = SDL_GAMEPAD_AXIS_LEFT_TRIGGER,
+    SC_GAMEPAD_AXIS_RIGHT_TRIGGER = SDL_GAMEPAD_AXIS_RIGHT_TRIGGER,
 };
 
 enum sc_gamepad_button {
     SC_GAMEPAD_BUTTON_UNKNOWN = -1,
-    SC_GAMEPAD_BUTTON_SOUTH = SDL_CONTROLLER_BUTTON_A,
-    SC_GAMEPAD_BUTTON_EAST = SDL_CONTROLLER_BUTTON_B,
-    SC_GAMEPAD_BUTTON_WEST = SDL_CONTROLLER_BUTTON_X,
-    SC_GAMEPAD_BUTTON_NORTH = SDL_CONTROLLER_BUTTON_Y,
-    SC_GAMEPAD_BUTTON_BACK = SDL_CONTROLLER_BUTTON_BACK,
-    SC_GAMEPAD_BUTTON_GUIDE = SDL_CONTROLLER_BUTTON_GUIDE,
-    SC_GAMEPAD_BUTTON_START = SDL_CONTROLLER_BUTTON_START,
-    SC_GAMEPAD_BUTTON_LEFT_STICK = SDL_CONTROLLER_BUTTON_LEFTSTICK,
-    SC_GAMEPAD_BUTTON_RIGHT_STICK = SDL_CONTROLLER_BUTTON_RIGHTSTICK,
-    SC_GAMEPAD_BUTTON_LEFT_SHOULDER = SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
-    SC_GAMEPAD_BUTTON_RIGHT_SHOULDER = SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
-    SC_GAMEPAD_BUTTON_DPAD_UP = SDL_CONTROLLER_BUTTON_DPAD_UP,
-    SC_GAMEPAD_BUTTON_DPAD_DOWN = SDL_CONTROLLER_BUTTON_DPAD_DOWN,
-    SC_GAMEPAD_BUTTON_DPAD_LEFT = SDL_CONTROLLER_BUTTON_DPAD_LEFT,
-    SC_GAMEPAD_BUTTON_DPAD_RIGHT = SDL_CONTROLLER_BUTTON_DPAD_RIGHT,
+    SC_GAMEPAD_BUTTON_SOUTH = SDL_GAMEPAD_BUTTON_SOUTH,
+    SC_GAMEPAD_BUTTON_EAST = SDL_GAMEPAD_BUTTON_EAST,
+    SC_GAMEPAD_BUTTON_WEST = SDL_GAMEPAD_BUTTON_WEST,
+    SC_GAMEPAD_BUTTON_NORTH = SDL_GAMEPAD_BUTTON_NORTH,
+    SC_GAMEPAD_BUTTON_BACK = SDL_GAMEPAD_BUTTON_BACK,
+    SC_GAMEPAD_BUTTON_GUIDE = SDL_GAMEPAD_BUTTON_GUIDE,
+    SC_GAMEPAD_BUTTON_START = SDL_GAMEPAD_BUTTON_START,
+    SC_GAMEPAD_BUTTON_LEFT_STICK = SDL_GAMEPAD_BUTTON_LEFT_STICK,
+    SC_GAMEPAD_BUTTON_RIGHT_STICK = SDL_GAMEPAD_BUTTON_RIGHT_STICK,
+    SC_GAMEPAD_BUTTON_LEFT_SHOULDER = SDL_GAMEPAD_BUTTON_LEFT_SHOULDER,
+    SC_GAMEPAD_BUTTON_RIGHT_SHOULDER = SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER,
+    SC_GAMEPAD_BUTTON_DPAD_UP = SDL_GAMEPAD_BUTTON_DPAD_UP,
+    SC_GAMEPAD_BUTTON_DPAD_DOWN = SDL_GAMEPAD_BUTTON_DPAD_DOWN,
+    SC_GAMEPAD_BUTTON_DPAD_LEFT = SDL_GAMEPAD_BUTTON_DPAD_LEFT,
+    SC_GAMEPAD_BUTTON_DPAD_RIGHT = SDL_GAMEPAD_BUTTON_DPAD_RIGHT,
 };
 
 static_assert(sizeof(enum sc_mod) >= sizeof(SDL_Keymod),
@@ -393,8 +391,6 @@ struct sc_mouse_scroll_event {
     struct sc_position position;
     float hscroll;
     float vscroll;
-    int32_t hscroll_int;
-    int32_t vscroll_int;
     uint8_t buttons_state; // bitwise-OR of sc_mouse_button values
 };
 
@@ -413,10 +409,9 @@ struct sc_touch_event {
     float pressure;
 };
 
-// As documented in <https://wiki.libsdl.org/SDL2/SDL_JoystickID>:
-// The ID value starts at 0 and increments from there. The value -1 is an
-// invalid ID.
-#define SC_GAMEPAD_ID_INVALID UINT32_C(-1)
+// As documented in <https://wiki.libsdl.org/SDL3/SDL_JoystickID>:
+// The value 0 is an invalid ID.
+#define SC_GAMEPAD_ID_INVALID 0
 
 struct sc_gamepad_device_event {
     uint32_t gamepad_id;
@@ -451,8 +446,8 @@ sc_scancode_from_sdl(SDL_Scancode scancode) {
 
 static inline enum sc_action
 sc_action_from_sdl_keyboard_type(uint32_t type) {
-    assert(type == SDL_KEYDOWN || type == SDL_KEYUP);
-    if (type == SDL_KEYDOWN) {
+    assert(type == SDL_EVENT_KEY_DOWN || type == SDL_EVENT_KEY_UP);
+    if (type == SDL_EVENT_KEY_DOWN) {
         return SC_ACTION_DOWN;
     }
     return SC_ACTION_UP;
@@ -460,8 +455,8 @@ sc_action_from_sdl_keyboard_type(uint32_t type) {
 
 static inline enum sc_action
 sc_action_from_sdl_mousebutton_type(uint32_t type) {
-    assert(type == SDL_MOUSEBUTTONDOWN || type == SDL_MOUSEBUTTONUP);
-    if (type == SDL_MOUSEBUTTONDOWN) {
+    assert(type == SDL_EVENT_MOUSE_BUTTON_DOWN || type == SDL_EVENT_MOUSE_BUTTON_UP);
+    if (type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
         return SC_ACTION_DOWN;
     }
     return SC_ACTION_UP;
@@ -469,12 +464,12 @@ sc_action_from_sdl_mousebutton_type(uint32_t type) {
 
 static inline enum sc_touch_action
 sc_touch_action_from_sdl(uint32_t type) {
-    assert(type == SDL_FINGERMOTION || type == SDL_FINGERDOWN ||
-           type == SDL_FINGERUP);
-    if (type == SDL_FINGERMOTION) {
+    assert(type == SDL_EVENT_FINGER_MOTION || type == SDL_EVENT_FINGER_DOWN ||
+           type == SDL_EVENT_FINGER_UP);
+    if (type == SDL_EVENT_FINGER_MOTION) {
         return SC_TOUCH_ACTION_MOVE;
     }
-    if (type == SDL_FINGERDOWN) {
+    if (type == SDL_EVENT_FINGER_DOWN) {
         return SC_TOUCH_ACTION_DOWN;
     }
     return SC_TOUCH_ACTION_UP;
@@ -484,7 +479,7 @@ static inline enum sc_mouse_button
 sc_mouse_button_from_sdl(uint8_t button) {
     if (button >= SDL_BUTTON_LEFT && button <= SDL_BUTTON_X2) {
         // SC_MOUSE_BUTTON_* constants are initialized from SDL_BUTTON(index)
-        return SDL_BUTTON(button);
+        return SDL_BUTTON_MASK(button);
     }
 
     return SC_MOUSE_BUTTON_UNKNOWN;
@@ -500,9 +495,9 @@ sc_mouse_buttons_state_from_sdl(uint32_t buttons_state) {
 
 static inline enum sc_gamepad_axis
 sc_gamepad_axis_from_sdl(uint8_t axis) {
-    if (axis <= SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
+    if (axis <= SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) {
         // SC_GAMEPAD_AXIS_* constants are initialized from
-        // SDL_CONTROLLER_AXIS_*
+        // SDL_GAMEPAD_AXIS_*
         return axis;
     }
     return SC_GAMEPAD_AXIS_UNKNOWN;
@@ -510,18 +505,18 @@ sc_gamepad_axis_from_sdl(uint8_t axis) {
 
 static inline enum sc_gamepad_button
 sc_gamepad_button_from_sdl(uint8_t button) {
-    if (button <= SDL_CONTROLLER_BUTTON_DPAD_RIGHT) {
+    if (button <= SDL_GAMEPAD_BUTTON_DPAD_RIGHT) {
         // SC_GAMEPAD_BUTTON_* constants are initialized from
-        // SDL_CONTROLLER_BUTTON_*
+        // SDL_GAMEPAD_BUTTON_*
         return button;
     }
     return SC_GAMEPAD_BUTTON_UNKNOWN;
 }
 
 static inline enum sc_action
-sc_action_from_sdl_controllerbutton_type(uint32_t type) {
-    assert(type == SDL_CONTROLLERBUTTONDOWN || type == SDL_CONTROLLERBUTTONUP);
-    if (type == SDL_CONTROLLERBUTTONDOWN) {
+sc_action_from_sdl_gamepad_button_type(uint32_t type) {
+    assert(type == SDL_EVENT_GAMEPAD_BUTTON_DOWN || type == SDL_EVENT_GAMEPAD_BUTTON_UP);
+    if (type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
         return SC_ACTION_DOWN;
     }
     return SC_ACTION_UP;

@@ -18,6 +18,8 @@
 // type: 1 byte; sequence: 8 bytes; paste flag: 1 byte; length: 4 bytes
 #define SC_CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH (SC_CONTROL_MSG_MAX_SIZE - 14)
 
+#define SC_CONTROL_MSG_SCAN_FILE_PATH_MAX_LENGTH 256
+
 #define SC_POINTER_ID_MOUSE UINT64_C(-1)
 #define SC_POINTER_ID_GENERIC_FINGER UINT64_C(-2)
 
@@ -43,6 +45,11 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS,
     SC_CONTROL_MSG_TYPE_START_APP,
     SC_CONTROL_MSG_TYPE_RESET_VIDEO,
+    SC_CONTROL_MSG_TYPE_CAMERA_SET_TORCH,
+    SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_IN,
+    SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_OUT,
+    SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY,
+    SC_CONTROL_MSG_TYPE_SCAN_FILE,
 };
 
 enum sc_copy_key {
@@ -111,6 +118,16 @@ struct sc_control_msg {
         struct {
             char *name;
         } start_app;
+        struct {
+            bool on;
+        } camera_set_torch;
+        struct {
+            uint16_t width;
+            uint16_t height;
+        } resize_display;
+        struct {
+            char *path; // owned, to be freed by free()
+        } scan_file;
     };
 };
 

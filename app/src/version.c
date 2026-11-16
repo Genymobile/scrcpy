@@ -10,17 +10,20 @@
 #ifdef HAVE_USB
 # include <libusb-1.0/libusb.h>
 #endif
-#include <SDL2/SDL_version.h>
+#include <SDL3/SDL_version.h>
 
 void
 scrcpy_print_version(void) {
     printf("\nDependencies (compiled / linked):\n");
 
-    SDL_version sdl;
-    SDL_GetVersion(&sdl);
+    int sdl = SDL_GetVersion();
     printf(" - SDL: %u.%u.%u / %u.%u.%u\n",
-           SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
-           (unsigned) sdl.major, (unsigned) sdl.minor, (unsigned) sdl.patch);
+           SDL_MAJOR_VERSION,
+           SDL_MINOR_VERSION,
+           SDL_MICRO_VERSION,
+           SDL_VERSIONNUM_MAJOR(sdl),
+           SDL_VERSIONNUM_MINOR(sdl),
+           SDL_VERSIONNUM_MICRO(sdl));
 
     unsigned avcodec = avcodec_version();
     printf(" - libavcodec: %u.%u.%u / %u.%u.%u\n",
