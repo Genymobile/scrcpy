@@ -72,6 +72,8 @@ struct sc_screen {
     struct SDL_Rect toolbar_save_all_logs_button_rect;
     // "home" button — sends Android HOME keycode (drawable coords)
     struct SDL_Rect toolbar_home_button_rect;
+    // "expand" button — resizes window to fit the display (drawable coords)
+    struct SDL_Rect toolbar_expand_button_rect;
     bool has_frame;
     bool fullscreen;
     bool maximized;
@@ -149,6 +151,10 @@ sc_screen_resize_to_fit(struct sc_screen *screen);
 // resize window to 1:1 (pixel-perfect)
 void
 sc_screen_resize_to_pixel_perfect(struct sc_screen *screen);
+
+// expand window to the largest aspect-correct size that fits the display
+void
+sc_screen_expand_to_display(struct sc_screen *screen);
 
 // set the display orientation
 void

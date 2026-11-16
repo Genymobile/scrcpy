@@ -151,7 +151,9 @@ get_initial_optimal_size(struct sc_size content_size, uint16_t req_width,
                          uint16_t req_height) {
     struct sc_size window_size;
     if (!req_width && !req_height) {
-        window_size = get_optimal_size(content_size, content_size, true);
+        // Match the device's actual screen resolution (do not scale down to
+        // fit the display)
+        window_size = get_optimal_size(content_size, content_size, false);
     } else {
         if (req_width) {
             window_size.width = req_width;
@@ -226,12 +228,18 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
     screen->toolbar_save_all_logs_button_rect.y = btn_margin;
     screen->toolbar_save_all_logs_button_rect.w = btn_size;
     screen->toolbar_save_all_logs_button_rect.h = btn_size;
-    // Home button (sends Android HOME), leftmost so it's the easiest to hit
+    // Home button (sends Android HOME)
     screen->toolbar_home_button_rect.x =
         screen->toolbar_save_all_logs_button_rect.x - btn_margin - btn_size;
     screen->toolbar_home_button_rect.y = btn_margin;
     screen->toolbar_home_button_rect.w = btn_size;
     screen->toolbar_home_button_rect.h = btn_size;
+    // Expand button (resizes window to fit the display), leftmost
+    screen->toolbar_expand_button_rect.x =
+        screen->toolbar_home_button_rect.x - btn_margin - btn_size;
+    screen->toolbar_expand_button_rect.y = btn_margin;
+    screen->toolbar_expand_button_rect.w = btn_size;
+    screen->toolbar_expand_button_rect.h = btn_size;
 
     struct sc_size content_size = screen->content_size;
     // The drawable size is the window size * the HiDPI scale, minus toolbar
@@ -282,7 +290,8 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
                           &screen->toolbar_logs_button_rect,
                           &screen->toolbar_save_logs_button_rect,
                           &screen->toolbar_save_all_logs_button_rect,
-                          &screen->toolbar_home_button_rect);
+                          &screen->toolbar_home_button_rect,
+                          &screen->toolbar_expand_button_rect);
     (void) res; // any error already logged
 }
 
@@ -290,7 +299,7 @@ static void
 sc_screen_render_novideo(struct sc_screen *screen) {
     enum sc_display_result res =
         sc_display_render(&screen->display, NULL, SC_ORIENTATION_0,
-                          NULL, NULL, NULL, NULL, NULL, NULL);
+                          NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     (void) res; // any error already logged
 }
 
@@ -563,6 +572,21 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
     struct sc_size window_size =
         get_initial_optimal_size(screen->content_size, screen->req.width,
                                                        screen->req.height);
+
+    if (!screen->req.width && !screen->req.height) {
+        // The content size is in device pixels, but the window size is in
+        // points; on HiDPI displays these differ. Convert to points so the
+        // mirrored area maps 1:1 to the device's real resolution instead of
+        // rendering larger than the device screen.
+        int ww, wh, dw, dh;
+        SDL_GetWindowSize(screen->window, &ww, &wh);
+        SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
+        if (dw > 0 && dh > 0) {
+            window_size.width = (uint32_t) window_size.width * ww / dw;
+            window_size.height = (uint32_t) window_size.height * wh / dh;
+        }
+    }
+
     // Reserve space for the toolbar strip above the content
     window_size.height += SC_TOOLBAR_HEIGHT;
 
@@ -860,6 +884,36 @@ sc_screen_resize_to_fit(struct sc_screen *screen) {
                       optimal_size.height + SC_TOOLBAR_HEIGHT);
     SDL_SetWindowPosition(screen->window, new_x, new_y);
     LOGD("Resized to optimal size: %ux%u", optimal_size.width,
+                                           optimal_size.height);
+}
+
+void
+sc_screen_expand_to_display(struct sc_screen *screen) {
+    assert(screen->video);
+
+    if (screen->fullscreen || screen->maximized || screen->minimized) {
+        return;
+    }
+
+    struct sc_size display_bounds;
+    if (!get_preferred_display_bounds(&display_bounds)) {
+        return;
+    }
+
+    // Reserve space for the toolbar in the available content height
+    struct sc_size content_area = {
+        .width = display_bounds.width,
+        .height = display_bounds.height > SC_TOOLBAR_HEIGHT
+                ? display_bounds.height - SC_TOOLBAR_HEIGHT : 1,
+    };
+
+    // Largest aspect-correct size that fits within the display
+    struct sc_size optimal_size =
+        get_optimal_size(content_area, screen->content_size, true);
+
+    SDL_SetWindowSize(screen->window, optimal_size.width,
+                      optimal_size.height + SC_TOOLBAR_HEIGHT);
+    LOGD("Expanded to fit display: %ux%u", optimal_size.width,
                                            optimal_size.height);
 }
 

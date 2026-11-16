@@ -407,7 +407,8 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
                   const SDL_Rect *toolbar_logs_button,
                   const SDL_Rect *toolbar_save_logs_button,
                   const SDL_Rect *toolbar_save_all_logs_button,
-                  const SDL_Rect *toolbar_home_button) {
+                  const SDL_Rect *toolbar_home_button,
+                  const SDL_Rect *toolbar_expand_button) {
     SDL_RenderClear(display->renderer);
 
     if (display->pending.flags) {
@@ -688,6 +689,42 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
 
             sc_mini_draw_button_label(display->renderer, label.x, label.y,
                                       label.w, label.h, "HOME");
+        }
+
+        if (toolbar_expand_button) {
+            // Expand button: four corner brackets + "FIT" label
+            SDL_SetRenderDrawColor(display->renderer, 80, 80, 80, 255);
+            SDL_RenderFillRect(display->renderer, toolbar_expand_button);
+
+            SPLIT_BUTTON(toolbar_expand_button, icon, label);
+
+            int pad = icon.w / 6;
+            if (pad < 1) pad = 1;
+            int t = icon.h / 10;
+            if (t < 1) t = 1;
+            int arm = icon.w / 3;
+            if (arm < 1) arm = 1;
+            int x0 = icon.x + pad;
+            int y0 = icon.y + pad;
+            int x1 = icon.x + icon.w - pad;
+            int y1 = icon.y + icon.h - pad;
+
+            SDL_SetRenderDrawColor(display->renderer, 220, 220, 220, 255);
+            SDL_Rect brackets[8] = {
+                // top-left
+                {x0, y0, arm, t}, {x0, y0, t, arm},
+                // top-right
+                {x1 - arm, y0, arm, t}, {x1 - t, y0, t, arm},
+                // bottom-left
+                {x0, y1 - t, arm, t}, {x0, y1 - arm, t, arm},
+                // bottom-right
+                {x1 - arm, y1 - t, arm, t}, {x1 - t, y1 - arm, t, arm},
+            };
+            for (int i = 0; i < 8; ++i) {
+                SDL_RenderFillRect(display->renderer, &brackets[i]);
+            }
+            sc_mini_draw_button_label(display->renderer, label.x, label.y,
+                                      label.w, label.h, "FIT");
         }
 
 #undef SPLIT_BUTTON

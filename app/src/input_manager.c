@@ -926,6 +926,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
             const SDL_Rect *save_all =
                 &im->screen->toolbar_save_all_logs_button_rect;
             const SDL_Rect *home = &im->screen->toolbar_home_button_rect;
+            const SDL_Rect *expand = &im->screen->toolbar_expand_button_rect;
             if (x >= btn->x && x < btn->x + btn->w
                     && y >= btn->y && y < btn->y + btn->h) {
                 LOGD("Screenshot toolbar button clicked");
@@ -953,6 +954,10 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
                     action_home(im, SC_ACTION_DOWN);
                     action_home(im, SC_ACTION_UP);
                 }
+            } else if (x >= expand->x && x < expand->x + expand->w
+                    && y >= expand->y && y < expand->y + expand->h) {
+                LOGD("Expand toolbar button clicked");
+                sc_screen_expand_to_display(im->screen);
             }
         }
         // Swallow all mouse button events in the toolbar region
