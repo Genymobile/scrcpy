@@ -28,6 +28,7 @@ src = [
     'src/mouse_sdk.c',
     'src/opengl.c',
     'src/options.c',
+    'src/pending_key.c',
     'src/packet_merger.c',
     'src/receiver.c',
     'src/recorder.c',
@@ -309,6 +310,10 @@ if get_option('buildtype') == 'debug'
         ['test_device_msg_deserialize', [
             'tests/test_device_msg_deserialize.c',
             'src/device_msg.c',
+        ]],
+        ['test_pending_key', [
+            'tests/test_pending_key.c',
+            'src/pending_key.c',
         ]],
         ['test_orientation', [
             'tests/test_orientation.c',
