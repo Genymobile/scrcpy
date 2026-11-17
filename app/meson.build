@@ -115,6 +115,11 @@ if vaapi_support
     src += [ 'src/interop/interop_vaapi.c' ]
 endif
 
+obs_vcam_support = host_machine.system() == 'windows'
+if obs_vcam_support
+    src += [ 'src/obs_vcam_sink.c' ]
+endif
+
 d3d11va_support = get_option('d3d11va') and host_machine.system() == 'windows'
 if d3d11va_support
     src += [ 'src/interop/interop_d3d11va.c' ]
@@ -218,6 +223,9 @@ conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 
 # enable V4L2 support (linux only)
 conf.set('HAVE_V4L2', v4l2_support)
+
+# enable OBS virtual camera sink (windows only)
+conf.set('HAVE_OBS_VCAM', obs_vcam_support)
 
 # enable VA-API hardware decoding (linux only)
 conf.set('HAVE_VAAPI', vaapi_support)

@@ -97,3 +97,30 @@ Then just double-click on that file to run it.
 To start scrcpy without opening a terminal, double-click `scrcpy-noconsole.vbs`
 (note that errors won't be shown). To pass arguments, edit (a copy of)
 `scrcpy-noconsole.vbs` and add the desired arguments.
+
+## Webcam
+
+On Windows, it is possible to send the video stream to the [OBS Virtual
+Camera], so that the Android device can be opened like a webcam by any
+application supporting DirectShow cameras (browsers, video conference tools…).
+
+[OBS Virtual Camera]: https://obsproject.com/kb/virtual-camera-guide
+
+[OBS Studio] (version 26.1 or later) must be installed, since it provides the
+virtual camera driver. OBS itself must _not_ be running (its virtual camera
+would conflict with scrcpy).
+
+[OBS Studio]: https://obsproject.com/
+
+```bash
+scrcpy --obs-virtualcam
+scrcpy --obs-virtualcam --no-video-playback  # disable playback window
+scrcpy --video-source=camera --camera-size=1920x1080 --obs-virtualcam --no-playback
+```
+
+Then select the "OBS Virtual Camera" device in the target application. While
+scrcpy is not running, the virtual camera shows a placeholder image.
+
+The camera keeps the format it was opened with: if the video size changes
+(for example on device rotation), the frames are scaled to that format. To
+avoid this, lock the orientation (see [`--capture-orientation`](video.md#orientation)).
