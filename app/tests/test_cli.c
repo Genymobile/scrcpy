@@ -28,12 +28,12 @@ static void test_flag_help(void) {
         .version = false,
     };
 
-    char *argv[] = {"scrcpy", "-v"};
+    char *argv[] = {"scrcpy", "-h"};
 
     bool ok = scrcpy_parse_args(&args, 2, argv);
     assert(ok);
-    assert(!args.help);
-    assert(args.version);
+    assert(args.help);
+    assert(!args.version);
 }
 
 static void test_options(void) {
@@ -121,6 +121,35 @@ static void test_options2(void) {
     assert(opts->record_format == SC_RECORD_FORMAT_MP4);
 }
 
+static void test_list_options(void) {
+    struct scrcpy_cli_args args = {
+        .opts = scrcpy_options_default,
+        .help = false,
+        .version = false,
+    };
+
+    assert(!args.opts.list);
+
+    char *argv[] = {
+        "scrcpy",
+        "--list-encoders",
+        "--list-displays",
+        "--list-cameras",
+        "--list-camera-sizes",
+        "--list-apps",
+    };
+
+    bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
+    assert(ok);
+
+    const struct scrcpy_options *opts = &args.opts;
+    assert(opts->list == (SC_OPTION_LIST_ENCODERS
+                        | SC_OPTION_LIST_DISPLAYS
+                        | SC_OPTION_LIST_CAMERAS
+                        | SC_OPTION_LIST_CAMERA_SIZES
+                        | SC_OPTION_LIST_APPS));
+}
+
 static void test_parse_shortcut_mods(void) {
     uint8_t mods;
     bool ok;
@@ -163,6 +192,7 @@ int main(int argc, char *argv[]) {
     test_flag_help();
     test_options();
     test_options2();
+    test_list_options();
     test_parse_shortcut_mods();
     return 0;
 }
