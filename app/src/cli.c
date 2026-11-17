@@ -3015,6 +3015,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
+    // Apply the log level before the options post-processing, which may log
+    // messages
+    sc_set_log_level(opts->log_level);
+
     int index = optind;
     if (index < argc) {
         LOGE("Unexpected additional argument: %s", argv[index]);
