@@ -261,6 +261,21 @@ The list of display ids can be retrieved by:
 scrcpy --list-displays
 ```
 
+Each display is listed with its size, its density, its type (`internal`,
+`external`, `wifi`, `overlay` or `virtual`), its name and its flags:
+
+```
+List of displays:
+    --display-id=0    (1080x2340, 420dpi, internal, "Built-in Screen", flags=[FLAG_SUPPORTS_PROTECTED_BUFFERS, FLAG_SECURE, FLAG_TRUSTED])
+    --display-id=2    (1920x1080, 160dpi, virtual, "Desktop", flags=[FLAG_SECURE, FLAG_TRUSTED, FLAG_OWN_DISPLAY_GROUP])
+```
+
+The flags are named after the `FLAG_*` constants of the Android [`Display`]
+class on the device (so they may include flags specific to the device
+manufacturer). A flag without a name is printed as its value.
+
+[`Display`]: https://developer.android.com/reference/android/view/Display
+
 A secondary display may only be controlled if the device runs at least Android
 10 (otherwise it is mirrored as read-only).
 

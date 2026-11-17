@@ -82,7 +82,7 @@ public final class DisplayManager {
         int density = Integer.parseInt(m.group(5));
         int layerStack = Integer.parseInt(m.group(6));
 
-        return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, density, null);
+        return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, density, null, DisplayInfo.TYPE_UNKNOWN, null);
     }
 
     private static DisplayInfo getDisplayInfoFromDumpsysDisplay(int displayId) {
@@ -146,7 +146,20 @@ public final class DisplayManager {
                 // This field might not exist: <https://github.com/Genymobile/scrcpy/issues/6461>
                 uniqueId = null;
             }
-            return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, dpi, uniqueId);
+            // The type and the name are only used to describe the display, so failing to read them must never be a fatal error
+            int type;
+            try {
+                type = cls.getDeclaredField("type").getInt(displayInfo);
+            } catch (ReflectiveOperationException | RuntimeException e) {
+                type = DisplayInfo.TYPE_UNKNOWN;
+            }
+            String name;
+            try {
+                name = (String) cls.getDeclaredField("name").get(displayInfo);
+            } catch (ReflectiveOperationException | RuntimeException e) {
+                name = null;
+            }
+            return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, dpi, uniqueId, type, name);
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
