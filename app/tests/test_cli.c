@@ -28,12 +28,12 @@ static void test_flag_help(void) {
         .version = false,
     };
 
-    char *argv[] = {"scrcpy", "-v"};
+    char *argv[] = {"scrcpy", "-h"};
 
     bool ok = scrcpy_parse_args(&args, 2, argv);
     assert(ok);
-    assert(!args.help);
-    assert(args.version);
+    assert(args.help);
+    assert(!args.version);
 }
 
 static void test_options(void) {
