@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <SDL3/SDL.h>
 
 #ifdef _WIN32
@@ -77,8 +78,19 @@ set_terminal_title_with_prefix(const char *value) {
 
 enum scrcpy_exit_code
 scrcpy_otg(struct scrcpy_options *options) {
+#ifndef NDEBUG
+    // In DEBUG mode, allocate the struct on the heap so that LSAN detects leaks
+    struct scrcpy_otg *s = malloc(sizeof(*s));
+    if (!s) {
+        LOG_OOM();
+        return SCRCPY_EXIT_FAILURE;
+    }
+    // Detect missing initializations
+    memset(s, 42, sizeof(*s));
+# else
     static struct scrcpy_otg scrcpy_otg;
     struct scrcpy_otg *s = &scrcpy_otg;
+#endif
 
     const char *serial = options->serial;
     if (!serial) {
@@ -91,10 +103,12 @@ scrcpy_otg(struct scrcpy_options *options) {
 
     sc_sdl_set_hints(options->render_driver, options->disable_screensaver);
 
+    enum scrcpy_exit_code ret = SCRCPY_EXIT_FAILURE;
+
     // Minimal SDL initialization
     if (!SDL_Init(SDL_INIT_EVENTS)) {
         LOGE("Could not initialize SDL: %s", SDL_GetError());
-        return SCRCPY_EXIT_FAILURE;
+        goto release;
     }
 
     if (options->gamepad_input_mode != SC_GAMEPAD_INPUT_MODE_DISABLED) {
@@ -105,8 +119,6 @@ scrcpy_otg(struct scrcpy_options *options) {
     }
 
     atexit(SDL_Quit);
-
-    enum scrcpy_exit_code ret = SCRCPY_EXIT_FAILURE;
 
     struct sc_key_processor *kp = NULL;
     struct sc_mouse_processor *mp = NULL;
@@ -141,7 +153,7 @@ scrcpy_otg(struct scrcpy_options *options) {
     };
     bool ok = sc_usb_init(&s->usb);
     if (!ok) {
-        return SCRCPY_EXIT_FAILURE;
+        goto release;
     }
 
     struct sc_usb_device usb_device;
@@ -306,6 +318,12 @@ end:
         sc_screen_join(&s->screen);
         sc_screen_destroy(&s->screen);
     }
+
+release:
+#ifndef NDEBUG
+    // In DEBUG mode, the struct is dynamically allocated
+    free(s);
+#endif
 
     return ret;
 }

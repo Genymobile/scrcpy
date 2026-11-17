@@ -354,22 +354,29 @@ sc_init_video_hwdec(struct sc_hwdec *hwdec, enum sc_hwdec_mode mode,
 
 enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
-    static struct scrcpy scrcpy;
 #ifndef NDEBUG
+    // In DEBUG mode, allocate the struct on the heap so that LSAN detects leaks
+    struct scrcpy *s = malloc(sizeof(*s));
+    if (!s) {
+        LOG_OOM();
+        return SCRCPY_EXIT_FAILURE;
+    }
     // Detect missing initializations
-    memset(&scrcpy, 42, sizeof(scrcpy));
-#endif
+    memset(s, 42, sizeof(*s));
+# else
+    static struct scrcpy scrcpy;
     struct scrcpy *s = &scrcpy;
+#endif
+
+    enum scrcpy_exit_code ret = SCRCPY_EXIT_FAILURE;
 
     // Minimal SDL initialization
     if (!SDL_Init(SDL_INIT_EVENTS)) {
         LOGE("Could not initialize SDL: %s", SDL_GetError());
-        return SCRCPY_EXIT_FAILURE;
+        goto release;
     }
 
     atexit(SDL_Quit);
-
-    enum scrcpy_exit_code ret = SCRCPY_EXIT_FAILURE;
 
     bool server_started = false;
     bool file_pusher_initialized = false;
@@ -472,7 +479,7 @@ scrcpy(struct scrcpy_options *options) {
         .on_disconnected = sc_server_on_disconnected,
     };
     if (!sc_server_init(&s->server, &params, &cbs, NULL)) {
-        return SCRCPY_EXIT_FAILURE;
+        goto release;
     }
 
 #ifdef _WIN32
@@ -1189,6 +1196,12 @@ end:
     }
 
     sc_server_destroy(&s->server);
+
+release:
+#ifndef NDEBUG
+    // In DEBUG mode, the struct is dynamically allocated
+    free(s);
+#endif
 
     return ret;
 }
