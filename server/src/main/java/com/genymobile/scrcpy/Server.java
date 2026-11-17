@@ -245,7 +245,7 @@ public final class Server {
         Ln.i("Device: [" + Build.MANUFACTURER + "] " + Build.BRAND + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
 
         if (options.getList()) {
-            if (options.getCleanup()) {
+            if (options.getCleanup() && options.getUnlinkServer()) {
                 CleanUp.unlinkSelf();
             }
 

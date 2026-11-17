@@ -62,6 +62,7 @@ public class Options {
     private boolean clipboardAutosync = true;
     private boolean downsizeOnError = true;
     private boolean cleanup = true;
+    private boolean unlinkServer = true;
     private boolean powerOn = true;
 
     private NewDisplay newDisplay;
@@ -241,6 +242,10 @@ public class Options {
 
     public boolean getCleanup() {
         return cleanup;
+    }
+
+    public boolean getUnlinkServer() {
+        return unlinkServer;
     }
 
     public boolean getPowerOn() {
@@ -464,6 +469,9 @@ public class Options {
                     break;
                 case "cleanup":
                     options.cleanup = Boolean.parseBoolean(value);
+                    break;
+                case "unlink_server":
+                    options.unlinkServer = Boolean.parseBoolean(value);
                     break;
                 case "power_on":
                     options.powerOn = Boolean.parseBoolean(value);
