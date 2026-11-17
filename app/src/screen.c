@@ -867,6 +867,9 @@ sc_screen_destroy(struct sc_screen *screen) {
     }
     sc_texture_destroy(&screen->tex);
     av_frame_free(&screen->frame);
+    if (screen->resume_frame) {
+        av_frame_free(&screen->resume_frame);
+    }
     sc_frame_buffer_destroy(&screen->fb);
 #ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
     SDL_GL_DestroyContext(screen->gl_context);
