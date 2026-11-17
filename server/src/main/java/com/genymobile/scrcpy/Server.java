@@ -250,20 +250,20 @@ public final class Server {
             }
 
             if (options.getListEncoders()) {
-                Ln.i(LogUtils.buildVideoEncoderListMessage());
-                Ln.i(LogUtils.buildAudioEncoderListMessage());
+                Ln.print(LogUtils.buildVideoEncoderListMessage());
+                Ln.print(LogUtils.buildAudioEncoderListMessage());
             }
             if (options.getListDisplays()) {
-                Ln.i(LogUtils.buildDisplayListMessage());
+                Ln.print(LogUtils.buildDisplayListMessage());
             }
             if (options.getListCameras() || options.getListCameraSizes()) {
                 Workarounds.apply();
-                Ln.i(LogUtils.buildCameraListMessage(options.getListCameraSizes()));
+                Ln.print(LogUtils.buildCameraListMessage(options.getListCameraSizes()));
             }
             if (options.getListApps()) {
                 Workarounds.apply();
                 Ln.i("Processing Android apps... (this may take some time)");
-                Ln.i(LogUtils.buildAppListMessage());
+                Ln.print(LogUtils.buildAppListMessage());
             }
             // Just print the requested data, do not mirror
             return;

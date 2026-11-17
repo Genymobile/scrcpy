@@ -103,6 +103,15 @@ public final class Ln {
         e(message, null);
     }
 
+    /**
+     * Print a message explicitly requested by the user, regardless of the log level.
+     *
+     * @param message the message
+     */
+    public static void print(String message) {
+        CONSOLE_OUT.print(PREFIX + message + '\n');
+    }
+
     static class NullOutputStream extends OutputStream {
         @Override
         public void write(byte[] b) {
