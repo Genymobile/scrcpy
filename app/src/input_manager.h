@@ -11,6 +11,7 @@
 #include "controller.h"
 #include "file_pusher.h"
 #include "options.h"
+#include "pen.h"
 #include "trait/gamepad_processor.h"
 #include "trait/key_processor.h"
 #include "trait/mouse_processor.h"
@@ -48,6 +49,8 @@ struct sc_input_manager {
     uint64_t next_sequence; // used for request acknowledgements
 
     bool disconnected;
+    bool boox_pen;
+    struct sc_pen pen;
 };
 
 struct sc_input_manager_params {
@@ -63,6 +66,7 @@ struct sc_input_manager_params {
     bool legacy_paste;
     bool clipboard_autosync;
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
+    bool boox_pen;
 };
 
 void

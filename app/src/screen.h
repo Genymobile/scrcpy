@@ -128,6 +128,7 @@ struct sc_screen_params {
     bool text_input;
     bool legacy_paste;
     bool clipboard_autosync;
+    bool boox_pen;
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
 
     const char *window_title;

@@ -146,3 +146,10 @@ Note that some gallery apps only show files from a fixed list of folders
 (typically `DCIM/Camera`) in their main view; the file is then still reachable
 through the system Photo Picker and the folder view, but may not appear on the
 gallery home screen.
+
+## Experimental BOOX pen input
+
+For supported BOOX devices only, [native pen input](boox-pen.md) forwards SDL pen
+coordinates and pressure to the device digitizer. This opt-in backend is not a
+generic Android stylus backend. It requires a shell-writable physical digitizer;
+never use the physical pen concurrently, and test only in a disposable notebook.
