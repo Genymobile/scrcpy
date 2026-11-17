@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Felix Yan <felixonmars@archlinux.org>
+Date: Thu, 27 Aug 2026 16:00:00 +0800
+Subject: [PATCH] adb: keep libbase logging macros after protobuf includes
+
+Protobuf 36's descriptor.h includes absl/log/log.h, which defines the
+short LOG and VLOG macros. Several adb sources include generated protobuf
+headers after adb's libbase logging/trace headers; those protobuf headers
+then replace adb's macros and make adb_trace.h's LOG(DEBUG) expand as
+Abseil logging, where DEBUG is not a valid severity.
+
+sysdeps.h is the first include for most adb translation units. Extend its
+existing protobuf-first include to cover descriptor.h as well, so Abseil's
+short logging macros are seen before android-base/logging.h and adb_trace.h
+install adb's macros. Include sysdeps.h first from mdns_tracker.cpp too,
+matching the rest of adb host sources.
+
+This keeps adb's logging behavior intact and avoids per-include macro
+save/restore blocks.
+---
+ client/mdns_tracker.cpp | 2 ++
+ sysdeps.h               | 7 +++++--
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/client/mdns_tracker.cpp b/client/mdns_tracker.cpp
+index 92ef35086b18..0f21f5054164 100644
+--- a/client/mdns_tracker.cpp
++++ b/client/mdns_tracker.cpp
+@@ -14,6 +14,8 @@
+  * limitations under the License.
+  */
+ 
++#include "sysdeps.h"
++
+ #include "mdns_tracker.h"
+ 
+ #include <list>
+diff --git a/sysdeps.h b/sysdeps.h
+index 970e7cf27b4d..da2a8830317e 100644
+--- a/sysdeps.h
++++ b/sysdeps.h
+@@ -24,9 +24,12 @@
+ #  undef _WIN32
+ #endif
+ 
+-// Include this protobuf header first, because it uses some write() calls
+-// that we will redefine later. Not all modules that include sysdeps.h use
+-// protobufs, so only include it if it exists.
++// Include protobuf headers first, because they expose Abseil's LOG/VLOG macros
++// and use some write() calls that we will redefine later. Not all modules that
++// include sysdeps.h use protobufs, so only include them if they exist.
++#if __has_include("google/protobuf/descriptor.h")
++#include "google/protobuf/descriptor.h"
++#endif
+ #if __has_include("google/protobuf/io/coded_stream.h")
+ #include "google/protobuf/io/coded_stream.h"
+ #endif
