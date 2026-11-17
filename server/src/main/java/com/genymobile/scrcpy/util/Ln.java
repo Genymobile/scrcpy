@@ -66,9 +66,18 @@ public final class Ln {
 
     public static void i(String message) {
         if (isEnabled(Level.INFO)) {
-            Log.i(TAG, message);
-            CONSOLE_OUT.print(PREFIX + "INFO: " + message + '\n');
+            print(message);
         }
+    }
+
+    /**
+     * Print a message explicitly requested by the user (for example a list of displays), regardless of the log level.
+     *
+     * @param message the message
+     */
+    public static void print(String message) {
+        Log.i(TAG, message);
+        CONSOLE_OUT.print(PREFIX + "INFO: " + message + '\n');
     }
 
     public static void w(String message, Throwable throwable) {
