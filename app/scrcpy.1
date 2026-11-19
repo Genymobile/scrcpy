@@ -116,6 +116,12 @@ Select the device camera by its facing direction.
 Possible values are "front", "back" and "external".
 
 .TP
+.BI "\-\-camera\-focus " diopters
+Disable autofocus and hold the camera focus at a fixed distance, expressed in diopters (1/meters).
+
+0 means infinity; larger values focus closer (e.g. 2 for 50cm, 10 for 10cm). The value is clamped to the camera minimum focus distance.
+
+.TP
 .BI "\-\-camera\-fps " fps
 Specify the camera capture frame rate.
 

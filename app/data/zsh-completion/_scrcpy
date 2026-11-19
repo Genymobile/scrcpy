@@ -24,6 +24,7 @@ arguments=(
     '--camera-high-speed=[Enable high-speed camera capture mode]'
     '--camera-id=[Specify the camera id to mirror]'
     '--camera-facing=[Select the device camera by its facing direction]:facing:(front back external)'
+    '--camera-focus=[Hold the camera focus at a fixed distance in diopters]'
     '--camera-fps=[Specify the camera capture frame rate]'
     '--camera-size=[Specify an explicit camera capture size]'
     '--camera-torch[Turn on the camera torch when the camera starts]'
