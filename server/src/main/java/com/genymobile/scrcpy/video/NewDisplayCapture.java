@@ -41,6 +41,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private static final int VIRTUAL_DISPLAY_FLAG_TOUCH_FEEDBACK_DISABLED = 1 << 13;
     private static final int VIRTUAL_DISPLAY_FLAG_OWN_FOCUS = 1 << 14;
     private static final int VIRTUAL_DISPLAY_FLAG_DEVICE_DISPLAY_GROUP = 1 << 15;
+    private static final int VIRTUAL_DISPLAY_FLAG_ALLOWS_CONTENT_MODE_SWITCH = 1 << 17;
 
     private final VirtualDisplayListener vdListener;
     private final NewDisplay newDisplay;
@@ -210,16 +211,21 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     public void startNew(Surface surface) {
         try {
+            boolean contentModeSwitch = vdSystemDecorations && Build.VERSION.SDK_INT >= AndroidVersions.API_37_ANDROID_17;
+
             int flags = VIRTUAL_DISPLAY_FLAG_PUBLIC
                     | VIRTUAL_DISPLAY_FLAG_PRESENTATION
-                    | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
                     | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
                     | VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT;
+            if (!contentModeSwitch) {
+                flags |= VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY;
+            }
             if (vdDestroyContent) {
                 flags |= VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL;
             }
             if (vdSystemDecorations) {
-                flags |= VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
+                flags |= contentModeSwitch ? VIRTUAL_DISPLAY_FLAG_ALLOWS_CONTENT_MODE_SWITCH
+                        : VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
             }
             if (Build.VERSION.SDK_INT >= AndroidVersions.API_33_ANDROID_13) {
                 flags |= VIRTUAL_DISPLAY_FLAG_TRUSTED
