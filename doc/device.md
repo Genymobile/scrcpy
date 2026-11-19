@@ -185,6 +185,12 @@ For convenience, it is also possible to select an app by its name, by adding a
 scrcpy --start-app=?firefox
 ```
 
+When the name of the app is too long, fuzzy matching can be used by prefixing with a `%` to find the best matching app name. 
+It handles typos and partial matches, for example "Remote Desktop Manager" can be started like so:
+```bash 
+scrcpy --start-app=%remotedesk
+```
+
 But retrieving app names may take some time (sometimes several seconds), so
 passing the package name is recommended.
 
