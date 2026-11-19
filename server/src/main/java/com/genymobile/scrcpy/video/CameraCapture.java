@@ -66,6 +66,9 @@ public class CameraCapture extends SurfaceCapture {
     private final Orientation captureOrientation;
     private final float angle;
     private final boolean initialTorch;
+    private final int manualIso;
+    private final long manualExposureNs;
+    private final boolean awbLock;
     private float zoom;
 
     private VideoConstraints videoConstraints;
@@ -102,6 +105,9 @@ public class CameraCapture extends SurfaceCapture {
         assert captureOrientation != null;
         this.angle = options.getAngle();
         this.initialTorch = options.getCameraTorch();
+        this.manualIso = options.getCameraIso();
+        this.manualExposureNs = options.getCameraExposure();
+        this.awbLock = options.isCameraAwbLock();
         this.zoom = options.getCameraZoom();
     }
 
@@ -313,6 +319,20 @@ public class CameraCapture extends SurfaceCapture {
                 try {
                     requestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
                     requestBuilder.addTarget(captureSurface);
+
+                    // Manual exposure: disable auto-exposure and set ISO + shutter speed
+                    if (manualIso > 0 && manualExposureNs > 0) {
+                        Ln.i("Applying manual exposure: ISO " + manualIso + ", Shutter " + manualExposureNs + " ns");
+                        requestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF);
+                        requestBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, manualIso);
+                        requestBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, manualExposureNs);
+                    }
+
+                    // Lock auto white balance
+                    if (awbLock) {
+                        Ln.i("Locking auto white balance");
+                        requestBuilder.set(CaptureRequest.CONTROL_AWB_LOCK, true);
+                    }
 
                     if (fps > 0) {
                         requestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<>(fps, fps));
