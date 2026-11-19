@@ -52,6 +52,7 @@ _scrcpy() {
         --min-size-alignment=
         --mouse=
         --mouse-bind=
+        --mpris
         -n --no-control
         -N --no-playback
         --new-display

@@ -537,6 +537,27 @@ static void test_serialize_scan_file(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_media_action(void) {
+    struct sc_control_msg msg = {
+        .type = SC_CONTROL_MSG_TYPE_MEDIA_ACTION,
+        .media_action = {
+            .action = SC_MEDIA_ACTION_SEEK,
+            .position_ms = INT64_C(0x0102030405060708),
+        },
+    };
+
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
+    size_t size = sc_control_msg_serialize(&msg, buf);
+    assert(size == 10);
+
+    const uint8_t expected[] = {
+        SC_CONTROL_MSG_TYPE_MEDIA_ACTION,
+        5, // action (seek)
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, // position
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -566,5 +587,6 @@ int main(int argc, char *argv[]) {
     test_serialize_camera_zoom_out();
     test_serialize_resize_display();
     test_serialize_scan_file();
+    test_serialize_media_action();
     return 0;
 }

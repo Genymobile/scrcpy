@@ -44,6 +44,7 @@ meson setup "$LINUX_BUILD_DIR" \
     --strip \
     -Db_lto=true \
     -Dcompile_server=false \
+    -Dmpris=false \
     -Dportable=true \
     -Dstatic=true
 ninja -C "$LINUX_BUILD_DIR"

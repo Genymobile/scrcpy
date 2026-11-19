@@ -5,6 +5,7 @@
 
 #include <stdbool.h>
 
+#include "trait/media_listener.h"
 #include "uhid/uhid_output.h"
 #include "util/acksync.h"
 #include "util/net.h"
@@ -19,6 +20,7 @@ struct sc_receiver {
 
     struct sc_acksync *acksync;
     struct sc_uhid_devices *uhid_devices;
+    struct sc_media_listener *media_listener;
 
     const struct sc_receiver_callbacks *cbs;
     void *cbs_userdata;

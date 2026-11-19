@@ -29,6 +29,7 @@ sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket,
     receiver->control_socket = control_socket;
     receiver->acksync = NULL;
     receiver->uhid_devices = NULL;
+    receiver->media_listener = NULL;
 
     assert(cbs && cbs->on_ended);
     receiver->cbs = cbs;
@@ -154,6 +155,25 @@ process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
             }
 
             break;
+        case DEVICE_MSG_TYPE_MEDIA_UPDATE: {
+            struct sc_media_listener *listener = receiver->media_listener;
+            if (!listener) {
+                LOGE("Received unexpected media update message");
+                sc_device_msg_destroy(msg);
+                return;
+            }
+
+            // The listener takes ownership of the strings (do not destroy
+            // the msg)
+            listener->ops->on_update(listener, msg->media_update.state,
+                                     msg->media_update.position_ms,
+                                     msg->media_update.capabilities,
+                                     msg->media_update.duration_ms,
+                                     msg->media_update.title,
+                                     msg->media_update.artist,
+                                     msg->media_update.album);
+            break;
+        }
     }
 }
 

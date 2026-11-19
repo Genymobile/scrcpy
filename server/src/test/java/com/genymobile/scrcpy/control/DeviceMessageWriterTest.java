@@ -72,4 +72,33 @@ public class DeviceMessageWriterTest {
 
         Assert.assertArrayEquals(expected, actual);
     }
+
+    @Test
+    public void testSerializeMediaUpdate() throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(DeviceMessage.TYPE_MEDIA_UPDATE);
+        dos.writeByte(1); // state (playing)
+        dos.writeLong(12345); // position
+        dos.writeInt(0x13); // capabilities
+        dos.writeLong(123456); // duration
+        byte[] title = "hello".getBytes(StandardCharsets.UTF_8);
+        dos.writeShort(title.length);
+        dos.write(title);
+        dos.writeShort(0); // artist (null)
+        byte[] album = "foo".getBytes(StandardCharsets.UTF_8);
+        dos.writeShort(album.length);
+        dos.write(album);
+        byte[] expected = bos.toByteArray();
+
+        bos = new ByteArrayOutputStream();
+        DeviceMessageWriter writer = new DeviceMessageWriter(bos);
+
+        DeviceMessage msg = DeviceMessage.createMediaUpdate(1, 12345, 0x13, 123456, "hello", null, "foo");
+        writer.write(msg);
+
+        byte[] actual = bos.toByteArray();
+
+        Assert.assertArrayEquals(expected, actual);
+    }
 }

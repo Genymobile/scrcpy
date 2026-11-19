@@ -62,6 +62,11 @@ public final class Workarounds {
             // <https://github.com/Genymobile/scrcpy/issues/4467>
             // Must be called before fillAppContext() because it is necessary to get a valid system context.
             fillConfigurationController();
+
+            // Since Android 12, MediaSessionManager retrieves its service binder through a MediaServiceManager installed by
+            // ActivityThread.initializeMainlineModules(), which is never called in the server process. Without it, requesting the media
+            // session service throws a NullPointerException.
+            fillMediaServiceManager();
         }
 
         // On ONYX devices, fillAppInfo() breaks video mirroring:
@@ -142,6 +147,34 @@ public final class Workarounds {
             // this is a workaround, so failing is not an error
             Ln.d("Could not get system context: " + throwable.getMessage());
             return null;
+        }
+    }
+
+    private static void fillMediaServiceManager() {
+        try {
+            Class<?> mediaServiceManagerClass = Class.forName("android.media.MediaServiceManager");
+
+            // MediaServiceManager mediaServiceManager = new MediaServiceManager();
+            Constructor<?> mediaServiceManagerConstructor = mediaServiceManagerClass.getDeclaredConstructor();
+            mediaServiceManagerConstructor.setAccessible(true);
+            Object mediaServiceManager = mediaServiceManagerConstructor.newInstance();
+
+            // Both the platform and the apex (MediaCommunicationManager) initializers must be set
+            String[] initializers = {"android.media.MediaFrameworkPlatformInitializer", "android.media.MediaFrameworkInitializer"};
+            for (String initializer : initializers) {
+                Class<?> initializerClass = Class.forName(initializer);
+
+                // if (Initializer.getMediaServiceManager() == null)
+                Method getMediaServiceManagerMethod = initializerClass.getDeclaredMethod("getMediaServiceManager");
+                if (getMediaServiceManagerMethod.invoke(null) == null) {
+                    // Initializer.setMediaServiceManager(mediaServiceManager);
+                    Method setMediaServiceManagerMethod = initializerClass.getDeclaredMethod("setMediaServiceManager", mediaServiceManagerClass);
+                    setMediaServiceManagerMethod.invoke(null, mediaServiceManager);
+                }
+            }
+        } catch (Throwable throwable) {
+            // this is a workaround, so failing is not an error
+            Ln.d("Could not fill media service manager: " + throwable.getMessage());
         }
     }
 

@@ -83,6 +83,50 @@ static void test_deserialize_uhid_output(void) {
     sc_device_msg_destroy(&msg);
 }
 
+static void test_deserialize_media_update(void) {
+    const uint8_t input[] = {
+        DEVICE_MSG_TYPE_MEDIA_UPDATE,
+        1, // state (playing)
+        0, 0, 0, 0, 0, 0, 0x30, 0x39, // position (12345 ms)
+        0, 0, 0, 0x13, // capabilities
+        0, 0, 0, 0, 0, 0x01, 0xE2, 0x40, // duration (123456 ms)
+        0, 5, 'h', 'e', 'l', 'l', 'o', // title
+        0, 0, // artist (empty)
+        0, 3, 'f', 'o', 'o', // album
+    };
+
+    struct sc_device_msg msg;
+    ssize_t r = sc_device_msg_deserialize(input, sizeof(input), &msg);
+    assert(r == 36);
+
+    assert(msg.type == DEVICE_MSG_TYPE_MEDIA_UPDATE);
+    assert(msg.media_update.state == SC_MEDIA_STATE_PLAYING);
+    assert(msg.media_update.position_ms == 12345);
+    assert(msg.media_update.capabilities
+            == (SC_MEDIA_CAP_PLAY | SC_MEDIA_CAP_PAUSE | SC_MEDIA_CAP_SEEK));
+    assert(msg.media_update.duration_ms == 123456);
+    assert(!strcmp(msg.media_update.title, "hello"));
+    assert(!msg.media_update.artist);
+    assert(!strcmp(msg.media_update.album, "foo"));
+
+    sc_device_msg_destroy(&msg);
+}
+
+static void test_deserialize_media_update_incomplete(void) {
+    const uint8_t input[] = {
+        DEVICE_MSG_TYPE_MEDIA_UPDATE,
+        2, // state (paused)
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // position (unknown)
+        0, 0, 0, 0, // capabilities
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // duration (unknown)
+        0, 5, 'h', 'e', 'l', // title (truncated)
+    };
+
+    struct sc_device_msg msg;
+    ssize_t r = sc_device_msg_deserialize(input, sizeof(input), &msg);
+    assert(r == 0); // no complete message
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -91,5 +135,7 @@ int main(int argc, char *argv[]) {
     test_deserialize_clipboard_big();
     test_deserialize_ack_set_clipboard();
     test_deserialize_uhid_output();
+    test_deserialize_media_update();
+    test_deserialize_media_update_incomplete();
     return 0;
 }

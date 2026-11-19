@@ -50,6 +50,17 @@ static const char *const copy_key_labels[] = {
     "cut",
 };
 
+#define MEDIA_ACTION_LABEL(value) ENUM_TO_LABEL(media_action_labels, value)
+
+static const char *const media_action_labels[] = {
+    "play",
+    "pause",
+    "stop",
+    "next",
+    "previous",
+    "seek",
+};
+
 static inline const char *
 get_well_known_pointer_id_name(uint64_t pointer_id) {
     switch (pointer_id) {
@@ -194,6 +205,10 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
                                       SC_CONTROL_MSG_SCAN_FILE_PATH_MAX_LENGTH);
             return 1 + len;
         };
+        case SC_CONTROL_MSG_TYPE_MEDIA_ACTION:
+            buf[1] = msg->media_action.action;
+            sc_write64be(&buf[2], (uint64_t) msg->media_action.position_ms);
+            return 10;
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
@@ -348,6 +363,11 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             break;
         case SC_CONTROL_MSG_TYPE_SCAN_FILE:
             LOG_CMSG("scan file \"%s\"", msg->scan_file.path);
+            break;
+        case SC_CONTROL_MSG_TYPE_MEDIA_ACTION:
+            LOG_CMSG("media action %s position=%" PRIi64 "ms",
+                     MEDIA_ACTION_LABEL(msg->media_action.action),
+                     msg->media_action.position_ms);
             break;
         default:
             LOG_CMSG("unknown type: %u", (unsigned) msg->type);

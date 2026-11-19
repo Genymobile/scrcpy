@@ -42,6 +42,7 @@ Its features include:
  - [configurable quality](doc/video.md)
  - [camera mirroring](doc/camera.md) (Android 12+)
  - [mirroring as a webcam (V4L2)](doc/v4l2.md) (Linux-only)
+ - [desktop media controls (MPRIS)](doc/mpris.md) (Linux-only)
  - physical [keyboard][hid-keyboard] and [mouse][hid-mouse] simulation (HID)
  - [gamepad](doc/gamepad.md) support
  - [OTG mode](doc/otg.md)
@@ -168,6 +169,7 @@ documented in the following pages:
  - [OTG](doc/otg.md)
  - [Camera](doc/camera.md)
  - [Video4Linux](doc/v4l2.md)
+ - [MPRIS](doc/mpris.md)
  - [Shortcuts](doc/shortcuts.md)
 
 

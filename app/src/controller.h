@@ -50,7 +50,8 @@ sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
 void
 sc_controller_configure(struct sc_controller *controller,
                         struct sc_acksync *acksync,
-                        struct sc_uhid_devices *uhid_devices);
+                        struct sc_uhid_devices *uhid_devices,
+                        struct sc_media_listener *media_listener);
 
 void
 sc_controller_destroy(struct sc_controller *controller);

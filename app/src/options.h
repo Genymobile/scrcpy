@@ -324,6 +324,9 @@ struct scrcpy_options {
 #ifdef HAVE_USB
     bool otg;
 #endif
+#ifdef HAVE_MPRIS
+    bool mpris;
+#endif
     bool show_touches;
     bool fullscreen;
     bool always_on_top;

@@ -1224,6 +1224,9 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                 sc_screen_render(screen, true);
             }
             return;
+        case SC_EVENT_RAISE_WINDOW:
+            SDL_RaiseWindow(screen->window);
+            return;
         case SC_EVENT_DEVICE_DISCONNECTED:
             assert(!screen->disconnected);
             screen->disconnected = true;

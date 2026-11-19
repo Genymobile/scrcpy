@@ -64,9 +64,17 @@ public class ControlMessageReader {
                 return parseResizeDisplay();
             case ControlMessage.TYPE_SCAN_FILE:
                 return parseScanFile();
+            case ControlMessage.TYPE_MEDIA_ACTION:
+                return parseMediaAction();
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
+    }
+
+    private ControlMessage parseMediaAction() throws IOException {
+        int action = dis.readUnsignedByte();
+        long positionMs = dis.readLong();
+        return ControlMessage.createMediaAction(action, positionMs);
     }
 
     private ControlMessage parseInjectKeycode() throws IOException {
