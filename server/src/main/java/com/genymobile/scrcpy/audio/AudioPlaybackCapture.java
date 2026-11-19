@@ -61,8 +61,18 @@ public final class AudioPlaybackCapture implements AudioCapture {
             usages.add(AudioAttributes.USAGE_NOTIFICATION_EVENT);
             usages.add(AudioAttributes.USAGE_NOTIFICATION_RINGTONE);
             usages.add(AudioAttributes.USAGE_UNKNOWN);
-            usages.add(AudioAttributes.USAGE_VOICE_COMMUNICATION);
             usages.add(AudioAttributes.USAGE_VOICE_COMMUNICATION_SIGNALLING);
+
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14) {
+                // Capturing USAGE_VOICE_COMMUNICATION requires the CAPTURE_VOICE_COMMUNICATION_OUTPUT permission, which is granted to the shell only
+                // since Android 14
+                usages.add(AudioAttributes.USAGE_VOICE_COMMUNICATION);
+
+                // audioMixingRuleBuilder.voiceCommunicationCaptureAllowed(true);
+                Method voiceCommunicationCaptureAllowedMethod = audioMixingRuleBuilderClass.getMethod("voiceCommunicationCaptureAllowed",
+                        boolean.class);
+                voiceCommunicationCaptureAllowedMethod.invoke(audioMixingRuleBuilder, true);
+            }
 
             int ruleMatchAttributeUsageConstant = audioMixingRuleClass.getField("RULE_MATCH_ATTRIBUTE_USAGE").getInt(null);
             Method addMixRuleMethod = audioMixingRuleBuilderClass.getMethod("addMixRule", int.class, Object.class);
@@ -72,10 +82,6 @@ public final class AudioPlaybackCapture implements AudioCapture {
                 // audioMixingRuleBuilder.addMixRule(AudioMixingRule.RULE_MATCH_ATTRIBUTE_USAGE, attributes);
                 addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, attributes);
             }
-
-            // audioMixingRuleBuilder.voiceCommunicationCaptureAllowed(true);
-            Method voiceCommunicationCaptureAllowedMethod = audioMixingRuleBuilderClass.getMethod("voiceCommunicationCaptureAllowed", boolean.class);
-            voiceCommunicationCaptureAllowedMethod.invoke(audioMixingRuleBuilder, true);
 
             // AudioMixingRule audioMixingRule = builder.build();
             Object audioMixingRule = audioMixingRuleBuilderClass.getMethod("build").invoke(audioMixingRuleBuilder);
