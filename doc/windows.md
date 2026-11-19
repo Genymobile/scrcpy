@@ -10,7 +10,7 @@ Download the [latest release]:
    <sub>SHA-256: `b12a2c4ee8be317422451fc7dcf8ee20a71b5ea7ef9ad73ddd825a25316227a5`</sub>
  - [`scrcpy-win32-v5.0.1.zip`][direct-win32] (32-bit)  
    <sub>SHA-256: `0cb65ebf1bce892fa4d1502d699af0c7a1a7f24d7febcb9ef72894e3f23fc2ad`</sub>
- - [`scrcpy-winarm64-v5.0.1.zip`][direct-win32] (ARM 64-bit)  
+ - [`scrcpy-winarm64-v5.0.1.zip`][direct-winarm64] (ARM 64-bit)  
    <sub>SHA-256: `16c3fc2068df64946f670e3504b4752073ebae47a416a45b46e79a5ab19c689b`</sub>
 
 [latest release]: https://github.com/Genymobile/scrcpy/releases/latest
