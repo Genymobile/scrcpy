@@ -238,7 +238,11 @@ public final class AudioEncoder implements AsyncProcessor {
             inputThread = new Thread(() -> {
                 try {
                     inputThread(mediaCodecRef, capture);
-                } catch (IOException | InterruptedException e) {
+                } catch (IOException | InterruptedException | RuntimeException e) {
+                    // RuntimeException: MediaCodec.CodecException may be thrown by getInputBuffer() and
+                    // queueInputBuffer() (cf. https://github.com/Genymobile/scrcpy/issues/7040).
+                    // Handle it like an IOException, otherwise the
+                    // uncaught exception would kill the whole server (video and control included).
                     Ln.e("Audio capture error", e);
                 } finally {
                     end();
@@ -255,6 +259,11 @@ public final class AudioEncoder implements AsyncProcessor {
                     if (!IO.isBrokenPipe(e)) {
                         Ln.e("Audio encoding error", e);
                     }
+                } catch (RuntimeException e) {
+                    // MediaCodec.CodecException may be thrown by getOutputBuffer()
+                    // (cf. https://github.com/Genymobile/scrcpy/issues/7040),
+                    // handle it like an IOException instead of crashing the whole server
+                    Ln.e("Audio encoding error", e);
                 } finally {
                     end();
                 }
@@ -306,7 +315,13 @@ public final class AudioEncoder implements AsyncProcessor {
 
             if (mediaCodec != null) {
                 if (mediaCodecStarted) {
-                    mediaCodec.stop();
+                    try {
+                        mediaCodec.stop();
+                    } catch (RuntimeException e) {
+                        // The codec may be in error state (e.g. after a CodecException), do not let
+                        // this exception escape and kill the server during cleanup
+                        Ln.e("Could not stop audio encoder", e);
+                    }
                 }
                 mediaCodec.release();
             }
