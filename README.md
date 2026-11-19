@@ -1,3 +1,27 @@
+# Scrcpy — Bluetooth & Radio Auto-Connect Edition (macOS)
+
+This fork modifies `scrcpy` (`app/src/options.c`) to natively default to low-bandwidth radio/Bluetooth PAN settings (`1 Mbps` bitrate, `800px` max resolution, `20 FPS`, `no audio`, `stay-awake`) and includes a macOS `launchd` daemon for hands-free auto-connecting without a Wi-Fi router or Homebrew.
+
+## 1. Quick Setup on macOS (No Homebrew Required)
+1. **Download Android Platform Tools (`adb`):** Download the standalone [Android SDK Platform-Tools for Mac](https://android.com) zip from Google and move `adb` to `/usr/local/bin/` (or `~/.local/bin/`).
+2. **Build `scrcpy` from Source:** Install Xcode Command Line Tools (`xcode-select --install`), build `meson`, `ninja`, `SDL2`, `FFmpeg`, and `libusb` (or install via MacPorts/static binaries), then compile:
+```bash
+meson setup build --buildtype=release --strip -Db_lto=true
+ninja -Cbuild
+sudo ninja -Cbuild install
+```
+
+## 2. Enable Hands-Free Bluetooth / Radio Auto-Connect
+1. Pair your Android phone with your Mac via Bluetooth and enable **Bluetooth Tethering** on Android.
+2. Connect your Mac to the phone via **System Settings > Network > Bluetooth PAN** and note the **Router IP** (usually `192.168.44.1`).
+3. Plug your phone in via USB once and run `adb tcpip 5555`, then unplug.
+4. Run the auto-connect installer:
+```bash
+./macos-autoconnect/install.sh
+```
+To remove the background service later, run `./macos-autoconnect/uninstall.sh`.
+
+---
 > [!WARNING]
 > **This GitHub repo (<https://github.com/Genymobile/scrcpy>) is the only official
 source for the project. Do not download releases from random websites, even if
