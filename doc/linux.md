@@ -21,7 +21,7 @@ and extract it.
 
 Scrcpy is packaged in several distributions and package managers:
 
- - Debian/Ubuntu: ~~`apt install scrcpy`~~ _(obsolete version)_
+ - Debian/Ubuntu: `apt install scrcpy`
  - Arch Linux: `pacman -S scrcpy`
  - Fedora: `dnf copr enable zeno/scrcpy && dnf install scrcpy`
  - Gentoo: `emerge scrcpy`
