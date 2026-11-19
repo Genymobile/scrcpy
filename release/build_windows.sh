@@ -34,6 +34,7 @@ WINXX_BUILD_DIR="$WORK_DIR/build-$WINXX"
 app/deps/adb_windows.sh
 app/deps/sdl.sh $WINXX $BUILD_TYPE shared
 app/deps/dav1d.sh $WINXX $BUILD_TYPE shared
+app/deps/opus.sh $WINXX $BUILD_TYPE shared
 app/deps/ffmpeg.sh $WINXX $BUILD_TYPE shared
 app/deps/libusb.sh $WINXX $BUILD_TYPE shared
 

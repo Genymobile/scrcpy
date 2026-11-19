@@ -96,13 +96,14 @@ public final class Server {
         boolean control = options.getControl();
         boolean video = options.getVideo();
         boolean audio = options.getAudio();
+        boolean clientAudio = options.getClientAudio();
         boolean sendDummyByte = options.getSendDummyByte();
 
         Workarounds.apply();
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
-        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, sendDummyByte);
+        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, clientAudio, sendDummyByte);
         try {
             if (options.getSendDeviceMeta()) {
                 connection.sendDeviceMeta(Device.getDeviceName());
@@ -157,6 +158,11 @@ public final class Server {
                 if (controller != null) {
                     controller.setSurfaceCapture(surfaceCapture);
                 }
+            }
+
+            if (clientAudio) {
+                ClientAudioInjector clientAudioInjector = new ClientAudioInjector(connection);
+                asyncProcessors.add(clientAudioInjector);
             }
 
             Completion completion = new Completion(asyncProcessors.size());

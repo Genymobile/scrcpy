@@ -96,9 +96,15 @@ else
             --enable-hwaccel=vp8_vaapi
             --enable-hwaccel=vp9_vaapi
         )
+    elif [[ "$HOST" == win* ]]
+    then
+        conf+=(
+            --disable-vaapi
+        )
     else
         conf+=(
-            # libavdevice is only used for V4L2 on Linux
+            # libavdevice is only used for V4L2 on Linux and for client audio
+            # capture on Windows
             --disable-avdevice
             --disable-vaapi
         )
@@ -107,6 +113,11 @@ else
     if [[ "$HOST" == win* ]]
     then
         conf+=(
+            # Client audio: capture a microphone with DirectShow and encode it
+            # to Opus before sending it to the device
+            --enable-indev=dshow
+            --enable-libopus
+            --enable-encoder=libopus
             --enable-d3d11va
             # Only the *_d3d11va2 hwaccels are used, but the FFmpeg Makefile
             # compiles their source files only for the *_d3d11va hwaccels
