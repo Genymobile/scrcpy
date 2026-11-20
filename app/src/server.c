@@ -437,6 +437,9 @@ execute_server(struct sc_server *server,
     if (!params->vd_system_decorations) {
         ADD_PARAM("vd_system_decorations=false");
     }
+    if (params->vd_enable_freeform) {
+        ADD_PARAM("vd_enable_freeform=true");
+    }
     if (params->keep_active) {
         ADD_PARAM("keep_active=true");
     }

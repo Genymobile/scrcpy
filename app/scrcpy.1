@@ -663,6 +663,16 @@ This option is similar to \fB\-\-video\-buffer\fR, but specific to V4L2 sink.
 Default is 0 (no buffering).
 
 .TP
+.B \-\-vd\-enable\-freeform
+Temporarily enable freeform window management for the whole device, so that the Android desktop can launch apps on the new display when freeform support is disabled.
+
+Requires \fB\-\-new\-display\fR and Android 17 or newer.
+
+Cleanup attempts to restore the original \fBenable_freeform_support\fR setting on exit.
+
+Incompatible with \fB\-\-no\-cleanup\fR and \fB\-\-no\-vd\-system\-decorations\fR.
+
+.TP
 .BI "\-\-video\-buffer " ms
 Add a buffering delay (in milliseconds) before displaying video frames.
 
