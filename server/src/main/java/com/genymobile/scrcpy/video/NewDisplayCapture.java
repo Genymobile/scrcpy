@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.AndroidVersions;
+import com.genymobile.scrcpy.FreeformSupport;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.display.DisplayInfo;
@@ -8,6 +9,7 @@ import com.genymobile.scrcpy.display.DisplayMonitor;
 import com.genymobile.scrcpy.display.DisplayProperties;
 import com.genymobile.scrcpy.display.DisplayPropertiesTracker;
 import com.genymobile.scrcpy.display.DisplayResizeDebouncer;
+import com.genymobile.scrcpy.model.ConfigurationException;
 import com.genymobile.scrcpy.model.NewDisplay;
 import com.genymobile.scrcpy.model.Orientation;
 import com.genymobile.scrcpy.model.Size;
@@ -21,7 +23,6 @@ import com.genymobile.scrcpy.wrappers.ServiceManager;
 import android.graphics.Rect;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
-import android.os.SystemClock;
 import android.view.Surface;
 
 import java.io.IOException;
@@ -212,7 +213,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         displayTransform = AffineMatrix.multiplyAll(displayRotationMatrix, eventTransform);
     }
 
-    public void startNew(Surface surface) {
+    private void startNew(Surface surface) throws ConfigurationException {
         try {
             boolean contentModeSwitch = vdSystemDecorations && Build.VERSION.SDK_INT >= AndroidVersions.API_37_ANDROID_17;
 
@@ -246,8 +247,8 @@ public class NewDisplayCapture extends SurfaceCapture {
             int virtualDisplayId = vd.getDisplay().getDisplayId();
             Ln.i("New display: " + displaySize.getWidth() + "x" + displaySize.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
 
-            if (contentModeSwitch) {
-                checkDesktopEligibility(virtualDisplayId);
+            if (vdEnableFreeform) {
+                FreeformSupport.awaitDesktopEligibility(virtualDisplayId);
             }
 
             if (displayImePolicy != -1) {
@@ -270,46 +271,18 @@ public class NewDisplayCapture extends SurfaceCapture {
                 }
                 getCaptureControl().reset(reason);
             });
+        } catch (ConfigurationException e) {
+            // An expected eligibility failure is fatal for this session, not a codec retry.
+            Ln.e(e.getMessage(), e.getCause());
+            throw e;
         } catch (Exception e) {
             Ln.e("Could not create display", e);
             throw new AssertionError("Could not create display");
         }
     }
 
-    private void checkDesktopEligibility(int displayId) throws IOException {
-        boolean eligible;
-        try {
-            // DisplayManager may return before WindowManager has processed the added display.
-            long deadline = SystemClock.uptimeMillis() + 3000;
-            do {
-                eligible = ServiceManager.getWindowManager().isEligibleForDesktopMode(displayId);
-                if (eligible) {
-                    break;
-                }
-                Thread.sleep(25);
-            } while (SystemClock.uptimeMillis() < deadline);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while waiting for virtual display desktop eligibility", e);
-        } catch (ReflectiveOperationException e) {
-            if (vdEnableFreeform) {
-                throw new IOException("Cannot verify virtual display desktop eligibility", e);
-            }
-            Ln.w("Could not query desktop eligibility on this Android build", e);
-            return;
-        }
-        if (!eligible) {
-            if (vdEnableFreeform) {
-                throw new IOException("Virtual display is not desktop-eligible despite freeform support; "
-                        + "Android display policy prevents desktop use");
-            }
-            Ln.w("Virtual display is not desktop-eligible; the Android launcher may ignore app icons. "
-                    + "If freeform support is missing, --vd-enable-freeform can temporarily enable it for the entire device");
-        }
-    }
-
     @Override
-    public void start(Surface surface) throws IOException {
+    public void start(Surface surface) throws ConfigurationException, IOException {
         if (displayTransform != null) {
             assert glRunner == null;
             OpenGLFilter glFilter = new AffineOpenGLFilter(displayTransform);

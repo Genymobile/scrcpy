@@ -106,9 +106,10 @@ A separate guardian process saves the original value before changing it. After
 the session ends, it restores that value (or deletes the key if originally
 absent), unless another writer has changed it to a different value. A later
 external write of the same value cannot be distinguished. On normal exit, the
-virtual display is released before restoration. The guardian also handles loss
-of the server process, but **cannot restore after it is itself killed or the
-device restarts**. In that case, restore the original setting manually; record
+virtual display is released before restoration. If cleanup fails or stalls,
+the server exits so Android can reclaim its display and the guardian can restore
+the setting. The guardian also handles loss of the server process, but
+**cannot restore after it is itself killed or the device restarts**. In that case, restore the original setting manually; record
 its value before running experiments with this option:
 
 ```bash

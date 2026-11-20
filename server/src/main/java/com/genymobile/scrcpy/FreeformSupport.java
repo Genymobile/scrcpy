@@ -1,10 +1,13 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.model.ConfigurationException;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.Settings;
 import com.genymobile.scrcpy.util.SettingsException;
+import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.os.Looper;
+import android.os.SystemClock;
 import android.system.Os;
 
 import java.io.Closeable;
@@ -18,6 +21,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
@@ -36,9 +40,11 @@ public final class FreeformSupport implements Closeable {
     private static final String LOCK_PATH = "/data/local/tmp/scrcpy-freeform.lock";
     private static final int READY = 1;
     private static final long TIMEOUT_MS = 5000;
+    private static final long DESKTOP_ELIGIBILITY_TIMEOUT_MS = 3000;
 
     private final Process process;
     private boolean closed;
+    private boolean restoreOnServerExit;
 
     private FreeformSupport(Process process) {
         this.process = process;
@@ -82,9 +88,54 @@ public final class FreeformSupport implements Closeable {
         return error;
     }
 
+    public static void awaitDesktopEligibility(int displayId) throws ConfigurationException {
+        // Both enabling the setting and adding a display are processed asynchronously.
+        long deadline = SystemClock.uptimeMillis() + DESKTOP_ELIGIBILITY_TIMEOUT_MS;
+        try {
+            do {
+                if (ServiceManager.getWindowManager().isEligibleForDesktopMode(displayId)) {
+                    return;
+                }
+                Thread.sleep(25);
+            } while (SystemClock.uptimeMillis() < deadline);
+        } catch (ReflectiveOperationException e) {
+            throw eligibilityError("Cannot verify desktop eligibility for display " + displayId, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw eligibilityError("Interrupted while waiting for desktop eligibility for display " + displayId, e);
+        }
+        throw new ConfigurationException("Display " + displayId + " did not become desktop-eligible; check Android freeform support and policy");
+    }
+
+    private static ConfigurationException eligibilityError(String message, Exception cause) {
+        ConfigurationException error = new ConfigurationException(message);
+        error.initCause(cause);
+        return error;
+    }
+
+    void finishSession(Callable<Void> stop) throws IOException {
+        // If cleanup fails, keep the guardian pipe open until process exit releases the display.
+        restoreOnServerExit = true;
+        FutureTask<Void> task = new FutureTask<>(stop);
+        Thread worker = new Thread(task, "freeform-session-stop");
+        worker.setDaemon(true);
+        worker.start();
+        try {
+            task.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            restoreOnServerExit = false;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted during display cleanup; deferring freeform restoration to server exit", e);
+        } catch (ExecutionException e) {
+            throw new IOException("Display cleanup failed; deferring freeform restoration to server exit", e.getCause());
+        } catch (TimeoutException e) {
+            throw new IOException("Display cleanup timed out; deferring freeform restoration to server exit", e);
+        }
+    }
+
     @Override
     public synchronized void close() throws IOException {
-        if (closed) {
+        if (closed || restoreOnServerExit) {
             return;
         }
         closed = true;

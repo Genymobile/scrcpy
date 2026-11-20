@@ -50,7 +50,7 @@ public abstract class SurfaceCapture {
      *
      * @param surface the surface which will be encoded
      */
-    public abstract void start(Surface surface) throws IOException;
+    public abstract void start(Surface surface) throws ConfigurationException, IOException;
 
     /**
      * Stop the capture.

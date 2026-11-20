@@ -126,33 +126,17 @@ public final class DesktopConnection implements Closeable {
     }
 
     public void shutdown() throws IOException {
-        IOException failure = null;
-        // Wake all processors even if one socket has already failed.
-        for (LocalSocket socket : new LocalSocket[]{videoSocket, audioSocket, controlSocket}) {
-            if (socket == null) {
-                continue;
-            }
-            try {
-                socket.shutdownInput();
-            } catch (IOException e) {
-                if (failure == null) {
-                    failure = e;
-                } else {
-                    failure.addSuppressed(e);
-                }
-            }
-            try {
-                socket.shutdownOutput();
-            } catch (IOException e) {
-                if (failure == null) {
-                    failure = e;
-                } else {
-                    failure.addSuppressed(e);
-                }
-            }
+        if (videoSocket != null) {
+            videoSocket.shutdownInput();
+            videoSocket.shutdownOutput();
         }
-        if (failure != null) {
-            throw failure;
+        if (audioSocket != null) {
+            audioSocket.shutdownInput();
+            audioSocket.shutdownOutput();
+        }
+        if (controlSocket != null) {
+            controlSocket.shutdownInput();
+            controlSocket.shutdownOutput();
         }
     }
 
