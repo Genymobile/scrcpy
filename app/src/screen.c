@@ -14,17 +14,69 @@
 
 #define DOWNCAST(SINK) container_of(SINK, struct sc_screen, frame_sink)
 
+// Lock the window aspect ratio to the ratio of the given window size
+//
+// Since the toolbar has a fixed height, the window aspect ratio depends on the
+// window size: it is recomputed from the width on every resize (see
+// sc_screen_on_resize()).
 static void
-set_aspect_ratio(struct sc_screen *screen, struct sc_size content_size) {
-    assert(content_size.width && content_size.height);
+set_aspect_ratio(struct sc_screen *screen, struct sc_size window_size) {
+    assert(window_size.width && window_size.height);
 
     if (screen->window_aspect_ratio_lock) {
-        float ar = (float) content_size.width / content_size.height;
+        float ar = (float) window_size.width / window_size.height;
         bool ok = SDL_SetWindowAspectRatio(screen->window, ar, ar);
         if (!ok) {
             LOGW("Could not set window aspect ratio: %s", SDL_GetError());
         }
     }
+}
+
+// Size of the window for a given content area (the toolbar is added on top)
+static inline struct sc_size
+add_toolbar(struct sc_size area) {
+    return (struct sc_size) {
+        .width = area.width,
+        .height = area.height + SC_TOOLBAR_HEIGHT,
+    };
+}
+
+// Size of the content area (window minus the toolbar)
+static inline struct sc_size
+remove_toolbar(struct sc_size window_size) {
+    return (struct sc_size) {
+        .width = window_size.width,
+        .height = window_size.height > SC_TOOLBAR_HEIGHT
+                ? window_size.height - SC_TOOLBAR_HEIGHT : 1,
+    };
+}
+
+// Resize the window so that its content area (below the toolbar) has the
+// given size
+static void
+set_window_area_size(struct sc_screen *screen, struct sc_size area) {
+    struct sc_size window_size = add_toolbar(area);
+    set_aspect_ratio(screen, window_size);
+    sc_sdl_set_window_size(screen->window, window_size);
+}
+
+// Keep the aspect ratio lock in sync with the current window width
+static void
+update_aspect_ratio(struct sc_screen *screen, uint16_t window_width) {
+    struct sc_size content_size = screen->content_size;
+    if (!screen->window_aspect_ratio_lock || !window_width
+            || !content_size.width || !content_size.height) {
+        return;
+    }
+    struct sc_size area = {
+        .width = window_width,
+        .height = (uint32_t) window_width * content_size.height
+                / content_size.width,
+    };
+    if (!area.height) {
+        return;
+    }
+    set_aspect_ratio(screen, add_toolbar(area));
 }
 
 static inline struct sc_size
@@ -127,10 +179,11 @@ get_optimal_size(struct sc_size current_size, struct sc_size content_size,
 // req_width and req_height, if not 0, are the sizes requested by the user
 static inline struct sc_size
 get_initial_optimal_size(struct sc_size content_size, uint16_t req_width,
-                         uint16_t req_height) {
+                         uint16_t req_height, bool within_display_bounds) {
     struct sc_size window_size;
     if (!req_width && !req_height) {
-        window_size = get_optimal_size(content_size, content_size, true);
+        window_size = get_optimal_size(content_size, content_size,
+                                       within_display_bounds);
     } else {
         if (req_width) {
             window_size.width = req_width;
@@ -247,9 +300,20 @@ compute_content_rect(struct sc_size window_size, struct sc_size content_size,
 static void
 sc_screen_update_content_rect(struct sc_screen *screen) {
     struct sc_size window_size = sc_sdl_get_window_size(screen->window);
-    compute_content_rect(window_size, screen->content_size,
+    if (!screen->video) {
+        // No toolbar without video
+        compute_content_rect(window_size, screen->content_size,
+                             screen->is_icon_active, screen->render_fit,
+                             &screen->rect);
+        return;
+    }
+
+    // The toolbar spans the full width at the top, the content is below
+    sc_toolbar_layout(&screen->toolbar, window_size.width);
+    compute_content_rect(remove_toolbar(window_size), screen->content_size,
                          screen->is_icon_active, screen->render_fit,
                          &screen->rect);
+    screen->rect.y += SC_TOOLBAR_HEIGHT;
 }
 
 // render the texture to the renderer
@@ -269,19 +333,19 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, 0);
     sc_sdl_render_clear(renderer);
 
-    SDL_Texture *texture = screen->is_icon_active
-                         ? screen->icon_tex
-                         : sc_texture_get(&screen->tex);
-    if (!texture) {
-        goto end;
-    }
-
     float scale = SDL_GetWindowPixelDensity(screen->window);
     if (scale == 0) {
         // Just in case, but in practice the function can only fail when window
         // is invalid
         LOGE("Cannot get scale value: %s", SDL_GetError());
         scale = 1;
+    }
+
+    SDL_Texture *texture = screen->is_icon_active
+                         ? screen->icon_tex
+                         : sc_texture_get(&screen->tex);
+    if (!texture) {
+        goto overlay;
     }
 
     SDL_FRect geometry = {
@@ -339,7 +403,35 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
         LOGE("Could not render texture: %s", SDL_GetError());
     }
 
-end:
+overlay:
+    if (screen->video) {
+        // Toolbar strip with labelled buttons
+        sc_toolbar_render(&screen->toolbar, renderer, scale);
+    }
+
+    if (screen->flash_active) {
+        // Screenshot flash: full white for 100ms, then fade out until 500ms
+        sc_tick elapsed = sc_tick_now() - screen->flash_start;
+        sc_tick duration = SC_TICK_FROM_MS(500);
+        if (elapsed < duration) {
+            uint8_t alpha;
+            sc_tick fade_start = SC_TICK_FROM_MS(100);
+            if (elapsed < fade_start) {
+                alpha = 255;
+            } else {
+                alpha = (uint8_t) (255 * (duration - elapsed)
+                                       / (duration - fade_start));
+            }
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, alpha);
+            SDL_RenderFillRect(renderer, NULL);
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+        } else {
+            screen->flash_active = false;
+            LOGD("Screenshot flash finished");
+        }
+    }
+
     sc_sdl_render_present(renderer);
 }
 
@@ -369,11 +461,18 @@ sc_screen_on_resize(struct sc_screen *screen, const SDL_WindowEvent *event) {
         sc_screen_render(screen, true);
     } else {
         assert(event->type == SDL_EVENT_WINDOW_RESIZED);
+        if (screen->video && is_windowed(screen)) {
+            assert(!(event->data1 & ~0xFFFF));
+            update_aspect_ratio(screen, event->data1);
+        }
         if (screen->flex_display) {
             assert(!(event->data1 & ~0xFFFF));
             assert(!(event->data2 & ~0xFFFF));
-            uint16_t width = event->data1;
-            uint16_t height = event->data2;
+            // The device display matches the content area, not the toolbar
+            struct sc_size area =
+                remove_toolbar((struct sc_size) {event->data1, event->data2});
+            uint16_t width = area.width;
+            uint16_t height = area.height;
 
             struct sc_resize_tracker *tracker = &screen->resize_tracker;
             if (tracker->time
@@ -545,6 +644,11 @@ sc_screen_init(struct sc_screen *screen,
     screen->req.start_fps_counter = params->start_fps_counter;
 
     screen->prevent_auto_resize = false;
+
+    screen->flash_active = false;
+    screen->flash_start = 0;
+    screen->flash_timer = 0;
+    memset(&screen->toolbar, 0, sizeof(screen->toolbar));
 
     screen->resize_tracker.time = 0;
     screen->resize_tracker.size.width = 0;
@@ -781,8 +885,11 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
     };
 
     struct sc_size window_size =
+        // Match the device's actual screen resolution (do not scale down to
+        // fit the display), except in flex display mode, where the window size
+        // drives the device display size
         get_initial_optimal_size(screen->content_size, screen->req.width,
-                                                       screen->req.height);
+                                 screen->req.height, screen->flex_display);
 
     if (screen->flex_display
             && window_size.width == screen->content_size.width
@@ -792,9 +899,21 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
         sc_screen_track_resize(screen, window_size);
     }
 
+    if (!screen->req.width && !screen->req.height && !screen->flex_display) {
+        // The content size is in device pixels, but the window size is in
+        // points; on HiDPI displays these differ. Convert to points so the
+        // mirrored area maps 1:1 to the device's real resolution instead of
+        // rendering larger than the device screen.
+        float density = SDL_GetWindowPixelDensity(screen->window);
+        if (density > 0) {
+            window_size.width = window_size.width / density;
+            window_size.height = window_size.height / density;
+        }
+    }
+
     assert(is_windowed(screen));
-    set_aspect_ratio(screen, screen->content_size);
-    sc_sdl_set_window_size(screen->window, window_size);
+    // Reserve space for the toolbar strip above the content
+    set_window_area_size(screen, window_size);
     sc_sdl_set_window_position(screen->window, position);
 
     if (screen->req.fullscreen) {
@@ -844,6 +963,9 @@ sc_screen_destroy(struct sc_screen *screen) {
     if (screen->disconnect_started) {
         sc_disconnect_destroy(&screen->disconnect);
     }
+    if (screen->flash_timer) {
+        SDL_RemoveTimer(screen->flash_timer);
+    }
     sc_texture_destroy(&screen->tex);
     av_frame_free(&screen->frame);
 #ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
@@ -881,7 +1003,9 @@ resize_for_content(struct sc_screen *screen, struct sc_size old_content_size,
 
     struct sc_size target_size = new_content_size;
     if (!screen->flex_display) {
-        struct sc_size window_size = sc_sdl_get_window_size(screen->window);
+        // Work on the content area (window minus toolbar)
+        struct sc_size window_size =
+            remove_toolbar(sc_sdl_get_window_size(screen->window));
         // Scale proportionally
         target_size.width = (uint32_t) window_size.width * target_size.width
                           / old_content_size.width;
@@ -890,8 +1014,7 @@ resize_for_content(struct sc_screen *screen, struct sc_size old_content_size,
     }
     target_size = get_optimal_size(target_size, new_content_size, true);
     assert(is_windowed(screen));
-    set_aspect_ratio(screen, new_content_size);
-    sc_sdl_set_window_size(screen->window, target_size);
+    set_window_area_size(screen, target_size);
 }
 
 static void
@@ -899,22 +1022,26 @@ set_content_size(struct sc_screen *screen, struct sc_size new_content_size,
                  bool resize) {
     assert(screen->video);
 
+    struct sc_size old_content_size = screen->content_size;
+    // Update before resizing: resize events (which may be delivered
+    // synchronously by the event watcher) read it to update the aspect ratio
+    screen->content_size = new_content_size;
+
     if (resize) {
         if (is_windowed(screen)) {
-            resize_for_content(screen, screen->content_size, new_content_size);
+            resize_for_content(screen, old_content_size, new_content_size);
         } else if (screen->flex_display) {
             // Force a display resize, the client cannot resize in fullscreen
-            struct sc_size size = sc_sdl_get_window_size(screen->window);
+            struct sc_size size =
+                remove_toolbar(sc_sdl_get_window_size(screen->window));
             sc_screen_request_resize_display(screen, size.width, size.height);
         } else if (!screen->resize_pending) {
             // Store the windowed size to be able to compute the optimal size
             // once fullscreen/maximized/minimized are disabled
-            screen->windowed_content_size = screen->content_size;
+            screen->windowed_content_size = old_content_size;
             screen->resize_pending = true;
         }
     }
-
-    screen->content_size = new_content_size;
 }
 
 static void
@@ -1081,12 +1208,13 @@ sc_screen_resize_to_fit(struct sc_screen *screen) {
         return;
     }
 
-    struct sc_size window_size = sc_sdl_get_window_size(screen->window);
+    // Exclude the toolbar from the available content area
+    struct sc_size window_size =
+        remove_toolbar(sc_sdl_get_window_size(screen->window));
 
     if (screen->render_fit == SC_RENDER_FIT_UNSCALED) {
         struct sc_size content_size = screen->content_size;
-        set_aspect_ratio(screen, content_size);
-        sc_sdl_set_window_size(screen->window, content_size);
+        set_window_area_size(screen, content_size);
 
         int32_t x_offset = 0;
         if (content_size.width < window_size.width) {
@@ -1125,8 +1253,7 @@ sc_screen_resize_to_fit(struct sc_screen *screen) {
         .y = point.y + (window_size.height - optimal_size.height) / 2,
     };
 
-    set_aspect_ratio(screen, screen->content_size);
-    sc_sdl_set_window_size(screen->window, optimal_size);
+    set_window_area_size(screen, optimal_size);
     sc_sdl_set_window_position(screen->window, new_position);
     LOGD("Resized to optimal size: %ux%u", optimal_size.width,
                                            optimal_size.height);
@@ -1141,10 +1268,76 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
     }
 
     struct sc_size content_size = screen->content_size;
-    set_aspect_ratio(screen, content_size);
-    sc_sdl_set_window_size(screen->window, content_size);
+    set_window_area_size(screen, content_size);
     LOGD("Resized to pixel-perfect: %ux%u", content_size.width,
                                             content_size.height);
+}
+
+void
+sc_screen_expand_to_display(struct sc_screen *screen) {
+    assert(screen->video);
+
+    if (!is_windowed(screen)) {
+        return;
+    }
+
+    struct sc_size display_bounds;
+    if (!get_preferred_display_bounds(&display_bounds)) {
+        return;
+    }
+
+    // Reserve space for the toolbar in the available content height
+    struct sc_size content_area = remove_toolbar(display_bounds);
+
+    // Largest aspect-correct size that fits within the display
+    struct sc_size optimal_size =
+        get_optimal_size(content_area, screen->content_size, true);
+
+    set_window_area_size(screen, optimal_size);
+    LOGD("Expanded to fit display: %ux%u", optimal_size.width,
+                                           optimal_size.height);
+}
+
+static uint32_t
+flash_timer_cb(void *userdata, SDL_TimerID id, uint32_t interval) {
+    (void) userdata;
+    (void) id;
+    // Render on the main thread
+    sc_push_event(SC_EVENT_FLASH_TICK);
+    return interval;
+}
+
+void
+sc_screen_flash(struct sc_screen *screen) {
+    assert(screen->video);
+
+    screen->flash_start = sc_tick_now();
+    screen->flash_active = true;
+    LOGD("Screenshot flash triggered");
+
+    if (!screen->flash_timer) {
+        // Redraw periodically during the animation, even if no new frame is
+        // received from the device
+        screen->flash_timer = SDL_AddTimer(16, flash_timer_cb, NULL);
+        if (!screen->flash_timer) {
+            LOGW("Could not add flash timer: %s", SDL_GetError());
+        }
+    }
+
+    if (screen->window_shown) {
+        sc_screen_render(screen, false);
+    }
+}
+
+static void
+sc_screen_on_flash_tick(struct sc_screen *screen) {
+    if (screen->window_shown && screen->flash_active) {
+        sc_screen_render(screen, false);
+    }
+    if (!screen->flash_active && screen->flash_timer) {
+        SDL_RemoveTimer(screen->flash_timer);
+        screen->flash_timer = 0;
+    }
 }
 
 static void
@@ -1198,6 +1391,9 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
         }
         case SDL_EVENT_WINDOW_EXPOSED:
             sc_screen_render(screen, true);
+            return;
+        case SC_EVENT_FLASH_TICK:
+            sc_screen_on_flash_tick(screen);
             return;
 // If defined, then the actions are already performed by the event watcher
 #ifndef CONTINUOUS_RESIZING_WORKAROUND
@@ -1277,6 +1473,9 @@ sc_screen_handle_disconnection(struct sc_screen *screen) {
         switch (event.type) {
             case SDL_EVENT_WINDOW_EXPOSED:
                 sc_screen_render(screen, true);
+                break;
+            case SC_EVENT_FLASH_TICK:
+                sc_screen_on_flash_tick(screen);
                 break;
             case SC_EVENT_DISCONNECTED_ICON_LOADED: {
                 SDL_Surface *icon_disconnected = event.user.data1;

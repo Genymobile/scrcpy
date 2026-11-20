@@ -105,6 +105,22 @@ sc_adb_select_device(struct sc_intr *intr,
                      unsigned flags, struct sc_adb_device *out_device);
 
 /**
+ * List the serials of all ready ("device" state) ADB devices
+ *
+ * Start the adb server if necessary, then execute `adb devices` and collect the
+ * serials of every device in the "device" state (ignoring "offline",
+ * "unauthorized", etc.).
+ *
+ * Return a heap-allocated, NULL-terminated array of heap-allocated serial
+ * strings, and write the number of serials to `out_count`. The caller must free
+ * each serial and the array. Return NULL on error.
+ *
+ * `sc_adb_init()` must have been called first.
+ */
+char **
+sc_adb_list_ready_serials(size_t *out_count);
+
+/**
  * Execute `adb getprop <prop>`
  */
 char *

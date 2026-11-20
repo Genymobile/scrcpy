@@ -19,6 +19,7 @@
 #include "mouse_capture.h"
 #include "options.h"
 #include "texture.h"
+#include "toolbar.h"
 #include "trait/key_processor.h"
 #include "trait/frame_sink.h"
 #include "trait/mouse_processor.h"
@@ -86,8 +87,16 @@ struct sc_screen {
 
     // client orientation
     enum sc_orientation orientation;
-    // rectangle of the content (excluding black borders)
+    // rectangle of the content (excluding black borders), in window
+    // coordinates (below the toolbar)
     struct SDL_FRect rect;
+    // toolbar strip above the content (window coordinates)
+    struct sc_toolbar toolbar;
+
+    // Screenshot flash overlay
+    sc_tick flash_start;
+    bool flash_active;
+    SDL_TimerID flash_timer; // 0 if none
     bool window_shown;
 
     // only accessed from the thread calling sc_frame_sink_ops functions
@@ -187,6 +196,14 @@ sc_screen_resize_to_fit(struct sc_screen *screen);
 // resize window to 1:1 (pixel-perfect)
 void
 sc_screen_resize_to_pixel_perfect(struct sc_screen *screen);
+
+// resize window to the largest aspect-correct size that fits the display
+void
+sc_screen_expand_to_display(struct sc_screen *screen);
+
+// show a white flash over the window (screenshot feedback)
+void
+sc_screen_flash(struct sc_screen *screen);
 
 // set the display orientation
 void

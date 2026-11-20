@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <SDL3/SDL.h>
 
 #include "android/input.h"
@@ -10,6 +11,7 @@
 #include "events.h"
 #include "input_events.h"
 #include "screen.h"
+#include "screenshot.h"
 #include "shortcut_mod.h"
 #include "util/log.h"
 #include "util/sdl.h"
@@ -410,6 +412,166 @@ inverse_point(struct sc_point point, struct sc_size size,
     return point;
 }
 
+// Returns the foreground app's package name, or an empty string if not found.
+// Caller must provide a buffer; output is NUL-terminated.
+static void
+get_foreground_package(char *pkg, size_t pkg_size) {
+    if (pkg_size == 0) {
+        return;
+    }
+    pkg[0] = '\0';
+    FILE *fp = popen(
+        "adb shell \"dumpsys activity activities"
+        " | grep mResumedActivity"
+        " | head -1"
+        " | sed 's|.* \\([^ ]*/\\).*|\\1|'"
+        " | sed 's|/||'\"", "r");
+    if (!fp) {
+        return;
+    }
+    if (fgets(pkg, pkg_size, fp)) {
+        size_t len = strlen(pkg);
+        while (len > 0 && (pkg[len-1] == '\n' || pkg[len-1] == '\r'
+                           || pkg[len-1] == ' ')) {
+            pkg[--len] = '\0';
+        }
+    }
+    pclose(fp);
+}
+
+// Dump the current logcat buffer (filtered to foreground app when possible)
+// to ~/Downloads/scrcpy_logs_YYYYMMDD-HHMMSS.txt.
+static void
+save_logcat_to_downloads(void) {
+    const char *home = getenv("HOME");
+    if (!home) {
+        home = ".";
+    }
+
+    time_t now = time(NULL);
+    struct tm *tm = localtime(&now);
+    if (!tm) {
+        LOGW("Could not resolve local time for log filename");
+        return;
+    }
+
+    char filename[512];
+    int n = snprintf(filename, sizeof(filename),
+                     "%s/Downloads/scrcpy_logs_%04d%02d%02d-%02d%02d%02d.txt",
+                     home,
+                     tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+                     tm->tm_hour, tm->tm_min, tm->tm_sec);
+    if (n <= 0 || (size_t) n >= sizeof(filename)) {
+        LOGW("Could not build log filename");
+        return;
+    }
+
+    char pkg[256];
+    get_foreground_package(pkg, sizeof(pkg));
+
+    char cmd[1024];
+    int rc;
+    if (pkg[0]) {
+        LOGI("Saving logcat for %s to %s", pkg, filename);
+        rc = snprintf(cmd, sizeof(cmd),
+                      "adb logcat -d --pid=$(adb shell pidof %s)"
+                      " > \"%s\" 2>&1 &",
+                      pkg, filename);
+    } else {
+        LOGI("Saving full logcat buffer to %s", filename);
+        rc = snprintf(cmd, sizeof(cmd),
+                      "adb logcat -d > \"%s\" 2>&1 &", filename);
+    }
+    if (rc <= 0 || (size_t) rc >= sizeof(cmd)) {
+        LOGW("Could not build logcat save command");
+        return;
+    }
+    system(cmd);
+}
+
+// Dump the full system log buffers (main+system+crash+events+radio...) to
+// ~/Downloads/scrcpy_syslogs_YYYYMMDD-HHMMSS.txt. Unfiltered, unlike
+// save_logcat_to_downloads() which is scoped to the foreground app's PID.
+static void
+save_full_system_logcat_to_downloads(void) {
+    const char *home = getenv("HOME");
+    if (!home) {
+        home = ".";
+    }
+
+    time_t now = time(NULL);
+    struct tm *tm = localtime(&now);
+    if (!tm) {
+        LOGW("Could not resolve local time for syslog filename");
+        return;
+    }
+
+    char filename[512];
+    int n = snprintf(filename, sizeof(filename),
+                     "%s/Downloads/scrcpy_syslogs_%04d%02d%02d-%02d%02d%02d.txt",
+                     home,
+                     tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+                     tm->tm_hour, tm->tm_min, tm->tm_sec);
+    if (n <= 0 || (size_t) n >= sizeof(filename)) {
+        LOGW("Could not build syslog filename");
+        return;
+    }
+
+    char cmd[1024];
+    int rc = snprintf(cmd, sizeof(cmd),
+                      "adb logcat -d -b all > \"%s\" 2>&1 &", filename);
+    if (rc <= 0 || (size_t) rc >= sizeof(cmd)) {
+        LOGW("Could not build full logcat save command");
+        return;
+    }
+    LOGI("Saving full system logcat (all buffers) to %s", filename);
+    system(cmd);
+}
+
+static void
+open_logcat_for_foreground_app(void) {
+    char pkg[256];
+    get_foreground_package(pkg, sizeof(pkg));
+
+    if (pkg[0]) {
+        LOGI("Opening logcat for foreground app: %s", pkg);
+        char cmd[1024];
+#ifdef __APPLE__
+        snprintf(cmd, sizeof(cmd),
+            "osascript -e 'tell application \"Terminal\" to do script "
+            "\"adb logcat --pid=$(adb shell pidof %s)\"' &", pkg);
+#else
+        snprintf(cmd, sizeof(cmd),
+            "x-terminal-emulator -e sh -c "
+            "\"adb logcat --pid=\\$(adb shell pidof %s)\" &"
+            " || xterm -e sh -c "
+            "\"adb logcat --pid=\\$(adb shell pidof %s)\" &",
+            pkg, pkg);
+#endif
+        system(cmd);
+    } else {
+        LOGI("Could not detect foreground app, opening unfiltered logcat");
+#ifdef __APPLE__
+        system("osascript -e 'tell application \"Terminal\" to do script "
+               "\"adb logcat\"' &");
+#else
+        system("x-terminal-emulator -e adb logcat &"
+               " || xterm -e adb logcat &");
+#endif
+    }
+}
+
+static void
+take_screenshot(struct sc_input_manager *im) {
+    bool ok = sc_screenshot_save(im->screen->frame, im->screen->orientation);
+    if (ok) {
+        LOGD("Screenshot saved successfully, triggering flash overlay");
+        sc_screen_flash(im->screen);
+    } else {
+        LOGD("Screenshot save failed");
+    }
+}
+
 static void
 sc_input_manager_process_key(struct sc_input_manager *im,
                              const SDL_KeyboardEvent *event) {
@@ -458,6 +620,23 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
             }
             return;
+    }
+
+    // Ctrl+Shift+L: open logcat filtered to foreground app
+    if (ctrl && shift && sdl_keycode == SDLK_L) {
+        if (!repeat && down) {
+            open_logcat_for_foreground_app();
+        }
+        return;
+    }
+
+    // Ctrl+Shift+S: screenshot (independent of MOD key)
+    if (ctrl && shift && sdl_keycode == SDLK_S && video) {
+        if (!repeat && down) {
+            LOGD("Screenshot shortcut triggered (Ctrl+Shift+S)");
+            take_screenshot(im);
+        }
+        return;
     }
 
     if (is_shortcut) {
@@ -743,6 +922,53 @@ sc_input_manager_get_position(struct sc_input_manager *im, int32_t x,
     };
 }
 
+// Returns true if the (window coordinates) point lands inside the toolbar strip
+static bool
+sc_input_manager_in_toolbar(struct sc_input_manager *im, float x, float y) {
+    if (!im->screen->video) {
+        return false;
+    }
+    return sc_toolbar_contains(&im->screen->toolbar, x, y);
+}
+
+static void
+sc_input_manager_on_toolbar_click(struct sc_input_manager *im, float x,
+                                  float y) {
+    enum sc_toolbar_button btn = sc_toolbar_hit(&im->screen->toolbar, x, y);
+    switch (btn) {
+        case SC_TOOLBAR_BUTTON_SCREENSHOT:
+            LOGD("Screenshot toolbar button clicked");
+            take_screenshot(im);
+            break;
+        case SC_TOOLBAR_BUTTON_LOGS:
+            LOGD("Logs toolbar button clicked");
+            open_logcat_for_foreground_app();
+            break;
+        case SC_TOOLBAR_BUTTON_SAVE_LOGS:
+            LOGD("Save-logs toolbar button clicked");
+            save_logcat_to_downloads();
+            break;
+        case SC_TOOLBAR_BUTTON_SAVE_ALL_LOGS:
+            LOGD("Save-all-logs toolbar button clicked");
+            save_full_system_logcat_to_downloads();
+            break;
+        case SC_TOOLBAR_BUTTON_HOME:
+            LOGD("Home toolbar button clicked");
+            if (im->controller && im->kp && !im->camera && !im->disconnected
+                    && !im->screen->paused) {
+                action_home(im, SC_ACTION_DOWN);
+                action_home(im, SC_ACTION_UP);
+            }
+            break;
+        case SC_TOOLBAR_BUTTON_EXPAND:
+            LOGD("Expand toolbar button clicked");
+            sc_screen_expand_to_display(im->screen);
+            break;
+        default:
+            break;
+    }
+}
+
 static void
 sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
                                       const SDL_MouseMotionEvent *event) {
@@ -752,6 +978,14 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
 
     if (event->which == SDL_TOUCH_MOUSEID) {
         // simulated from touch events, so it's a duplicate
+        return;
+    }
+
+    if (!im->mouse_buttons_state && !im->mp->relative_mode
+            && sc_input_manager_in_toolbar(im, event->x, event->y)) {
+        // Don't forward hover motion over the toolbar strip to the device (a
+        // drag started on the content is still forwarded, so that the device
+        // receives a consistent gesture)
         return;
     }
 
@@ -839,20 +1073,36 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     // some mouse events do not interact with the device, so process the event
     // even if control is disabled
 
-    if (im->camera || im->disconnected) {
-        return;
-    }
-
     if (event->which == SDL_TOUCH_MOUSEID) {
         // simulated from touch events, so it's a duplicate
         return;
     }
 
+    bool mouse_relative_mode = im->mp && im->mp->relative_mode;
+    bool down = event->type == SDL_EVENT_MOUSE_BUTTON_DOWN;
+    enum sc_mouse_button button = sc_mouse_button_from_sdl(event->button);
+
+    // Handle clicks on the toolbar strip (outside the mirrored content). A
+    // release of a button pressed on the content is still forwarded, so that
+    // the device never sees a press without a release.
+    bool held = button != SC_MOUSE_BUTTON_UNKNOWN
+             && (im->mouse_buttons_state & button);
+    if (!mouse_relative_mode && !(!down && held)
+            && sc_input_manager_in_toolbar(im, event->x, event->y)) {
+        if (down && event->button == SDL_BUTTON_LEFT) {
+            sc_input_manager_on_toolbar_click(im, event->x, event->y);
+        }
+        // Swallow all other mouse button events in the toolbar region
+        return;
+    }
+
+    if (im->camera || im->disconnected) {
+        return;
+    }
+
     bool control = im->controller;
     bool paused = im->screen->paused;
-    bool down = event->type == SDL_EVENT_MOUSE_BUTTON_DOWN;
 
-    enum sc_mouse_button button = sc_mouse_button_from_sdl(event->button);
     if (button == SC_MOUSE_BUTTON_UNKNOWN) {
         return;
     }
@@ -911,7 +1161,6 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
 
     // double-click on black borders resizes to fit the device screen
     bool video = im->screen->video;
-    bool mouse_relative_mode = im->mp && im->mp->relative_mode;
     if (video && !mouse_relative_mode && event->button == SDL_BUTTON_LEFT
             && event->clicks == 2) {
         int32_t x = event->x;

@@ -581,6 +581,14 @@ scrcpy(struct scrcpy_options *options) {
     const char *serial = s->server.serial;
     assert(serial);
 
+#ifndef _WIN32
+    // The toolbar log/focus helpers run plain "adb" commands: make them target
+    // this device even if several devices are connected
+    if (setenv("ANDROID_SERIAL", serial, 1)) {
+        LOGW("Could not set ANDROID_SERIAL");
+    }
+#endif
+
     struct sc_file_pusher *fp = NULL;
 
     if (options->window && options->control) {

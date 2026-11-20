@@ -2,7 +2,9 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <pthread.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -267,6 +269,117 @@ convert_input_key(const struct sc_key_event *event, struct sc_control_msg *msg,
     return true;
 }
 
+// Store previous focus state so we can show transitions
+static char prev_focus_cls[1024] = "";
+
+struct dpad_query_ctx {
+    char direction[16];
+};
+
+static void *
+query_focused_view(void *arg) {
+    struct dpad_query_ctx *ctx = (struct dpad_query_ctx *)arg;
+    char direction[16];
+    snprintf(direction, sizeof(direction), "%s", ctx->direction);
+    free(ctx);
+
+    // Delay to let the app process the key event
+    struct timespec ts = {0, 300000000}; // 300ms
+    nanosleep(&ts, NULL);
+
+    // Use dumpsys activity top to get the currently focused view.
+    // This works universally with any app, unlike logcat-based approaches
+    // which require the app to log focus info with a specific tag.
+    //
+    // We look for "mCurrentFocus" or "mFocused" lines in the view hierarchy,
+    // and also grab the activity/fragment info from the top of the output.
+    FILE *fp = popen(
+        "adb shell dumpsys activity top 2>/dev/null"
+        " | grep -E '(mCurrentFocus|mFocusedView|ACTIVITY|mFocused|"
+        "getCurrentFocus|isFocused.*true)'"
+        " | tail -5", "r");
+    if (!fp) {
+        LOGW("[FOCUS] Could not run dumpsys");
+        return NULL;
+    }
+
+    char focus_info[512] = "";
+    char activity_info[256] = "";
+    char line[2048];
+
+    while (fgets(line, sizeof(line), fp)) {
+        size_t len = strlen(line);
+        if (len > 0 && line[len - 1] == '\n') line[len - 1] = '\0';
+
+        // Grab ACTIVITY line for context
+        if (strstr(line, "ACTIVITY")) {
+            // Trim leading whitespace
+            char *p = line;
+            while (*p == ' ' || *p == '\t') p++;
+            snprintf(activity_info, sizeof(activity_info), "%s", p);
+            continue;
+        }
+
+        // Grab focus info - prefer mFocusedView or isFocused lines
+        if (strstr(line, "mFocused") || strstr(line, "isFocused")
+                || strstr(line, "mCurrentFocus")
+                || strstr(line, "getCurrentFocus")) {
+            char *p = line;
+            while (*p == ' ' || *p == '\t') p++;
+            snprintf(focus_info, sizeof(focus_info), "%s", p);
+        }
+    }
+    pclose(fp);
+
+    if (focus_info[0]) {
+        if (activity_info[0]) {
+            LOGI("[DPAD %s] %s", direction, activity_info);
+        }
+        // Show transition
+        if (prev_focus_cls[0]) {
+            if (strcmp(prev_focus_cls, focus_info) != 0) {
+                LOGI("[DPAD %s] Focus moved: %s -> %s",
+                     direction, prev_focus_cls, focus_info);
+            } else {
+                LOGI("[DPAD %s] Focus unchanged: %s", direction, focus_info);
+            }
+        } else {
+            LOGI("[DPAD %s] Focus: %s", direction, focus_info);
+        }
+        // Save for next comparison
+        snprintf(prev_focus_cls, sizeof(prev_focus_cls), "%s", focus_info);
+    } else {
+        // Fallback: try dumpsys window to get at least the focused window
+        FILE *fp2 = popen(
+            "adb shell dumpsys window windows 2>/dev/null"
+            " | grep -E 'mCurrentFocus|mFocusedApp'"
+            " | head -2", "r");
+        if (fp2) {
+            char win_info[512] = "";
+            while (fgets(line, sizeof(line), fp2)) {
+                size_t l = strlen(line);
+                if (l > 0 && line[l - 1] == '\n') line[l - 1] = '\0';
+                char *p = line;
+                while (*p == ' ' || *p == '\t') p++;
+                if (*p) {
+                    snprintf(win_info, sizeof(win_info), "%s", p);
+                }
+            }
+            pclose(fp2);
+
+            if (win_info[0]) {
+                LOGI("[DPAD %s] Window: %s", direction, win_info);
+            } else {
+                LOGW("[DPAD %s] No focus info available", direction);
+            }
+        } else {
+            LOGW("[DPAD %s] No focus info available", direction);
+        }
+    }
+
+    return NULL;
+}
+
 static void
 sc_key_processor_process_key(struct sc_key_processor *kp,
                              const struct sc_key_event *event,
@@ -289,6 +402,35 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
 
     struct sc_control_msg msg;
     if (convert_input_key(event, &msg, kb->key_inject_mode, kb->repeat)) {
+        // Log D-pad events for debugging
+        enum android_keycode kc = msg.inject_keycode.keycode;
+        const char *dpad_name = NULL;
+        switch (kc) {
+            case AKEYCODE_DPAD_UP:    dpad_name = "UP";    break;
+            case AKEYCODE_DPAD_DOWN:  dpad_name = "DOWN";  break;
+            case AKEYCODE_DPAD_LEFT:  dpad_name = "LEFT";  break;
+            case AKEYCODE_DPAD_RIGHT: dpad_name = "RIGHT"; break;
+            case AKEYCODE_DPAD_CENTER: dpad_name = "CENTER"; break;
+            default: break;
+        }
+        if (dpad_name) {
+            if (msg.inject_keycode.action == AKEY_EVENT_ACTION_DOWN) {
+                LOGI("[DPAD] %s PRESS (repeat=%d)", dpad_name,
+                     (int) kb->repeat);
+            } else {
+                LOGI("[DPAD] %s RELEASE -> querying focus...", dpad_name);
+                // On release, spawn thread to query what changed
+                struct dpad_query_ctx *ctx = malloc(sizeof(*ctx));
+                if (ctx) {
+                    snprintf(ctx->direction, sizeof(ctx->direction),
+                             "%s", dpad_name);
+                    pthread_t tid;
+                    pthread_create(&tid, NULL, query_focused_view, ctx);
+                    pthread_detach(tid);
+                }
+            }
+        }
+
         if (!sc_controller_push_msg(kb->controller, &msg)) {
             LOGW("Could not request 'inject keycode'");
         }

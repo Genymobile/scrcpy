@@ -33,6 +33,8 @@ src = [
     'src/recorder.c',
     'src/scrcpy.c',
     'src/screen.c',
+    'src/screenshot.c',
+    'src/toolbar.c',
     'src/sdl_hints.c',
     'src/server.c',
     'src/texture.c',
@@ -147,6 +149,7 @@ dependencies = [
     dependency('libavcodec', version: '>= 60.3', static: static),
     dependency('libavutil', version: '>= 58.2', static: static),
     dependency('libswresample', static: static),
+    dependency('libswscale', static: static),
     dependency('sdl3', version: '>= 3.2.0', static: static),
 ]
 
