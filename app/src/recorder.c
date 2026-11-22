@@ -199,13 +199,18 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
         sc_cond_wait(&recorder->cond, &recorder->mutex);
     }
 
-    if (recorder->stopped && recorder->video
-            && sc_vecdeque_is_empty(&recorder->video_queue)) {
-        // If the recorder is stopped, don't process anything if there are not
-        // at least video packets
-        sc_mutex_unlock(&recorder->mutex);
-        LOGW("Recording stopped before headers were processed");
-        return false;
+    if (recorder->stopped) {
+        struct sc_recorder_queue *main_queue = recorder->video
+                                             ? &recorder->video_queue
+                                             : &recorder->audio_queue;
+        if (sc_vecdeque_is_empty(main_queue)) {
+            // If the recorder is stopped, don't process anything if there are
+            // not at least video packets (or audio packets if video is
+            // disabled).
+            sc_mutex_unlock(&recorder->mutex);
+            LOGW("Recording stopped before headers were processed");
+            return false;
+        }
     }
 
     AVPacket *video_pkt = NULL;
