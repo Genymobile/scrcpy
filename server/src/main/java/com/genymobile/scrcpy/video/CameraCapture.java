@@ -442,7 +442,10 @@ public class CameraCapture extends SurfaceCapture {
                         cameraAccessExceptionErrorCode = CameraAccessException.CAMERA_ERROR;
                         break;
                 }
-                future.completeExceptionally(new CameraAccessException(cameraAccessExceptionErrorCode));
+                if (future.completeExceptionally(new CameraAccessException(cameraAccessExceptionErrorCode))) {
+                    // The camera device was not returned to the caller, close it here
+                    camera.close();
+                }
             }
         }, cameraHandler);
 
