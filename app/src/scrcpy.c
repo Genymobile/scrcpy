@@ -1146,9 +1146,6 @@ end:
             sc_gamepad_aoa_destroy(&s->gamepad_aoa);
         }
     }
-    if (acksync) {
-        sc_acksync_destroy(acksync);
-    }
 #endif
 
     if (video_decoder_initialized) {
@@ -1178,6 +1175,13 @@ end:
     if (controller_initialized) {
         sc_controller_destroy(&s->controller);
     }
+
+#ifdef HAVE_USB
+    if (acksync) {
+        // Must be destroyed after the controller is joined
+        sc_acksync_destroy(acksync);
+    }
+#endif
 
     if (recorder_started) {
         sc_recorder_join(&s->recorder);
