@@ -1193,7 +1193,7 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
 
     struct sc_size content_size = screen->content_size;
     set_aspect_ratio(screen, content_size);
-    sc_sdl_set_window_size(screen->window, content_size);
+    sc_screen_set_window_size(screen, content_size);
     LOGD("Resized to pixel-perfect: %ux%u", content_size.width,
                                             content_size.height);
 }
