@@ -453,12 +453,8 @@ end:
 
 static bool
 sc_recorder_record(struct sc_recorder *recorder) {
-    bool ok = sc_recorder_open_output_file(recorder);
-    if (!ok) {
-        return false;
-    }
-
-    ok = sc_recorder_process_packets(recorder);
+    // The output file has been opened by sc_recorder_start()
+    bool ok = sc_recorder_process_packets(recorder);
     sc_recorder_close_output_file(recorder);
     return ok;
 }
@@ -828,10 +824,18 @@ error_free_filename:
 
 bool
 sc_recorder_start(struct sc_recorder *recorder) {
-    bool ok = sc_thread_create(&recorder->thread, run_recorder,
-                               "scrcpy-recorder", recorder);
+    // Open the output file before the demuxers are started, so that
+    // recorder->ctx is valid when the packet sinks are opened
+    bool ok = sc_recorder_open_output_file(recorder);
+    if (!ok) {
+        return false;
+    }
+
+    ok = sc_thread_create(&recorder->thread, run_recorder,
+                          "scrcpy-recorder", recorder);
     if (!ok) {
         LOGE("Could not start recorder thread");
+        sc_recorder_close_output_file(recorder);
         return false;
     }
 
