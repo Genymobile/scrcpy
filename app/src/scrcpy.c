@@ -1169,6 +1169,11 @@ end:
         sc_screen_destroy(&s->screen);
     }
 
+    if (file_pusher_initialized) {
+        sc_file_pusher_join(&s->file_pusher);
+        sc_file_pusher_destroy(&s->file_pusher);
+    }
+
     if (controller_started) {
         sc_controller_join(&s->controller);
     }
@@ -1188,11 +1193,6 @@ end:
     }
     if (recorder_initialized) {
         sc_recorder_destroy(&s->recorder);
-    }
-
-    if (file_pusher_initialized) {
-        sc_file_pusher_join(&s->file_pusher);
-        sc_file_pusher_destroy(&s->file_pusher);
     }
 
     if (server_started) {
