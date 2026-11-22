@@ -417,6 +417,10 @@ public class CameraCapture extends SurfaceCapture {
                 Ln.w("Camera disconnected");
                 disconnected.set(true);
                 getCaptureControl().reset(CaptureControl.RESET_REASON_TERMINATED);
+                if (future.completeExceptionally(new CameraAccessException(CameraAccessException.CAMERA_DISCONNECTED))) {
+                    // The camera device was not returned to the caller, close it here
+                    camera.close();
+                }
             }
 
             @Override
