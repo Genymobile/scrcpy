@@ -141,7 +141,8 @@ public final class CleanUp {
         Process process = builder.start();
         OutputStream out = process.getOutputStream();
 
-        while (true) {
+        boolean localInterrupted;
+        do {
             int localPendingChanges;
             boolean localPendingRestoreDisplayPower;
             synchronized (this) {
@@ -152,9 +153,7 @@ public final class CleanUp {
                         throw new AssertionError("Clean up thread MUST NOT be interrupted");
                     }
                 }
-                if (interrupted) {
-                    break;
-                }
+                localInterrupted = interrupted;
                 localPendingChanges = pendingChanges;
                 localPendingRestoreDisplayPower = pendingRestoreDisplayPower;
                 pendingChanges = 0;
@@ -163,7 +162,7 @@ public final class CleanUp {
                 out.write(localPendingRestoreDisplayPower ? 1 : 0);
                 out.flush();
             }
-        }
+        } while (!localInterrupted);
     }
 
     public synchronized void setRestoreDisplayPower(boolean restoreDisplayPower) {
