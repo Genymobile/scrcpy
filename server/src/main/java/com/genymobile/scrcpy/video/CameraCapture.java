@@ -114,6 +114,7 @@ public class CameraCapture extends SurfaceCapture {
         cameraHandler = new Handler(cameraThread.getLooper());
         cameraExecutor = new HandlerExecutor(cameraHandler);
 
+        boolean initialized = false;
         try {
             cameraId = selectCamera(explicitCameraId, cameraFacing);
             if (cameraId == null) {
@@ -122,8 +123,14 @@ public class CameraCapture extends SurfaceCapture {
 
             Ln.i("Using camera '" + cameraId + "'");
             cameraDevice = openCamera(cameraId);
+            initialized = true;
         } catch (CameraAccessException | InterruptedException e) {
             throw new IOException(e);
+        } finally {
+            if (!initialized) {
+                // release() is not called if init fails
+                cameraThread.quitSafely();
+            }
         }
     }
 
