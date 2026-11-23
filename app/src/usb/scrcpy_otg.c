@@ -273,7 +273,9 @@ end:
     if (aoa_started) {
         sc_aoa_stop(&s->aoa);
     }
-    sc_usb_stop(&s->usb);
+    if (usb_connected) {
+        sc_usb_stop(&s->usb);
+    }
 
     if (screen_initialized) {
         sc_screen_interrupt(&s->screen);
@@ -302,9 +304,8 @@ end:
         sc_aoa_destroy(&s->aoa);
     }
 
-    sc_usb_join(&s->usb);
-
     if (usb_connected) {
+        sc_usb_join(&s->usb);
         sc_usb_disconnect(&s->usb);
     }
 
