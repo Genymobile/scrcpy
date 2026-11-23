@@ -130,6 +130,10 @@ run_v4l2_sink(void *data) {
         av_frame_unref(vs->frame);
         if (!ok) {
             LOGE("Could not send frame to v4l2 sink");
+            // Reject further frames
+            sc_mutex_lock(&vs->mutex);
+            vs->stopped = true;
+            sc_mutex_unlock(&vs->mutex);
             break;
         }
     }
