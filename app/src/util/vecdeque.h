@@ -322,6 +322,20 @@ sc_vecdeque_growsize_(size_t value)
             sc_vecdeque_push_uninitialized_noresize(pv) : NULL)
 
 /**
+ * Remove the last pushed item
+ *
+ * This allows to cancel a sc_vecdeque_push_uninitialized() if the item could
+ * not be initialized.
+ *
+ * It is an error to call this function if the VecDeque is empty.
+ */
+#define sc_vecdeque_remove_last(pv) \
+({ \
+    assert(!sc_vecdeque_is_empty(pv)); \
+    --(pv)->size; \
+})
+
+/**
  * Push an item
  *
  * It does not attempt to resize the VecDeque. It is an error to this function
