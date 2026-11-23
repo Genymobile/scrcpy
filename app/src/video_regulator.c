@@ -205,6 +205,7 @@ sc_video_regulator_frame_sink_push(struct sc_frame_sink *sink,
 
     bool ok = sc_delayed_packet_init_frame(dpacket, frame);
     if (!ok) {
+        sc_vecdeque_remove_last(&vr->queue);
         sc_mutex_unlock(&vr->mutex);
         return SC_SINK_KO;
     }
