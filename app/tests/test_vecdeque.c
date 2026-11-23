@@ -184,6 +184,47 @@ static void test_vecdeque_push_uninitialized(void) {
     sc_vecdeque_destroy(&vdq);
 }
 
+static void test_vecdeque_remove_last(void) {
+    struct SC_VECDEQUE(int) vdq = SC_VECDEQUE_INITIALIZER;
+
+    bool ok = sc_vecdeque_reserve(&vdq, 3);
+    assert(ok);
+
+    // Make the content wrap around
+    ok = sc_vecdeque_push(&vdq, 1);
+    assert(ok);
+    ok = sc_vecdeque_push(&vdq, 2);
+    assert(ok);
+    int v = sc_vecdeque_pop(&vdq);
+    assert(v == 1);
+    ok = sc_vecdeque_push(&vdq, 3);
+    assert(ok);
+    ok = sc_vecdeque_push(&vdq, 4);
+    assert(ok);
+    assert(sc_vecdeque_size(&vdq) == 3);
+
+    sc_vecdeque_remove_last(&vdq);
+    assert(sc_vecdeque_size(&vdq) == 2);
+
+    int *p = sc_vecdeque_push_uninitialized(&vdq);
+    assert(p);
+    sc_vecdeque_remove_last(&vdq);
+    assert(sc_vecdeque_size(&vdq) == 2);
+
+    ok = sc_vecdeque_push(&vdq, 5);
+    assert(ok);
+
+    v = sc_vecdeque_pop(&vdq);
+    assert(v == 2);
+    v = sc_vecdeque_pop(&vdq);
+    assert(v == 3);
+    v = sc_vecdeque_pop(&vdq);
+    assert(v == 5);
+    assert(sc_vecdeque_is_empty(&vdq));
+
+    sc_vecdeque_destroy(&vdq);
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -192,6 +233,7 @@ int main(int argc, char *argv[]) {
     test_vecdeque_reserve();
     test_vecdeque_grow();
     test_vecdeque_push_uninitialized();
+    test_vecdeque_remove_last();
 
     return 0;
 }
