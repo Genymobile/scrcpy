@@ -168,9 +168,6 @@ public final class Server {
 
             Looper.loop(); // interrupted by the Completion implementation
         } finally {
-            if (cleanUp != null) {
-                cleanUp.interrupt();
-            }
             for (AsyncProcessor asyncProcessor : asyncProcessors) {
                 asyncProcessor.stop();
             }
@@ -178,11 +175,13 @@ public final class Server {
             connection.shutdown();
 
             try {
-                if (cleanUp != null) {
-                    cleanUp.join();
-                }
                 for (AsyncProcessor asyncProcessor : asyncProcessors) {
                     asyncProcessor.join();
+                }
+                if (cleanUp != null) {
+                    // Interrupt only after the processors are joined, because they can still submit changes to the cleanUp
+                    cleanUp.interrupt();
+                    cleanUp.join();
                 }
 
                 OpenGLRunner.shutdown();
