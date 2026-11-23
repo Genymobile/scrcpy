@@ -53,12 +53,13 @@ public class SurfaceEncoder implements AsyncProcessor {
     private Thread thread;
     private final AtomicBoolean stopped = new AtomicBoolean();
 
-    private final CaptureControl captureControl = new CaptureControl();
+    private final CaptureControl captureControl;
 
     private VideoConstraints videoConstraints;
 
     public SurfaceEncoder(SurfaceCapture capture, Streamer streamer, Options options) {
         this.capture = capture;
+        this.captureControl = capture.getCaptureControl();
         this.streamer = streamer;
         this.videoBitRate = options.getVideoBitRate();
         this.maxSize = options.getMaxSize();
@@ -97,7 +98,7 @@ public class SurfaceEncoder implements AsyncProcessor {
         boolean captureInitialized = false;
 
         try {
-            capture.init(captureControl, videoConstraints);
+            capture.init(videoConstraints);
             captureInitialized = true;
 
             boolean alive;

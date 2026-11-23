@@ -12,15 +12,7 @@ import java.io.IOException;
  */
 public abstract class SurfaceCapture {
 
-    private CaptureControl captureControl;
-
-    /**
-     * Called once before the first capture starts.
-     */
-    public final void init(CaptureControl captureControl, VideoConstraints videoConstraints) throws ConfigurationException, IOException {
-        this.captureControl = captureControl;
-        init(videoConstraints);
-    }
+    private final CaptureControl captureControl = new CaptureControl();
 
     public CaptureControl getCaptureControl() {
         return captureControl;
