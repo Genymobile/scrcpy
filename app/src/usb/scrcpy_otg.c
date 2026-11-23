@@ -299,8 +299,10 @@ end:
         sc_gamepad_aoa_destroy(&s->gamepad);
     }
 
-    if (aoa_initialized) {
+    if (aoa_started) {
         sc_aoa_join(&s->aoa);
+    }
+    if (aoa_initialized) {
         sc_aoa_destroy(&s->aoa);
     }
 
