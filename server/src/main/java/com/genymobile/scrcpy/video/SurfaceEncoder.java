@@ -94,9 +94,12 @@ public class SurfaceEncoder implements AsyncProcessor {
         // Do not constrain by the declared video encoder capabilities before encoding actually fails
         videoConstraints = new VideoConstraints(maxSize, alignment, null);
 
-        capture.init(captureControl, videoConstraints);
+        boolean captureInitialized = false;
 
         try {
+            capture.init(captureControl, videoConstraints);
+            captureInitialized = true;
+
             boolean alive;
 
             streamer.writeVideoHeader();
@@ -184,7 +187,9 @@ public class SurfaceEncoder implements AsyncProcessor {
             } while (alive);
         } finally {
             mediaCodec.release();
-            capture.release();
+            if (captureInitialized) {
+                capture.release();
+            }
         }
     }
 
