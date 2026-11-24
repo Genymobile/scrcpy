@@ -338,6 +338,12 @@ public class NewDisplayCapture extends SurfaceCapture {
         }
 
         VideoConstraints constraints = getVideoConstraints(); // synchronized
+        if (constraints == null) {
+            // init() has not been called yet, there is no display to resize
+            Ln.w(getClass().getSimpleName() + ": resize request (" + width + "x" + height + ") before initialization ignored");
+            return;
+        }
+
         Size newSize = new Size(width, height).constrain(constraints, false);
         if (Ln.isEnabled(Ln.Level.VERBOSE)) {
             Ln.v(getClass().getSimpleName() + ": requestResize(" + width + ", " + height + ")");
