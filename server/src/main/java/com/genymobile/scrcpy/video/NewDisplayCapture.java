@@ -69,8 +69,8 @@ public class NewDisplayCapture extends SurfaceCapture {
     private Size displaySize; // the logical size of the display (including rotation)
     private Size physicalSize; // the physical size of the display (without rotation)
 
-    private DisplayPropertiesTracker tracker;
-    private DisplayResizeDebouncer debouncer;
+    private final DisplayPropertiesTracker tracker;
+    private final DisplayResizeDebouncer debouncer;
 
     private int dpi;
 
@@ -88,6 +88,14 @@ public class NewDisplayCapture extends SurfaceCapture {
         this.vdDestroyContent = options.getVDDestroyContent();
         this.vdSystemDecorations = options.getVDSystemDecorations();
         this.flexDisplay = options.getFlexDisplay();
+
+        if (flexDisplay) {
+            tracker = new DisplayPropertiesTracker();
+            debouncer = new DisplayResizeDebouncer(this::triggerResize);
+        } else {
+            tracker = null;
+            debouncer = null;
+        }
     }
 
     @Override
@@ -101,8 +109,6 @@ public class NewDisplayCapture extends SurfaceCapture {
                 throw new IllegalArgumentException("Flex display does not support cropping");
             }
 
-            tracker = new DisplayPropertiesTracker();
-            debouncer = new DisplayResizeDebouncer(this::triggerResize);
             debouncer.start();
 
             // Hardcode default values if not defined
