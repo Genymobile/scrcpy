@@ -279,30 +279,6 @@ scrcpy_generate_scid(void) {
 }
 
 static void
-init_sdl_gamepads(void) {
-    // Trigger a SDL_EVENT_GAMEPAD_ADDED event for all gamepads already
-    // connected
-    int count;
-    SDL_JoystickID *joysticks = SDL_GetJoysticks(&count);
-    if (!joysticks) {
-        LOGE("Could not list joysticks: %s", SDL_GetError());
-        return;
-    }
-
-    for (int i = 0; i < count; ++i) {
-        SDL_JoystickID joystick = joysticks[i];
-        if (SDL_IsGamepad(joystick)) {
-            SDL_Event event;
-            event.gdevice.type = SDL_EVENT_GAMEPAD_ADDED;
-            event.gdevice.which = joystick;
-            SDL_PushEvent(&event);
-        }
-    }
-
-    SDL_free(joysticks);
-}
-
-static void
 set_terminal_title_with_prefix(const char *value) {
     char title[128];
     memcpy(title, "scrcpy - ", 9);
@@ -531,8 +507,12 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     if (options->gamepad_input_mode != SC_GAMEPAD_INPUT_MODE_DISABLED) {
-        if (!SDL_Init(SDL_INIT_GAMEPAD)) {
-            LOGE("Could not initialize SDL gamepad: %s", SDL_GetError());
+        // Detect the joysticks while the server is starting, but do not
+        // initialize the gamepad subsystem yet, so that the
+        // SDL_EVENT_GAMEPAD_ADDED events are not discarded by
+        // await_for_server()
+        if (!SDL_Init(SDL_INIT_JOYSTICK)) {
+            LOGE("Could not initialize SDL joystick: %s", SDL_GetError());
             goto end;
         }
     }
@@ -552,6 +532,16 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     LOGD("Server connected");
+
+    if (options->gamepad_input_mode != SC_GAMEPAD_INPUT_MODE_DISABLED) {
+        // On initialization, SDL posts an SDL_EVENT_GAMEPAD_ADDED event for
+        // each gamepad already connected. Initialize the gamepad subsystem only
+        // after await_for_server(), which would otherwise discard these events
+        if (!SDL_Init(SDL_INIT_GAMEPAD)) {
+            LOGE("Could not initialize SDL gamepad: %s", SDL_GetError());
+            goto end;
+        }
+    }
 
     // It is necessarily initialized here, since the device is connected
     struct sc_server_info *info = &s->server.info;
@@ -1000,11 +990,6 @@ aoa_complete:
         }
 
         timeout_started = true;
-    }
-
-    if (options->control
-            && options->gamepad_input_mode != SC_GAMEPAD_INPUT_MODE_DISABLED) {
-        init_sdl_gamepads();
     }
 
     if (options->control && options->start_app) {
