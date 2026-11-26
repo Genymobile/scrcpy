@@ -53,6 +53,7 @@ enum {
     OPT_RAW_KEY_EVENTS,
     OPT_NO_DOWNSIZE_ON_ERROR,
     OPT_OTG,
+    OPT_OBS_VIRTUALCAM,
     OPT_NO_CLEANUP,
     OPT_PRINT_FPS,
     OPT_NO_POWER_ON,
@@ -719,6 +720,14 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_NO_WINDOW_ASPECT_RATIO_LOCK,
         .longopt = "no-window-aspect-ratio-lock",
         .text = "Disable window aspect ratio lock.",
+    },
+    {
+        .longopt_id = OPT_OBS_VIRTUALCAM,
+        .longopt = "obs-virtualcam",
+        .text = "Output to the OBS Virtual Camera, so that the device can be "
+                "used as a webcam (OBS Studio must be installed, but not "
+                "running).\n"
+                "This feature is only available on Windows.",
     },
     {
         .longopt_id = OPT_ORIENTATION,
@@ -2832,6 +2841,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGE("OTG mode (--otg) is disabled.");
                 return false;
 #endif
+            case OPT_OBS_VIRTUALCAM:
+#ifdef HAVE_OBS_VCAM
+                opts->obs_vcam = true;
+                break;
+#else
+                LOGE("OBS virtual camera (--obs-virtualcam) is only available "
+                     "on Windows.");
+                return false;
+#endif
             case OPT_V4L2_SINK:
 #ifdef HAVE_V4L2
                 opts->v4l2_device = optarg;
@@ -3039,12 +3057,20 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     bool otg = false;
     bool v4l2 = false;
+    bool obs_vcam = false;
 #ifdef HAVE_USB
     otg = opts->otg;
 #endif
 #ifdef HAVE_V4L2
     v4l2 = !!opts->v4l2_device;
 #endif
+#ifdef HAVE_OBS_VCAM
+    obs_vcam = opts->obs_vcam;
+#endif
+    // Name of the sink exposing the video as a webcam, if any
+    const char *webcam = v4l2 ? "V4L2 sink"
+                       : obs_vcam ? "OBS virtual camera"
+                       : NULL;
 
     if (!opts->window) {
         // Without window, there cannot be any video playback
@@ -3064,8 +3090,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->video && !opts->video_playback && !opts->record_filename
-            && !v4l2) {
-        LOGI("No video playback, no recording, no V4L2 sink: video disabled");
+            && !webcam) {
+        LOGI("No video playback, no recording, no webcam sink: video "
+             "disabled");
         opts->video = false;
     }
 
@@ -3104,35 +3131,35 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 return false;
             }
             opts->hwdec_mode = SC_HWDEC_MODE_DISABLED;
-        } else if (v4l2) {
+        } else if (webcam) {
             if (opts->hwdec_mode != SC_HWDEC_MODE_AUTO) {
-                LOGE("Hardware decoding is not compatible with V4L2");
+                LOGE("Hardware decoding is not compatible with %s", webcam);
                 return false;
             }
-            LOGI("V4L2 sink enabled, hardware decoding disabled");
+            LOGI("%s enabled, hardware decoding disabled", webcam);
             opts->hwdec_mode = SC_HWDEC_MODE_DISABLED;
         }
     }
 
-#ifdef HAVE_V4L2
-    if (v4l2) {
+    if (webcam) {
         if (!opts->video) {
-            LOGE("V4L2 sink requires video capture, but --no-video was set.");
+            LOGE("%s requires video capture, but --no-video was set.", webcam);
             return false;
         }
 
         if (opts->flex_display) {
-            LOGE("V4L2 is incompatible with -x/--flex-display because it does "
-                 "not support resizing");
+            LOGE("%s is incompatible with -x/--flex-display because it does "
+                 "not support resizing", webcam);
             return false;
         }
 
-        // V4L2 could not handle size change.
+        // The webcam sink could not handle size change.
         // Do not log because downsizing on error is the default behavior,
         // not an explicit request from the user.
         opts->downsize_on_error = false;
     }
 
+#ifdef HAVE_V4L2
     if (opts->v4l2_buffer && !opts->v4l2_device) {
         LOGE("V4L2 buffer value without V4L2 sink");
         return false;
@@ -3568,8 +3595,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("OTG mode: could not select display");
             return false;
         }
-        if (v4l2) {
-            LOGE("OTG mode: could not sink to V4L2 device");
+        if (webcam) {
+            LOGE("OTG mode: could not sink to %s", webcam);
             return false;
         }
     }

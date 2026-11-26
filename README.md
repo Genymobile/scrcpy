@@ -41,7 +41,8 @@ Its features include:
  - [copy-paste](doc/control.md#copy-paste) in both directions
  - [configurable quality](doc/video.md)
  - [camera mirroring](doc/camera.md) (Android 12+)
- - [mirroring as a webcam (V4L2)](doc/v4l2.md) (Linux-only)
+ - mirroring as a webcam ([V4L2](doc/v4l2.md) on Linux,
+   [OBS Virtual Camera](doc/windows.md#webcam) on Windows)
  - physical [keyboard][hid-keyboard] and [mouse][hid-mouse] simulation (HID)
  - [gamepad](doc/gamepad.md) support
  - [OTG mode](doc/otg.md)
