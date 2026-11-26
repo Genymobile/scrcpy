@@ -34,6 +34,12 @@ public final class OpenGLRunner {
     private SurfaceTexture surfaceTexture;
     private Surface inputSurface;
     private int textureId;
+    private Size currentOutputSize;
+    private float[] lastTransformMatrix;
+    private long lastPresentationTimeNs;
+    private long lastSurfaceTimestampNs;
+    private long lastSurfaceNanoTimeNs;
+    private boolean hasRenderedFirstFrame;
 
     private boolean stopped;
 
@@ -166,6 +172,7 @@ public final class OpenGLRunner {
         inputSurface = new Surface(surfaceTexture);
 
         filter.init();
+        currentOutputSize = outputSize;
 
         surfaceTexture.setOnFrameAvailableListener(surfaceTexture -> {
             if (stopped) {
@@ -173,27 +180,62 @@ public final class OpenGLRunner {
                 return;
             }
 
-            render(outputSize);
+            render(outputSize, true);
         }, handler);
     }
 
-    private void render(Size outputSize) {
+    public void requestRender() {
+        Handler h;
+        synchronized (OpenGLRunner.class) {
+            h = handler;
+        }
+        if (h == null) {
+            return;
+        }
+        h.post(() -> {
+            if (!stopped && hasRenderedFirstFrame && currentOutputSize != null) {
+                render(currentOutputSize, false);
+            }
+        });
+    }
+
+    private void render(Size outputSize, boolean newSurfaceFrame) {
         GLES20.glViewport(0, 0, outputSize.getWidth(), outputSize.getHeight());
         GLUtils.checkGlError();
 
-        surfaceTexture.updateTexImage();
+        if (newSurfaceFrame) {
+            surfaceTexture.updateTexImage();
+            hasRenderedFirstFrame = true;
+        }
 
         float[] matrix;
         if (overrideTransformMatrix != null) {
             matrix = overrideTransformMatrix;
-        } else {
+        } else if (newSurfaceFrame || lastTransformMatrix == null) {
             matrix = new float[16];
             surfaceTexture.getTransformMatrix(matrix);
+            lastTransformMatrix = matrix;
+        } else {
+            matrix = lastTransformMatrix;
         }
 
         filter.draw(textureId, matrix);
 
-        EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, surfaceTexture.getTimestamp());
+        long ptsNs;
+        long nowNanoNs = System.nanoTime();
+        if (newSurfaceFrame) {
+            long stPts = surfaceTexture.getTimestamp();
+            lastSurfaceTimestampNs = stPts;
+            lastSurfaceNanoTimeNs = nowNanoNs;
+            ptsNs = Math.max(stPts, lastPresentationTimeNs + 1_000_000L);
+        } else {
+            long elapsedNs = Math.max(0L, nowNanoNs - lastSurfaceNanoTimeNs);
+            long estimatedNowPtsNs = lastSurfaceTimestampNs + elapsedNs;
+            ptsNs = Math.max(estimatedNowPtsNs, lastPresentationTimeNs + 16_666_667L);
+        }
+        lastPresentationTimeNs = ptsNs;
+
+        EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, ptsNs);
         EGL14.eglSwapBuffers(eglDisplay, eglSurface);
     }
 
