@@ -27,11 +27,13 @@ import com.genymobile.scrcpy.video.VideoSource;
 import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.system.Os;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -111,6 +113,7 @@ public final class Server {
             Controller controller = null;
 
             if (control) {
+                waitForInputService();
                 ControlChannel controlChannel = connection.getControlChannel();
                 controller = new Controller(controlChannel, cleanUp, options);
                 asyncProcessors.add(controller);
@@ -273,6 +276,30 @@ public final class Server {
             scrcpy(options);
         } catch (ConfigurationException e) {
             // Do not print stack trace, a user-friendly error-message has already been logged
+        }
+    }
+
+    private static void waitForInputService() throws ConfigurationException {
+        // If the device is still booting, the input service may not be published yet
+        // <https://github.com/Genymobile/scrcpy/issues/6306>
+        try {
+            Method checkService = Class.forName("android.os.ServiceManager").getDeclaredMethod("checkService", String.class);
+            Method getProp = Class.forName("android.os.SystemProperties").getDeclaredMethod("get", String.class);
+            boolean logged = false;
+            while (checkService.invoke(null, "input") == null) {
+                if ("1".equals(getProp.invoke(null, "sys.boot_completed"))) {
+                    // Boot is complete: the input service will never be available
+                    Ln.e("Input service not available (use --no-control)");
+                    throw new ConfigurationException("Input service not available");
+                }
+                if (!logged) {
+                    Ln.i("Waiting for the device to boot...");
+                    logged = true;
+                }
+                SystemClock.sleep(200);
+            }
+        } catch (ReflectiveOperationException e) {
+            Ln.w("Could not check the input service", e);
         }
     }
 
