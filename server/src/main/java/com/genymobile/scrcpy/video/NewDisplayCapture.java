@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.AndroidVersions;
+import com.genymobile.scrcpy.FreeformSupport;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.display.DisplayInfo;
@@ -8,6 +9,7 @@ import com.genymobile.scrcpy.display.DisplayMonitor;
 import com.genymobile.scrcpy.display.DisplayProperties;
 import com.genymobile.scrcpy.display.DisplayPropertiesTracker;
 import com.genymobile.scrcpy.display.DisplayResizeDebouncer;
+import com.genymobile.scrcpy.model.ConfigurationException;
 import com.genymobile.scrcpy.model.NewDisplay;
 import com.genymobile.scrcpy.model.Orientation;
 import com.genymobile.scrcpy.model.Size;
@@ -41,6 +43,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private static final int VIRTUAL_DISPLAY_FLAG_TOUCH_FEEDBACK_DISABLED = 1 << 13;
     private static final int VIRTUAL_DISPLAY_FLAG_OWN_FOCUS = 1 << 14;
     private static final int VIRTUAL_DISPLAY_FLAG_DEVICE_DISPLAY_GROUP = 1 << 15;
+    private static final int VIRTUAL_DISPLAY_FLAG_ALLOWS_CONTENT_MODE_SWITCH = 1 << 17;
 
     private final VirtualDisplayListener vdListener;
     private final NewDisplay newDisplay;
@@ -60,6 +63,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private final float angle;
     private final boolean vdDestroyContent;
     private final boolean vdSystemDecorations;
+    private final boolean vdEnableFreeform;
     private final boolean flexDisplay;
 
     private VideoConstraints videoConstraints;
@@ -87,6 +91,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         this.angle = options.getAngle();
         this.vdDestroyContent = options.getVDDestroyContent();
         this.vdSystemDecorations = options.getVDSystemDecorations();
+        this.vdEnableFreeform = options.getVDEnableFreeform();
         this.flexDisplay = options.getFlexDisplay();
     }
 
@@ -208,18 +213,23 @@ public class NewDisplayCapture extends SurfaceCapture {
         displayTransform = AffineMatrix.multiplyAll(displayRotationMatrix, eventTransform);
     }
 
-    public void startNew(Surface surface) {
+    private void startNew(Surface surface) throws ConfigurationException {
         try {
+            boolean contentModeSwitch = vdSystemDecorations && Build.VERSION.SDK_INT >= AndroidVersions.API_37_ANDROID_17;
+
             int flags = VIRTUAL_DISPLAY_FLAG_PUBLIC
                     | VIRTUAL_DISPLAY_FLAG_PRESENTATION
-                    | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
                     | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
                     | VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT;
+            if (!contentModeSwitch) {
+                flags |= VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY;
+            }
             if (vdDestroyContent) {
                 flags |= VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL;
             }
             if (vdSystemDecorations) {
-                flags |= VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
+                flags |= contentModeSwitch ? VIRTUAL_DISPLAY_FLAG_ALLOWS_CONTENT_MODE_SWITCH
+                        : VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
             }
             if (Build.VERSION.SDK_INT >= AndroidVersions.API_33_ANDROID_13) {
                 flags |= VIRTUAL_DISPLAY_FLAG_TRUSTED
@@ -236,6 +246,10 @@ public class NewDisplayCapture extends SurfaceCapture {
             setCurrentVirtualDisplay(vd); // used for client resize
             int virtualDisplayId = vd.getDisplay().getDisplayId();
             Ln.i("New display: " + displaySize.getWidth() + "x" + displaySize.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
+
+            if (vdEnableFreeform) {
+                FreeformSupport.awaitDesktopEligibility(virtualDisplayId);
+            }
 
             if (displayImePolicy != -1) {
                 ServiceManager.getWindowManager().setDisplayImePolicy(virtualDisplayId, displayImePolicy);
@@ -257,6 +271,10 @@ public class NewDisplayCapture extends SurfaceCapture {
                 }
                 getCaptureControl().reset(reason);
             });
+        } catch (ConfigurationException e) {
+            // An expected eligibility failure is fatal for this session, not a codec retry.
+            Ln.e(e.getMessage(), e.getCause());
+            throw e;
         } catch (Exception e) {
             Ln.e("Could not create display", e);
             throw new AssertionError("Could not create display");
@@ -264,7 +282,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     }
 
     @Override
-    public void start(Surface surface) throws IOException {
+    public void start(Surface surface) throws ConfigurationException, IOException {
         if (displayTransform != null) {
             assert glRunner == null;
             OpenGLFilter glFilter = new AffineOpenGLFilter(displayTransform);

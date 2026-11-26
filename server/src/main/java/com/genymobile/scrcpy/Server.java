@@ -28,6 +28,7 @@ import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.Looper;
 import android.system.Os;
+import android.view.Display;
 
 import java.io.File;
 import java.io.IOException;
@@ -85,11 +86,28 @@ public final class Server {
             }
         }
 
-        CleanUp cleanUp = null;
-
-        if (options.getCleanup()) {
-            cleanUp = CleanUp.start(options);
+        if (!options.getVDEnableFreeform()) {
+            scrcpySession(options, null);
+            return;
         }
+        if (Build.VERSION.SDK_INT < AndroidVersions.API_37_ANDROID_17 || options.getNewDisplay() == null
+                || !options.getVideo() || options.getVideoSource() != VideoSource.DISPLAY
+                || !options.getVDSystemDecorations() || !options.getCleanup()) {
+            throw new ConfigurationException("vd_enable_freeform requires Android 17+, a new display with video and system decorations, "
+                    + "and cleanup");
+        }
+        Ln.w("Enabling freeform temporarily for the entire device; this may reconfigure the main display");
+
+        // Start the guardian before CleanUp can unlink the server jar.
+        Workarounds.apply();
+        try (FreeformSupport freeform = FreeformSupport.start()) {
+            FreeformSupport.awaitDesktopEligibility(Display.DEFAULT_DISPLAY);
+            scrcpySession(options, freeform);
+        }
+    }
+
+    private static void scrcpySession(Options options, FreeformSupport freeform) throws IOException, ConfigurationException {
+        CleanUp cleanUp = options.getCleanup() ? CleanUp.start(options) : null;
 
         int scid = options.getScid();
         boolean tunnelForward = options.isTunnelForward();
@@ -98,7 +116,9 @@ public final class Server {
         boolean audio = options.getAudio();
         boolean sendDummyByte = options.getSendDummyByte();
 
-        Workarounds.apply();
+        if (freeform == null) {
+            Workarounds.apply();
+        }
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
@@ -168,30 +188,45 @@ public final class Server {
 
             Looper.loop(); // interrupted by the Completion implementation
         } finally {
+            if (freeform == null) {
+                try {
+                    stopSession(cleanUp, asyncProcessors, connection);
+                } catch (InterruptedException e) {
+                    // Preserve the ordinary session's shutdown behavior.
+                }
+            } else {
+                freeform.finishSession(() -> {
+                    stopSession(cleanUp, asyncProcessors, connection);
+                    return null;
+                });
+            }
+        }
+    }
+
+    private static void stopSession(CleanUp cleanUp, List<AsyncProcessor> asyncProcessors, DesktopConnection connection)
+            throws IOException, InterruptedException {
+        if (cleanUp != null) {
+            cleanUp.interrupt();
+        }
+        for (AsyncProcessor asyncProcessor : asyncProcessors) {
+            asyncProcessor.stop();
+        }
+
+        connection.shutdown();
+
+        try {
             if (cleanUp != null) {
-                cleanUp.interrupt();
+                cleanUp.join();
             }
             for (AsyncProcessor asyncProcessor : asyncProcessors) {
-                asyncProcessor.stop();
+                asyncProcessor.join();
             }
-
-            connection.shutdown();
-
-            try {
-                if (cleanUp != null) {
-                    cleanUp.join();
-                }
-                for (AsyncProcessor asyncProcessor : asyncProcessors) {
-                    asyncProcessor.join();
-                }
-
-                OpenGLRunner.shutdown();
-            } catch (InterruptedException e) {
-                // ignore
-            }
-
+            OpenGLRunner.shutdown();
+        } catch (InterruptedException e) {
             connection.close();
+            throw e;
         }
+        connection.close();
     }
 
     private static void prepareMainLooper() {
