@@ -111,8 +111,10 @@ public class CameraCapture extends SurfaceCapture {
 
         cameraThread = new HandlerThread("camera");
         cameraThread.start();
-        cameraHandler = new Handler(cameraThread.getLooper());
-        cameraExecutor = new HandlerExecutor(cameraHandler);
+
+        Handler handler = new Handler(cameraThread.getLooper());
+        setCameraHandler(handler); // synchronized
+        cameraExecutor = new HandlerExecutor(handler);
 
         boolean initialized = false;
         try {
@@ -495,8 +497,21 @@ public class CameraCapture extends SurfaceCapture {
         return disconnected.get();
     }
 
+    private synchronized void setCameraHandler(Handler cameraHandler) {
+        this.cameraHandler = cameraHandler;
+    }
+
+    private synchronized Handler getCameraHandler() {
+        return cameraHandler;
+    }
+
     public void setTorchEnabled(boolean enabled) {
-        cameraHandler.post(() -> {
+        Handler handler = getCameraHandler(); // synchronized
+        if (handler == null) {
+            Ln.w("Camera torch request before initialization ignored");
+            return;
+        }
+        handler.post(() -> {
             assertCameraThread();
             if (currentSession != null && requestBuilder != null) {
                 try {
@@ -513,7 +528,12 @@ public class CameraCapture extends SurfaceCapture {
 
     @TargetApi(AndroidVersions.API_30_ANDROID_11)
     private void zoom(boolean in) {
-        cameraHandler.post(() -> {
+        Handler handler = getCameraHandler(); // synchronized
+        if (handler == null) {
+            Ln.w("Camera zoom request before initialization ignored");
+            return;
+        }
+        handler.post(() -> {
             assertCameraThread();
             if (currentSession != null && requestBuilder != null) {
                 // Always align to log values
