@@ -13,7 +13,19 @@ fi
 ARCH="$1"
 LINUX_BUILD_DIR="$WORK_DIR/build-linux-$ARCH"
 
-app/deps/adb_linux.sh
+if [[ "$ARCH" == x86_64 ]]
+then
+    app/deps/adb_linux.sh
+else
+    # Google only provides x86_64 Linux platform-tools, build adb from source
+    app/deps/abseil.sh linux native static
+    app/deps/protobuf.sh linux native static
+    app/deps/brotli.sh linux native static
+    app/deps/zstd.sh linux native static
+    app/deps/lz4.sh linux native static
+    app/deps/pcre2.sh linux native static
+    app/deps/android-tools.sh linux native static
+fi
 app/deps/sdl.sh linux native static
 app/deps/dav1d.sh linux native static
 app/deps/ffmpeg.sh linux native static
