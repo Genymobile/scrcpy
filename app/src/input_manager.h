@@ -11,6 +11,7 @@
 #include "controller.h"
 #include "file_pusher.h"
 #include "options.h"
+#include "pending_key.h"
 #include "trait/gamepad_processor.h"
 #include "trait/key_processor.h"
 #include "trait/mouse_processor.h"
@@ -48,6 +49,8 @@ struct sc_input_manager {
     uint64_t next_sequence; // used for request acknowledgements
 
     bool disconnected;
+
+    struct sc_pending_keys pending;
 };
 
 struct sc_input_manager_params {
