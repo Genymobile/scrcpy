@@ -10,10 +10,21 @@ public final class DisplayInfo {
     private final int flags;
     private final int dpi;
     private final String uniqueId;
+    private final int type;
+    private final String name;
 
     public static final int FLAG_SUPPORTS_PROTECTED_BUFFERS = 0x00000001;
 
-    public DisplayInfo(int displayId, Size size, int rotation, int layerStack, int flags, int dpi, String uniqueId) {
+    // android.view.Display.TYPE_*
+    public static final int TYPE_UNKNOWN = 0;
+    public static final int TYPE_INTERNAL = 1;
+    public static final int TYPE_EXTERNAL = 2;
+    public static final int TYPE_WIFI = 3;
+    public static final int TYPE_OVERLAY = 4;
+    public static final int TYPE_VIRTUAL = 5;
+
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    public DisplayInfo(int displayId, Size size, int rotation, int layerStack, int flags, int dpi, String uniqueId, int type, String name) {
         this.displayId = displayId;
         this.size = size;
         this.rotation = rotation;
@@ -21,6 +32,8 @@ public final class DisplayInfo {
         this.flags = flags;
         this.dpi = dpi;
         this.uniqueId = uniqueId;
+        this.type = type;
+        this.name = name;
     }
 
     public int getDisplayId() {
@@ -49,5 +62,13 @@ public final class DisplayInfo {
 
     public String getUniqueId() {
         return uniqueId;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public String getName() {
+        return name;
     }
 }

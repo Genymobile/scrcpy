@@ -23,8 +23,12 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.os.Build;
 import android.util.Range;
+import android.view.Display;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -98,8 +102,7 @@ public final class LogUtils {
                 builder.append("\n    --display-id=").append(id).append("    (");
                 DisplayInfo displayInfo = displayManager.getDisplayInfo(id);
                 if (displayInfo != null) {
-                    Size size = displayInfo.getSize();
-                    builder.append(size.getWidth()).append("x").append(size.getHeight());
+                    builder.append(buildDisplayDescription(displayInfo));
                 } else {
                     builder.append("size unknown");
                 }
@@ -107,6 +110,81 @@ public final class LogUtils {
             }
         }
         return builder.toString();
+    }
+
+    // not private to call it from unit tests
+    static String buildDisplayDescription(DisplayInfo displayInfo) {
+        StringBuilder builder = new StringBuilder();
+        Size size = displayInfo.getSize();
+        builder.append(size.getWidth()).append("x").append(size.getHeight());
+        builder.append(", ").append(displayInfo.getDpi()).append("dpi");
+        String typeName = getDisplayTypeName(displayInfo.getType());
+        if (typeName != null) {
+            builder.append(", ").append(typeName);
+        }
+        String name = displayInfo.getName();
+        if (name != null) {
+            builder.append(", \"").append(name).append('"');
+        }
+        List<String> flagNames = getDisplayFlagNames(displayInfo.getFlags());
+        if (!flagNames.isEmpty()) {
+            builder.append(", flags=").append(flagNames);
+        }
+        return builder.toString();
+    }
+
+    private static String getDisplayTypeName(int type) {
+        switch (type) {
+            case DisplayInfo.TYPE_INTERNAL:
+                return "internal";
+            case DisplayInfo.TYPE_EXTERNAL:
+                return "external";
+            case DisplayInfo.TYPE_WIFI:
+                return "wifi";
+            case DisplayInfo.TYPE_OVERLAY:
+                return "overlay";
+            case DisplayInfo.TYPE_VIRTUAL:
+                return "virtual";
+            default:
+                return null;
+        }
+    }
+
+    // not private to call it from unit tests
+    static List<String> getDisplayFlagNames(int flags) {
+        // Read the names from the Display class of the device, to also name the flags which are hidden or specific to a vendor
+        String[] names = new String[Integer.SIZE];
+        for (Field field : Display.class.getDeclaredFields()) {
+            String name = field.getName();
+            if (field.getType() != int.class || !Modifier.isStatic(field.getModifiers()) || !name.startsWith("FLAG_")) {
+                continue;
+            }
+            try {
+                int value = field.getInt(null);
+                if (Integer.bitCount(value) == 1) {
+                    int bit = Integer.numberOfTrailingZeros(value);
+                    // If several flags share the same value, always keep the same one
+                    if (names[bit] == null || name.compareTo(names[bit]) < 0) {
+                        names[bit] = name;
+                    }
+                }
+            } catch (ReflectiveOperationException | RuntimeException e) {
+                // Silently ignore, this flag will be reported by its value
+            }
+        }
+
+        List<String> result = new ArrayList<>();
+        for (int bit = 0; bit < Integer.SIZE; ++bit) {
+            int flag = 1 << bit;
+            if ((flags & flag) != 0) {
+                if (names[bit] != null) {
+                    result.add(names[bit]);
+                } else {
+                    result.add("0x" + Integer.toHexString(flag));
+                }
+            }
+        }
+        return result;
     }
 
     private static String getCameraFacingName(int facing) {
