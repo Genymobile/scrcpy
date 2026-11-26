@@ -357,6 +357,21 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
 
 bool
 sc_control_msg_is_droppable(const struct sc_control_msg *msg) {
+    if (msg->type == SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT
+            && msg->inject_touch_event.pointer_id == SC_POINTER_ID_PEN) {
+        switch (msg->inject_touch_event.action) {
+            case AMOTION_EVENT_ACTION_DOWN:
+            case AMOTION_EVENT_ACTION_UP:
+            case AMOTION_EVENT_ACTION_CANCEL:
+                // Preserve stroke boundaries in FIFO order under congestion.
+                // MOVE (including pressure-only samples) keeps the ordinary limit.
+                // Like UHID lifecycle events, boundaries may grow the queue and
+                // still fail on allocation failure; the caller observes false.
+                return false;
+            default:
+                break;
+        }
+    }
     // Cannot drop UHID_CREATE messages, because it would cause all further
     // UHID_INPUT messages for this device to be invalid.
     // Cannot drop UHID_DESTROY messages either, because a further UHID_CREATE
