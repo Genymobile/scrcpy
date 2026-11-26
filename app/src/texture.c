@@ -46,7 +46,8 @@ sc_texture_init(struct sc_texture *tex, SDL_Renderer *renderer, bool mipmaps,
     }
 
     tex->renderer = renderer;
-    tex->interop = sc_interop_new(hwdec_mode, tex->renderer, gl, tex->mipmaps);
+    tex->interop = sc_interop_new_from_hwdec_mode(hwdec_mode, tex->renderer, gl,
+                                                  tex->mipmaps);
     if (!tex->interop) {
         return false;
     }
@@ -83,14 +84,14 @@ sc_texture_get_frame_size(struct sc_texture *tex) {
     return tex->interop->frame_size;
 }
 
-bool
-sc_texture_disable_hwdec(struct sc_texture *tex) {
+static bool
+sc_texture_replace_interop(struct sc_texture *tex,
+                           enum AVHWDeviceType hw_type) {
     assert(tex->interop);
-    assert(tex->interop->hw_type != AV_HWDEVICE_TYPE_NONE);
 
     struct sc_opengl *gl = tex->has_gl ? &tex->gl : NULL;
     struct sc_interop *interop =
-        sc_interop_new(SC_HWDEC_MODE_DISABLED, tex->renderer, gl, tex->mipmaps);
+        sc_interop_new(hw_type, tex->renderer, gl, tex->mipmaps);
     if (!interop) {
         return false;
     }
@@ -105,20 +106,49 @@ sc_texture_disable_hwdec(struct sc_texture *tex) {
 }
 
 bool
-sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
+sc_texture_disable_hwdec(struct sc_texture *tex) {
     assert(tex->interop);
+    assert(tex->interop->hw_type != AV_HWDEVICE_TYPE_NONE);
 
+    return sc_texture_replace_interop(tex, AV_HWDEVICE_TYPE_NONE);
+}
+
+static enum AVPixelFormat
+sc_texture_get_frame_format(const AVFrame *frame) {
     enum AVPixelFormat format = frame->format;
     if (format == AV_PIX_FMT_YUVJ420P) {
         // Deprecated full-range alias of YUV420P, with the same layout (the
         // color range is read from the frame)
         format = AV_PIX_FMT_YUV420P;
     }
+    return format;
+}
 
-    if (tex->interop->hw_type != AV_HWDEVICE_TYPE_NONE
-            && tex->interop->pix_fmt != format) {
-        LOGI("Incompatible frame, switching to software interop");
-        if (!sc_texture_disable_hwdec(tex)) {
+static enum AVHWDeviceType
+sc_texture_get_frame_hw_device_type(const AVFrame *frame) {
+    if (!frame->hw_frames_ctx) {
+        return AV_HWDEVICE_TYPE_NONE;
+    }
+
+    AVHWFramesContext *frames_ctx =
+        (AVHWFramesContext *) frame->hw_frames_ctx->data;
+    return frames_ctx->device_ctx->type;
+}
+
+bool
+sc_texture_prepare(struct sc_texture *tex, const AVFrame *frame) {
+    assert(tex->interop);
+
+    enum AVPixelFormat format = sc_texture_get_frame_format(frame);
+
+    if (tex->interop->pix_fmt != format) {
+        // The decoder may fall back to software decoding for a session that the
+        // hardware decoder does not support, and use hardware decoding again
+        // for the next one
+        enum AVHWDeviceType hw_type =
+            sc_texture_get_frame_hw_device_type(frame);
+        if (hw_type != tex->interop->hw_type
+                && !sc_texture_replace_interop(tex, hw_type)) {
             return false;
         }
     }
@@ -131,7 +161,15 @@ sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
         return false;
     }
 
-    assert(interop->ops && interop->ops->import);
+    return true;
+}
+
+bool
+sc_texture_update(struct sc_texture *tex, const AVFrame *frame) {
+    struct sc_interop *interop = tex->interop;
+    assert(interop && interop->ops && interop->ops->import);
+    // sc_texture_prepare() must have been called for this frame
+    assert(interop->pix_fmt == sc_texture_get_frame_format(frame));
     return interop->ops->import(interop, frame);
 }
 

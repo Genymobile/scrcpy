@@ -11,6 +11,8 @@
 
 #define SC_PACKET_HEADER_SIZE 12
 
+#define SC_PACKET_MAX_SIZE (64 * 1024 * 1024)
+
 #define SC_PACKET_FLAG_CONFIG    (UINT64_C(1) << 62)
 #define SC_PACKET_FLAG_KEY_FRAME (UINT64_C(1) << 61)
 
@@ -140,6 +142,12 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, const uint8_t *header,
     uint32_t len = sc_read32be(&header[8]);
     if (!len) {
         LOGE("Invalid packet length: 0");
+        return false;
+    }
+
+    if (len > SC_PACKET_MAX_SIZE) {
+        LOGE("Invalid packet length: %" PRIu32 " (max %d)", len,
+             SC_PACKET_MAX_SIZE);
         return false;
     }
 
@@ -314,7 +322,7 @@ run_demuxer(void *data) {
             }
 
             if (must_merge_config_packet) {
-                // Prepend any config packet to the next media packet
+                // Prepend the last config packet to every key frame
                 ok = sc_packet_merger_merge(&merger, packet);
                 if (!ok) {
                     av_packet_unref(packet);

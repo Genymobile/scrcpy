@@ -1067,8 +1067,15 @@ run_server(void *data) {
         if (pid == SC_PROCESS_NONE) {
             goto error_connection_failed;
         }
-        sc_process_wait(pid, NULL); // ignore exit code
-        sc_process_close(pid);
+        sc_exit_code exit_code = sc_process_wait(pid, true);
+        if (exit_code) {
+            if (exit_code != SC_EXIT_CODE_NONE) {
+                LOGE("Server returned with value %" SC_PRIexitcode, exit_code);
+            } else {
+                LOGE("Server exited unexpectedly");
+            }
+            goto error_connection_failed;
+        }
         // Wake up await_for_server()
         server->cbs->on_connected(server, server->cbs_userdata);
         return 0;

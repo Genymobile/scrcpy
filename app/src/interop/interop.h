@@ -40,8 +40,13 @@ struct sc_interop_ops {
 };
 
 struct sc_interop *
-sc_interop_new(enum sc_hwdec_mode hwdec_mode, SDL_Renderer *renderer,
+sc_interop_new(enum AVHWDeviceType hw_type, SDL_Renderer *renderer,
                struct sc_opengl *gl, bool mipmaps);
+
+struct sc_interop *
+sc_interop_new_from_hwdec_mode(enum sc_hwdec_mode hwdec_mode,
+                               SDL_Renderer *renderer, struct sc_opengl *gl,
+                               bool mipmaps);
 
 void
 sc_interop_delete(struct sc_interop *interop);

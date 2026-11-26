@@ -125,6 +125,7 @@ struct sc_screen_params {
     struct sc_gamepad_processor *gp;
 
     struct sc_mouse_bindings mouse_bindings;
+    bool text_input;
     bool legacy_paste;
     bool clipboard_autosync;
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
@@ -198,7 +199,7 @@ void
 sc_screen_set_paused(struct sc_screen *screen, bool paused);
 
 // react to SDL events
-void
+bool
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event);
 
 // run the event loop once the device is disconnected
@@ -206,10 +207,15 @@ void
 sc_screen_handle_disconnection(struct sc_screen *screen);
 
 // convert point from window coordinates to frame coordinates
-// x and y are expressed in pixels
+// x and y are expressed in SDL window coordinates
 struct sc_point
 sc_screen_convert_window_to_frame_coords(struct sc_screen *screen,
-                                        int32_t x, int32_t y);
+                                         float x, float y);
+
+// return true if the point, expressed in SDL window coordinates, is inside the
+// content rectangle
+bool
+sc_screen_content_contains(struct sc_screen *screen, float x, float y);
 
 static inline enum AVHWDeviceType
 sc_screen_get_hw_type(struct sc_screen *screen) {

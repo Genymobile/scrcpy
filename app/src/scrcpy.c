@@ -8,12 +8,6 @@
 #include <string.h>
 #include <SDL3/SDL.h>
 
-#ifdef _WIN32
-// not needed here, but winsock2.h must never be included AFTER windows.h
-# include <winsock2.h>
-# include <windows.h>
-#endif
-
 #include "audio_player.h"
 #include "controller.h"
 #include "decoder.h"
@@ -98,25 +92,6 @@ struct scrcpy {
     struct sc_timeout timeout;
 };
 
-#ifdef _WIN32
-static BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
-    if (ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_BREAK_EVENT) {
-        sc_push_event(SDL_EVENT_QUIT);
-        return TRUE;
-    }
-    return FALSE;
-}
-
-static void
-sdl_configure_ctrl_c_windows(void) {
-    // Clean up properly on Ctrl+C on Windows
-    bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
-    if (!ok) {
-        LOGW("Could not set Ctrl+C handler");
-    }
-}
-#endif // _WIN32
-
 static enum scrcpy_exit_code
 event_loop(struct scrcpy *s, bool has_screen) {
     SDL_Event event;
@@ -125,7 +100,9 @@ event_loop(struct scrcpy *s, bool has_screen) {
             case SC_EVENT_DEVICE_DISCONNECTED:
                 LOGW("Device disconnected");
                 if (has_screen) {
-                    sc_screen_handle_event(&s->screen, &event);
+                    if (!sc_screen_handle_event(&s->screen, &event)) {
+                        return SCRCPY_EXIT_FAILURE;
+                    }
                 }
                 return SCRCPY_EXIT_DISCONNECTED;
             case SC_EVENT_DEMUXER_ERROR:
@@ -151,7 +128,9 @@ event_loop(struct scrcpy *s, bool has_screen) {
                 return SCRCPY_EXIT_SUCCESS;
             default:
                 if (has_screen) {
-                    sc_screen_handle_event(&s->screen, &event);
+                    if (!sc_screen_handle_event(&s->screen, &event)) {
+                        return SCRCPY_EXIT_FAILURE;
+                    }
                 }
                 break;
         }
@@ -375,22 +354,29 @@ sc_init_video_hwdec(struct sc_hwdec *hwdec, enum sc_hwdec_mode mode,
 
 enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
-    static struct scrcpy scrcpy;
 #ifndef NDEBUG
+    // In DEBUG mode, allocate the struct on the heap so that LSAN detects leaks
+    struct scrcpy *s = malloc(sizeof(*s));
+    if (!s) {
+        LOG_OOM();
+        return SCRCPY_EXIT_FAILURE;
+    }
     // Detect missing initializations
-    memset(&scrcpy, 42, sizeof(scrcpy));
-#endif
+    memset(s, 42, sizeof(*s));
+# else
+    static struct scrcpy scrcpy;
     struct scrcpy *s = &scrcpy;
+#endif
+
+    enum scrcpy_exit_code ret = SCRCPY_EXIT_FAILURE;
 
     // Minimal SDL initialization
     if (!SDL_Init(SDL_INIT_EVENTS)) {
         LOGE("Could not initialize SDL: %s", SDL_GetError());
-        return SCRCPY_EXIT_FAILURE;
+        goto release;
     }
 
     atexit(SDL_Quit);
-
-    enum scrcpy_exit_code ret = SCRCPY_EXIT_FAILURE;
 
     bool server_started = false;
     bool file_pusher_initialized = false;
@@ -494,11 +480,11 @@ scrcpy(struct scrcpy_options *options) {
         .on_disconnected = sc_server_on_disconnected,
     };
     if (!sc_server_init(&s->server, &params, &cbs, NULL)) {
-        return SCRCPY_EXIT_FAILURE;
+        goto release;
     }
 
 #ifdef _WIN32
-    sdl_configure_ctrl_c_windows();
+    sc_set_windows_ctrl_c_handler();
 #endif
 
     // Set hints before starting the server thread to avoid race conditions in
@@ -652,6 +638,8 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_mouse_processor *mp = NULL;
     struct sc_gamepad_processor *gp = NULL;
 
+    bool text_input = false;
+
     if (options->control) {
         static const struct sc_controller_callbacks controller_cbs = {
             .on_ended = sc_controller_on_ended,
@@ -769,6 +757,7 @@ aoa_complete:
                                  options->key_inject_mode,
                                  options->forward_key_repeat);
             kp = &s->keyboard_sdk.key_processor;
+            text_input = options->key_inject_mode != SC_KEY_INJECT_MODE_RAW;
         } else if (options->keyboard_input_mode
                 == SC_KEYBOARD_INPUT_MODE_UHID) {
             bool ok = sc_keyboard_uhid_init(&s->keyboard_uhid, &s->controller);
@@ -824,6 +813,7 @@ aoa_complete:
             .mp = mp,
             .gp = gp,
             .mouse_bindings = options->mouse_bindings,
+            .text_input = text_input,
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,
             .shortcut_mods = options->shortcut_mods,
@@ -1157,9 +1147,6 @@ end:
             sc_gamepad_aoa_destroy(&s->gamepad_aoa);
         }
     }
-    if (acksync) {
-        sc_acksync_destroy(acksync);
-    }
 #endif
 
     if (video_decoder_initialized) {
@@ -1183,12 +1170,24 @@ end:
         sc_screen_destroy(&s->screen);
     }
 
+    if (file_pusher_initialized) {
+        sc_file_pusher_join(&s->file_pusher);
+        sc_file_pusher_destroy(&s->file_pusher);
+    }
+
     if (controller_started) {
         sc_controller_join(&s->controller);
     }
     if (controller_initialized) {
         sc_controller_destroy(&s->controller);
     }
+
+#ifdef HAVE_USB
+    if (acksync) {
+        // Must be destroyed after the controller is joined
+        sc_acksync_destroy(acksync);
+    }
+#endif
 
     if (recorder_started) {
         sc_recorder_join(&s->recorder);
@@ -1197,16 +1196,17 @@ end:
         sc_recorder_destroy(&s->recorder);
     }
 
-    if (file_pusher_initialized) {
-        sc_file_pusher_join(&s->file_pusher);
-        sc_file_pusher_destroy(&s->file_pusher);
-    }
-
     if (server_started) {
         sc_server_join(&s->server);
     }
 
     sc_server_destroy(&s->server);
+
+release:
+#ifndef NDEBUG
+    // In DEBUG mode, the struct is dynamically allocated
+    free(s);
+#endif
 
     return ret;
 }

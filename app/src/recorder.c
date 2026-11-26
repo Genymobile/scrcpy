@@ -199,13 +199,18 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
         sc_cond_wait(&recorder->cond, &recorder->mutex);
     }
 
-    if (recorder->stopped && recorder->video
-            && sc_vecdeque_is_empty(&recorder->video_queue)) {
-        // If the recorder is stopped, don't process anything if there are not
-        // at least video packets
-        sc_mutex_unlock(&recorder->mutex);
-        LOGW("Recording stopped before headers were processed");
-        return false;
+    if (recorder->stopped) {
+        struct sc_recorder_queue *main_queue = recorder->video
+                                             ? &recorder->video_queue
+                                             : &recorder->audio_queue;
+        if (sc_vecdeque_is_empty(main_queue)) {
+            // If the recorder is stopped, don't process anything if there are
+            // not at least video packets (or audio packets if video is
+            // disabled).
+            sc_mutex_unlock(&recorder->mutex);
+            LOGW("Recording stopped before headers were processed");
+            return false;
+        }
     }
 
     AVPacket *video_pkt = NULL;
@@ -453,12 +458,7 @@ end:
 
 static bool
 sc_recorder_record(struct sc_recorder *recorder) {
-    bool ok = sc_recorder_open_output_file(recorder);
-    if (!ok) {
-        return false;
-    }
-
-    ok = sc_recorder_process_packets(recorder);
+    bool ok = sc_recorder_process_packets(recorder);
     sc_recorder_close_output_file(recorder);
     return ok;
 }
@@ -647,6 +647,10 @@ sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
     assert(!recorder->audio_init);
 
     sc_mutex_lock(&recorder->mutex);
+    if (recorder->stopped) {
+        sc_mutex_unlock(&recorder->mutex);
+        return false;
+    }
 
     AVStream *stream = avformat_new_stream(recorder->ctx, NULL);
     if (!stream) {
@@ -828,10 +832,16 @@ error_free_filename:
 
 bool
 sc_recorder_start(struct sc_recorder *recorder) {
-    bool ok = sc_thread_create(&recorder->thread, run_recorder,
-                               "scrcpy-recorder", recorder);
+    bool ok = sc_recorder_open_output_file(recorder);
+    if (!ok) {
+        return false;
+    }
+
+    ok = sc_thread_create(&recorder->thread, run_recorder,
+                          "scrcpy-recorder", recorder);
     if (!ok) {
         LOGE("Could not start recorder thread");
+        sc_recorder_close_output_file(recorder);
         return false;
     }
 

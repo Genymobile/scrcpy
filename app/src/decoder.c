@@ -58,40 +58,43 @@ sc_decoder_create_context(const char *decoder_name, const AVCodec *codec,
 }
 
 static bool
-sc_decoder_fallback_to_software(struct sc_decoder *decoder) {
-    const AVCodec *codec = avcodec_find_decoder(decoder->params->codec_id);
+sc_decoder_reopen_codec(struct sc_decoder *decoder, bool hw) {
+    struct sc_hwdec *hwdec = hw ? decoder->hwdec : NULL;
+    enum AVCodecID codec_id = decoder->params->codec_id;
+
+    const AVCodec *codec = NULL;
+
+    if (hwdec && hwdec->hw_type != AV_HWDEVICE_TYPE_NONE) {
+        // The default decoder may not support hardware decoding (for example,
+        // libdav1d is preferred for AV1, but only the native av1 decoder
+        // supports the hardware devices)
+        codec = sc_hwdec_find_decoder(hwdec, codec_id);
+    }
+
     if (!codec) {
-        LOGE("Decoder '%s': no software decoder", decoder->name);
-        return false;
+        codec = avcodec_find_decoder(codec_id);
+        if (!codec) {
+            LOGE("Decoder '%s': no decoder for %s", decoder->name,
+                 avcodec_get_name(codec_id));
+            return false;
+        }
     }
 
-    // Pass NULL as hwdec
+    LOGD("Decoder '%s': %s", decoder->name, codec->name);
+
     AVCodecContext *ctx =
-        sc_decoder_create_context(decoder->name, codec, decoder->params, NULL,
+        sc_decoder_create_context(decoder->name, codec, decoder->params, hwdec,
                                   decoder->copy_opaque);
     if (!ctx) {
         return false;
     }
 
-    avcodec_free_context(&decoder->ctx);
-    decoder->ctx = ctx;
-    return true;
-}
-
-static bool
-sc_decoder_reopen(struct sc_decoder *decoder) {
-    assert(decoder->ctx->hw_device_ctx);
-
-    AVCodecContext *ctx =
-        sc_decoder_create_context(decoder->name, decoder->ctx->codec,
-                                  decoder->params, decoder->hwdec,
-                                  decoder->copy_opaque);
-    if (!ctx) {
-        return false;
+    // Delete the old context
+    if (decoder->ctx) {
+        avcodec_free_context(&decoder->ctx);
     }
-
-    avcodec_free_context(&decoder->ctx);
     decoder->ctx = ctx;
+    decoder->frame_decoded = false;
     return true;
 }
 
@@ -100,26 +103,6 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodecParameters *params,
                 const struct sc_stream_session *session) {
     // A video stream must have a session
     assert(session || params->codec_type != AVMEDIA_TYPE_VIDEO);
-
-    const AVCodec *codec = NULL;
-
-    if (decoder->hwdec && decoder->hwdec->hw_type != AV_HWDEVICE_TYPE_NONE) {
-        // The default decoder may not support hardware decoding (for example,
-        // libdav1d is preferred for AV1, but only the native av1 decoder
-        // supports the hardware devices)
-        codec = sc_hwdec_find_decoder(decoder->hwdec, params->codec_id);
-    }
-
-    if (!codec) {
-        codec = avcodec_find_decoder(params->codec_id);
-        if (!codec) {
-            LOGE("Decoder '%s': no decoder for %s", decoder->name,
-                 avcodec_get_name(params->codec_id));
-            return false;
-        }
-    }
-
-    LOGD("Decoder '%s': %s", decoder->name, codec->name);
 
     decoder->params = avcodec_parameters_alloc();
     if (!decoder->params) {
@@ -133,10 +116,10 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodecParameters *params,
         goto error_free_params;
     }
 
-    decoder->ctx = sc_decoder_create_context(decoder->name, codec, params,
-                                             decoder->hwdec,
-                                             decoder->copy_opaque);
-    if (!decoder->ctx) {
+    decoder->ctx = NULL;
+
+    bool ok = sc_decoder_reopen_codec(decoder, true);
+    if (!ok) {
         goto error_free_params;
     }
 
@@ -156,7 +139,6 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodecParameters *params,
     }
 
     memset(&decoder->frame_size, 0, sizeof(decoder->frame_size));
-    decoder->frame_decoded = false;
 
     return true;
 
@@ -204,7 +186,7 @@ sc_decoder_process_packet(struct sc_decoder *decoder, const AVPacket *packet) {
         if (fallback_to_software) {
             LOGW("Decoder '%s': hardware decoding failed (%s), falling back "
                  "to software decoding", decoder->name, av_err2str(ret));
-            if (!sc_decoder_fallback_to_software(decoder)) {
+            if (!sc_decoder_reopen_codec(decoder, false)) {
                 return SC_SINK_KO;
             }
 
@@ -305,12 +287,17 @@ sc_decoder_decode(struct sc_decoder *decoder) {
             assert(dp.type == SC_DECODER_PACKET_TYPE_SESSION);
             decoder->session = dp.session;
 
-            // A new session starts a new stream possibly with a different size.
-            // The FFmpeg av1 decoder does not reinitialize its hardware decoder
-            // in that case, so recreate the codec context.
-            bool av1_hw = decoder->ctx->codec_id == AV_CODEC_ID_AV1
-                       && decoder->ctx->hw_device_ctx;
-            if (av1_hw && !sc_decoder_reopen(decoder)) {
+            // The codec parameters were initialized with the size of the first
+            // session
+            decoder->params->width = dp.session.video.width;
+            decoder->params->height = dp.session.video.height;
+
+            // A new session starts a new stream, possibly with a different
+            // size, which the hardware decoder may not support. Select the
+            // decoder again, so that a software fallback applies to each
+            // session separately.
+            bool ok = sc_decoder_reopen_codec(decoder, true);
+            if (!ok) {
                 return false;
             }
 

@@ -14,66 +14,110 @@
 #endif
 #include "util/log.h"
 
+static enum AVHWDeviceType
+sc_interop_get_hw_type(enum sc_hwdec_mode hwdec_mode) {
+    switch (hwdec_mode) {
+        case SC_HWDEC_MODE_VAAPI:
+            return AV_HWDEVICE_TYPE_VAAPI;
+        case SC_HWDEC_MODE_D3D11VA:
+            return AV_HWDEVICE_TYPE_D3D11VA;
+        case SC_HWDEC_MODE_VIDEOTOOLBOX:
+            return AV_HWDEVICE_TYPE_VIDEOTOOLBOX;
+        default:
+            assert(hwdec_mode == SC_HWDEC_MODE_DISABLED);
+            return AV_HWDEVICE_TYPE_NONE;
+    }
+}
+
 struct sc_interop *
-sc_interop_new(enum sc_hwdec_mode hwdec_mode, SDL_Renderer *renderer,
+sc_interop_new(enum AVHWDeviceType hw_type, SDL_Renderer *renderer,
                struct sc_opengl *gl, bool mipmaps) {
-    bool any = hwdec_mode == SC_HWDEC_MODE_AUTO;
-
+    switch (hw_type) {
+        case AV_HWDEVICE_TYPE_NONE: {
+            struct sc_interop_software *sw =
+                sc_interop_software_new(renderer, gl, mipmaps);
+            return sw ? &sw->interop : NULL;
+        }
 #ifdef HAVE_VAAPI
-    if (any || hwdec_mode == SC_HWDEC_MODE_VAAPI) {
-        struct sc_interop_vaapi *vaapi =
-            sc_interop_vaapi_new(renderer, gl, mipmaps);
-        if (vaapi) {
-            return &vaapi->interop;
+        case AV_HWDEVICE_TYPE_VAAPI: {
+            struct sc_interop_vaapi *vaapi =
+                sc_interop_vaapi_new(renderer, gl, mipmaps);
+            return vaapi ? &vaapi->interop : NULL;
         }
-        if (!any) {
-            LOGE("VA-API interop unavailable");
-            return NULL;
-        }
-        LOGI("VA-API interop unavailable");
-    }
 #endif
-
 #ifdef HAVE_D3D11VA
-    if (any || hwdec_mode == SC_HWDEC_MODE_D3D11VA) {
-        struct sc_interop_d3d11va *d3d11va = sc_interop_d3d11va_new(renderer);
-        if (d3d11va) {
-            return &d3d11va->interop;
+        case AV_HWDEVICE_TYPE_D3D11VA: {
+            struct sc_interop_d3d11va *d3d11va =
+                sc_interop_d3d11va_new(renderer);
+            return d3d11va ? &d3d11va->interop : NULL;
         }
-        if (!any) {
-            LOGE("D3D11VA interop unavailable");
-            return NULL;
-        }
-        LOGI("D3D11VA interop unavailable");
-    }
 #endif
-
 #ifdef HAVE_VIDEOTOOLBOX
-    if (any || hwdec_mode == SC_HWDEC_MODE_VIDEOTOOLBOX) {
-        struct sc_interop_videotoolbox *vt =
-            sc_interop_videotoolbox_new(renderer);
-        if (vt) {
-            return &vt->interop;
+        case AV_HWDEVICE_TYPE_VIDEOTOOLBOX: {
+            struct sc_interop_videotoolbox *vt =
+                sc_interop_videotoolbox_new(renderer);
+            return vt ? &vt->interop : NULL;
         }
-        if (!any) {
-            LOGE("VideoToolbox interop unavailable");
-            return NULL;
-        }
-        LOGI("VideoToolbox interop unavailable");
-    }
 #endif
+        default:
+            LOGE("No interop for hardware device type: %s",
+                 av_hwdevice_get_type_name(hw_type));
+            return NULL;
+    }
+}
 
-    if (any || hwdec_mode == SC_HWDEC_MODE_DISABLED) {
-        struct sc_interop_software *sw =
-            sc_interop_software_new(renderer, gl, mipmaps);
-        if (sw) {
-            return &sw->interop;
+static inline const char *
+sc_interop_get_hw_type_name(enum AVHWDeviceType hw_type) {
+    return hw_type != AV_HWDEVICE_TYPE_NONE
+         ? av_hwdevice_get_type_name(hw_type)
+         : "software";
+}
+
+static struct sc_interop *
+sc_interop_new_auto(SDL_Renderer *renderer, struct sc_opengl *gl,
+                    bool mipmaps) {
+    // In order of preference
+    static const enum AVHWDeviceType hw_types[] = {
+#ifdef HAVE_VAAPI
+        AV_HWDEVICE_TYPE_VAAPI,
+#endif
+#ifdef HAVE_D3D11VA
+        AV_HWDEVICE_TYPE_D3D11VA,
+#endif
+#ifdef HAVE_VIDEOTOOLBOX
+        AV_HWDEVICE_TYPE_VIDEOTOOLBOX,
+#endif
+        AV_HWDEVICE_TYPE_NONE, // software
+    };
+
+    for (size_t i = 0; i < ARRAY_LEN(hw_types); ++i) {
+        enum AVHWDeviceType hw_type = hw_types[i];
+        struct sc_interop *interop =
+            sc_interop_new(hw_type, renderer, gl, mipmaps);
+        if (interop) {
+            return interop;
         }
-        LOGI("Software interop failed");
+        LOGI("Interop %s unavailable", sc_interop_get_hw_type_name(hw_type));
     }
 
     LOGE("No compatible interop");
     return NULL;
+}
+
+struct sc_interop *
+sc_interop_new_from_hwdec_mode(enum sc_hwdec_mode hwdec_mode,
+                               SDL_Renderer *renderer, struct sc_opengl *gl,
+                               bool mipmaps) {
+    if (hwdec_mode == SC_HWDEC_MODE_AUTO) {
+        return sc_interop_new_auto(renderer, gl, mipmaps);
+    }
+
+    enum AVHWDeviceType hw_type = sc_interop_get_hw_type(hwdec_mode);
+    struct sc_interop *interop = sc_interop_new(hw_type, renderer, gl, mipmaps);
+    if (!interop) {
+        LOGE("Interop %s unavailable", sc_interop_get_hw_type_name(hw_type));
+    }
+    return interop;
 }
 
 void
