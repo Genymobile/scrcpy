@@ -450,14 +450,19 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     // Shortcuts that do not involve the MOD key
     switch (sdl_keycode) {
         case SDLK_F11:
-            if (video && !repeat && down) {
-                bool alt = mod & SDL_KMOD_ALT;
-                bool super = mod & SDL_KMOD_GUI;
-                if (!ctrl && !shift && !alt && !super) {
-                    sc_screen_toggle_fullscreen(im->screen);
+            if (video) {
+                if (!repeat && down) {
+                    bool alt = mod & SDL_KMOD_ALT;
+                    bool super = mod & SDL_KMOD_GUI;
+                    if (!ctrl && !shift && !alt && !super) {
+                        sc_screen_toggle_fullscreen(im->screen);
+                    }
                 }
+                return;
             }
-            return;
+            // Without video (e.g. in OTG mode), there is no fullscreen to
+            // toggle, so forward F11 to the device
+            break;
     }
 
     if (is_shortcut) {
