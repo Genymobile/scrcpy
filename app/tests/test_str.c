@@ -384,6 +384,25 @@ static void test_remove_trailing_cr(void) {
     assert(!strcmp(s3, "adb\rdef"));
 }
 
+static void test_to_hex_string(void) {
+    const uint8_t data[] = {0xAB, 0x01, 0xFF};
+
+    char *s = sc_str_to_hex_string(data, 3);
+    assert(s);
+    assert(!strcmp(s, "AB 01 FF"));
+    free(s);
+
+    s = sc_str_to_hex_string(data, 1);
+    assert(s);
+    assert(!strcmp(s, "AB"));
+    free(s);
+
+    s = sc_str_to_hex_string(data, 0);
+    assert(s);
+    assert(!strcmp(s, ""));
+    free(s);
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -405,5 +424,6 @@ int main(int argc, char *argv[]) {
     test_wrap_lines();
     test_index_of_column();
     test_remove_trailing_cr();
+    test_to_hex_string();
     return 0;
 }

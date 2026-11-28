@@ -357,8 +357,8 @@ sc_str_to_hex_string(const uint8_t *data, size_t size) {
         snprintf(buffer + i * 3, 4, "%02X ", data[i]);
     }
 
-    // Remove the final space
-    buffer[size * 3] = '\0';
+    // Remove the final space (if any)
+    buffer[size ? size * 3 - 1 : 0] = '\0';
 
     return buffer;
 }
